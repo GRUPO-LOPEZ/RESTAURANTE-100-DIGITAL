@@ -1,0 +1,36 @@
+# dependencias
+/node_modules
+
+# next.js
+/.next/
+/out/
+/build
+next-env.d.ts
+*.tsbuildinfo
+
+# pruebas
+/coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# supabase local
+supabase/.temp/
+supabase/.branches/
+
+# variables de entorno: nunca se suben (salvo el ejemplo)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# varios
+.DS_Store
+Thumbs.db
+*.pem
+npm-debug.log*
+
+# ajustes personales de Claude Code
+.claude/settings.local.json

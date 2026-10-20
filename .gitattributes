@@ -1,0 +1,6 @@
+# Finales de línea LF en todo el repositorio (ver docs/decisiones/0001-entorno.md)
+* text=auto eol=lf
+*.ico binary
+*.png binary
+*.jpg binary
+*.webp binary
