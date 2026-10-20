@@ -66,6 +66,19 @@ describe("protect-migrations", () => {
     expect(run("protect-migrations", event)).toBe(0);
   });
 
+  it("bloquea editar una migración ya commiteada", () => {
+    const committed = spawnSync("git", ["ls-files", "supabase/migrations/*.sql"], {
+      cwd: root,
+      encoding: "utf8",
+    })
+      .stdout.split("\n")
+      .find(Boolean);
+    expect(committed, "tiene que haber al menos una migración commiteada").toBeDefined();
+    expect(
+      run("protect-migrations", { tool_name: "Edit", tool_input: { file_path: committed } }),
+    ).toBe(2);
+  });
+
   it("no afecta archivos fuera de migraciones", () => {
     expect(
       run("protect-migrations", {
