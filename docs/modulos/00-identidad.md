@@ -43,7 +43,18 @@ La Fase 1 cierra cuando las 13 pruebas obligatorias del Módulo Maestro y las 10
 | 12  | Una aprobación guarda identidad, fecha y decisión         | pgTAP                       |
 | 13  | No se puede alterar el historial con operaciones normales | pgTAP                       |
 
-> **Pendiente:** las **10 pruebas adicionales** que menciona el texto no llegaron todavía.
+**Pruebas adicionales** (recibidas de Joaco el 2026-10-20, copia fiel):
+
+1. Un usuario no puede darse permisos ni roles a sí mismo.
+2. No se puede aprobar la propia solicitud cuando la política lo prohíbe.
+3. Ni el superadministrador puede borrar o modificar audit_events desde la app.
+4. Revocar un rol corta el acceso en la siguiente consulta.
+5. Un usuario suspendido no puede iniciar sesión; uno reactivado sí.
+6. Las asignaciones con alcance incoherente son rechazadas por la base.
+7. Tras 5 intentos fallidos de login se bloquea temporalmente y queda registrado.
+8. Los roles 1 a 4 y Controller no entran sin MFA.
+9. Todas las tablas tienen RLS activo (prueba que recorre el catálogo de la base).
+10. Las consultas del tablero de usuarios responden en menos de 300 ms con 500 usuarios de prueba.
 
 ---
 

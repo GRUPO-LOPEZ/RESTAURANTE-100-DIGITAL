@@ -18,7 +18,8 @@ _Última actualización: 2026-10-20, adelanto de la Fase 1 (M1 a M4)._
 **Preguntas para usted:**
 
 - ~~**P15:** ¿cómo se pasa un local a otra marca?~~ Resuelta por Joaco: se crea el local nuevo y se cierra el viejo, que conserva su historia. Si hiciera falta, se puede cambiar más adelante (ADR-0007).
-- **P16:** faltan las 10 pruebas adicionales de su Módulo Maestro.
+- ~~**P16:** las 10 pruebas adicionales.~~ Recibidas; la 6 (alcance incoherente) ya pasa.
+- **P18:** ¿cuánto dura el bloqueo después de 5 intentos fallidos? La propuesta es 15 minutos. Puede que necesite un plan pago de Supabase; lo verificamos.
 - **P17:** la prueba 11, "una operación rechazada queda registrada", ¿es una aprobación rechazada o también un intento sin permiso?
 - **P7:** ¿qué cambios necesitan aprobación?
 

@@ -211,7 +211,7 @@ Se decide antes de M3, se registra en `docs/decisiones/0005-...` y se agregan lo
 
 ## Las 13 pruebas obligatorias
 
-La lista oficial está en la sección 10 del Módulo Maestro (copiada en `docs/modulos/00-identidad.md`). P4 quedó resuelta. Faltan las **10 adicionales** (P16).
+La lista oficial está en la sección 10 del Módulo Maestro (copiada en `docs/modulos/00-identidad.md`). P4 y P16 quedaron resueltas: están las 13 obligatorias y las 10 adicionales.
 
 | #   | Prueba obligatoria (Módulo Maestro)                       | Dónde                       | Se construye en                                                       |
 | --- | --------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------- |
@@ -228,6 +228,19 @@ La lista oficial está en la sección 10 del Módulo Maestro (copiada en `docs/m
 | 11  | Una operación rechazada queda registrada                  | pgTAP                       | M7 o M9, según P17                                                    |
 | 12  | Una aprobación guarda identidad, fecha y decisión         | pgTAP                       | M7                                                                    |
 | 13  | No se puede alterar el historial con operaciones normales | pgTAP                       | M2 (ya cubierta en `020_audit`; se repite como `authenticated` en M5) |
+
+| #   | Prueba adicional (Módulo Maestro)                                             | Se construye en                                                                                                   |
+| --- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| A1  | Un usuario no puede darse permisos ni roles a sí mismo                        | M6 (`assign_role`, regla 4)                                                                                       |
+| A2  | No se puede aprobar la propia solicitud cuando la política lo prohíbe         | M7 (`workflow.decide`)                                                                                            |
+| A3  | Ni el superadministrador puede borrar o modificar `audit_events` desde la app | M2 (ya cubierta en `020_audit`); se repite como `authenticated` con el superadmin en M5                           |
+| A4  | Revocar un rol corta el acceso en la siguiente consulta                       | M5 (`has_permission` lee las asignaciones en cada consulta, no del JWT)                                           |
+| A5  | Un usuario suspendido no puede iniciar sesión; uno reactivado sí              | M8 (bloqueo y reactivación con ban en Auth), pgTAP + Playwright                                                   |
+| A6  | Las asignaciones con alcance incoherente son rechazadas por la base           | M4 ✅ (`040_identity`: grupo con marca, restaurante sin restaurante, local de otra marca, marca de otro grupo)    |
+| A7  | Tras 5 intentos fallidos de login se bloquea temporalmente y queda registrado | M9, junto con P5. **Riesgo:** Auth no trae bloqueo por cuenta, solo límites por IP. Ver P18                       |
+| A8  | Los roles 1 a 4 y Controller no entran sin MFA                                | M5 (`has_permission` exige `aal2`) + M8 (TOTP prendido), pgTAP + Playwright                                       |
+| A9  | Todas las tablas tienen RLS activo (recorre el catálogo)                      | M7 (prueba de catálogo); hoy cada archivo de pruebas ya lo controla para sus tablas                               |
+| A10 | El tablero de usuarios responde en menos de 300 ms con 500 usuarios de prueba | Pantalla de usuarios + seed de rendimiento con 500 personas ficticias (aparte del seed chico) y `explain analyze` |
 
 Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión en pgTAP (`set local role authenticated` + `request.jwt.claims`). Las pruebas que había propuesto antes (RLS en todas las tablas, invitación, MFA, secretos en la auditoría, borrado lógico) no se pierden: quedan como pruebas propias de M5 a M8.
 
@@ -254,7 +267,13 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 - ~~**P6. Matriz de permisos.**~~ Resuelta: matriz aprobada por Joaco (`docs/modulos/00-identidad.md`).
 - **P7. Aprobaciones.** ¿Qué cambios de la Fase 1 necesitan aprobación y cuáles exigen que apruebe otra persona? La propuesta de seguridad es que pasen por aprobación tres cosas: dar roles con `approvals.decide` o con permisos sensibles, los cambios de la matriz y los traspasos.
 - ~~**P15. Traspaso de locales y marcas.**~~ Resuelta por Joaco el 2026-10-20: opción A. Se crea un local nuevo en la marca nueva y se cierra el viejo, que conserva su historia (ADR-0007). Si hace falta, se puede pasar a B más adelante.
-- **P16. Las 10 pruebas adicionales** del Módulo Maestro: no llegaron.
+- ~~**P16. Las 10 pruebas adicionales.**~~ Resuelta: recibidas el 2026-10-20.
+- **P18. Bloqueo tras 5 intentos fallidos (prueba A7).** Supabase Auth limita intentos por IP, pero no bloquea una cuenta por intentos fallidos. Hay dos caminos:
+  - un hook de Auth que verifique la contraseña, cuente los fallos y bloquee. Según la documentación de Supabase podría requerir un plan pago; **hay que verificarlo**;
+  - que el ingreso pase por una función de servidor propia que cuente y bloquee.
+
+  Se decide con P5 y el plan de Supabase de Soy. ¿Cuánto dura el bloqueo temporal? Propuesta: 15 minutos.
+
 - **P17. "Una operación rechazada queda registrada" (prueba 11):** ¿se refiere a una solicitud de aprobación rechazada, o también a un intento sin permiso que la base frena (por ejemplo, un cocinero que quiere editar un costo)? En el segundo caso hace falta un registro aparte, porque lo que la base rechaza se deshace entero, y su auditoría también.
 
 **No bloqueantes:**
