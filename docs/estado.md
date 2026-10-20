@@ -21,7 +21,14 @@ _Última actualización: 2026-10-20, adelanto de la Fase 1 (M1 a M4)._
 - ~~**P16:** las 10 pruebas adicionales.~~ Recibidas; la 6 (alcance incoherente) ya pasa.
 - **P18:** ¿cuánto dura el bloqueo después de 5 intentos fallidos? La propuesta es 15 minutos. Puede que necesite un plan pago de Supabase; lo verificamos.
 - **P17:** la prueba 11, "una operación rechazada queda registrada", ¿es una aprobación rechazada o también un intento sin permiso?
-- **P7:** ¿qué cambios necesitan aprobación?
+- ~~**P7:** ¿qué cambios necesitan aprobación?~~ Resuelta por Joaco (ADR-0008). Piden aprobación de otra persona:
+  - dar roles que aprueban;
+  - dar el rol Superadministrador;
+  - cambiar los permisos de los roles;
+  - pasar un local a otra marca;
+  - reactivar una cuenta.
+
+  Bloquear una cuenta es inmediato.
 
 **Estado:** rama `feat/fase-1-identidad` (sale de `feat/fase-1-organizacion`). Es un **adelanto**: no se suma a `main` sin su aprobación.
 

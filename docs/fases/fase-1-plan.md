@@ -137,7 +137,7 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
   2. **los permisos del rol que otorga sean un subconjunto de los suyos** en ese alcance. Se comparan **conjuntos de permisos, nunca `level`**: si se comparara el nivel, el gerente (nivel 4) podría dar Chef Ejecutivo (nivel 5), que tiene `approvals.decide`;
   3. **el alcance otorgado quede dentro del suyo**;
   4. **nadie se asigne roles a sí mismo**, ni siquiera en otro alcance;
-  5. los roles que incluyen `approvals.decide` o algún permiso `is_sensitive` pasan por `workflow`, con aprobación de otra persona. Así se evitan las "cuentas títere": invitar un segundo correo propio y darle el mismo rol para aprobarse a uno mismo.
+  5. los roles que incluyen `approvals.decide`, y el de Superadministrador, pasan por `workflow` con aprobación de otra persona (ADR-0008). Así se evitan las "cuentas títere": invitar un segundo correo propio y darle un rol que aprueba, para aprobarse a uno mismo. Los demás roles se aplican al instante.
 - Extender una vigencia o restaurar una asignación también pasa por `assign_role`.
 - Cambios del catálogo con `roles.manage`:
   - van por `workflow`, con aprobador distinto;
@@ -265,7 +265,15 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 - ~~**P2. MFA.**~~ Resuelta: niveles 1 a 4 más Controller.
 - ~~**P4. Las 13 pruebas.**~~ Resuelta: lista oficial de la sección 10 del Módulo Maestro.
 - ~~**P6. Matriz de permisos.**~~ Resuelta: matriz aprobada por Joaco (`docs/modulos/00-identidad.md`).
-- **P7. Aprobaciones.** ¿Qué cambios de la Fase 1 necesitan aprobación y cuáles exigen que apruebe otra persona? La propuesta de seguridad es que pasen por aprobación tres cosas: dar roles con `approvals.decide` o con permisos sensibles, los cambios de la matriz y los traspasos.
+- ~~**P7. Aprobaciones.**~~ Resuelta por Joaco el 2026-10-20 (ADR-0008). Pasan por aprobación, con una sola persona distinta de quien pide:
+  - dar roles que aprueban;
+  - dar el rol Superadministrador;
+  - cambiar la matriz;
+  - los traspasos;
+  - reactivar cuentas.
+
+  Bloquear una cuenta es inmediato.
+
 - ~~**P15. Traspaso de locales y marcas.**~~ Resuelta por Joaco el 2026-10-20: opción A. Se crea un local nuevo en la marca nueva y se cierra el viejo, que conserva su historia (ADR-0007). Si hace falta, se puede pasar a B más adelante.
 - ~~**P16. Las 10 pruebas adicionales.**~~ Resuelta: recibidas el 2026-10-20.
 - **P18. Bloqueo tras 5 intentos fallidos (prueba A7).** Supabase Auth limita intentos por IP, pero no bloquea una cuenta por intentos fallidos. Hay dos caminos:
