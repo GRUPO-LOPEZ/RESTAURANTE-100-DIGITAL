@@ -172,10 +172,18 @@ Se compararon 110 reglas clave del prompt maestro contra `CLAUDE.md` + `.claude/
 
 ## Falta
 
-1. **Subir la rama y abrir el PR** para verificar GitHub Actions en verde. Necesita la confirmación de Joaco para el `git push`.
-2. **Proteger `main` en GitHub:** exigir PR, pruebas en verde y aprobación, y prohibir el push forzado. Se hace desde la cuenta de Soy.
-3. Responder las preguntas bloqueantes de la Fase 1 (P1, P2, P4, P6 y P7 en `docs/fases/fase-1-plan.md`).
-4. Decidir cómo llega la app a los datos (ADR-0005, antes de M3).
+_Actualizado el 2026-10-20._
+
+1. **Construir M5, M6 y M8** y las pantallas de ingreso, "sin acceso" y usuarios. No dependen de nadie.
+2. **M7 (aprobaciones)** cuando esté P17. P7 ya está resuelta (ADR-0008).
+3. Preguntas abiertas: P17 (operación rechazada), P5 (eventos de ingreso), P18 (duración del bloqueo), P10, P13 y P14.
+4. **Subir las 3 ramas de adelanto** (M1–M2, M3, M4) como PRs y verificar GitHub Actions en verde. Necesita la confirmación de Joaco para el `git push`.
+5. **Supabase remoto:**
+   - Soy ya creó la organización y Joaco es administrador.
+   - Faltan los proyectos `grupo-lf-staging` y `grupo-lf-prod` (región São Paulo), los ajustes de Auth en el panel, y el flujo de GitHub Actions con sus secretos. Lo hace Joaco desde el panel, nunca Claude Code.
+   - Pendiente también una guía escrita para Soy.
+6. **Proteger `main` en GitHub**, Vercel, respaldos y exportación semanal del historial (Soy).
+7. Texto completo del Módulo Maestro y tabla de fases (sección 12) de Soy.
 
 ## Bloqueado
 
