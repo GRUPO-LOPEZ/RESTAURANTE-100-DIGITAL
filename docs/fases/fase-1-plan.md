@@ -64,7 +64,7 @@ Archivo: `supabase/migrations/20261020173811_audit_events.sql`. Pruebas: `supaba
   - recorta el motivo a 500 caracteres y descarta orígenes inválidos;
   - **rechaza los cambios con la clave de servidor que no declaran origen**.
 - **Pendiente:**
-  - `audit.authentication_security_events` (espera P5);
+  - `audit.authentication_security_events`: registro de seguridad de ingresos e intentos frenados (ADR-0009 y ADR-0010);
   - la tarea programada que sella cada hora;
   - la exportación externa con la última huella;
   - la lectura con `audit.view`, que tiene que **ocultar costos** a quien no tenga `costing.view_costs` (ADR-0006).
@@ -237,7 +237,7 @@ La lista oficial está en la sección 10 del Módulo Maestro (copiada en `docs/m
 | A4  | Revocar un rol corta el acceso en la siguiente consulta                       | M5 (`has_permission` lee las asignaciones en cada consulta, no del JWT)                                           |
 | A5  | Un usuario suspendido no puede iniciar sesión; uno reactivado sí              | M8 (bloqueo y reactivación con ban en Auth), pgTAP + Playwright                                                   |
 | A6  | Las asignaciones con alcance incoherente son rechazadas por la base           | M4 ✅ (`040_identity`: grupo con marca, restaurante sin restaurante, local de otra marca, marca de otro grupo)    |
-| A7  | Tras 5 intentos fallidos de login se bloquea temporalmente y queda registrado | M9, junto con P5. **Riesgo:** Auth no trae bloqueo por cuenta, solo límites por IP. Ver P18                       |
+| A7  | Tras 5 intentos fallidos de login se bloquea temporalmente y queda registrado | M8 y M9: ingreso por función de servidor + Custom Access Token hook (ADR-0010); duración en P18                   |
 | A8  | Los roles 1 a 4 y Controller no entran sin MFA                                | M5 (`has_permission` exige `aal2`) + M8 (TOTP prendido), pgTAP + Playwright                                       |
 | A9  | Todas las tablas tienen RLS activo (recorre el catálogo)                      | M7 (prueba de catálogo); hoy cada archivo de pruebas ya lo controla para sus tablas                               |
 | A10 | El tablero de usuarios responde en menos de 300 ms con 500 usuarios de prueba | Pantalla de usuarios + seed de rendimiento con 500 personas ficticias (aparte del seed chico) y `explain analyze` |
@@ -276,18 +276,14 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 
 - ~~**P15. Traspaso de locales y marcas.**~~ Resuelta por Joaco el 2026-10-20: opción A. Se crea un local nuevo en la marca nueva y se cierra el viejo, que conserva su historia (ADR-0007). Si hace falta, se puede pasar a B más adelante.
 - ~~**P16. Las 10 pruebas adicionales.**~~ Resuelta: recibidas el 2026-10-20.
-- **P18. Bloqueo tras 5 intentos fallidos (prueba A7).** Supabase Auth limita intentos por IP, pero no bloquea una cuenta por intentos fallidos. Hay dos caminos:
-  - un hook de Auth que verifique la contraseña, cuente los fallos y bloquee. Según la documentación de Supabase podría requerir un plan pago; **hay que verificarlo**;
-  - que el ingreso pase por una función de servidor propia que cuente y bloquee.
-
-  Se decide con P5 y el plan de Supabase de Soy. ¿Cuánto dura el bloqueo temporal? Propuesta: 15 minutos.
+- **P18. Duración del bloqueo tras 5 intentos fallidos (prueba A7).** El mecanismo ya está decidido (ADR-0010). Falta saber dos cosas: cuánto dura el bloqueo (propuesta: 15 minutos, y después se libera solo) y si un administrador también puede liberarlo antes.
 
 - ~~**P17. Operación rechazada (prueba 11).**~~ Resuelta por Joaco el 2026-10-20: opción 2. Se registran las aprobaciones rechazadas y los intentos frenados en las funciones críticas, en un registro de seguridad que se guarda aunque la operación se rechace (ADR-0009).
 
 **No bloqueantes:**
 
 - **P3.** ¿Particionamos `audit_events` por mes desde el inicio? Propuesta: dejarlo preparado y activarlo al pasar el millón de filas.
-- **P5.** Eventos de autenticación: ¿hooks de Auth en tiempo real o una copia periódica?
+- ~~**P5.** Eventos de autenticación.~~ Resuelta por Joaco el 2026-10-20 (ADR-0010): el ingreso pasa por una función de servidor propia que registra y cuenta los intentos, y el Custom Access Token hook (planes Free y Pro) niega la sesión a las cuentas bloqueadas. Si Soy contrata Teams, se pasa al Password Verification hook.
 - **P8.** Política de contraseñas. Propuesta: 12 caracteres como mínimo, con letras y números.
 - **P9.** ¿Quién puede invitar y con qué alcance? ¿Un gerente invita cocineros de su restaurante?
 - **P10.** Lista completa de marcas y restaurantes reales, y si entran otros negocios del grupo (vinos, consultoría).
