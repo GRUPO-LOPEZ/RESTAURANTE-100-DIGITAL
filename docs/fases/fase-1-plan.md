@@ -123,7 +123,12 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
   - **Deniega a todo actor que no tenga un perfil activo o una cuenta técnica activa.** Hoy se puede crear un actor `service_account` sin su fila en `service_accounts`.
   - `core.permissions`, `core.roles` y `core.role_permissions` no tienen escritura para ningún rol de la API. El catálogo se cambia por migración o por funciones que pasan por `workflow`.
   - `core.service_accounts`: nadie más que `postgres` la escribe hasta la Fase 5.
-- **Traspaso de locales y marcas (P15, decidir antes de M5):** las FKs compuestas, más la regla de que una asignación no cambia, impiden mover un local o una marca que ya tuvo asignaciones. Lo mismo pasa con `org.areas`.
+- **Traspaso de locales y marcas (P15, resuelta: opción A, ADR-0007):** el trámite de traspaso, en una sola transacción y auditado:
+  - cierra el local viejo;
+  - crea uno nuevo en la marca destino, con una referencia al anterior;
+  - reasigna los roles con las reglas de M6.
+
+  Las FKs compuestas no se aflojan.
 
 ### M6 — Asignación de roles sin escalada de privilegios
 
@@ -248,9 +253,7 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 - ~~**P4. Las 13 pruebas.**~~ Resuelta: lista oficial de la sección 10 del Módulo Maestro.
 - ~~**P6. Matriz de permisos.**~~ Resuelta: matriz aprobada por Joaco (`docs/modulos/00-identidad.md`).
 - **P7. Aprobaciones.** ¿Qué cambios de la Fase 1 necesitan aprobación y cuáles exigen que apruebe otra persona? La propuesta de seguridad es que pasen por aprobación tres cosas: dar roles con `approvals.decide` o con permisos sensibles, los cambios de la matriz y los traspasos.
-- **P15. Traspaso de locales y marcas.** Hoy, un local que ya tuvo personas asignadas no se puede mover de marca. Opciones:
-  - (a) el traspaso crea un local nuevo en la marca nueva y cierra el viejo, y la historia queda en el viejo;
-  - (b) otro mecanismo, que habría que diseñar.
+- ~~**P15. Traspaso de locales y marcas.**~~ Resuelta por Joaco el 2026-10-20: opción A. Se crea un local nuevo en la marca nueva y se cierra el viejo, que conserva su historia (ADR-0007). Si hace falta, se puede pasar a B más adelante.
 - **P16. Las 10 pruebas adicionales** del Módulo Maestro: no llegaron.
 - **P17. "Una operación rechazada queda registrada" (prueba 11):** ¿se refiere a una solicitud de aprobación rechazada, o también a un intento sin permiso que la base frena (por ejemplo, un cocinero que quiere editar un costo)? En el segundo caso hace falta un registro aparte, porque lo que la base rechaza se deshace entero, y su auditoría también.
 
