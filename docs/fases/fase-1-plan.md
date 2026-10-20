@@ -89,7 +89,15 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
 - Auditoría: el alcance de cada evento sale de la estructura (`org.restaurants` / `org.brands`), no de lo que diga la fila. En las filas de `org`, sale de su propio id.
 - Se cortaron los permisos por defecto de Supabase en `public` (DELETE y TRUNCATE para los roles de la API).
 - **Excepción documentada a "índice en cada FK":** `created_by`, `updated_by` y `deleted_by` (hacia `core.actors`) no se indexan. Un actor nunca se borra, así que esas FKs no se recorren al borrar. Si una pantalla filtra "creado por", se agrega el índice.
-- **Pendiente:** dirección, CUIT, código de marca y zona horaria (P10), y el trámite de traspaso (M5).
+- **Datos del local (P10, decidido por Joaco el 2026-10-20): todos opcionales.** Van en una migración nueva, junto con M5:
+  - código corto, único por grupo entre los vigentes;
+  - dirección y barrio o localidad;
+  - razón social y CUIT, por local, con `check` de formato de 11 dígitos;
+  - teléfono;
+  - fecha de apertura;
+  - zona horaria, que por defecto es `America/Argentina/Buenos_Aires` y se valida contra `pg_timezone_names`.
+
+  El trámite de traspaso va en M5 (ADR-0007).
 
 ### M4 — Identidad (`core`) ✅ construida (adelanto, rama `feat/fase-1-identidad`)
 
@@ -286,7 +294,7 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 - ~~**P5.** Eventos de autenticación.~~ Resuelta por Joaco el 2026-10-20 (ADR-0010): el ingreso pasa por una función de servidor propia que registra y cuenta los intentos, y el Custom Access Token hook (planes Free y Pro) niega la sesión a las cuentas bloqueadas. Si Soy contrata Teams, se pasa al Password Verification hook.
 - **P8.** Política de contraseñas. Propuesta: 12 caracteres como mínimo, con letras y números.
 - **P9.** ¿Quién puede invitar y con qué alcance? ¿Un gerente invita cocineros de su restaurante?
-- **P10.** Lista completa de marcas y restaurantes reales, y si entran otros negocios del grupo (vinos, consultoría).
+- **P10.** Los datos de cada local están resueltos: todos opcionales (ver M3). Falta la lista completa de marcas y restaurantes reales, y si entran otros negocios del grupo (vinos, consultoría). Esto se carga recién en producción, nunca en desarrollo.
 - **P11.** La tabla de fases (sección 12) no llegó completa: confirmar qué entra en cada fase.
 - ~~**P12.** Cómo llega la app a los datos: opción A o B.~~ Resuelta: opción A (ADR-0005), que se aplica en M5/M6.
 - **P13.** ¿Se puede editar un registro que ya está borrado, o hay que restaurarlo primero? Hoy se permite y queda auditado como `update`.

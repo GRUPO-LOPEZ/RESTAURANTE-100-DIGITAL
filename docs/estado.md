@@ -177,7 +177,7 @@ _Actualizado el 2026-10-20._
 
 1. **Construir M5, M6 y M8** y las pantallas de ingreso, "sin acceso" y usuarios. No dependen de nadie.
 2. **M7 (aprobaciones)**: P7 y P17 ya están resueltas (ADR-0008 y ADR-0009).
-3. Preguntas abiertas (no frenan nada): P10, P13 y P14.
+3. Preguntas abiertas (no frenan nada): P13 y P14. P10: los datos del local van todos opcionales (decidido); falta la lista real de marcas y locales para producción.
 4. **Subir las 3 ramas de adelanto** (M1–M2, M3, M4) como PRs y verificar GitHub Actions en verde. Necesita la confirmación de Joaco para el `git push`.
 5. **Supabase remoto:**
    - Soy ya creó la organización y Joaco es administrador.
