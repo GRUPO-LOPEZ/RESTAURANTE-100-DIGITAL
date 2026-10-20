@@ -1,26 +1,118 @@
+/*
+ * Sistema de diseño de Grupo LF (prompt maestro, sección 7; reglas en .claude/rules/design.md).
+ * Este archivo es la ÚNICA fuente de colores, tipografía y formas.
+ * Ver docs/decisiones/0002-tailwind-4-tokens.md.
+ */
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Se borra la paleta por defecto de Tailwind: solo existen los colores de abajo. */
+  --color-*: initial;
+
+  /* Paleta base */
+  --color-app: #fafaf9; /* fondo de la app */
+  --color-surface: #ffffff; /* tarjetas y paneles */
+  --color-line: #e7e5e4; /* bordes y divisores */
+  --color-ink: #1f2937; /* texto principal */
+  --color-ink-muted: #6b7280; /* texto secundario */
+  --color-primary: #4f6d9a; /* acción principal */
+  --color-primary-ink: #ffffff; /* texto sobre la acción principal */
+
+  /* Estados: fondo pastel + texto oscuro del mismo tono */
+  --color-ok: #d1fae5; /* bien, aprobado, en meta */
+  --color-ok-ink: #065f46;
+  --color-warn: #fef3c7; /* atención, pendiente */
+  --color-warn-ink: #92400e;
+  --color-bad: #ffe4e6; /* problema, rechazado */
+  --color-bad-ink: #9f1239;
+  --color-info: #e0f2fe; /* información */
+  --color-info-ink: #075985;
+  --color-review: #ede9fe; /* en revisión */
+  --color-review-ink: #5b21b6;
+  --color-draft: #ffedd5; /* borrador */
+  --color-draft-ink: #9a3412;
+
+  /* Series de gráficos (máximo 4 por gráfico, siempre con etiqueta) */
+  --color-chart-1: #93c5fd;
+  --color-chart-2: #86efac;
+  --color-chart-3: #fcd34d;
+  --color-chart-4: #fda4af;
+  --color-chart-5: #c4b5fd;
+  --color-chart-6: #fdba74;
+
+  /* Tipografía: Inter con respaldo en la fuente del sistema */
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  --font-heading: var(--font-sans);
+  --text-sm: 0.875rem; /* 14 px texto chico */
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem; /* 16 px texto base */
+  --text-base--line-height: 1.5rem;
+  --text-xl: 1.25rem; /* 20 px subtítulos */
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem; /* 24 px títulos */
+  --text-2xl--line-height: 2rem;
+  --text-kpi: 2rem; /* 32 px números de KPI */
+  --text-kpi--line-height: 2.5rem;
+
+  /* Formas: grilla de 8 px, radios de 8 a 12 px */
+  --spacing: 0.25rem; /* unidades de 4 px: usar múltiplos pares (p-2 = 8 px, p-4 = 16 px...) */
+  --radius-sm: 0.5rem; /* 8 px */
+  --radius-md: 0.625rem; /* 10 px */
+  --radius-lg: 0.75rem; /* 12 px */
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 0.75rem;
+
+  /* Sin sombras fuertes */
+  --shadow-*: initial;
+  --shadow-sm: 0 1px 2px 0 rgb(31 41 55 / 0.04);
+
+  /* Altura mínima táctil */
+  --spacing-touch: 2.75rem; /* 44 px */
 }
 
+/* Nombres que usan los componentes de shadcn/ui, apuntando a la paleta de arriba. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--color-app);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary-foreground: var(--color-primary-ink);
+  --color-secondary: var(--color-app);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-app);
+  --color-muted-foreground: var(--color-ink-muted);
+  --color-accent: var(--color-app);
+  --color-accent-foreground: var(--color-ink);
+  --color-destructive: var(--color-bad-ink);
+  --color-border: var(--color-line);
+  --color-input: var(--color-line);
+  --color-ring: var(--color-primary);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-line outline-primary/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-app text-base text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-semibold;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
 }
