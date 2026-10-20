@@ -1,8 +1,35 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-20, adelanto de la Fase 1 (M1 y M2)._
+_Última actualización: 2026-10-20, adelanto de la Fase 1 (M1, M2 y M3)._
 
-## Resumen para Soy: adelanto de la Fase 1
+## Resumen para Soy: estructura del grupo (M3)
+
+**Qué se hizo:** la base ya conoce cómo está armado el grupo: **grupo → marcas → restaurantes → áreas** (cocina, salón, depósito). Para probar hay datos inventados: "Grupo Demo", 3 marcas y 4 locales.
+
+- Un local **no puede quedar en una marca de otro grupo**, ni un área en un local de otro grupo: la base lo rechaza.
+- Por decisión de Joaco:
+  - **no se puede borrar algo que todavía tiene cosas vigentes adentro** (una marca con locales abiertos, por ejemplo);
+  - **un local no se puede mover a otra marca con una edición común**. Va a haber un trámite que pide motivo y queda en el historial.
+- Cada alta, cambio o borrado queda en el historial, **con el local, la marca y el grupo correctos**, aunque alguien intente cargar datos engañosos.
+- Todo sigue **cerrado**: ninguna pantalla puede leer estos datos hasta que existan los permisos (ADR-0005).
+
+**Cómo está probado:** 207 pruebas de base de datos en verde, revisadas por los revisores de base de datos y de seguridad (sin hallazgos graves; lo que encontraron está corregido).
+
+**Preguntas para usted:** P13 (¿se puede editar algo borrado?), P14 (¿alcanzan los estados "operando" y "cerrado"?) y P10 (¿qué datos lleva cada local: dirección, CUIT…?).
+
+**Estado:** rama `feat/fase-1-organizacion` (sale de `feat/fase-1-base-auditoria`). Es un **adelanto**: no se suma a `main` sin su aprobación.
+
+| Prueba                                | Resultado     |
+| ------------------------------------- | ------------- |
+| Lint, formato y tipos                 | ✅            |
+| Vitest                                | ✅ 63 de 63   |
+| pgTAP (`000`, `010`, `020`, `030`)    | ✅ 207 de 207 |
+| Playwright + axe                      | ✅ 10 de 10   |
+| `npx supabase db reset` (con el seed) | ✅            |
+
+Revisiones de M3: `db-reviewer` sin graves (2 medias que eran reglas de negocio, ya decididas por Joaco, y 5 menores corregidas). `security-auditor` apto (3 medias latentes: alcance falsificable en la auditoría, ya corregido; riesgos del ADR-0005, ya documentados; permisos por defecto en `public`, ya cortados; y 4 menores corregidas).
+
+## Adelanto de la Fase 1: base común y auditoría (M1 y M2)
 
 **Qué se hizo:** se construyó el **historial inalterable** del sistema, la parte de la Fase 1 que no depende de su documento:
 

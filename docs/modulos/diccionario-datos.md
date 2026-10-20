@@ -1,4 +1,4 @@
-# Diccionario de datos — core y audit
+# Diccionario de datos — core, audit y org
 
 > Generado desde los `comment on` de la base local el 2026-10-20. No editar a mano: regenerar después de cada migración.
 
@@ -55,6 +55,74 @@ Quién puede hacer cambios: una fila por cada usuario de Supabase Auth, sea pers
 | `actor_type` | `core.actor_type`          | no   | Persona o cuenta técnica, según app_metadata al darse de alta (solo lo escribe el servidor). Descriptivo: no decide permisos. |
 | `created_at` | `timestamp with time zone` | no   | Cuándo se dio de alta el actor.                                                                                               |
 
+## `org.areas`
+
+Área de trabajo dentro de un restaurante (por ejemplo, cocina, salón o depósito).
+
+| Columna         | Tipo                       | Nulo | Qué guarda                                                                                 |
+| --------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------ |
+| `id`            | `uuid`                     | no   | Identificador del área.                                                                    |
+| `group_id`      | `uuid`                     | no   | Grupo al que pertenece. Tiene que coincidir con el de su restaurante.                      |
+| `restaurant_id` | `uuid`                     | no   | Restaurante al que pertenece el área.                                                      |
+| `name`          | `text`                     | no   | Nombre del área. Único dentro del restaurante entre las vigentes, sin importar mayúsculas. |
+| `created_at`    | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                          |
+| `created_by`    | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                           |
+| `updated_at`    | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                         |
+| `updated_by`    | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                          |
+| `deleted_at`    | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                   |
+| `deleted_by`    | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                          |
+
+## `org.brands`
+
+Marca del grupo (por ejemplo, RAGU). Tiene sus recetas estándar, precios y reportes.
+
+| Columna      | Tipo                       | Nulo | Qué guarda                                                                              |
+| ------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador de la marca.                                                              |
+| `group_id`   | `uuid`                     | no   | Grupo al que pertenece la marca.                                                        |
+| `name`       | `text`                     | no   | Nombre de la marca. Único dentro del grupo entre las vigentes, sin importar mayúsculas. |
+| `status`     | `org.unit_status`          | no   | Si la marca está operando o cerrada.                                                    |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                       |
+| `created_by` | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                        |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                      |
+| `updated_by` | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                       |
+| `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                |
+| `deleted_by` | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                       |
+
+## `org.groups`
+
+Grupo gastronómico: el nivel más alto de la organización (por ejemplo, Grupo LF). Preparado para más de uno.
+
+| Columna      | Tipo                       | Nulo | Qué guarda                                                                  |
+| ------------ | -------------------------- | ---- | --------------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador del grupo.                                                    |
+| `name`       | `text`                     | no   | Nombre del grupo. Único entre los grupos vigentes, sin importar mayúsculas. |
+| `status`     | `org.unit_status`          | no   | Si el grupo está operando o cerrado.                                        |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                           |
+| `created_by` | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                            |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                          |
+| `updated_by` | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                           |
+| `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                    |
+| `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                           |
+
+## `org.restaurants`
+
+Restaurante (local) de una marca (por ejemplo, RAGU Parque Leloir). Es donde pasa la operación diaria.
+
+| Columna      | Tipo                       | Nulo | Qué guarda                                                                                    |
+| ------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador del restaurante.                                                                |
+| `group_id`   | `uuid`                     | no   | Grupo al que pertenece. Tiene que coincidir con el de su marca.                               |
+| `brand_id`   | `uuid`                     | no   | Marca del restaurante.                                                                        |
+| `name`       | `text`                     | no   | Nombre del restaurante. Único dentro de la marca entre los vigentes, sin importar mayúsculas. |
+| `status`     | `org.unit_status`          | no   | Si el restaurante está operando o cerrado.                                                    |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                             |
+| `created_by` | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                              |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                            |
+| `updated_by` | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                             |
+| `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                      |
+| `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                             |
+
 ## Tipos
 
 | Tipo                  | Valores                                                          | Qué significa                                                                                                                                                                                           |
@@ -62,3 +130,4 @@ Quién puede hacer cambios: una fila por cada usuario de Supabase Auth, sea pers
 | `audit.action`        | `insert`, `update`, `soft_delete`, `restore`, `delete`           | Qué pasó con el registro: insert (alta), update (cambio), soft_delete (borrado lógico), restore (restauración) o delete (borrado físico, solo mantenimiento).                                           |
 | `audit.change_origin` | `app`, `edge_function`, `agent`, `import`, `seed`, `maintenance` | Desde dónde se hizo un cambio: app (la aplicación), edge_function (función de servidor), agent (agente de IA), import (carga masiva), seed (datos de prueba) o maintenance (mantenimiento documentado). |
 | `core.actor_type`     | `user`, `service_account`                                        | Tipo de actor: user (persona) o service_account (cuenta técnica de un agente o integración).                                                                                                            |
+| `org.unit_status`     | `active`, `inactive`                                             | Estado de un grupo, marca o restaurante: active (operando) o inactive (cerrado, pero visible en la historia). Borrar un registro es otra cosa: corrige un error de carga.                               |

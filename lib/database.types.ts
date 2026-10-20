@@ -146,6 +146,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      try_uuid: { Args: { p_value: string }; Returns: string };
       verify_seals: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -203,7 +204,204 @@ export type Database = {
   };
   org: {
     Tables: {
-      [_ in never]: never;
+      areas: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          restaurant_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          name: string;
+          restaurant_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          name?: string;
+          restaurant_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "areas_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "areas_restaurant_fkey";
+            columns: ["restaurant_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "restaurants";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      brands: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          status: Database["org"]["Enums"]["unit_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          name: string;
+          status?: Database["org"]["Enums"]["unit_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          name?: string;
+          status?: Database["org"]["Enums"]["unit_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "brands_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      groups: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          id: string;
+          name: string;
+          status: Database["org"]["Enums"]["unit_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          id?: string;
+          name: string;
+          status?: Database["org"]["Enums"]["unit_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          id?: string;
+          name?: string;
+          status?: Database["org"]["Enums"]["unit_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      restaurants: {
+        Row: {
+          brand_id: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          status: Database["org"]["Enums"]["unit_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          name: string;
+          status?: Database["org"]["Enums"]["unit_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          brand_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          name?: string;
+          status?: Database["org"]["Enums"]["unit_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_brand_fkey";
+            columns: ["brand_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "brands";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "restaurants_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -212,7 +410,7 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      unit_status: "active" | "inactive";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -368,7 +566,9 @@ export const Constants = {
     },
   },
   org: {
-    Enums: {},
+    Enums: {
+      unit_status: ["active", "inactive"],
+    },
   },
   public: {
     Enums: {},

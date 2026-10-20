@@ -70,11 +70,26 @@ Archivo: `supabase/migrations/20261020173811_audit_events.sql`. Pruebas: `supaba
   - la lectura con `audit.view`, que tiene que **ocultar costos** a quien no tenga `costing.view_costs` (ADR-0006).
 - **Pregunta abierta P13:** hoy se puede editar un registro que ya está borrado (queda auditado como `update`). ¿Debe rechazarse, o hay que restaurarlo primero?
 
-### M3 — Organización (`org`)
+### M3 — Organización (`org`) ✅ construida (adelanto, rama `feat/fase-1-organizacion`)
 
-- `org.groups`, `org.brands` (`group_id`), `org.restaurants` (`group_id`, `brand_id`) y `org.areas` (`group_id`, `restaurant_id`; por ejemplo cocina, salón o depósito).
-- Columnas de control, `comment on` en español, índices parciales `where deleted_at is null`, `unique (group_id, lower(name)) where deleted_at is null` y los triggers de control y auditoría.
-- FKs compuestas de alcance (regla 5): el `brand_id` de un restaurante pertenece al mismo `group_id`.
+Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supabase/tests/030_org.test.sql` (51). Seed: 1 grupo, 3 marcas, 4 restaurantes y 12 áreas, todos ficticios. Acceso de la app: **ADR-0005**.
+
+- `org.groups`, `org.brands`, `org.restaurants` y `org.areas`, con las 6 columnas de control y comentarios en español. Los estados `active` e `inactive` son una propuesta (**P14**).
+- FKs compuestas de alcance (regla 5) y `unique (id, group_id)` en marcas, restaurantes y áreas.
+- **Nombres únicos:**
+  - grupo: entre todos los grupos;
+  - marca: por grupo;
+  - restaurante: **por marca** (decisión: dos marcas pueden tener un local con el mismo nombre);
+  - área: por restaurante;
+  - en todos los casos sin importar mayúsculas y entre los vigentes.
+- **Decisiones de Joaco (2026-10-20), aplicadas con el trigger `validate_hierarchy`:**
+  - No se borra algo que tiene elementos vigentes adentro, y no se da de alta ni se restaura algo bajo un padre borrado.
+  - El alcance no se mueve con una edición común. Mover un restaurante de marca, o una marca de grupo, tendrá un **trámite** (una función con motivo y permiso propio, en M5) que se habilita con una migración nueva.
+- `TRUNCATE` rechazado en las tablas de negocio (`core.reject_truncate()`).
+- Auditoría: el alcance de cada evento sale de la estructura (`org.restaurants` / `org.brands`), no de lo que diga la fila. En las filas de `org`, sale de su propio id.
+- Se cortaron los permisos por defecto de Supabase en `public` (DELETE y TRUNCATE para los roles de la API).
+- **Excepción documentada a "índice en cada FK":** `created_by`, `updated_by` y `deleted_by` (hacia `core.actors`) no se indexan. Un actor nunca se borra, así que esas FKs no se recorren al borrar. Si una pantalla filtra "creado por", se agrega el índice.
+- **Pendiente:** dirección, CUIT, código de marca y zona horaria (P10), y el trámite de traspaso (M5).
 
 ### M4 — Identidad (`core`)
 
@@ -213,7 +228,9 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 - **P9.** ¿Quién puede invitar y con qué alcance? ¿Un gerente invita cocineros de su restaurante?
 - **P10.** Lista completa de marcas y restaurantes reales, y si entran otros negocios del grupo (vinos, consultoría).
 - **P11.** La tabla de fases (sección 12) no llegó completa: confirmar qué entra en cada fase.
-- **P12.** Cómo llega la app a los datos: opción A o B (ADR-0005).
+- ~~**P12.** Cómo llega la app a los datos: opción A o B.~~ Resuelta: opción A (ADR-0005), que se aplica en M5/M6.
+- **P13.** ¿Se puede editar un registro que ya está borrado, o hay que restaurarlo primero? Hoy se permite y queda auditado como `update`.
+- **P14.** Estados de grupo, marca y restaurante: ¿alcanzan `active` (operando) e `inactive` (cerrado, visible en la historia)? ¿Hace falta otro, por ejemplo "en apertura"?
 
 ## Definición de terminado de la Fase 1
 
