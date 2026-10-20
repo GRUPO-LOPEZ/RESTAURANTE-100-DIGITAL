@@ -175,6 +175,8 @@ Se compararon 110 reglas clave del prompt maestro contra `CLAUDE.md` + `.claude/
 
 _Actualizado el 2026-10-20._
 
+**Hecho fuera de la Fase 1:** conector MCP de Supabase solo contra la base local, en solo lectura (ADR-0011, rama `chore/mcp-supabase-local`). Pendiente: el MCP de GitHub.
+
 1. **Construir M5, M6 y M8** y las pantallas de ingreso, "sin acceso" y usuarios. No dependen de nadie.
 2. **M7 (aprobaciones)**: P7 y P17 ya están resueltas (ADR-0008 y ADR-0009).
 3. Preguntas de la Fase 1: **todas resueltas**. P10, P13 y P14 se implementan junto con M5. Para producción falta la lista real de marcas y locales.
