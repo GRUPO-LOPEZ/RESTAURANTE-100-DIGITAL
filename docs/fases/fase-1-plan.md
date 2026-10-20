@@ -225,7 +225,7 @@ La lista oficial está en la sección 10 del Módulo Maestro (copiada en `docs/m
 | 8   | Una cuenta desactivada pierde acceso                      | pgTAP + Playwright          | M8                                                                    |
 | 9   | Usuario con dos restaurantes opera solo en los suyos      | pgTAP                       | M5 (persona del seed `...0411`)                                       |
 | 10  | Una cuenta técnica no supera sus permisos                 | pgTAP                       | M5 y M6                                                               |
-| 11  | Una operación rechazada queda registrada                  | pgTAP                       | M7 o M9, según P17                                                    |
+| 11  | Una operación rechazada queda registrada                  | pgTAP                       | M6 a M9: registro de seguridad de intentos frenados (ADR-0009)        |
 | 12  | Una aprobación guarda identidad, fecha y decisión         | pgTAP                       | M7                                                                    |
 | 13  | No se puede alterar el historial con operaciones normales | pgTAP                       | M2 (ya cubierta en `020_audit`; se repite como `authenticated` en M5) |
 
@@ -282,7 +282,7 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 
   Se decide con P5 y el plan de Supabase de Soy. ¿Cuánto dura el bloqueo temporal? Propuesta: 15 minutos.
 
-- **P17. "Una operación rechazada queda registrada" (prueba 11):** ¿se refiere a una solicitud de aprobación rechazada, o también a un intento sin permiso que la base frena (por ejemplo, un cocinero que quiere editar un costo)? En el segundo caso hace falta un registro aparte, porque lo que la base rechaza se deshace entero, y su auditoría también.
+- ~~**P17. Operación rechazada (prueba 11).**~~ Resuelta por Joaco el 2026-10-20: opción 2. Se registran las aprobaciones rechazadas y los intentos frenados en las funciones críticas, en un registro de seguridad que se guarda aunque la operación se rechace (ADR-0009).
 
 **No bloqueantes:**
 

@@ -20,7 +20,7 @@ _Última actualización: 2026-10-20, adelanto de la Fase 1 (M1 a M4)._
 - ~~**P15:** ¿cómo se pasa un local a otra marca?~~ Resuelta por Joaco: se crea el local nuevo y se cierra el viejo, que conserva su historia. Si hiciera falta, se puede cambiar más adelante (ADR-0007).
 - ~~**P16:** las 10 pruebas adicionales.~~ Recibidas; la 6 (alcance incoherente) ya pasa.
 - **P18:** ¿cuánto dura el bloqueo después de 5 intentos fallidos? La propuesta es 15 minutos. Puede que necesite un plan pago de Supabase; lo verificamos.
-- **P17:** la prueba 11, "una operación rechazada queda registrada", ¿es una aprobación rechazada o también un intento sin permiso?
+- ~~**P17:** operación rechazada.~~ Resuelta por Joaco: quedan registradas las aprobaciones rechazadas y los intentos sin permiso en las funciones importantes (ADR-0009).
 - ~~**P7:** ¿qué cambios necesitan aprobación?~~ Resuelta por Joaco (ADR-0008). Piden aprobación de otra persona:
   - dar roles que aprueban;
   - dar el rol Superadministrador;
@@ -175,8 +175,8 @@ Se compararon 110 reglas clave del prompt maestro contra `CLAUDE.md` + `.claude/
 _Actualizado el 2026-10-20._
 
 1. **Construir M5, M6 y M8** y las pantallas de ingreso, "sin acceso" y usuarios. No dependen de nadie.
-2. **M7 (aprobaciones)** cuando esté P17. P7 ya está resuelta (ADR-0008).
-3. Preguntas abiertas: P17 (operación rechazada), P5 (eventos de ingreso), P18 (duración del bloqueo), P10, P13 y P14.
+2. **M7 (aprobaciones)**: P7 y P17 ya están resueltas (ADR-0008 y ADR-0009).
+3. Preguntas abiertas: P5 (eventos de ingreso), P18 (duración del bloqueo), P10, P13 y P14.
 4. **Subir las 3 ramas de adelanto** (M1–M2, M3, M4) como PRs y verificar GitHub Actions en verde. Necesita la confirmación de Joaco para el `git push`.
 5. **Supabase remoto:**
    - Soy ya creó la organización y Joaco es administrador.
