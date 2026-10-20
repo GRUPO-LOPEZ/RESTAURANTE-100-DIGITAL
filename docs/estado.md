@@ -183,8 +183,15 @@ _Actualizado el 2026-10-20._
    - Soy ya creó la organización y Joaco es administrador.
    - Faltan los proyectos `grupo-lf-staging` y `grupo-lf-prod` (región São Paulo), los ajustes de Auth en el panel, y el flujo de GitHub Actions con sus secretos. Lo hace Joaco desde el panel, nunca Claude Code.
    - Pendiente también una guía escrita para Soy.
-6. **Proteger `main` en GitHub**, Vercel, respaldos y exportación semanal del historial (Soy).
-7. Texto completo del Módulo Maestro y tabla de fases (sección 12) de Soy.
+6. Vercel, respaldos y exportación semanal del historial (Soy).
+7. **Proteger `main` en GitHub: postergado por decisión de Joaco (2026-10-20).** Mientras tanto se sigue la regla igual, por costumbre:
+   - nada entra a `main` sin un PR aprobado por Soy;
+   - Claude Code nunca hace push a `main`;
+   - el push forzado está bloqueado por el guardián.
+
+   Se retoma antes de pasar a producción.
+
+8. Texto completo del Módulo Maestro y tabla de fases (sección 12) de Soy.
 
 ## Bloqueado
 
