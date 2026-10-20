@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(26);
+select plan(60);
 
 select has_schema(s, format('existe el esquema %s', s))
 from unnest(array[
@@ -17,9 +17,17 @@ from unnest(array[
   'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting'
 ]) as s;
 
--- Denegar por defecto: los roles de la API no pueden entrar a los esquemas de negocio.
-select ok(not has_schema_privilege('anon', 'core', 'usage'), 'anon no tiene acceso al esquema core');
-select ok(not has_schema_privilege('authenticated', 'audit', 'usage'), 'authenticated no tiene acceso al esquema audit todavía');
+-- Denegar por defecto: ningún rol de la API entra a ningún esquema de negocio.
+-- Si una migración futura da acceso, tiene que actualizar esta prueba a propósito.
+select ok(
+  not has_schema_privilege(r, s, 'usage'),
+  format('%s no tiene acceso al esquema %s', r, s)
+)
+from unnest(array[
+  'core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
+  'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting'
+]) as s
+cross join unnest(array['anon', 'authenticated', 'service_role']) as r;
 
 select * from finish();
 rollback;

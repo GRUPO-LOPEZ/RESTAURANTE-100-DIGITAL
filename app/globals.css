@@ -46,6 +46,12 @@
   --font-sans:
     var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-heading: var(--font-sans);
+  /* Solo existen los tamaños y pesos permitidos: se borran los de Tailwind. */
+  --text-*: initial;
+  --font-weight-*: initial;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500; /* etiquetas */
+  --font-weight-semibold: 600; /* títulos */
   --text-sm: 0.875rem; /* 14 px texto chico */
   --text-sm--line-height: 1.25rem;
   --text-base: 1rem; /* 16 px texto base */
@@ -59,13 +65,10 @@
 
   /* Formas: grilla de 8 px, radios de 8 a 12 px */
   --spacing: 0.25rem; /* unidades de 4 px: usar múltiplos pares (p-2 = 8 px, p-4 = 16 px...) */
+  --radius-*: initial;
   --radius-sm: 0.5rem; /* 8 px */
   --radius-md: 0.625rem; /* 10 px */
   --radius-lg: 0.75rem; /* 12 px */
-  --radius-xl: 0.75rem;
-  --radius-2xl: 0.75rem;
-  --radius-3xl: 0.75rem;
-  --radius-4xl: 0.75rem;
 
   /* Sin sombras fuertes */
   --shadow-*: initial;

@@ -41,4 +41,21 @@ test.describe("página de inicio", () => {
     );
     expect(overflow).toBeLessThanOrEqual(0);
   });
+
+  test("el botón principal mide al menos 44 px y tiene foco visible con teclado", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const button = page.getByRole("link", { name: "Ver el repositorio" });
+    const box = await button.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    await expect(button).toHaveCSS("background-color", "rgb(79, 109, 154)"); // #4F6D9A
+
+    await button.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    await expect(button).toBeFocused();
+    await expect(button).toHaveCSS("outline-style", "solid");
+    await expect(button).toHaveCSS("outline-color", "rgb(79, 109, 154)");
+  });
 });

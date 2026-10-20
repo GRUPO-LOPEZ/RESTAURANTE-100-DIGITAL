@@ -73,6 +73,13 @@ Fondo pastel + texto oscuro del mismo tono.
 ## Accesibilidad
 
 - Contraste mínimo WCAG AA: 4,5 a 1 en texto. Lo verifica `tests/unit/palette-contrast.test.ts` y axe en Playwright.
+- Sobre un fondo pastel, el texto va **siempre** en su tono oscuro (`ok-ink` sobre `ok`, etc.). `ink-muted` sobre pastel no llega a AA.
+- Los estados hover no aclaran fondos con texto encima (bajan el contraste): usar subrayado o `bg-line/50` en fondos claros.
+
+## Componentes nuevos de shadcn/ui
+
+La paleta, los tamaños, los pesos y los radios por defecto de Tailwind están **borrados** (`initial` en `@theme`). Al agregar un componente con `npx shadcn add`, revisá todas sus clases. `bg-black/50`, `text-white`, `text-xs`, `font-bold`, `rounded-xl` y `dark:` no generan nada **y no dan error**. Reemplazalas por tokens y cambiá `import { cn } from "cn"` por `@/lib/utils` (ADR-0004).
+
 - Todo se puede usar con teclado, con foco visible.
 - Modo oscuro opcional, en una fase posterior. No construirlo ahora.
 

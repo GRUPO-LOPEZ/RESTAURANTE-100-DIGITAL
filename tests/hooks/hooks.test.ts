@@ -41,6 +41,27 @@ describe("guard: secretos y ambientes remotos", () => {
     ["borrar rama remota", bash("git push origin --delete main")],
     ["deploy vercel", bash("npx vercel deploy --prod")],
     ["buscar archivos de variables", { tool_name: "Glob", tool_input: { pattern: `**/${ENV}*` } }],
+    // Casos encontrados por security-auditor (2026-10-20)
+    ["reset remoto vía npm run", bash("npm run db:reset -- --linked")],
+    [
+      "test db remoto vía npm run",
+      bash("npm run test:db -- --db-url postgres://u@db.x.co/postgres"),
+    ],
+    ["db dump", bash("npx supabase db dump")],
+    ["db pull", bash("npx supabase db pull")],
+    ["functions deploy", bash("npx supabase functions deploy invitar")],
+    ["supabase login", bash("npx supabase login")],
+    ["migration list remoto", bash("npx supabase migration list")],
+    ["gen types remoto", bash("npx supabase gen types typescript --project-id abc")],
+    ["psql a host remoto", bash("psql postgresql://postgres:x@db.abc.supabase.co:5432/postgres")],
+    ["push con +refspec", bash("git push origin +main")],
+    ["push con -fu", bash("git push -fu origin main")],
+    ["push con git -C", bash("git -C . push --force origin main")],
+    ["git show del archivo de variables", bash(`git show HEAD:${ENV}.local`)],
+    ["token de supabase", bash("cat ~/.supabase/access-token")],
+    ["vercel pull", bash("npx vercel pull --environment=production")],
+    ["leer credenciales de vercel", read(".vercel/project.json")],
+    ["leer .npmrc", read(".npmrc")],
   ])("bloquea: %s", (_name, event) => {
     expect(run("guard", event)).toBe(2);
   });
@@ -50,6 +71,15 @@ describe("guard: secretos y ambientes remotos", () => {
     ["leer el README", read("README.md")],
     ["process.env en código", bash('node -e "console.log(process.env.HOME)"')],
     ["supabase local", bash("npx supabase db reset")],
+    ["supabase test db", bash("npx supabase test db")],
+    ["gen types local", bash("npx supabase gen types typescript --local --schema core")],
+    ["git add de migraciones", bash("git add supabase/migrations/x.sql")],
+    ["npm run db:reset", bash("npm run db:reset")],
+    [
+      "psql local",
+      bash("psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -c 'select 1'"),
+    ],
+    ["vercel --version", bash("npx vercel --version")],
     ["push normal", bash("git push -u origin chore/fase-0-entorno")],
     ["grep en app", { tool_name: "Grep", tool_input: { pattern: "env", path: "app" } }],
   ])("permite: %s", (_name, event) => {
@@ -77,6 +107,19 @@ describe("protect-migrations", () => {
     expect(
       run("protect-migrations", { tool_name: "Edit", tool_input: { file_path: committed } }),
     ).toBe(2);
+  });
+
+  it("bloquea aunque la ruta venga con otras mayúsculas (Windows)", () => {
+    const committed = spawnSync("git", ["ls-files", "supabase/migrations/*.sql"], {
+      cwd: root,
+      encoding: "utf8",
+    })
+      .stdout.split("\n")
+      .find(Boolean)!;
+    const upper = committed.replace("supabase/migrations", "Supabase/Migrations");
+    expect(run("protect-migrations", { tool_name: "Edit", tool_input: { file_path: upper } })).toBe(
+      2,
+    );
   });
 
   it("no afecta archivos fuera de migraciones", () => {

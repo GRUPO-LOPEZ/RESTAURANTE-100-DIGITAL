@@ -6,7 +6,8 @@ import { block, projectDir, readEvent } from "./lib.mjs";
 const event = readEvent();
 const cmd = String(event.tool_input?.command ?? "");
 
-if (/\bgit\s+commit\b/.test(cmd)) {
+// También cubre "git -C . commit" y "git -c clave=valor commit".
+if (/\bgit\b[^|;&\n]*\bcommit\b/.test(cmd)) {
   for (const script of ["lint", "typecheck"]) {
     const result = spawnSync("npm", ["run", "--silent", script], {
       cwd: projectDir(event),

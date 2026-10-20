@@ -2,15 +2,19 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(npm run lint:*)",
-      "Bash(npm run typecheck:*)",
-      "Bash(npm run format:*)",
-      "Bash(npm run test:*)",
-      "Bash(npm run build:*)",
-      "Bash(npm run db:start:*)",
-      "Bash(npm run db:stop:*)",
-      "Bash(npm run db:reset:*)",
-      "Bash(npm run db:types:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run format)",
+      "Bash(npm run format:check)",
+      "Bash(npm run test)",
+      "Bash(npm run test:unit)",
+      "Bash(npm run test:db)",
+      "Bash(npm run test:e2e)",
+      "Bash(npm run build)",
+      "Bash(npm run db:start)",
+      "Bash(npm run db:stop)",
+      "Bash(npm run db:reset)",
+      "Bash(npm run db:types)",
       "Bash(npx supabase status:*)",
       "Bash(npx supabase start:*)",
       "Bash(npx supabase stop:*)",
@@ -27,7 +31,8 @@
       "Bash(git diff:*)",
       "Bash(git log:*)",
       "Bash(git show:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch --show-current)",
+      "Bash(git branch --list:*)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -36,7 +41,14 @@
       "Bash(npx supabase migration repair:*)",
       "Bash(supabase migration repair:*)",
       "Bash(npm install:*)",
-      "Bash(npm i :*)"
+      "Bash(npm i :*)",
+      "PowerShell(git push:*)",
+      "PowerShell(npx supabase db push:*)",
+      "PowerShell(supabase db push:*)",
+      "PowerShell(npx supabase migration repair:*)",
+      "PowerShell(supabase migration repair:*)",
+      "PowerShell(npm install:*)",
+      "PowerShell(npm i :*)"
     ],
     "deny": [
       "Read(./.env)",
@@ -59,7 +71,30 @@
       "Bash(git push -f:*)",
       "Bash(rm -rf:*)",
       "Bash(vercel:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(npx supabase login:*)",
+      "Bash(npx supabase db dump:*)",
+      "Bash(npx supabase db pull:*)",
+      "Bash(npx supabase functions deploy:*)",
+      "Bash(git -C:*)",
+      "Bash(git branch -D:*)",
+      "Bash(Remove-Item -Recurse:*)",
+      "PowerShell(npx supabase link:*)",
+      "PowerShell(supabase link:*)",
+      "PowerShell(npx supabase db push --linked:*)",
+      "PowerShell(supabase db push --linked:*)",
+      "PowerShell(git push --force:*)",
+      "PowerShell(git push -f:*)",
+      "PowerShell(rm -rf:*)",
+      "PowerShell(vercel:*)",
+      "PowerShell(npx vercel:*)",
+      "PowerShell(npx supabase login:*)",
+      "PowerShell(npx supabase db dump:*)",
+      "PowerShell(npx supabase db pull:*)",
+      "PowerShell(npx supabase functions deploy:*)",
+      "PowerShell(git -C:*)",
+      "PowerShell(git branch -D:*)",
+      "PowerShell(Remove-Item -Recurse:*)"
     ]
   },
   "hooks": {
@@ -67,7 +102,10 @@
       {
         "matcher": "Read|Edit|Write|MultiEdit|NotebookEdit|Grep|Glob|Bash|PowerShell",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.mjs\"" }
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.mjs\""
+          }
         ]
       },
       {
@@ -94,7 +132,10 @@
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/format.mjs\"" }
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/format.mjs\""
+          }
         ]
       }
     ]

@@ -10,11 +10,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-ink hover:bg-primary/90",
-        outline: "border-line bg-surface text-ink hover:bg-app",
-        ghost: "text-ink hover:bg-app",
-        destructive: "bg-bad text-bad-ink hover:bg-bad/80",
-        link: "min-h-0 px-0 text-primary underline-offset-4 hover:underline",
+        // El hover subraya en lugar de aclarar el fondo: aclararlo baja el contraste por debajo de AA.
+        default: "bg-primary text-primary-ink underline-offset-4 hover:underline",
+        outline: "border-line bg-surface text-ink hover:bg-line/50",
+        ghost: "text-ink hover:bg-line/50",
+        destructive: "bg-bad text-bad-ink underline-offset-4 hover:underline",
+        link: "px-0 text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "",

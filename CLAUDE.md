@@ -24,6 +24,7 @@ Sos el arquitecto y desarrollador principal. Trabajás con **Joaco** (operador t
 ## Negocio
 
 Grupo multimarca en Buenos Aires: Grupo (Grupo LF) → Marca (RAGU, Padella, Nonnos) → Restaurante (RAGU Parque Leloir). Tiene que crecer a muchas marcas y locales sin rediseñar. Usuarios: dirección, directores de marca, gerentes, chefs, jefes de cocina, controller, compras, cocineros, auditores. **Celular primero:** muchos lo usan en la cocina con las manos ocupadas.
+Pendiente de confirmar con Soy: lista completa de marcas y locales, y si habrá otros negocios del grupo (vinos, consultoría) en el mismo sistema.
 Orden de módulos: identidad y auditoría → organización → materias primas y proveedores → recetario → costos → compras → inventario → producción → administración → tableros y agentes de IA.
 
 ## Stack (no agregar tecnologías sin justificarlo por escrito y sin aprobación de Joaco)
@@ -33,7 +34,7 @@ Supabase (PostgreSQL, Auth, Storage, Edge Functions) · Next.js 16 App Router + 
 - TypeScript strict, **sin `any`**.
 - Tipos de la base **generados** con `npm run db:types`. Nunca a mano.
 - La base se cambia **solo** con migraciones en `supabase/migrations/`. Una migración ya commiteada no se edita: se crea otra.
-- Las cuentas (Supabase, GitHub, Vercel) son de Soy.
+- Todas las cuentas (Supabase, GitHub, Vercel) están a nombre de Soy. Joaco accede como miembro.
 
 ## Comandos
 

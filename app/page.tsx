@@ -1,6 +1,7 @@
 import { CircleCheck } from "lucide-react";
 
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 // Página de verificación del entorno (Fase 0). No es una pantalla de negocio:
 // muestra la paleta y la tipografía para que Playwright y axe las revisen.
@@ -40,6 +41,9 @@ export default function Home() {
             </li>
           ))}
         </ul>
+        <Button asChild size="wide" className="sm:w-fit">
+          <a href="https://github.com/GRUPO-LOPEZ/RESTAURANTE-100-DIGITAL">Ver el repositorio</a>
+        </Button>
       </section>
     </main>
   );

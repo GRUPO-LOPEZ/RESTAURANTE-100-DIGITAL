@@ -30,6 +30,8 @@ const PAIRS: [texto: string, fondo: string][] = [
   ["ink-muted", "surface"],
   ["primary-ink", "primary"],
   ["primary", "surface"],
+  ["primary", "app"],
+  ["bad-ink", "surface"],
   ["ok-ink", "ok"],
   ["warn-ink", "warn"],
   ["bad-ink", "bad"],
@@ -47,5 +49,15 @@ describe("contraste de la paleta (WCAG AA)", () => {
     expect(token("app").toUpperCase()).toBe("#FAFAF9");
     expect(token("ink").toUpperCase()).toBe("#1F2937");
     expect(token("primary").toUpperCase()).toBe("#4F6D9A");
+  });
+
+  it("el color del navegador (themeColor) es el fondo de la app", () => {
+    const layout = readFileSync(path.resolve(import.meta.dirname, "../../app/layout.tsx"), "utf8");
+    expect(layout).toContain(`themeColor: "${token("app")}"`);
+  });
+
+  // Documentado en design.md: el texto secundario no va sobre fondos pastel.
+  it.each(["ok", "warn"])("ink-muted NO llega a AA sobre %s (por eso está prohibido)", (bg) => {
+    expect(contrast(token("ink-muted"), token(bg))).toBeLessThan(4.5);
   });
 });
