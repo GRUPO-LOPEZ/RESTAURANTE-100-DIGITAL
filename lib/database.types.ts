@@ -552,9 +552,12 @@ export type Database = {
           disabled_at: string | null;
           disabled_reason: string | null;
           email: string;
+          failed_login_count: number;
           first_name: string | null;
           id: string;
+          last_failed_login_at: string | null;
           last_name: string | null;
+          locked_until: string | null;
           status: Database["core"]["Enums"]["account_status"];
           updated_at: string;
           updated_by: string | null;
@@ -568,9 +571,12 @@ export type Database = {
           disabled_at?: string | null;
           disabled_reason?: string | null;
           email: string;
+          failed_login_count?: number;
           first_name?: string | null;
           id: string;
+          last_failed_login_at?: string | null;
           last_name?: string | null;
+          locked_until?: string | null;
           status?: Database["core"]["Enums"]["account_status"];
           updated_at?: string;
           updated_by?: string | null;
@@ -583,9 +589,12 @@ export type Database = {
           disabled_at?: string | null;
           disabled_reason?: string | null;
           email?: string;
+          failed_login_count?: number;
           first_name?: string | null;
           id?: string;
+          last_failed_login_at?: string | null;
           last_name?: string | null;
+          locked_until?: string | null;
           status?: Database["core"]["Enums"]["account_status"];
           updated_at?: string;
           updated_by?: string | null;
@@ -717,9 +726,60 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      actor_grants: {
+        Args: { p_permission: string };
+        Returns: {
+          brand_id: string;
+          group_id: string;
+          restaurant_id: string;
+          scope_type: Database["core"]["Enums"]["scope_type"];
+        }[];
+      };
+      actor_roles_snapshot: { Args: { p_actor_id: string }; Returns: Json };
+      can_view_scope: {
+        Args: {
+          p_brand_id?: string;
+          p_group_id: string;
+          p_permission: string;
+          p_restaurant_id?: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: boolean;
+      };
+      can_view_user: { Args: { p_user_id: string }; Returns: boolean };
+      current_aal: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_id: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_subject: { Args: Record<PropertyKey, never>; Returns: string };
+      current_session_ok: { Args: Record<PropertyKey, never>; Returns: boolean };
+      has_permission: { Args: { p_permission: string; p_restaurant_id: string }; Returns: boolean };
+      has_permission_anywhere: { Args: { p_permission: string }; Returns: boolean };
+      has_permission_for_scope: {
+        Args: {
+          p_brand_id?: string;
+          p_group_id: string;
+          p_permission: string;
+          p_restaurant_id?: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: boolean;
+      };
+      has_permission_in_brand: {
+        Args: { p_brand_id: string; p_permission: string };
+        Returns: boolean;
+      };
+      has_permission_in_group: {
+        Args: { p_group_id: string; p_permission: string };
+        Returns: boolean;
+      };
+      is_assignment_current: {
+        Args: { p_valid_from: string; p_valid_until: string };
+        Returns: boolean;
+      };
+      permitted_restaurant_ids: { Args: { p_permission: string }; Returns: string[] };
       set_change_context: { Args: { p_origin: string; p_reason: string }; Returns: undefined };
+      visible_assignment_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      visible_brand_ids: { Args: { p_permission: string }; Returns: string[] };
+      visible_user_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
     };
     Enums: {
       account_status: "active" | "disabled";
@@ -874,42 +934,69 @@ export type Database = {
       };
       restaurants: {
         Row: {
+          address: string | null;
           brand_id: string;
+          code: string | null;
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
           group_id: string;
           id: string;
+          legal_name: string | null;
+          locality: string | null;
           name: string;
+          opened_on: string | null;
+          phone: string | null;
+          predecessor_id: string | null;
           status: Database["org"]["Enums"]["unit_status"];
+          tax_id: string | null;
+          time_zone: string;
           updated_at: string;
           updated_by: string | null;
         };
         ComputedFields: never;
         Insert: {
+          address?: string | null;
           brand_id: string;
+          code?: string | null;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           group_id: string;
           id?: string;
+          legal_name?: string | null;
+          locality?: string | null;
           name: string;
+          opened_on?: string | null;
+          phone?: string | null;
+          predecessor_id?: string | null;
           status?: Database["org"]["Enums"]["unit_status"];
+          tax_id?: string | null;
+          time_zone?: string;
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: {
+          address?: string | null;
           brand_id?: string;
+          code?: string | null;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
+          legal_name?: string | null;
+          locality?: string | null;
           name?: string;
+          opened_on?: string | null;
+          phone?: string | null;
+          predecessor_id?: string | null;
           status?: Database["org"]["Enums"]["unit_status"];
+          tax_id?: string | null;
+          time_zone?: string;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -928,14 +1015,74 @@ export type Database = {
             referencedRelation: "groups";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "restaurants_predecessor_id_fkey";
+            columns: ["predecessor_id"];
+            isOneToOne: false;
+            referencedRelation: "restaurants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "restaurants_time_zone_fkey";
+            columns: ["time_zone"];
+            isOneToOne: false;
+            referencedRelation: "time_zones";
+            referencedColumns: ["code"];
+          },
         ];
+      };
+      time_zones: {
+        Row: {
+          code: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+        };
+        Update: {
+          code?: string;
+        };
+        Relationships: [];
       };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      check_keys: { Args: { p_allowed: string[]; p_changes: Json }; Returns: undefined };
+      create_area: {
+        Args: { p_name: string; p_reason: string; p_restaurant_id: string };
+        Returns: string;
+      };
+      create_brand: {
+        Args: { p_group_id: string; p_name: string; p_reason: string };
+        Returns: string;
+      };
+      create_restaurant: {
+        Args: { p_brand_id: string; p_details: Json; p_name: string; p_reason: string };
+        Returns: string;
+      };
+      require: { Args: { p_action: string; p_allowed: boolean }; Returns: undefined };
+      set_deleted: {
+        Args: { p_deleted: boolean; p_id: string; p_reason: string; p_table: string };
+        Returns: undefined;
+      };
+      update_area: {
+        Args: { p_changes: Json; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      update_brand: {
+        Args: { p_changes: Json; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      update_group: {
+        Args: { p_changes: Json; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      update_restaurant: {
+        Args: { p_changes: Json; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       unit_status: "active" | "inactive";

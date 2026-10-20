@@ -39,8 +39,10 @@ select is(
      from unnest(array['user_profiles', 'permissions', 'roles', 'role_permissions',
                        'user_memberships', 'user_role_assignments', 'service_accounts']) as t
      cross join unnest(array['anon', 'authenticated', 'service_role']) as r
-    where has_table_privilege(r, format('core.%I', t), 'select,insert,update,delete,truncate,references,trigger')),
-  0, 'ningún rol de la API tiene permisos sobre las tablas de identidad (hasta M5)'
+    where has_table_privilege(r, format('core.%I', t), 'insert,update,delete,truncate,references,trigger')
+       or (has_table_privilege(r, format('core.%I', t), 'select')
+           and not (r = 'authenticated' and t <> 'service_accounts'))),
+  0, 'tablas de identidad: nadie escribe directo, solo authenticated lee y las cuentas técnicas siguen cerradas (M5)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -351,7 +353,7 @@ select throws_ok(
 -- ---------------------------------------------------------------------------
 select is(
   (select count(*)::int from core.user_profiles where email like '%@ejemplo.test' and id::text like '00000000-0000-4000-8000-0000000004%'),
-  11, 'el seed tiene 11 personas de prueba'
+  12, 'el seed tiene 12 personas de prueba'
 );
 select is(
   (select count(distinct r.code)::int from core.user_role_assignments a join core.roles r on r.id = a.role_id

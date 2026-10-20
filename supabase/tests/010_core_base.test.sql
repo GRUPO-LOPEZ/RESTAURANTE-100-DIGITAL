@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(41);
+select plan(42);
 
 -- ---------------------------------------------------------------------------
 -- Preparación: dos usuarios de Auth (persona y cuenta técnica) y la tabla de práctica.
@@ -172,27 +172,41 @@ select is(
   'ninguna función de los esquemas de negocio es ejecutable por PUBLIC'
 );
 
--- Ningún rol de la API tiene permisos explícitos sobre funciones, tablas o secuencias de negocio
--- (se excluye la tabla de práctica). Cuando el ADR-0005 dé accesos, esta prueba se actualiza a propósito.
+-- anon y service_role no tienen permisos sobre funciones, tablas ni secuencias de negocio.
+-- authenticated solo lee y llama funciones puntuales (M5, ADR-0005): la lista exacta
+-- está en 050_permissions. Cuando se abra algo más, estas pruebas se actualizan a propósito.
 select is(
   (
     select count(*)::int
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
-    cross join unnest(array['anon', 'authenticated', 'service_role']) as r
+    cross join unnest(array['anon', 'service_role']) as r
     where n.nspname in ('core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
                         'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting')
       and has_function_privilege(r, p.oid, 'execute')
   ),
   0,
-  'anon, authenticated y service_role no pueden ejecutar ninguna función de negocio'
+  'anon y service_role no pueden ejecutar ninguna función de negocio'
 );
 select is(
   (
     select count(*)::int
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    cross join unnest(array['anon', 'authenticated', 'service_role']) as r
+    where n.nspname in ('core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
+                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting')
+      and c.relkind in ('r', 'p', 'v', 'm')
+      and has_table_privilege('authenticated', c.oid, 'insert,update,delete,truncate,references,trigger')
+  ),
+  0,
+  'authenticated no escribe directo en ninguna tabla de negocio: las escrituras van por funciones'
+);
+select is(
+  (
+    select count(*)::int
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    cross join unnest(array['anon', 'service_role']) as r
     where n.nspname in ('core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
                         'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting')
       and c.relkind in ('r', 'p', 'v', 'm', 'S')
@@ -202,7 +216,7 @@ select is(
       )
   ),
   0,
-  'anon, authenticated y service_role no tienen ningún permiso sobre tablas ni secuencias de negocio'
+  'anon y service_role no tienen ningún permiso sobre tablas ni secuencias de negocio'
 );
 
 create function core.tmp_new_function() returns int language sql as $$ select 1 $$;

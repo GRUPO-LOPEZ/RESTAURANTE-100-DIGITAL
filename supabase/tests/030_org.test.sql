@@ -263,20 +263,22 @@ select is(
   (select count(*)::int
      from unnest(array['groups', 'brands', 'restaurants', 'areas']) as t
      cross join unnest(array['anon', 'authenticated', 'service_role']) as r
-    where has_table_privilege(r, format('org.%I', t), 'select,insert,update,delete,truncate,references,trigger')),
+    where has_table_privilege(r, format('org.%I', t), 'insert,update,delete,truncate,references,trigger')
+       or (r <> 'authenticated' and has_table_privilege(r, format('org.%I', t), 'select'))),
   0,
-  'anon, authenticated y service_role no tienen ningún permiso sobre las tablas de org'
+  'en org nadie escribe directo, y solo authenticated lee (M5): anon y service_role no tienen nada'
 );
 select ok(
   not has_schema_privilege('anon', 'org', 'usage')
-  and not has_schema_privilege('authenticated', 'org', 'usage')
+  and has_schema_privilege('authenticated', 'org', 'usage')
   and not has_schema_privilege('service_role', 'org', 'usage'),
-  'ningún rol de la API entra al esquema org'
+  'al esquema org entra solo authenticated (M5)'
 );
 select is(
-  (select count(*)::int from pg_policies where schemaname = 'org' and roles <> '{audit_owner}'),
-  0,
-  'en org no hay políticas para nadie más que la auditoría'
+  (select array_agg(policyname || ':' || cmd order by policyname)::text[]
+     from pg_policies where schemaname = 'org' and roles <> '{audit_owner}'),
+  array['areas_select:SELECT', 'brands_select:SELECT', 'groups_select:SELECT', 'restaurants_select:SELECT', 'time_zones_select:SELECT'],
+  'en org solo hay políticas de lectura (las escrituras van por funciones), más las de la auditoría'
 );
 select is(
   (select count(*)::int
