@@ -68,13 +68,13 @@ Archivo: `supabase/migrations/20261020173811_audit_events.sql`. Pruebas: `supaba
   - la tarea programada que sella cada hora;
   - la exportación externa con la última huella;
   - la lectura con `audit.view`, que tiene que **ocultar costos** a quien no tenga `costing.view_costs` (ADR-0006).
-- **Pregunta abierta P13:** hoy se puede editar un registro que ya está borrado (queda auditado como `update`). ¿Debe rechazarse, o hay que restaurarlo primero?
+- **P13 (decidido por Joaco el 2026-10-20): un registro borrado no se edita; primero hay que restaurarlo.** Se implementa como regla genérica en una migración nueva, junto con M5, para todas las tablas con `deleted_at`. Un `update` sobre una fila con `deleted_at` es válido solo si la restaura (`deleted_at` pasa a nulo) y no cambia nada más; cualquier otro se rechaza. Restaurar y después editar quedan como dos eventos en el historial (`restore` y `update`).
 
 ### M3 — Organización (`org`) ✅ construida (adelanto, rama `feat/fase-1-organizacion`)
 
 Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supabase/tests/030_org.test.sql` (51). Seed: 1 grupo, 3 marcas, 4 restaurantes y 12 áreas, todos ficticios. Acceso de la app: **ADR-0005**.
 
-- `org.groups`, `org.brands`, `org.restaurants` y `org.areas`, con las 6 columnas de control y comentarios en español. Los estados `active` e `inactive` son una propuesta (**P14**).
+- `org.groups`, `org.brands`, `org.restaurants` y `org.areas`, con las 6 columnas de control y comentarios en español. Estados `active` (operando) e `inactive` (cerrado), confirmados por Joaco (**P14**). Si después hace falta otro, se suma al enum sin romper nada.
 - FKs compuestas de alcance (regla 5) y `unique (id, group_id)` en marcas, restaurantes y áreas.
 - **Nombres únicos:**
   - grupo: entre todos los grupos;
@@ -297,8 +297,8 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 - **P10.** Los datos de cada local están resueltos: todos opcionales (ver M3). Falta la lista completa de marcas y restaurantes reales, y si entran otros negocios del grupo (vinos, consultoría). Esto se carga recién en producción, nunca en desarrollo.
 - **P11.** La tabla de fases (sección 12) no llegó completa: confirmar qué entra en cada fase.
 - ~~**P12.** Cómo llega la app a los datos: opción A o B.~~ Resuelta: opción A (ADR-0005), que se aplica en M5/M6.
-- **P13.** ¿Se puede editar un registro que ya está borrado, o hay que restaurarlo primero? Hoy se permite y queda auditado como `update`.
-- **P14.** Estados de grupo, marca y restaurante: ¿alcanzan `active` (operando) e `inactive` (cerrado, visible en la historia)? ¿Hace falta otro, por ejemplo "en apertura"?
+- ~~**P13.**~~ Resuelta por Joaco el 2026-10-20: un registro borrado no se edita; hay que restaurarlo primero.
+- ~~**P14.**~~ Resuelta por Joaco el 2026-10-20: por ahora alcanzan `active` e `inactive`. Más adelante se verá si hace falta otro, por ejemplo "en apertura".
 
 ## Definición de terminado de la Fase 1
 

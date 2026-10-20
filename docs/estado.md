@@ -117,7 +117,7 @@ Revisiones: `db-reviewer` sin graves (4 medias y 6 menores, corregidas o anotada
 - Tarea programada que selle la auditoría cada hora, y exportación externa con la última huella (ADR-0006).
 - `audit.authentication_security_events` (diseño en ADR-0009 y ADR-0010).
 - La lectura de la auditoría tiene que ocultar costos a quien no tenga `costing.view_costs` (ADR-0006).
-- P13: edición de registros borrados.
+- P13 (resuelta): un registro borrado no se edita, primero se restaura. Se implementa junto con M5.
 
 ## Fase 0 (mergeada en `main`, PR #1)
 
@@ -177,7 +177,7 @@ _Actualizado el 2026-10-20._
 
 1. **Construir M5, M6 y M8** y las pantallas de ingreso, "sin acceso" y usuarios. No dependen de nadie.
 2. **M7 (aprobaciones)**: P7 y P17 ya están resueltas (ADR-0008 y ADR-0009).
-3. Preguntas abiertas (no frenan nada): P13 y P14. P10: los datos del local van todos opcionales (decidido); falta la lista real de marcas y locales para producción.
+3. Preguntas de la Fase 1: **todas resueltas**. P10, P13 y P14 se implementan junto con M5. Para producción falta la lista real de marcas y locales.
 4. **Subir las 3 ramas de adelanto** (M1–M2, M3, M4) como PRs y verificar GitHub Actions en verde. Necesita la confirmación de Joaco para el `git push`.
 5. **Supabase remoto:**
    - Soy ya creó la organización y Joaco es administrador.
