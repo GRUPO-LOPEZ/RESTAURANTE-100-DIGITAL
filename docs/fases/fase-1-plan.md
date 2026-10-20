@@ -91,16 +91,23 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
 - **Excepción documentada a "índice en cada FK":** `created_by`, `updated_by` y `deleted_by` (hacia `core.actors`) no se indexan. Un actor nunca se borra, así que esas FKs no se recorren al borrar. Si una pantalla filtra "creado por", se agrega el índice.
 - **Pendiente:** dirección, CUIT, código de marca y zona horaria (P10), y el trámite de traspaso (M5).
 
-### M4 — Identidad (`core`)
+### M4 — Identidad (`core`) ✅ construida (adelanto, rama `feat/fase-1-identidad`)
 
-- `core.user_profiles`: `id = auth.users.id`, nombre, teléfono opcional, `status` (enum `active` o `disabled`), `disabled_at`, `disabled_by`, `disabled_reason`.
-  - GRANT de `update` **por columna**: la persona solo edita su nombre y su teléfono. Nunca `status` ni `disabled_*`, para que nadie se reactive solo.
-- `core.permissions`: `code` único (`modulo.accion`), módulo y descripción. Catálogo cargado por migración.
-- `core.roles`: `code`, nombre, nivel (P1), `requires_mfa`, `is_system`.
-- `core.role_permissions`: `(role_id, permission_id)`.
+- `core.user_profiles`: `id = auth.users.id`, nombre, apellido, correo, `status` (enum `core.account_status`: `active` o `disabled`), `disabled_at`, `disabled_reason`. Se crea sola al dar de alta una persona en Auth. **No se borra: se bloquea.**
+  - Para M5: GRANT de `update` **por columna**. La persona solo edita su nombre, nunca `status` ni `disabled_*`, para que nadie se reactive solo.
+  - Quedaron para M8: `disabled_by` (hoy lo cubre `updated_by` y la auditoría), `phone` y la sincronización del correo con Auth.
+- `core.permissions`: los 14 permisos de la Fase 1. El código no se puede cambiar: renombrar `org.view` a `roles.manage` le daría `roles.manage` a todos los roles. Tampoco se borra un permiso que algún rol tiene.
+- `core.roles`: los 10 roles del Módulo Maestro, con nivel 1 a 10 y `requires_mfa` en los niveles 1 a 4 más Controller. El código no se puede cambiar, y a un rol del catálogo no se le puede sacar el MFA.
+- `core.role_permissions`: la matriz aprobada, 55 relaciones (`docs/modulos/00-identidad.md`). Solo con roles y permisos vigentes.
 - `core.user_memberships`: persona + grupo.
-- `core.user_role_assignments`: persona + rol + alcance. `scope_type` (enum `group`, `brand` o `restaurant`), `group_id` obligatorio y `brand_id` / `restaurant_id` según el tipo, validado con `check` y con FKs compuestas. Incluye `valid_from`, `valid_until` y `granted_by`.
-- `core.service_accounts`: cuentas técnicas (regla 3), cada una vinculada a su fila de `core.actors` y a su usuario técnico de Auth.
+- `core.user_role_assignments`: persona + rol + alcance. `scope_type` (enum `group`, `brand` o `restaurant`), `group_id` obligatorio y `brand_id` / `restaurant_id` según el tipo, validado con `check` y con 3 FKs compuestas. Incluye `valid_from` y `valid_until`; quién la dio es `created_by`.
+  - No se repite la misma asignación vigente (`unique ... nulls not distinct`).
+  - Persona, rol y alcance no cambian. `valid_from` no cambia y `valid_until` solo se acorta.
+  - Para tener un rol (también al restaurarlo) hace falta ser miembro del grupo, que el rol esté vigente y que la cuenta esté activa. Esos registros se bloquean con `for share`, así que no se cruzan con un borrado simultáneo.
+- `core.service_accounts`: cuentas técnicas, cada una con su actor de tipo `service_account` y una persona responsable activa. Sin roles hasta la Fase 5, porque `user_role_assignments.user_id` apunta a perfiles de persona, y eso se decide en la Fase 5.
+- Seed: 11 personas (una por rol y un gerente de dos locales) y una cuenta técnica. Contraseña local `Demo-Local-2026!`. El ingreso local está probado contra Auth.
+  - La guarda del seed aborta si la base tiene SSL (Supabase alojado siempre lo usa) o si ya hay grupos o usuarios.
+- `config.toml`: en la CLI, `[auth.email] enable_signup = false` apagaba **todo** el ingreso con correo. Ahora el alta libre se cierra solo con `[auth] enable_signup = false`. Está probado que el alta libre devuelve `signup_disabled`.
 
 ### M5 — Las funciones que deciden
 
@@ -110,16 +117,27 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
   - Devuelve `true` si alguna asignación vigente tiene un rol con ese permiso y el alcance cubre al restaurante: alcance de grupo, todo el grupo; alcance de marca, sus restaurantes; alcance de restaurante, solo ese.
 - `core.has_permission_in_brand(code, brand_id)` y `core.has_permission_in_group(code, group_id)`: para tablas de nivel marca o grupo, con la misma lógica interna.
 - `core.has_permission_anywhere(code)`: "¿tiene este permiso en algún lado?". **Solo para mostrar u ocultar menús. Prohibida en políticas RLS**: una prueba pgTAP recorre `pg_policies` y falla si alguna la usa.
-- Índices pensados para estas funciones: `user_role_assignments (user_id) where deleted_at is null` y `role_permissions (permission_id, role_id)`. Objetivo: menos de 1 ms por llamada con el seed.
+- Índices pensados para estas funciones: `user_role_assignments_key` (empieza por `user_id`, solo vigentes) y `role_permissions (permission_id, role_id)`. Objetivo: menos de 1 ms por llamada con el seed.
+- Requisitos que salen de la revisión de M4. Cada uno lleva su prueba de "no puede":
+  - `has_permission` filtra roles, permisos, relaciones, membresías y asignaciones borrados, la vigencia (`valid_from` ≤ ahora < `valid_until`) y el perfil activo.
+  - **Deniega a todo actor que no tenga un perfil activo o una cuenta técnica activa.** Hoy se puede crear un actor `service_account` sin su fila en `service_accounts`.
+  - `core.permissions`, `core.roles` y `core.role_permissions` no tienen escritura para ningún rol de la API. El catálogo se cambia por migración o por funciones que pasan por `workflow`.
+  - `core.service_accounts`: nadie más que `postgres` la escribe hasta la Fase 5.
+- **Traspaso de locales y marcas (P15, decidir antes de M5):** las FKs compuestas, más la regla de que una asignación no cambia, impiden mover un local o una marca que ya tuvo asignaciones. Lo mismo pasa con `org.areas`.
 
 ### M6 — Asignación de roles sin escalada de privilegios
 
 - `core.assign_role(user_id, role_id, scope...)`: es **la única vía** para crear asignaciones. Ningún rol de la API tiene `insert` directo sobre `user_role_assignments`. La base valida que:
-  1. quien asigna tenga `core.roles.assign` en ese alcance;
-  2. **los permisos del rol que otorga sean un subconjunto de los suyos** en ese alcance;
+  1. quien asigna tenga `roles.assign` en ese alcance;
+  2. **los permisos del rol que otorga sean un subconjunto de los suyos** en ese alcance. Se comparan **conjuntos de permisos, nunca `level`**: si se comparara el nivel, el gerente (nivel 4) podría dar Chef Ejecutivo (nivel 5), que tiene `approvals.decide`;
   3. **el alcance otorgado quede dentro del suyo**;
-  4. **nadie se asigne roles a sí mismo**;
-  5. los roles de nivel alto (P1) pasen por `workflow` con aprobador distinto.
+  4. **nadie se asigne roles a sí mismo**, ni siquiera en otro alcance;
+  5. los roles que incluyen `approvals.decide` o algún permiso `is_sensitive` pasan por `workflow`, con aprobación de otra persona. Así se evitan las "cuentas títere": invitar un segundo correo propio y darle el mismo rol para aprobarse a uno mismo.
+- Extender una vigencia o restaurar una asignación también pasa por `assign_role`.
+- Cambios del catálogo con `roles.manage`:
+  - van por `workflow`, con aprobador distinto;
+  - nadie modifica un rol que tiene él mismo. Si no, el superadmin podría darse `approvals.decide`.
+- Hay que tomar `for share`/`for update` sobre la membresía y el perfil, como ya hace el trigger de M4.
 - Una prueba pgTAP de "no puede" por cada regla.
 
 ### M7 — Aprobaciones (`workflow`) y prueba de catálogo
@@ -140,18 +158,29 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
 ### M8 — Cuentas: invitación, MFA y bloqueo
 
 - **Invitación** (el flujo va del servidor a la base, no al revés):
-  1. Una Edge Function de servidor (con `edge_runtime` prendido) valida con RPC que quien invita tenga `core.users.invite` en ese alcance.
+  1. Una Edge Function de servidor (con `edge_runtime` prendido) valida con RPC que quien invita tenga `users.invite` en ese alcance. También valida el nombre (hasta 80 caracteres): uno más largo hace fallar el alta entera en Auth. Los nombres pueden traer HTML, así que la interfaz nunca los muestra como HTML crudo.
   2. La Edge Function invita con la Admin API de Auth, usando `service_role` solo de su lado.
   3. Después llama a `core.register_invitation(...)` y a `core.assign_role(...)`, que audita todo y aplica las reglas de M6.
 - **MFA:** el factor se registra **solo en el primer ingreso por invitación**. Para resetear un factor hace falta un administrador, y queda auditado. Así, quien tiene solo la contraseña no puede registrar su propio TOTP. Hay que prender `[auth.mfa.totp]` en `supabase/config.toml`.
-- **Bloqueo** con `core.disable_user(user_id, reason)`, solo con `core.users.disable`:
+- `register_invitation` fija el contexto (origen y motivo). Hoy las altas que vienen de Auth quedan auditadas sin ninguno de los dos.
+- **Correo:** un trigger `after update of email on auth.users` sincroniza el perfil y lo audita. Si no, el perfil queda con el correo viejo y ese correo bloquea futuras invitaciones. La otra salida es no dejar que el usuario cambie su propio correo en Auth.
+- **Sobre otra persona** (`users.manage` y `users.deactivate`):
+  - todas sus asignaciones vigentes tienen que estar dentro del alcance de quien actúa, y con permisos que sean un subconjunto de los suyos;
+  - nunca sobre uno mismo, y nunca sobre el último superadmin activo.
+- **Bloqueo** con `core.disable_user(user_id, reason)`, solo con `users.deactivate`:
   1. marca el perfil como `disabled`;
   2. borra sesiones y refresh tokens;
   3. **banea al usuario en Auth** (`ban_duration`, vía la Edge Function), para que no pueda volver a entrar con su contraseña;
   4. audita.
   - Además, toda política pasa por `has_permission` o chequea el estado, así que el acceso se corta en la consulta siguiente aunque el JWT siga vigente.
 - Nada se borra: el usuario desactivado conserva toda su historia.
-- Política de contraseñas en `config.toml` y en el panel de staging y producción (P8).
+- Política de contraseñas en `config.toml` y en el panel de staging y producción (P8). Hoy local tiene TOTP apagado, mínimo de 6 caracteres y `secure_password_change = false`.
+- En los paneles de staging y producción hay que confirmar a mano tres cosas (`config.toml` no se aplica al remoto):
+  - alta libre apagada;
+  - ingreso anónimo apagado;
+  - cambio de correo controlado.
+- La cuenta técnica del seed no tiene contraseña, pero podría entrar por enlace mágico. Para la Fase 5: correos que no reciban mensajes, o bloquear ese ingreso.
+- CI: un paso que falle si algún workflow usa `--include-seed` contra un remoto. Después de cada despliegue, verificar que no haya `%@ejemplo.test` en `auth.users`.
 
 ### M9 — Seed ficticio (`supabase/seed.sql`)
 
@@ -177,25 +206,25 @@ Se decide antes de M3, se registra en `docs/decisiones/0005-...` y se agregan lo
 
 ## Las 13 pruebas obligatorias
 
-> **Importante:** el prompt maestro dice que son 13, pero la lista oficial está en el documento de Soy, que todavía no tenemos. Esta es una **propuesta derivada de las secciones 6 y 14**, para comparar contra la lista de Soy. No se da por buena hasta confirmarla (P4).
+La lista oficial está en la sección 10 del Módulo Maestro (copiada en `docs/modulos/00-identidad.md`). P4 quedó resuelta. Faltan las **10 adicionales** (P16).
 
-| #   | Prueba                                                                                                                             | Herramienta        |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| 1   | Cada usuario ve solo las filas de su alcance (grupo, marca, restaurante), incluido el caso de `restaurant_id` nulo                 | pgTAP + Playwright |
-| 2   | El cocinero no tiene `costing.view_costs` y no ve precios ni costos                                                                | pgTAP + Playwright |
-| 3   | Todo cambio deja en `audit_events` quién, cuándo, qué (antes y después) y por qué                                                  | pgTAP + Playwright |
-| 4   | Nadie puede modificar, borrar, truncar ni insertar a mano en `audit_events`, ni siquiera un administrador                          | pgTAP              |
-| 5   | Quien pidió un cambio no puede aprobarlo cuando la regla lo prohíbe, y una decisión no se puede duplicar                           | pgTAP + Playwright |
-| 6   | Un usuario desactivado pierde el acceso al instante y no puede volver a entrar                                                     | pgTAP + Playwright |
-| 7   | Todas las tablas tienen RLS y políticas, ninguna función queda abierta a `public` y ninguna política usa `has_permission_anywhere` | pgTAP              |
-| 8   | Solo se entra por invitación, y nadie se asigna roles a sí mismo ni otorga más de lo que tiene                                     | pgTAP + Playwright |
-| 9   | Los roles que exigen MFA no operan sin el segundo factor, y el factor no se registra con la contraseña sola                        | pgTAP + Playwright |
-| 10  | Una versión publicada no se puede modificar; corregir crea una versión nueva                                                       | pgTAP              |
-| 11  | La auditoría nunca guarda contraseñas, tokens ni secretos                                                                          | pgTAP              |
-| 12  | El borrado es lógico: un `DELETE` de un usuario común da "permission denied" y la historia se conserva                             | pgTAP              |
-| 13  | Una cuenta técnica (agente) solo puede lo asignado explícitamente, no saltea RLS y nunca escribe en `audit` ni `core`              | pgTAP              |
+| #   | Prueba obligatoria (Módulo Maestro)                       | Dónde                       | Se construye en                                                       |
+| --- | --------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------- |
+| 1   | Sin sesión no se consulta información privada             | pgTAP + Playwright          | M5 (RLS y API) + pantalla `/ingresar`                                 |
+| 2   | Cocinero abre la receta vigente pero no ve costos         | pgTAP (con tabla de prueba) | M7 (tabla de prueba con versión y vista sin costos)                   |
+| 3   | Jefe de cocina crea borrador pero no publica sin permiso  | pgTAP                       | M7 (tabla de prueba con versiones)                                    |
+| 4   | Gerente no edita fuera de su restaurante                  | pgTAP                       | M5                                                                    |
+| 5   | Dirección ve lo consolidado según permisos                | pgTAP                       | M5                                                                    |
+| 6   | Un cambio registra usuario, fecha, campo y valores        | pgTAP                       | M2 (ya cubierta en `020_audit`; se repite con usuario real en M5)     |
+| 7   | Una versión aprobada conserva su historia                 | pgTAP                       | M7                                                                    |
+| 8   | Una cuenta desactivada pierde acceso                      | pgTAP + Playwright          | M8                                                                    |
+| 9   | Usuario con dos restaurantes opera solo en los suyos      | pgTAP                       | M5 (persona del seed `...0411`)                                       |
+| 10  | Una cuenta técnica no supera sus permisos                 | pgTAP                       | M5 y M6                                                               |
+| 11  | Una operación rechazada queda registrada                  | pgTAP                       | M7 o M9, según P17                                                    |
+| 12  | Una aprobación guarda identidad, fecha y decisión         | pgTAP                       | M7                                                                    |
+| 13  | No se puede alterar el historial con operaciones normales | pgTAP                       | M2 (ya cubierta en `020_audit`; se repite como `authenticated` en M5) |
 
-Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión en pgTAP (`set local role authenticated` + `request.jwt.claims`).
+Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión en pgTAP (`set local role authenticated` + `request.jwt.claims`). Las pruebas que había propuesto antes (RLS en todas las tablas, invitación, MFA, secretos en la auditoría, borrado lógico) no se pierden: quedan como pruebas propias de M5 a M8.
 
 ## Riesgos
 
@@ -214,11 +243,16 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 
 **Bloqueantes** (sin respuesta no se puede cerrar la Fase 1):
 
-- **P1. Roles y niveles.** ¿Cuál es la lista oficial de roles y qué nivel (1 a 4) tiene cada uno? Del documento salen estos perfiles: dirección, director de marca, gerente, chef, jefe de cocina, controller, compras, cocinero, auditor y superadministrador. ¿Son roles distintos, o algunos son el mismo rol con otro alcance? ¿Qué roles son "de nivel alto" y necesitan aprobación para asignarse?
-- **P2. MFA.** "Obligatorio para niveles 1 a 4 y para Controller": ¿qué roles quedan en esos niveles? ¿Los cocineros entran sin MFA?
-- **P4. Las 13 pruebas.** ¿Coincide la lista propuesta con la del documento de Soy?
-- **P6. Matriz de permisos.** ¿Qué permisos (`modulo.accion`) tiene cada rol? Como mínimo, para identidad, organización y auditoría.
-- **P7. Aprobaciones.** ¿Qué cambios de la Fase 1 necesitan aprobación y cuáles exigen que apruebe otra persona?
+- ~~**P1. Roles y niveles.**~~ Resuelta: los 10 roles del Módulo Maestro, con nivel según el orden de la tabla.
+- ~~**P2. MFA.**~~ Resuelta: niveles 1 a 4 más Controller.
+- ~~**P4. Las 13 pruebas.**~~ Resuelta: lista oficial de la sección 10 del Módulo Maestro.
+- ~~**P6. Matriz de permisos.**~~ Resuelta: matriz aprobada por Joaco (`docs/modulos/00-identidad.md`).
+- **P7. Aprobaciones.** ¿Qué cambios de la Fase 1 necesitan aprobación y cuáles exigen que apruebe otra persona? La propuesta de seguridad es que pasen por aprobación tres cosas: dar roles con `approvals.decide` o con permisos sensibles, los cambios de la matriz y los traspasos.
+- **P15. Traspaso de locales y marcas.** Hoy, un local que ya tuvo personas asignadas no se puede mover de marca. Opciones:
+  - (a) el traspaso crea un local nuevo en la marca nueva y cierra el viejo, y la historia queda en el viejo;
+  - (b) otro mecanismo, que habría que diseñar.
+- **P16. Las 10 pruebas adicionales** del Módulo Maestro: no llegaron.
+- **P17. "Una operación rechazada queda registrada" (prueba 11):** ¿se refiere a una solicitud de aprobación rechazada, o también a un intento sin permiso que la base frena (por ejemplo, un cocinero que quiere editar un costo)? En el segundo caso hace falta un registro aparte, porque lo que la base rechaza se deshace entero, y su auditoría también.
 
 **No bloqueantes:**
 

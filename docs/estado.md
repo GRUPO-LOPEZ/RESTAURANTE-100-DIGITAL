@@ -1,6 +1,53 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-20, adelanto de la Fase 1 (M1, M2 y M3)._
+_Última actualización: 2026-10-20, adelanto de la Fase 1 (M1 a M4)._
+
+## Resumen para Soy: personas, roles y permisos (M4)
+
+**Qué se hizo:** la base ya conoce a las personas y qué puede hacer cada una.
+
+- Están cargados **los 10 roles de su Módulo Maestro** y los permisos de esta fase. Cada rol tiene su lista de permisos (la matriz que aprobó Joaco está en `docs/modulos/00-identidad.md`).
+- **Llevan doble verificación (MFA):** Superadministrador, Dirección General, Director de Marca, Gerente y Controller. A esos roles nadie les puede sacar el MFA.
+- Cada persona tiene un rol **en un lugar**: todo el grupo, una marca o un local. La base no deja dar un local que no es de esa marca, ni dar un rol a alguien que no es del grupo o que tiene la cuenta bloqueada.
+- **Nada se borra:** sacar un rol deja quién lo sacó, cuándo y por qué. Una persona no se borra, se bloquea.
+- Para probar hay **una persona inventada por rol**, un gerente de dos locales y una cuenta técnica para los agentes del futuro. Ya se puede entrar con ellas en la computadora de desarrollo.
+- Todo sigue **cerrado**: ninguna pantalla puede leer estos datos hasta que existan las reglas de acceso (M5).
+
+**Cómo está probado:** 285 pruebas de base de datos en verde. Pasó por los revisores de base de datos y de seguridad: ninguno encontró problemas graves, y los puntos que se podían arreglar ahora ya se arreglaron. El resto quedó anotado como requisito de M5, M6 y M8.
+
+**Preguntas para usted:**
+
+- **P15:** ¿cómo se pasa un local a otra marca? La propuesta es crear el local nuevo y cerrar el viejo, que conserva su historia.
+- **P16:** faltan las 10 pruebas adicionales de su Módulo Maestro.
+- **P17:** la prueba 11, "una operación rechazada queda registrada", ¿es una aprobación rechazada o también un intento sin permiso?
+- **P7:** ¿qué cambios necesitan aprobación?
+
+**Estado:** rama `feat/fase-1-identidad` (sale de `feat/fase-1-organizacion`). Es un **adelanto**: no se suma a `main` sin su aprobación.
+
+| Prueba                                        | Resultado                                         |
+| --------------------------------------------- | ------------------------------------------------- |
+| pgTAP (`000` a `040`)                         | ✅ 285 de 285                                     |
+| `npx supabase db reset` (con el seed)         | ✅                                                |
+| Ingreso local con una persona del seed (Auth) | ✅ entra; contraseña mala y alta libre rechazadas |
+
+Revisiones de M4:
+
+- **`db-reviewer`:** sin hallazgos graves. Corregidos en la misma migración:
+  - asignación duplicada;
+  - carrera entre dar un rol y sacar la membresía;
+  - reglas entre tablas (permisos y roles borrados, cuentas bloqueadas);
+  - vigencias que se extendían;
+  - pruebas faltantes;
+  - el ingreso local apagado por `config.toml`.
+
+  Anotados: el traspaso (P15), la sincronización del correo (M8) y SSO.
+
+- **`security-auditor`:** apto. Corregidos:
+  - los códigos de permisos y roles, que se podían renombrar (era una vía para darse más permisos);
+  - el MFA de los roles del catálogo, que se podía bajar;
+  - la guarda del seed, ahora más fuerte.
+
+  Pasaron a requisitos de M5, M6 y M8: separación de funciones (cuentas títere, superadmin que edita la matriz), reglas sobre a quién se puede bloquear, comparación por permisos y no por nivel, y la configuración de Auth en los paneles remotos.
 
 ## Resumen para Soy: estructura del grupo (M3)
 

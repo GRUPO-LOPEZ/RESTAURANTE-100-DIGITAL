@@ -186,6 +186,532 @@ export type Database = {
         };
         Relationships: [];
       };
+      permissions: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string;
+          id: string;
+          is_sensitive: boolean;
+          module: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description: string;
+          id?: string;
+          is_sensitive?: boolean;
+          module: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string;
+          id?: string;
+          is_sensitive?: boolean;
+          module?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "permissions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "permissions_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "permissions_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      role_permissions: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          id: string;
+          permission_id: string;
+          role_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          id?: string;
+          permission_id: string;
+          role_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          id?: string;
+          permission_id?: string;
+          role_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "role_permissions_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey";
+            columns: ["permission_id"];
+            isOneToOne: false;
+            referencedRelation: "permissions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "role_permissions_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      roles: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string | null;
+          id: string;
+          is_system: boolean;
+          level: number | null;
+          name: string;
+          requires_mfa: boolean;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          id?: string;
+          is_system?: boolean;
+          level?: number | null;
+          name: string;
+          requires_mfa?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          id?: string;
+          is_system?: boolean;
+          level?: number | null;
+          name?: string;
+          requires_mfa?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "roles_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "roles_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "roles_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      service_accounts: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string | null;
+          id: string;
+          name: string;
+          owner_user_id: string;
+          status: Database["core"]["Enums"]["account_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          id: string;
+          name: string;
+          owner_user_id: string;
+          status?: Database["core"]["Enums"]["account_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          owner_user_id?: string;
+          status?: Database["core"]["Enums"]["account_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "service_accounts_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "service_accounts_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "service_accounts_id_fkey";
+            columns: ["id"];
+            isOneToOne: true;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "service_accounts_owner_user_id_fkey";
+            columns: ["owner_user_id"];
+            isOneToOne: false;
+            referencedRelation: "user_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "service_accounts_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_memberships: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          updated_at: string;
+          updated_by: string | null;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_memberships_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_memberships_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_memberships_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "user_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_profiles: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          disabled_at: string | null;
+          disabled_reason: string | null;
+          email: string;
+          first_name: string | null;
+          id: string;
+          last_name: string | null;
+          status: Database["core"]["Enums"]["account_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          disabled_at?: string | null;
+          disabled_reason?: string | null;
+          email: string;
+          first_name?: string | null;
+          id: string;
+          last_name?: string | null;
+          status?: Database["core"]["Enums"]["account_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          disabled_at?: string | null;
+          disabled_reason?: string | null;
+          email?: string;
+          first_name?: string | null;
+          id?: string;
+          last_name?: string | null;
+          status?: Database["core"]["Enums"]["account_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_profiles_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_profiles_id_fkey";
+            columns: ["id"];
+            isOneToOne: true;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_profiles_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_role_assignments: {
+        Row: {
+          brand_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          restaurant_id: string | null;
+          role_id: string;
+          scope_type: Database["core"]["Enums"]["scope_type"];
+          updated_at: string;
+          updated_by: string | null;
+          user_id: string;
+          valid_from: string;
+          valid_until: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          restaurant_id?: string | null;
+          role_id: string;
+          scope_type: Database["core"]["Enums"]["scope_type"];
+          updated_at?: string;
+          updated_by?: string | null;
+          user_id: string;
+          valid_from?: string;
+          valid_until?: string | null;
+        };
+        Update: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          restaurant_id?: string | null;
+          role_id?: string;
+          scope_type?: Database["core"]["Enums"]["scope_type"];
+          updated_at?: string;
+          updated_by?: string | null;
+          user_id?: string;
+          valid_from?: string;
+          valid_until?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_role_assignments_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_role_assignments_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_role_assignments_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_role_assignments_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_role_assignments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "user_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -196,7 +722,9 @@ export type Database = {
       set_change_context: { Args: { p_origin: string; p_reason: string }; Returns: undefined };
     };
     Enums: {
+      account_status: "active" | "disabled";
       actor_type: "user" | "service_account";
+      scope_type: "group" | "brand" | "restaurant";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -562,7 +1090,9 @@ export const Constants = {
   },
   core: {
     Enums: {
+      account_status: ["active", "disabled"],
       actor_type: ["user", "service_account"],
+      scope_type: ["group", "brand", "restaurant"],
     },
   },
   org: {
