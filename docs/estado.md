@@ -1,8 +1,42 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-20, cierre de la sesión de la Fase 0._
+_Última actualización: 2026-10-20, adelanto de la Fase 1 (M1 y M2)._
 
-## Resumen para Soy
+## Resumen para Soy: adelanto de la Fase 1
+
+**Qué se hizo:** se construyó el **historial inalterable** del sistema, la parte de la Fase 1 que no depende de su documento:
+
+- Cada cambio que se haga en cualquier tabla va a quedar registrado: **quién, cuándo, qué había antes, qué quedó y por qué**.
+- **Nadie puede borrar ni cambiar ese historial**, ni siquiera un administrador. Y si alguien con la contraseña máxima de la base lo intentara, unos **sellos** (huellas digitales encadenadas) lo detectan. Hay una prueba que simula ese ataque.
+- Las contraseñas, tokens y claves **nunca** quedan en el historial, aunque vengan escondidos dentro de otros datos.
+- Los datos de "quién creó o cambió esto" los pone siempre la base, nunca la aplicación, así que no se pueden falsear.
+
+**Cómo está probado:** 156 pruebas de base de datos en verde, revisadas por los revisores de base de datos y de seguridad (sin hallazgos graves; todo lo que encontraron ya está corregido).
+
+**Qué falta:** su Módulo Maestro de Usuarios, para los roles, permisos y las 13 pruebas. Y una pregunta nueva (P13): ¿se puede editar algo que ya está borrado, o hay que restaurarlo primero?
+
+**Estado:** rama `feat/fase-1-base-auditoria`. Es un **adelanto**: no se suma a `main` hasta que usted apruebe la Fase 0 y este avance.
+
+### Pruebas de esta tarea (local, 2026-10-20)
+
+| Prueba                               | Resultado     |
+| ------------------------------------ | ------------- |
+| Lint, formato y tipos                | ✅            |
+| Vitest                               | ✅ 63 de 63   |
+| pgTAP (`000`, `010`, `020`)          | ✅ 156 de 156 |
+| Playwright + axe                     | ✅ 10 de 10   |
+| `npx supabase db reset` (desde cero) | ✅            |
+
+Revisiones: `db-reviewer` sin graves (4 medias y 6 menores, corregidas o anotadas), `security-auditor` apto (4 medias y 8 menores, corregidas o anotadas en ADR-0006). Dos errores reales los encontraron las propias pruebas antes de commitear: los permisos por defecto por esquema no cerraban nada, y `postgres` sin herencia no podía conectar el trigger de auditoría.
+
+### Pendientes de la Fase 1 que salen de esta tarea
+
+- Tarea programada que selle la auditoría cada hora, y exportación externa con la última huella (ADR-0006).
+- `audit.authentication_security_events` (espera P5).
+- La lectura de la auditoría tiene que ocultar costos a quien no tenga `costing.view_costs` (ADR-0006).
+- P13: edición de registros borrados.
+
+## Fase 0 (mergeada en `main`, PR #1)
 
 **Qué se hizo:** se preparó el "taller" donde se va a construir el sistema. Todavía no hay pantallas para los restaurantes; eso es a propósito. Quedó listo:
 
@@ -19,7 +53,7 @@ _Última actualización: 2026-10-20, cierre de la sesión de la Fase 0._
 
 ## Hecho
 
-Rama `chore/fase-0-entorno` (todavía sin subir a GitHub).
+Rama `chore/fase-0-entorno`, mergeada en `main` con el PR #1. Falta confirmar si GitHub Actions dio verde en ese PR.
 
 | Paso del prompt de arranque                   | Estado  | Dónde                                                                                  |
 | --------------------------------------------- | ------- | -------------------------------------------------------------------------------------- |

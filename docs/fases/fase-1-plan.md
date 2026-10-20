@@ -17,7 +17,7 @@ Esquemas `core`, `org`, `audit` y `workflow`, la función `core.has_permission`,
 Estas reglas valen para todas las migraciones de la fase. Salen de los hallazgos de los revisores.
 
 1. **RLS en la misma migración que crea la tabla.** `enable row level security`, las políticas y los GRANT van junto con el `create table`. Nunca existe, ni por un momento, una tabla sin RLS. La prueba de catálogo (M7) lo controla.
-2. **Ninguna función queda abierta por defecto.** En M1, para cada esquema: `revoke all on schema … from public` y `alter default privileges in schema … revoke execute on functions from public`. Cada función recibe `grant execute` explícito.
+2. **Ninguna función queda abierta por defecto.** En M1: `revoke all on schema … from public` en los 12 esquemas, y `alter default privileges revoke execute on functions from public` **global**, para cada rol que crea funciones (`postgres` y `audit_owner`). La versión por esquema no sirve: solo puede sumar permisos, no quitar los globales (lo detectó una prueba). Cada función recibe `grant execute` explícito.
 3. **Las cuentas técnicas nunca usan `service_role`.** `service_role` saltea RLS (BYPASSRLS). Los agentes entran como usuarios de Supabase Auth con un claim firmado en `app_metadata` (`actor_type = 'service_account'`, más el id de la cuenta), con rol `authenticated` y permisos solo sobre `ai`. `service_role` queda reservado a una sola Edge Function de servidor (invitaciones y bloqueo de cuentas) y nunca llega a un agente, a la app ni a Claude Code.
 4. **La identidad sale del JWT, nunca de algo que el cliente pueda escribir.** `reason` y `origin` (motivo y origen, cargados con `set_config`) son **solo informativos**: se guardan en la auditoría y nunca se usan para decidir permisos.
 5. **Alcance consistente por estructura.** `unique (id, group_id)` en `org.brands` y `org.restaurants`, y FKs compuestas `(restaurant_id, group_id) references org.restaurants (id, group_id)` en toda tabla con más de un nivel de alcance. Así una fila no puede decir que es de un restaurante de otro grupo.
@@ -28,29 +28,47 @@ Estas reglas valen para todas las migraciones de la fase. Salen de los hallazgos
 
 Cada una es un archivo nuevo en `supabase/migrations/`, con su prueba pgTAP y con RLS incluido (regla 1).
 
-### M1 — Base común y privilegios por defecto
+### M1 — Base común y privilegios por defecto ✅ construida (adelanto, rama `feat/fase-1-base-auditoria`)
 
-- Rol `audit_owner` (`nologin`): dueño de todo el esquema `audit` y de `audit.log_change()`.
-- Revocación de privilegios por defecto en los 12 esquemas (regla 2).
-- `core.actors`: tabla común de "quién hizo algo". Tiene una fila por persona (`auth.users`) y una por cuenta técnica. Las columnas `created_by`, `updated_by` y `deleted_by` apuntan acá. Así una acción de un agente no rompe la FK, y se sabe siempre qué tipo de actor fue.
-- `core.current_actor_id()`: sale **solo** de `auth.uid()` y del claim firmado `app_metadata` del JWT (regla 4).
-- `core.set_control_columns()`: trigger `before insert or update` que completa las columnas de control con `now()` y `core.current_actor_id()`, impide cambiar `id`, `created_at` y `created_by`, y completa `deleted_by` cuando se marca `deleted_at`.
-- `core.set_change_context(reason, origin)`: `set_config(..., true)`, que vale solo para la transacción (regla 4).
+Archivo: `supabase/migrations/20261020173808_core_base.sql`. Pruebas: `supabase/tests/010_core_base.test.sql` (41).
 
-### M2 — Auditoría (`audit`)
+- Rol `audit_owner` (`nologin`): dueño de todo el esquema `audit`. `postgres` puede ponerse el rol pero **no lo hereda** (ADR-0006).
+- Privilegios por defecto cerrados (regla 2).
+- `core.actors`: una fila por usuario de Auth (persona o cuenta técnica), cargada por un trigger sobre `auth.users`, que es el patrón estándar de Supabase. Las columnas `created_by`, `updated_by` y `deleted_by` apuntan acá.
+  - `actor_type` es descriptivo: los permisos de una cuenta técnica salen de `core.service_accounts` (M4).
+  - Un usuario con historia no se puede borrar de Auth (`on delete restrict`): se bloquea (M8).
+- `core.current_actor_id()` y `core.current_actor_subject()`: salen **solo** de `request.jwt.claims` (el JWT completo), nunca del GUC heredado `request.jwt.claim.sub`. Un `sub` que no es uuid deja el actor nulo, sin romper.
+- `core.set_control_columns()`: trigger que verifica que esté conectado como BEFORE por fila.
+  - Completa las columnas de control e impide cambiar `id`, `created_at` y `created_by`.
+  - Ignora los cambios que no cambian nada, y conserva quién y cuándo se borró algo ya borrado.
+- `core.set_change_context(reason, origin)`: el origen se recibe como **texto** y se valida contra la lista, para no exigir acceso al esquema `audit`.
 
-- Tipo `audit.action` (enum): `insert`, `update`, `soft_delete`, `restore`, `delete`.
-- `audit.audit_events`: `id`, `occurred_at`, `actor_id` (FK a `core.actors`), `actor_type`, `actor_roles jsonb` (roles vigentes en ese momento), `scope_group_id`, `scope_brand_id`, `scope_restaurant_id`, `schema_name`, `table_name`, `record_id`, `action`, `old_values jsonb`, `new_values jsonb`, `changed_fields text[]`, `reason`, `origin`, `transaction_id`.
-  - Índices: `(schema_name, table_name, record_id, occurred_at desc)`, `(actor_id, occurred_at desc)`, `(occurred_at)`.
-- **Solo inserción, de verdad:**
-  - Ningún rol de la API recibe `insert`, `update`, `delete` ni `truncate`. **Solo `audit.log_change()` inserta** (`security definer`, con `audit_owner` como dueño). Así nadie puede inventar eventos.
-  - Dos triggers que lanzan un error siempre: uno `before update or delete for each row` y otro `before truncate for each statement`. No se pueden combinar en uno solo.
-  - **Límite que queda, y está documentado:** un superusuario de Postgres (el dueño del proyecto en Supabase) puede desactivar triggers. Contra eso, la evidencia es la **exportación semanal** del esquema `audit` a un almacenamiento separado (sección 10).
-- `audit.log_change()`: trigger genérico `after insert or update or delete`, `search_path` fijo.
-  - **Filtro de secretos:** primero, un patrón de nombre de columna (`%password%`, `%token%`, `%secret%`, `%api_key%`); después, una lista de columnas a excluir que cada tabla pasa como argumento del trigger. La prueba 11 usa una tabla con una columna sensible.
-  - Un update que solo marca `deleted_at` se registra como `soft_delete`.
-- `audit.authentication_security_events`: inicios de sesión, fallas, MFA y bloqueos. Se carga desde hooks de Supabase Auth o con una copia periódica, **nunca con triggers sobre `auth.*`**, que Supabase desaconseja (P5).
-- Lectura: solo con `audit.view`, filtrada por alcance.
+### M2 — Auditoría (`audit`) ✅ construida (adelanto)
+
+Archivo: `supabase/migrations/20261020173811_audit_events.sql`. Pruebas: `supabase/tests/020_audit.test.sql` (55). Decisiones y límites: **ADR-0006**.
+
+- `audit.audit_events` con todo lo previsto, más:
+  - `sequence_number`: el orden exacto;
+  - `jwt_role` y `db_user`: quién hizo el cambio aunque no haya persona;
+  - un `check` de largo del motivo.
+- Índices: por registro, por actor, por restaurante, por transacción y por fecha.
+- **Solo inserción:**
+  - ningún rol de la API tiene permisos;
+  - triggers que rechazan `update`, `delete` y `truncate`;
+  - `postgres` no hereda al dueño;
+  - **sellos** (`audit.audit_seals`, `audit.seal_events()`, `audit.verify_seals()`) que detectan cualquier alteración de lo sellado.
+- `audit.log_change()`:
+  - verifica que esté conectado como AFTER por fila;
+  - falla si una columna a ocultar no existe;
+  - oculta secretos en cualquier nivel del jsonb (por nombre y por forma del valor);
+  - recorta el motivo a 500 caracteres y descarta orígenes inválidos;
+  - **rechaza los cambios con la clave de servidor que no declaran origen**.
+- **Pendiente:**
+  - `audit.authentication_security_events` (espera P5);
+  - la tarea programada que sella cada hora;
+  - la exportación externa con la última huella;
+  - la lectura con `audit.view`, que tiene que **ocultar costos** a quien no tenga `costing.view_costs` (ADR-0006).
+- **Pregunta abierta P13:** hoy se puede editar un registro que ya está borrado (queda auditado como `update`). ¿Debe rechazarse, o hay que restaurarlo primero?
 
 ### M3 — Organización (`org`)
 
