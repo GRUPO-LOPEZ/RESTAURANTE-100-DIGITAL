@@ -53,13 +53,13 @@ select is(
   (select array_agg(n.nspname || '.' || p.proname order by n.nspname || '.' || p.proname collate "C")
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = any (pg_temp.business_schemas()) and has_function_privilege('authenticated', p.oid, 'execute')),
-  array['core.can_view_scope', 'core.can_view_user', 'core.current_aal', 'core.current_actor_id',
+  array['core.assign_role', 'core.can_view_scope', 'core.can_view_user', 'core.current_aal', 'core.current_actor_id',
         'core.current_actor_subject', 'core.current_session_ok',
         'core.has_permission', 'core.has_permission_anywhere', 'core.has_permission_for_scope',
         'core.has_permission_in_brand', 'core.has_permission_in_group', 'core.is_assignment_current',
-        'core.permitted_restaurant_ids', 'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_user_ids',
-        'org.create_area', 'org.create_brand', 'org.create_restaurant', 'org.set_deleted',
-        'org.update_area', 'org.update_brand', 'org.update_group', 'org.update_restaurant'],
+        'core.permitted_brand_ids', 'core.permitted_group_ids', 'core.permitted_restaurant_ids', 'core.request_role_permission_change', 'core.revoke_role', 'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_user_ids',
+        'org.create_area', 'org.create_brand', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted',
+        'org.update_area', 'org.update_brand', 'org.update_group', 'org.update_restaurant', 'workflow.cancel_request', 'workflow.decide'],
   'authenticated solo puede llamar a estas funciones (en los 12 esquemas de negocio)'
 );
 select is(
@@ -68,7 +68,8 @@ select is(
     where n.nspname = any (pg_temp.business_schemas()) and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege('authenticated', c.oid, 'select')),
   array['core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships', 'core.user_profiles',
-        'core.user_role_assignments', 'org.areas', 'org.brands', 'org.groups', 'org.restaurants', 'org.time_zones'],
+        'core.user_role_assignments', 'org.areas', 'org.brands', 'org.groups', 'org.restaurants', 'org.time_zones',
+        'workflow.approval_decisions', 'workflow.approval_requests', 'workflow.approval_workflows'],
   'authenticated solo puede leer estas tablas (y nada de audit ni de cuentas técnicas)'
 );
 select is(

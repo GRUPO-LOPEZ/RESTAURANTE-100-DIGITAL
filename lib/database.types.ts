@@ -111,6 +111,102 @@ export type Database = {
         };
         Relationships: [];
       };
+      security_event_seals: {
+        Row: {
+          chain_hash: string;
+          event_count: number;
+          first_sequence: number;
+          id: number;
+          last_sequence: number;
+          previous_hash: string;
+          sealed_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          chain_hash: string;
+          event_count: number;
+          first_sequence: number;
+          id?: never;
+          last_sequence: number;
+          previous_hash: string;
+          sealed_at?: string;
+        };
+        Update: {
+          chain_hash?: string;
+          event_count?: number;
+          first_sequence?: number;
+          id?: never;
+          last_sequence?: number;
+          previous_hash?: string;
+          sealed_at?: string;
+        };
+        Relationships: [];
+      };
+      security_events: {
+        Row: {
+          actor_id: string | null;
+          actor_subject: string | null;
+          db_user: string;
+          details: Json | null;
+          email: string | null;
+          event_type: Database["audit"]["Enums"]["security_event_type"];
+          id: string;
+          ip: string | null;
+          jwt_role: string | null;
+          occurred_at: string;
+          operation: string | null;
+          reason: string | null;
+          scope_brand_id: string | null;
+          scope_group_id: string | null;
+          scope_restaurant_id: string | null;
+          sequence_number: number;
+          target_user_id: string | null;
+          user_agent: string | null;
+          security_event_digest: string | null;
+        };
+        ComputedFields: "security_event_digest";
+        Insert: {
+          actor_id?: string | null;
+          actor_subject?: string | null;
+          db_user?: string;
+          details?: Json | null;
+          email?: string | null;
+          event_type: Database["audit"]["Enums"]["security_event_type"];
+          id?: string;
+          ip?: string | null;
+          jwt_role?: string | null;
+          occurred_at?: string;
+          operation?: string | null;
+          reason?: string | null;
+          scope_brand_id?: string | null;
+          scope_group_id?: string | null;
+          scope_restaurant_id?: string | null;
+          sequence_number?: never;
+          target_user_id?: string | null;
+          user_agent?: string | null;
+        };
+        Update: {
+          actor_id?: string | null;
+          actor_subject?: string | null;
+          db_user?: string;
+          details?: Json | null;
+          email?: string | null;
+          event_type?: Database["audit"]["Enums"]["security_event_type"];
+          id?: string;
+          ip?: string | null;
+          jwt_role?: string | null;
+          occurred_at?: string;
+          operation?: string | null;
+          reason?: string | null;
+          scope_brand_id?: string | null;
+          scope_group_id?: string | null;
+          scope_restaurant_id?: string | null;
+          sequence_number?: never;
+          target_user_id?: string | null;
+          user_agent?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -127,6 +223,22 @@ export type Database = {
       };
       genesis_hash: { Args: Record<PropertyKey, never>; Returns: string };
       is_sensitive_key: { Args: { p_key: string }; Returns: boolean };
+      log_security_event: {
+        Args: {
+          p_brand_id?: string;
+          p_details?: Json;
+          p_email?: string;
+          p_event_type: Database["audit"]["Enums"]["security_event_type"];
+          p_group_id?: string;
+          p_ip?: string;
+          p_operation: string;
+          p_reason: string;
+          p_restaurant_id?: string;
+          p_target_user_id?: string;
+          p_user_agent?: string;
+        };
+        Returns: string;
+      };
       redact: { Args: { p_excluded?: string[]; p_value: Json }; Returns: Json };
       seal_events: {
         Args: { p_min_age?: string };
@@ -146,8 +258,45 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      seal_security_events: {
+        Args: { p_min_age?: string };
+        Returns: {
+          chain_hash: string;
+          event_count: number;
+          first_sequence: number;
+          id: number;
+          last_sequence: number;
+          previous_hash: string;
+          sealed_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "security_event_seals";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      security_event_digest: {
+        Args: {
+          p_event: Omit<
+            Database["audit"]["Tables"]["security_events"]["Row"],
+            Database["audit"]["Tables"]["security_events"]["ComputedFields"]
+          >;
+        };
+        Returns: string;
+      };
+      security_genesis_hash: { Args: Record<PropertyKey, never>; Returns: string };
       try_uuid: { Args: { p_value: string }; Returns: string };
       verify_seals: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          expected_events: number;
+          found_events: number;
+          is_valid: boolean;
+          seal_id: number;
+        }[];
+      };
+      verify_security_seals: {
         Args: Record<PropertyKey, never>;
         Returns: {
           expected_events: number;
@@ -160,6 +309,14 @@ export type Database = {
     Enums: {
       action: "insert" | "update" | "soft_delete" | "restore" | "delete";
       change_origin: "app" | "edge_function" | "agent" | "import" | "seed" | "maintenance";
+      security_event_type:
+        | "login_succeeded"
+        | "login_failed"
+        | "account_locked"
+        | "account_unlocked"
+        | "operation_denied"
+        | "account_disabled"
+        | "account_reactivated";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -736,6 +893,21 @@ export type Database = {
         }[];
       };
       actor_roles_snapshot: { Args: { p_actor_id: string }; Returns: Json };
+      apply_role_assignment: { Args: { p_request_id: string }; Returns: undefined };
+      apply_role_permission_change: { Args: { p_request_id: string }; Returns: undefined };
+      assign_role: {
+        Args: {
+          p_brand_id?: string;
+          p_group_id: string;
+          p_reason?: string;
+          p_restaurant_id?: string;
+          p_role_code: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+          p_user_id: string;
+          p_valid_until?: string;
+        };
+        Returns: Json;
+      };
       can_view_scope: {
         Args: {
           p_brand_id?: string;
@@ -747,10 +919,31 @@ export type Database = {
         Returns: boolean;
       };
       can_view_user: { Args: { p_user_id: string }; Returns: boolean };
+      check_scope: {
+        Args: {
+          p_brand_id: string;
+          p_group_id: string;
+          p_restaurant_id: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: undefined;
+      };
       current_aal: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_id: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_subject: { Args: Record<PropertyKey, never>; Returns: string };
       current_session_ok: { Args: Record<PropertyKey, never>; Returns: boolean };
+      deny: {
+        Args: {
+          p_brand_id?: string;
+          p_details?: Json;
+          p_group_id?: string;
+          p_operation: string;
+          p_reason: string;
+          p_restaurant_id?: string;
+          p_target_user_id?: string;
+        };
+        Returns: Json;
+      };
       has_permission: { Args: { p_permission: string; p_restaurant_id: string }; Returns: boolean };
       has_permission_anywhere: { Args: { p_permission: string }; Returns: boolean };
       has_permission_for_scope: {
@@ -771,11 +964,42 @@ export type Database = {
         Args: { p_group_id: string; p_permission: string };
         Returns: boolean;
       };
+      has_role_for_scope: {
+        Args: {
+          p_brand_id?: string;
+          p_group_id: string;
+          p_restaurant_id?: string;
+          p_role_codes: string[];
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: boolean;
+      };
       is_assignment_current: {
         Args: { p_valid_from: string; p_valid_until: string };
         Returns: boolean;
       };
+      missing_permissions_for_role: {
+        Args: {
+          p_brand_id: string;
+          p_group_id: string;
+          p_restaurant_id: string;
+          p_role_id: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: string[];
+      };
       permitted_restaurant_ids: { Args: { p_permission: string }; Returns: string[] };
+      request_role_permission_change: {
+        Args: {
+          p_grant: boolean;
+          p_group_id: string;
+          p_permission_code: string;
+          p_reason: string;
+          p_role_code: string;
+        };
+        Returns: Json;
+      };
+      revoke_role: { Args: { p_assignment_id: string; p_reason: string }; Returns: Json };
       set_change_context: { Args: { p_origin: string; p_reason: string }; Returns: undefined };
       visible_assignment_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
       visible_brand_ids: { Args: { p_permission: string }; Returns: string[] };
@@ -785,6 +1009,7 @@ export type Database = {
       account_status: "active" | "disabled";
       actor_type: "user" | "service_account";
       scope_type: "group" | "brand" | "restaurant";
+      version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1049,6 +1274,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      apply_transfer: { Args: { p_request_id: string }; Returns: undefined };
       check_keys: { Args: { p_allowed: string[]; p_changes: Json }; Returns: undefined };
       create_area: {
         Args: { p_name: string; p_reason: string; p_restaurant_id: string };
@@ -1061,6 +1287,15 @@ export type Database = {
       create_restaurant: {
         Args: { p_brand_id: string; p_details: Json; p_name: string; p_reason: string };
         Returns: string;
+      };
+      request_transfer: {
+        Args: {
+          p_new_name: string;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_target_brand_id: string;
+        };
+        Returns: Json;
       };
       require: { Args: { p_action: string; p_allowed: boolean }; Returns: undefined };
       set_deleted: {
@@ -1110,16 +1345,219 @@ export type Database = {
   };
   workflow: {
     Tables: {
-      [_ in never]: never;
+      approval_decisions: {
+        Row: {
+          comment: string | null;
+          created_at: string;
+          created_by: string | null;
+          decided_at: string;
+          decided_by: string;
+          decision: Database["workflow"]["Enums"]["decision"];
+          deleted_at: string | null;
+          deleted_by: string | null;
+          id: string;
+          request_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          comment?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          decided_at?: string;
+          decided_by: string;
+          decision: Database["workflow"]["Enums"]["decision"];
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          id?: string;
+          request_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          comment?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          decided_at?: string;
+          decided_by?: string;
+          decision?: Database["workflow"]["Enums"]["decision"];
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          id?: string;
+          request_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "approval_decisions_request_id_fkey";
+            columns: ["request_id"];
+            isOneToOne: false;
+            referencedRelation: "approval_requests";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      approval_requests: {
+        Row: {
+          brand_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          payload: NonNullable<Json>;
+          reason: string;
+          requested_by: string;
+          resolution_comment: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          restaurant_id: string | null;
+          status: Database["workflow"]["Enums"]["request_status"];
+          subject_user_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          workflow_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          payload: NonNullable<Json>;
+          reason: string;
+          requested_by: string;
+          resolution_comment?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          restaurant_id?: string | null;
+          status?: Database["workflow"]["Enums"]["request_status"];
+          subject_user_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          workflow_id: string;
+        };
+        Update: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          payload?: NonNullable<Json>;
+          reason?: string;
+          requested_by?: string;
+          resolution_comment?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          restaurant_id?: string | null;
+          status?: Database["workflow"]["Enums"]["request_status"];
+          subject_user_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          workflow_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_workflow_id_fkey";
+            columns: ["workflow_id"];
+            isOneToOne: false;
+            referencedRelation: "approval_workflows";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      approval_workflows: {
+        Row: {
+          apply_function: unknown;
+          approver_permission: string;
+          approver_role_codes: string[] | null;
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string | null;
+          id: string;
+          is_active: boolean;
+          name: string;
+          required_approvals: number;
+          requires_different_approver: boolean;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          apply_function: unknown;
+          approver_permission?: string;
+          approver_role_codes?: string[] | null;
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          required_approvals?: number;
+          requires_different_approver?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          apply_function?: unknown;
+          approver_permission?: string;
+          approver_role_codes?: string[] | null;
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          required_approvals?: number;
+          requires_different_approver?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      cancel_request: { Args: { p_reason: string; p_request_id: string }; Returns: Json };
+      create_request: {
+        Args: {
+          p_brand_id: string;
+          p_group_id: string;
+          p_payload: Json;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_subject_user_id: string;
+          p_workflow_code: string;
+        };
+        Returns: string;
+      };
+      decide: {
+        Args: { p_comment?: string; p_decision: string; p_request_id: string };
+        Returns: Json;
+      };
     };
     Enums: {
-      [_ in never]: never;
+      decision: "approved" | "rejected";
+      request_status: "pending" | "approved" | "rejected" | "cancelled";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1233,6 +1671,15 @@ export const Constants = {
     Enums: {
       action: ["insert", "update", "soft_delete", "restore", "delete"],
       change_origin: ["app", "edge_function", "agent", "import", "seed", "maintenance"],
+      security_event_type: [
+        "login_succeeded",
+        "login_failed",
+        "account_locked",
+        "account_unlocked",
+        "operation_denied",
+        "account_disabled",
+        "account_reactivated",
+      ],
     },
   },
   core: {
@@ -1240,6 +1687,7 @@ export const Constants = {
       account_status: ["active", "disabled"],
       actor_type: ["user", "service_account"],
       scope_type: ["group", "brand", "restaurant"],
+      version_status: ["draft", "in_review", "approved", "published", "archived"],
     },
   },
   org: {
@@ -1251,6 +1699,9 @@ export const Constants = {
     Enums: {},
   },
   workflow: {
-    Enums: {},
+    Enums: {
+      decision: ["approved", "rejected"],
+      request_status: ["pending", "approved", "rejected", "cancelled"],
+    },
   },
 } as const;
