@@ -19,10 +19,8 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": [
         "error",
         {
-          selector:
-            "Literal[value=/#[0-9a-fA-F]{3,8}\\b|rgba?\\(|hsla?\\(|oklch\\(/]",
-          message:
-            "Usá los tokens de color de app/globals.css, no colores sueltos.",
+          selector: "Literal[value=/#[0-9a-fA-F]{3,8}\\b|rgba?\\(|hsla?\\(|oklch\\(/]",
+          message: "Usá los tokens de color de app/globals.css, no colores sueltos.",
         },
       ],
     },
@@ -32,13 +30,7 @@ const eslintConfig = defineConfig([
     files: ["app/layout.tsx"],
     rules: { "no-restricted-syntax": "off" },
   },
-  globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    "lib/database.types.ts",
-  ]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "lib/database.types.ts"]),
 ]);
 
 export default eslintConfig;

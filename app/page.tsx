@@ -20,8 +20,8 @@ export default function Home() {
         <p className="text-sm font-medium text-ink-muted">Grupo LF</p>
         <h1 className="text-2xl">Sistema Operativo Gastronómico</h1>
         <p className="text-ink-muted">
-          El entorno de desarrollo está listo. Las pantallas llegan después de
-          identidad, permisos y auditoría.
+          El entorno de desarrollo está listo. Las pantallas llegan después de identidad, permisos y
+          auditoría.
         </p>
       </header>
 
@@ -33,10 +33,7 @@ export default function Home() {
           <CircleCheck aria-hidden className="size-5 text-ok-ink" />
           Fase 0: entorno
         </h2>
-        <ul
-          className="flex flex-wrap gap-2"
-          aria-label="Estados del sistema de diseño"
-        >
+        <ul className="flex flex-wrap gap-2" aria-label="Estados del sistema de diseño">
           {STATUSES.map(({ status, label }) => (
             <li key={status}>
               <Badge status={status}>{label}</Badge>

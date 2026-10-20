@@ -9,13 +9,13 @@
 - Los agentes leen del esquema `reporting` y escriben **solo** en `ai`. **Nunca tocan `audit` ni `core`.**
 - Las claves de los modelos de IA viven en funciones de servidor, nunca en el navegador.
 
-| Agente | Lee | Propone |
-|---|---|---|
-| Facturas | Facturas en Storage, proveedores | Precios nuevos de materias primas |
-| Costos | Recetas, precios vigentes | Alertas de desvío de costo y margen |
-| Inventario | Movimientos y conteos | Diferencias de stock y pedidos sugeridos |
-| Producción | Ventas y planes | Plan de producción del día |
-| Reputación | Reseñas públicas | Resumen semanal y alertas |
-| Dirección | Todo reporting | Resumen ejecutivo para Soy |
+| Agente     | Lee                              | Propone                                  |
+| ---------- | -------------------------------- | ---------------------------------------- |
+| Facturas   | Facturas en Storage, proveedores | Precios nuevos de materias primas        |
+| Costos     | Recetas, precios vigentes        | Alertas de desvío de costo y margen      |
+| Inventario | Movimientos y conteos            | Diferencias de stock y pedidos sugeridos |
+| Producción | Ventas y planes                  | Plan de producción del día               |
+| Reputación | Reseñas públicas                 | Resumen semanal y alertas                |
+| Dirección  | Todo reporting                   | Resumen ejecutivo para Soy               |
 
 **Los agentes se construyen recién en la Fase 5**, cuando los datos que leen ya son confiables. Antes de eso no se crea código de agentes.

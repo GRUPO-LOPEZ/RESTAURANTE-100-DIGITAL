@@ -4,25 +4,17 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-const css = readFileSync(
-  path.resolve(import.meta.dirname, "../../app/globals.css"),
-  "utf8",
-);
+const css = readFileSync(path.resolve(import.meta.dirname, "../../app/globals.css"), "utf8");
 
 function token(name: string): string {
   const match = css.match(new RegExp(`--color-${name}:\\s*(#[0-9a-fA-F]{6})`));
-  if (!match?.[1])
-    throw new Error(`No se encontró el color --color-${name} en globals.css`);
+  if (!match?.[1]) throw new Error(`No se encontró el color --color-${name} en globals.css`);
   return match[1];
 }
 
 function luminance(hex: string): number {
-  const channels = [1, 3, 5].map(
-    (i) => parseInt(hex.slice(i, i + 2), 16) / 255,
-  );
-  const [r, g, b] = channels.map((c) =>
-    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
-  );
+  const channels = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const [r, g, b] = channels.map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
   return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }
 

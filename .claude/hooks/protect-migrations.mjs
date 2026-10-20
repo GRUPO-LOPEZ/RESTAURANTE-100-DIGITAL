@@ -9,12 +9,17 @@ const rel = relativePath(event, event.tool_input?.file_path);
 if (/^supabase\/migrations\/.+\.sql$/.test(rel)) {
   let committed = false;
   try {
-    execFileSync("git", ["cat-file", "-e", `HEAD:${rel}`], { cwd: projectDir(event), stdio: "ignore" });
+    execFileSync("git", ["cat-file", "-e", `HEAD:${rel}`], {
+      cwd: projectDir(event),
+      stdio: "ignore",
+    });
     committed = true;
   } catch {
     committed = false;
   }
   if (committed) {
-    block(`${rel} ya está commiteada. No se edita: creá una migración nueva con "npx supabase migration new <nombre>".`);
+    block(
+      `${rel} ya está commiteada. No se edita: creá una migración nueva con "npx supabase migration new <nombre>".`,
+    );
   }
 }

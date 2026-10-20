@@ -7,15 +7,11 @@ const root = path.resolve(__dirname, "../..");
 const ENV = ".e" + "nv"; // se arma así para que el propio guardián no bloquee este archivo
 
 function run(hook: string, event: object): number {
-  const result = spawnSync(
-    "node",
-    [path.join(root, ".claude/hooks", `${hook}.mjs`)],
-    {
-      input: JSON.stringify(event),
-      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
-      encoding: "utf8",
-    },
-  );
+  const result = spawnSync("node", [path.join(root, ".claude/hooks", `${hook}.mjs`)], {
+    input: JSON.stringify(event),
+    env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+    encoding: "utf8",
+  });
   return result.status ?? -1;
 }
 
@@ -44,10 +40,7 @@ describe("guard: secretos y ambientes remotos", () => {
     ["push --force", bash("git push --force origin main")],
     ["borrar rama remota", bash("git push origin --delete main")],
     ["deploy vercel", bash("npx vercel deploy --prod")],
-    [
-      "buscar archivos de variables",
-      { tool_name: "Glob", tool_input: { pattern: `**/${ENV}*` } },
-    ],
+    ["buscar archivos de variables", { tool_name: "Glob", tool_input: { pattern: `**/${ENV}*` } }],
   ])("bloquea: %s", (_name, event) => {
     expect(run("guard", event)).toBe(2);
   });
@@ -58,10 +51,7 @@ describe("guard: secretos y ambientes remotos", () => {
     ["process.env en código", bash('node -e "console.log(process.env.HOME)"')],
     ["supabase local", bash("npx supabase db reset")],
     ["push normal", bash("git push -u origin chore/fase-0-entorno")],
-    [
-      "grep en app",
-      { tool_name: "Grep", tool_input: { pattern: "env", path: "app" } },
-    ],
+    ["grep en app", { tool_name: "Grep", tool_input: { pattern: "env", path: "app" } }],
   ])("permite: %s", (_name, event) => {
     expect(run("guard", event)).toBe(0);
   });

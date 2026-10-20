@@ -26,19 +26,19 @@ npm run dev                       # http://localhost:3000
 
 ## Comandos
 
-| Comando | Qué hace |
-|---|---|
-| `npm run dev` | App en modo desarrollo |
-| `npm run lint` | Revisa el código con ESLint |
-| `npm run typecheck` | Revisa los tipos de TypeScript |
-| `npm run format` | Formatea el código con Prettier |
-| `npm run test:unit` | Pruebas de lógica (Vitest) |
-| `npm run test:db` | Pruebas de base de datos (pgTAP) |
-| `npm run test:e2e` | Pruebas de flujos y accesibilidad (Playwright + axe) |
-| `npm run test` | Todo lo anterior, en orden |
-| `npm run db:start` / `db:stop` | Prende / apaga Supabase local |
-| `npm run db:reset` | Recrea la base local desde las migraciones |
-| `npm run db:types` | Regenera `lib/database.types.ts` desde la base |
+| Comando                        | Qué hace                                             |
+| ------------------------------ | ---------------------------------------------------- |
+| `npm run dev`                  | App en modo desarrollo                               |
+| `npm run lint`                 | Revisa el código con ESLint                          |
+| `npm run typecheck`            | Revisa los tipos de TypeScript                       |
+| `npm run format`               | Formatea el código con Prettier                      |
+| `npm run test:unit`            | Pruebas de lógica (Vitest)                           |
+| `npm run test:db`              | Pruebas de base de datos (pgTAP)                     |
+| `npm run test:e2e`             | Pruebas de flujos y accesibilidad (Playwright + axe) |
+| `npm run test`                 | Todo lo anterior, en orden                           |
+| `npm run db:start` / `db:stop` | Prende / apaga Supabase local                        |
+| `npm run db:reset`             | Recrea la base local desde las migraciones           |
+| `npm run db:types`             | Regenera `lib/database.types.ts` desde la base       |
 
 ## Ambientes
 

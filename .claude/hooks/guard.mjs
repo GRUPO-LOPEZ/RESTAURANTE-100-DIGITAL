@@ -29,10 +29,16 @@ if (tool === "Bash" || tool === "PowerShell") {
   if (ENV_FILE.test(` ${cmd}`)) {
     block("el comando toca un archivo .env*. Las claves no pasan por Claude Code.");
   }
-  if (/\bsupabase\b/.test(cmd) && /(\blink\b|--linked\b|--project-ref\b|--db-url\b|\bprojects\b|\bsecrets\b)/.test(cmd)) {
+  if (
+    /\bsupabase\b/.test(cmd) &&
+    /(\blink\b|--linked\b|--project-ref\b|--db-url\b|\bprojects\b|\bsecrets\b)/.test(cmd)
+  ) {
     block("Claude Code trabaja solo con Supabase local. Nada contra proyectos remotos.");
   }
-  if (/\bgit\s+push\b/.test(cmd) && /(--force\b|-f\b|--force-with-lease\b|--mirror\b|--delete\b|\s:\S)/.test(cmd)) {
+  if (
+    /\bgit\s+push\b/.test(cmd) &&
+    /(--force\b|-f\b|--force-with-lease\b|--mirror\b|--delete\b|\s:\S)/.test(cmd)
+  ) {
     block("no se fuerza ni se borra nada en el repositorio remoto.");
   }
   if (/\bvercel\b/.test(cmd) && /(--prod\b|\bdeploy\b|\benv\b)/.test(cmd)) {

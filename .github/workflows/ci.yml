@@ -1,0 +1,77 @@
+# Pruebas en cada pull request y en cada push a main (prompt maestro, secciones 8 y 9).
+# Una tarea está terminada solo cuando todo esto pasa en verde.
+name: Pruebas
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    name: Lint, tipos, Vitest, pgTAP y Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Formato
+        run: npm run format:check
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Pruebas de lógica (Vitest)
+        run: npm run test:unit
+
+      # Supabase LOCAL dentro del runner, con la misma versión de CLI que package.json.
+      # Nunca se conecta a staging ni a producción desde este job.
+      - name: Levantar Supabase local
+        run: npx supabase start -x studio,imgproxy,realtime,storage-api,mailpit,postgres-meta,vector,logflare,edge-runtime,supavisor
+
+      - name: Aplicar migraciones desde cero
+        run: npx supabase db reset
+
+      - name: Pruebas de base de datos (pgTAP)
+        run: npm run test:db
+
+      - name: Instalar navegador de Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Pruebas de flujos y accesibilidad (Playwright + axe)
+        run: npm run test:e2e
+
+      - name: Guardar reporte de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Apagar Supabase local
+        if: always()
+        run: npx supabase stop --no-backup
