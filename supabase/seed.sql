@@ -1,0 +1,5 @@
+-- Datos de prueba para desarrollo local. SOLO DATOS FICTICIOS: nunca datos reales.
+-- Se cargan con `npm run db:reset`, después de las migraciones.
+--
+-- Fase 1 (pendiente): un grupo ficticio, 3 marcas, 4 restaurantes y un usuario de prueba por rol.
+-- Fases siguientes: 50 ingredientes y 20 recetas.
