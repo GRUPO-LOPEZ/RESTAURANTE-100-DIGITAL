@@ -229,18 +229,18 @@ La lista oficial está en la sección 10 del Módulo Maestro (copiada en `docs/m
 | 12  | Una aprobación guarda identidad, fecha y decisión         | pgTAP                       | M7                                                                    |
 | 13  | No se puede alterar el historial con operaciones normales | pgTAP                       | M2 (ya cubierta en `020_audit`; se repite como `authenticated` en M5) |
 
-| #   | Prueba adicional (Módulo Maestro)                                             | Se construye en                                                                                                   |
-| --- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| A1  | Un usuario no puede darse permisos ni roles a sí mismo                        | M6 (`assign_role`, regla 4)                                                                                       |
-| A2  | No se puede aprobar la propia solicitud cuando la política lo prohíbe         | M7 (`workflow.decide`)                                                                                            |
-| A3  | Ni el superadministrador puede borrar o modificar `audit_events` desde la app | M2 (ya cubierta en `020_audit`); se repite como `authenticated` con el superadmin en M5                           |
-| A4  | Revocar un rol corta el acceso en la siguiente consulta                       | M5 (`has_permission` lee las asignaciones en cada consulta, no del JWT)                                           |
-| A5  | Un usuario suspendido no puede iniciar sesión; uno reactivado sí              | M8 (bloqueo y reactivación con ban en Auth), pgTAP + Playwright                                                   |
-| A6  | Las asignaciones con alcance incoherente son rechazadas por la base           | M4 ✅ (`040_identity`: grupo con marca, restaurante sin restaurante, local de otra marca, marca de otro grupo)    |
-| A7  | Tras 5 intentos fallidos de login se bloquea temporalmente y queda registrado | M8 y M9: ingreso por función de servidor + Custom Access Token hook (ADR-0010); duración en P18                   |
-| A8  | Los roles 1 a 4 y Controller no entran sin MFA                                | M5 (`has_permission` exige `aal2`) + M8 (TOTP prendido), pgTAP + Playwright                                       |
-| A9  | Todas las tablas tienen RLS activo (recorre el catálogo)                      | M7 (prueba de catálogo); hoy cada archivo de pruebas ya lo controla para sus tablas                               |
-| A10 | El tablero de usuarios responde en menos de 300 ms con 500 usuarios de prueba | Pantalla de usuarios + seed de rendimiento con 500 personas ficticias (aparte del seed chico) y `explain analyze` |
+| #   | Prueba adicional (Módulo Maestro)                                             | Se construye en                                                                                                            |
+| --- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| A1  | Un usuario no puede darse permisos ni roles a sí mismo                        | M6 (`assign_role`, regla 4)                                                                                                |
+| A2  | No se puede aprobar la propia solicitud cuando la política lo prohíbe         | M7 (`workflow.decide`)                                                                                                     |
+| A3  | Ni el superadministrador puede borrar o modificar `audit_events` desde la app | M2 (ya cubierta en `020_audit`); se repite como `authenticated` con el superadmin en M5                                    |
+| A4  | Revocar un rol corta el acceso en la siguiente consulta                       | M5 (`has_permission` lee las asignaciones en cada consulta, no del JWT)                                                    |
+| A5  | Un usuario suspendido no puede iniciar sesión; uno reactivado sí              | M8 (bloqueo y reactivación con ban en Auth), pgTAP + Playwright                                                            |
+| A6  | Las asignaciones con alcance incoherente son rechazadas por la base           | M4 ✅ (`040_identity`: grupo con marca, restaurante sin restaurante, local de otra marca, marca de otro grupo)             |
+| A7  | Tras 5 intentos fallidos de login se bloquea temporalmente y queda registrado | M8 y M9: ingreso por función de servidor + Custom Access Token hook (ADR-0010); 10 minutos, liberable por un administrador |
+| A8  | Los roles 1 a 4 y Controller no entran sin MFA                                | M5 (`has_permission` exige `aal2`) + M8 (TOTP prendido), pgTAP + Playwright                                                |
+| A9  | Todas las tablas tienen RLS activo (recorre el catálogo)                      | M7 (prueba de catálogo); hoy cada archivo de pruebas ya lo controla para sus tablas                                        |
+| A10 | El tablero de usuarios responde en menos de 300 ms con 500 usuarios de prueba | Pantalla de usuarios + seed de rendimiento con 500 personas ficticias (aparte del seed chico) y `explain analyze`          |
 
 Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión en pgTAP (`set local role authenticated` + `request.jwt.claims`). Las pruebas que había propuesto antes (RLS en todas las tablas, invitación, MFA, secretos en la auditoría, borrado lógico) no se pierden: quedan como pruebas propias de M5 a M8.
 
@@ -276,7 +276,7 @@ Cada prueba se corre con **un usuario de prueba por rol**, simulando la sesión 
 
 - ~~**P15. Traspaso de locales y marcas.**~~ Resuelta por Joaco el 2026-10-20: opción A. Se crea un local nuevo en la marca nueva y se cierra el viejo, que conserva su historia (ADR-0007). Si hace falta, se puede pasar a B más adelante.
 - ~~**P16. Las 10 pruebas adicionales.**~~ Resuelta: recibidas el 2026-10-20.
-- **P18. Duración del bloqueo tras 5 intentos fallidos (prueba A7).** El mecanismo ya está decidido (ADR-0010). Falta saber dos cosas: cuánto dura el bloqueo (propuesta: 15 minutos, y después se libera solo) y si un administrador también puede liberarlo antes.
+- ~~**P18. Duración del bloqueo.**~~ Resuelta por Joaco el 2026-10-20 (ADR-0010): dura 10 minutos y se libera solo. Un administrador con `users.deactivate` puede liberarlo antes, sin aprobación, y queda registrado.
 
 - ~~**P17. Operación rechazada (prueba 11).**~~ Resuelta por Joaco el 2026-10-20: opción 2. Se registran las aprobaciones rechazadas y los intentos frenados en las funciones críticas, en un registro de seguridad que se guarda aunque la operación se rechace (ADR-0009).
 

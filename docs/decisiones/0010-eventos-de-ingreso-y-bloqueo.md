@@ -1,7 +1,7 @@
 # ADR-0010 — Eventos de ingreso y bloqueo por intentos fallidos
 
 - **Fecha:** 2026-10-20
-- **Estado:** aceptada por Joaco (P5, opción B). Se implementa en M8 y M9. Duración del bloqueo: pendiente (P18).
+- **Estado:** aceptada por Joaco (P5, opción B). Se implementa en M8 y M9. Duración del bloqueo resuelta por Joaco (P18): 10 minutos, con liberación anticipada por un administrador.
 
 ## Contexto
 
@@ -38,6 +38,12 @@ Según la documentación de Supabase, consultada el 2026-10-20:
    - solo lo leen quienes tienen `audit.view`.
 
    Guarda la persona (si existe), el correo intentado normalizado, el resultado, la hora y el origen.
+
+## Duración y liberación (P18)
+
+- **5 fallos seguidos** de la misma cuenta, sin un ingreso bueno entre medio, dentro de 10 minutos → **bloqueo de 10 minutos**. Pasado ese tiempo se libera solo y el contador vuelve a cero. Un ingreso bueno también lo pone en cero.
+- **Un administrador puede liberarlo antes** con una función (`core.unlock_user`). Hace falta `users.deactivate` en un alcance que cubra todas las asignaciones de la persona, con las mismas reglas sobre otra persona que M8. No pide aprobación: el bloqueo es temporal y se iba a liberar solo. Igual queda en el registro de seguridad, con quién lo liberó y por qué.
+- No se confunde con la cuenta **desactivada** (`disabled`), que es definitiva hasta que se reactive, y la reactivación sí pide aprobación (ADR-0008).
 
 ## Límites (dichos claramente)
 
