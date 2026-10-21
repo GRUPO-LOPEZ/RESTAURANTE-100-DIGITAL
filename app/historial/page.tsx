@@ -8,14 +8,16 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/kpi";
 import {
   ACTION_LABELS,
+  FIELD_LABELS,
   TABLE_LABELS,
   formatDateTime,
+  formatValue,
   getHistory,
   type HistoryRow,
 } from "@/lib/data";
-import { requireOperable } from "@/lib/auth/session";
+import { requireMenu } from "@/lib/auth/session";
 
-// Historial inalterable (ADR-0006): quién, cuándo, qué (antes y después) y por qué.
+// Historial inalterable (ADR-0006): quién, cuándo, qué cambió y por qué, en lenguaje simple.
 // Solo lo de tu alcance, y sin costos si no tenés permiso para verlos.
 export default function HistorialPage({ searchParams }: PageProps<"/historial">) {
   return (
@@ -30,32 +32,51 @@ export default function HistorialPage({ searchParams }: PageProps<"/historial">)
   );
 }
 
-const CONTROL = new Set(["updated_at", "updated_by", "created_at", "created_by", "deleted_by"]);
+const VISIBLE = 5;
 
-function show(value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return value;
-  return JSON.stringify(value);
+function Change({ row, field }: { row: HistoryRow; field: string }) {
+  const before = row.old_values?.[field];
+  const after = row.new_values?.[field];
+  const isChange =
+    row.action === "update" || row.action === "soft_delete" || row.action === "restore";
+  return (
+    <div className="flex flex-col sm:flex-row sm:gap-2">
+      <dt className="font-medium text-ink sm:w-48 sm:shrink-0">{FIELD_LABELS[field]}</dt>
+      <dd className="break-words text-ink-muted">
+        {isChange ? `${formatValue(before)} → ${formatValue(after)}` : formatValue(after ?? before)}
+      </dd>
+    </div>
+  );
 }
 
 function Changes({ row }: { row: HistoryRow }) {
+  // Solo los campos con nombre en español: ids y datos técnicos no se muestran.
   const fields = (row.changed_fields ?? Object.keys(row.new_values ?? row.old_values ?? {})).filter(
-    (f) => !CONTROL.has(f),
+    (f) => FIELD_LABELS[f],
   );
   if (fields.length === 0) return null;
+  const first = fields.slice(0, VISIBLE);
+  const rest = fields.slice(VISIBLE);
   return (
-    <dl className="grid gap-1 text-sm sm:grid-cols-[minmax(0,12rem)_1fr]">
-      {fields.slice(0, 12).map((f) => (
-        <div key={f} className="contents">
-          <dt className="font-medium text-ink">{f}</dt>
-          <dd className="break-all text-ink-muted">
-            {row.action === "update" || row.action === "soft_delete" || row.action === "restore"
-              ? `${show(row.old_values?.[f])} → ${show(row.new_values?.[f])}`
-              : show((row.new_values ?? row.old_values)?.[f])}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <>
+      <dl className="flex flex-col gap-1 text-sm">
+        {first.map((f) => (
+          <Change key={f} row={row} field={f} />
+        ))}
+      </dl>
+      {rest.length > 0 ? (
+        <details className="text-sm">
+          <summary className="flex min-h-touch cursor-pointer items-center text-primary underline-offset-4 hover:underline">
+            Ver todo ({rest.length} más)
+          </summary>
+          <dl className="flex flex-col gap-1">
+            {rest.map((f) => (
+              <Change key={f} row={row} field={f} />
+            ))}
+          </dl>
+        </details>
+      ) : null}
+    </>
   );
 }
 
@@ -64,7 +85,7 @@ async function History({
 }: {
   searchParams: PageProps<"/historial">["searchParams"];
 }) {
-  await requireOperable();
+  await requireMenu("audit");
   const params = await searchParams;
   const beforeRaw = Array.isArray(params.antes) ? params.antes[0] : params.antes;
   const before = beforeRaw && /^[0-9]{1,18}$/.test(beforeRaw) ? Number(beforeRaw) : undefined;
@@ -84,10 +105,10 @@ async function History({
                     r.action === "soft_delete" ? "bad" : r.action === "insert" ? "ok" : "info"
                   }
                 >
-                  {ACTION_LABELS[r.action] ?? r.action}
+                  {ACTION_LABELS[r.action] ?? "Cambio"}
                 </Badge>
                 <span className="text-base font-medium text-ink">
-                  {TABLE_LABELS[`${r.schema_name}.${r.table_name}`] ?? r.table_name}
+                  {TABLE_LABELS[`${r.schema_name}.${r.table_name}`] ?? "Dato del sistema"}
                 </span>
                 {r.place_name ? (
                   <span className="text-sm text-ink-muted">· {r.place_name}</span>

@@ -46,7 +46,7 @@ const columns = column.columns([
       <div className="flex flex-col">
         <Link
           href={`/usuarios/${row.original.id}`}
-          className="font-medium text-primary underline-offset-4 hover:underline"
+          className="inline-flex min-h-touch items-center font-medium text-primary underline-offset-4 hover:underline"
         >
           {name(row.original)}
         </Link>

@@ -38,10 +38,11 @@ Deno.serve(async (req) => {
 
   const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: "POST",
+    // La IP que manda el cliente NO se reenvía a Auth: se puede falsificar y serviría para
+    // esquivar su límite por IP. Queda solo como dato informativo en el registro (ADR-0014).
     headers: {
       apikey: ANON_KEY,
       "content-type": "application/json",
-      ...(ip ? { "x-forwarded-for": ip } : {}),
     },
     body: JSON.stringify({ email, password }),
   });

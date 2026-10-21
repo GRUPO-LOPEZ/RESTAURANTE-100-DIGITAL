@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(50);
+select plan(62);
 
 create function pg_temp.q(p_user uuid, p_sql text, p_aal text default 'aal2')
 returns text
@@ -128,9 +128,14 @@ select is((select count(*)::int from audit.security_events where event_type = 'a
 select ok((core.login_status('Compras@Ejemplo.test') ->> 'locked')::boolean, 'A7. la función de ingreso ve el bloqueo (sin importar mayúsculas)');
 select ok(pg_temp.hook(pg_temp.u(408)) ? 'error', 'A7. bloqueada, no recibe token aunque la contraseña sea correcta');
 select is(pg_temp.q(pg_temp.u(408), 'select count(*)::text from org.restaurants', 'aal1'), '0', 'A7. bloqueada, no ve nada');
-select is(core.record_failed_login('nadie@ejemplo.test') ->> 'locked', 'false', 'un correo que no existe no revela nada');
+select is((select string_agg((core.record_failed_login('nadie@ejemplo.test') ->> 'locked'), ',') from generate_series(1, 5)),
+  'false,false,false,false,true', 'un correo que no existe se bloquea igual: el bloqueo no revela qué correos existen');
 select ok(exists (select 1 from audit.security_events where event_type = 'login_failed' and email = 'nadie@ejemplo.test' and target_user_id is null),
-  'pero el intento queda registrado');
+  'el intento con un correo que no existe queda registrado');
+select is(
+  (select (core.record_failed_login('compras@ejemplo.test') ->> 'locked_until')::timestamptz = (select locked_until from core.login_throttles where email = 'compras@ejemplo.test')
+          and (select locked_until from core.login_throttles where email = 'compras@ejemplo.test') <= now() + interval '10 minutes'),
+  true, 'P18. un fallo durante el bloqueo no lo extiende');
 
 select is(pg_temp.r(pg_temp.u(404), format('core.unlock_user(%L, ''Prueba'')', pg_temp.u(408))), 'denied',
   'el gerente no libera a alguien fuera de su alcance');
@@ -140,13 +145,47 @@ select ok(not (core.login_status('compras@ejemplo.test') ->> 'locked')::boolean
           and exists (select 1 from audit.security_events where event_type = 'account_unlocked' and target_user_id = pg_temp.u(408)),
   'P18. queda liberada, y la liberación queda registrada');
 
-update core.user_profiles set failed_login_count = 4, last_failed_login_at = now() - interval '11 minutes' where id = pg_temp.u(410);
-select is(core.record_failed_login('auditor@ejemplo.test') ->> 'locked', 'false', 'los fallos de hace más de 10 minutos no cuentan');
-update core.user_profiles set failed_login_count = 3, last_failed_login_at = now() where id = pg_temp.u(406);
+insert into core.login_throttles (email, failed_count, window_started_at, last_failed_at)
+values ('auditor@ejemplo.test', 4, now() - interval '11 minutes', now() - interval '1 minute');
+select is(core.record_failed_login('auditor@ejemplo.test') ->> 'locked', 'false', 'P18. la ventana cuenta desde el PRIMER fallo: pasados 10 minutos, empieza de nuevo');
+insert into core.login_throttles (email, failed_count, window_started_at, last_failed_at)
+values ('controller@ejemplo.test', 4, now() - interval '9 minutes', now() - interval '1 minute');
+select is(core.record_failed_login('controller@ejemplo.test') ->> 'locked', 'true', 'P18. 5 fallos dentro de 10 minutos desde el primero bloquean');
+insert into core.login_throttles (email, failed_count, window_started_at, last_failed_at)
+values ('jefecocina@ejemplo.test', 3, now(), now());
 select ok(pg_temp.hook(pg_temp.u(406)) ? 'claims', 'un ingreso bueno recibe su token');
-select ok((select failed_login_count = 0 from core.user_profiles where id = pg_temp.u(406))
+select ok(not exists (select 1 from core.login_throttles where email = 'jefecocina@ejemplo.test')
           and exists (select 1 from audit.security_events where event_type = 'login_succeeded' and target_user_id = pg_temp.u(406)),
   'un ingreso bueno pone el contador en cero y queda registrado');
+
+-- Revisión de M8: el tablero solo muestra los roles que la sesión puede ver.
+select is(pg_temp.q(pg_temp.u(404), format('select jsonb_array_length(roles)::text from core.users_dashboard(p_user_id => %L)', pg_temp.u(411))),
+  '1', 'el gerente ve solo el rol de su local de la gerente de dos locales (el otro local no es suyo)');
+
+-- Revisión de M8: reactivar. Quien bloqueó no aprueba, quien tiene menos permisos que la persona
+-- tampoco, y si quien pidió pierde el permiso, la aprobación no se aplica.
+select is(pg_temp.r(pg_temp.u(403), format('core.disable_user(%L, ''Prueba'')', pg_temp.u(504))), 'applied', 'el director desactiva a una persona');
+select is(pg_temp.r(pg_temp.u(404), format('core.request_reactivation(%L, ''Vuelve'')', pg_temp.u(504))), 'pending_approval', 'el gerente pide reactivarla');
+select is(pg_temp.r(pg_temp.u(403), format('workflow.decide(%L, ''approved'', null)',
+            (select id from workflow.approval_requests where subject_user_id = pg_temp.u(504) and status = 'pending'))),
+  'denied', 'quien bloqueó la cuenta no aprueba la reactivación');
+update core.user_role_assignments set deleted_at = now() where user_id = pg_temp.u(404);
+select is(pg_temp.q(pg_temp.u(411), format('select workflow.decide(%L, ''approved'', null) ->> ''result''',
+            (select id from workflow.approval_requests where subject_user_id = pg_temp.u(504) and status = 'pending'))),
+  'ERROR 23514', 'si quien pidió ya no tiene permiso, la reactivación no se aplica');
+select ok((select status = 'disabled' from core.user_profiles where id = pg_temp.u(504)), 'la cuenta sigue desactivada');
+update core.user_role_assignments set deleted_at = null where user_id = pg_temp.u(404);
+
+insert into core.user_role_assignments (user_id, role_id, scope_type, group_id, brand_id, restaurant_id)
+select pg_temp.u(503), r.id, 'restaurant', pg_temp.u(1), pg_temp.u(101), pg_temp.u(201) from core.roles r where r.code = 'auditor';
+select is(pg_temp.r(pg_temp.u(401), format('core.disable_user(%L, ''Prueba'')', pg_temp.u(503))), 'applied', 'el superadmin desactiva a alguien con un rol de auditoría');
+select is(pg_temp.r(pg_temp.u(401), format('core.request_reactivation(%L, ''Vuelve'')', pg_temp.u(503))), 'pending_approval', 'el superadmin pide reactivarla');
+select is(pg_temp.r(pg_temp.u(411), format('workflow.decide(%L, ''approved'', null)',
+            (select id from workflow.approval_requests where subject_user_id = pg_temp.u(503) and status = 'pending'))),
+  'denied', 'un gerente con menos permisos que la persona no aprueba su reactivación');
+select is(pg_temp.q(pg_temp.u(411), format('select can_decide::text from workflow.inbox() where id = %L',
+            (select id from workflow.approval_requests where subject_user_id = pg_temp.u(503) and status = 'pending'))),
+  'false', 'y la bandeja no le ofrece aprobarla');
 
 -- ---------------------------------------------------------------------------
 -- Invitación: los pasos de la base
@@ -208,9 +247,52 @@ begin
 end
 $$;
 reset role;
+
+-- Con volumen en la bandeja y en el historial, para alcances chicos (director de marca y gerente),
+-- que son los que antes recorrían todo: 5.000 solicitudes y 100.000 eventos de otro local y otra marca.
+do $$
+begin
+  perform core.set_change_context('Carga de prueba', 'maintenance');
+end
+$$;
+insert into workflow.approval_requests (workflow_id, group_id, brand_id, restaurant_id, requested_by, payload, reason)
+select (select id from workflow.approval_workflows where code = 'org.transfer_restaurant'), pg_temp.u(1),
+       case when g % 2 = 0 then pg_temp.u(102) end, case when g % 4 = 0 then pg_temp.u(203) end,
+       pg_temp.u(401), jsonb_build_object('n', g), 'Carga de prueba'
+  from generate_series(1, 5000) as g;
+set local role audit_owner;
+insert into audit.audit_events (schema_name, table_name, record_id, action, new_values, scope_group_id, scope_brand_id, scope_restaurant_id)
+select 'org', 'areas', gen_random_uuid(), 'insert', '{}'::jsonb, '00000000-0000-4000-8000-000000000001',
+       '00000000-0000-4000-8000-000000000102', case when g % 10 > 0 then '00000000-0000-4000-8000-000000000203'::uuid end
+  from generate_series(1, 100000) as g;
+reset role;
+analyze workflow.approval_requests, audit.audit_events;
+
+do $$
+declare
+  t0 timestamptz;
+  n  int;
+  who record;
+begin
+  for who in select * from (values ('director', '00000000-0000-4000-8000-000000000403'), ('gerente', '00000000-0000-4000-8000-000000000404')) as v (label, id) loop
+    perform set_config('request.jwt.claims', json_build_object('sub', who.id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+    t0 := clock_timestamp();
+    select count(*) into n from core.audit_history(50);
+    insert into timings values ('historial ' || who.label, extract(epoch from clock_timestamp() - t0) * 1000, n);
+    t0 := clock_timestamp();
+    select count(*) into n from workflow.inbox(true, 50);
+    insert into timings values ('pendientes ' || who.label, extract(epoch from clock_timestamp() - t0) * 1000, n);
+    t0 := clock_timestamp();
+    select count(*) into n from workflow.inbox(false, 50);
+    insert into timings values ('resueltas ' || who.label, extract(epoch from clock_timestamp() - t0) * 1000, n);
+  end loop;
+  perform set_config('request.jwt.claims', '', true);
+end
+$$;
+
 select is((select rows from timings where what = 'primera página'), 25, 'A10. la primera página trae 25 personas');
 select ok((select bool_and(ms < 300) from timings),
-  'A10. página, búsqueda e indicadores responden en menos de 300 ms con más de 500 personas: '
+  'A10. tablero, bandeja e historial responden en menos de 300 ms con 500 personas, 5.000 solicitudes y 100.000 eventos: '
   || (select string_agg(what || ' ' || round(ms) || ' ms', ', ') from timings));
 
 select * from finish();

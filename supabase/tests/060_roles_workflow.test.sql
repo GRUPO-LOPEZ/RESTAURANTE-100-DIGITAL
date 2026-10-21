@@ -146,8 +146,9 @@ select is(pg_temp.r(pg_temp.u(404), format('core.request_role_permission_change(
 -- M7: aprobaciones
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from workflow.approval_requests'), '0', 'el cocinero no ve solicitudes ajenas');
-select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from workflow.approval_requests'), '4', 'Dirección General ve todas las solicitudes del grupo');
-select is(pg_temp.q(pg_temp.u(403), 'select count(*)::text from workflow.approval_requests'), '1', 'el director ve las solicitudes de su marca');
+-- Solo las solicitudes de esta prueba (created_at = hora de esta transacción): la base local puede traer otras.
+select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from workflow.approval_requests where created_at = now()'), '4', 'Dirección General ve todas las solicitudes del grupo');
+select is(pg_temp.q(pg_temp.u(403), 'select count(*)::text from workflow.approval_requests where created_at = now()'), '1', 'el director ve las solicitudes de su marca');
 
 -- A2: no se aprueba la propia solicitud
 select is(pg_temp.r(pg_temp.u(403), format('workflow.decide(%L, ''approved'', ''La apruebo yo'')', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),

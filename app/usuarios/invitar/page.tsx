@@ -7,7 +7,7 @@ import { AppShell, Loading } from "@/components/app-shell";
 import { Card, CardDescription } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { getPlaces, getRoles } from "@/lib/data";
-import { requireOperable } from "@/lib/auth/session";
+import { requireMenu } from "@/lib/auth/session";
 
 export default function InvitarPage() {
   return (
@@ -23,11 +23,14 @@ export default function InvitarPage() {
 }
 
 async function InviteForm() {
-  await requireOperable();
+  await requireMenu("invite");
   const [roles, places] = await Promise.all([getRoles(), getPlaces()]);
   return (
     <>
-      <Link href="/usuarios" className="text-base text-primary underline-offset-4 hover:underline">
+      <Link
+        href="/usuarios"
+        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+      >
         Volver a usuarios
       </Link>
       <Card className="flex flex-col gap-4">

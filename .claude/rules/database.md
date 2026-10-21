@@ -11,7 +11,7 @@ Toda la información vive en PostgreSQL, separada en esquemas por tema. Cada tem
 | ------------ | ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `core`       | Identidad, roles y permisos   | user_profiles, roles, permissions, role_permissions, user_memberships, user_role_assignments, service_accounts |
 | `org`        | Estructura del grupo          | groups, brands, restaurants, areas                                                                             |
-| `audit`      | Historia inalterable          | audit_events, authentication_security_events                                                                   |
+| `audit`      | Historia inalterable          | audit_events, security_events (ingresos, bloqueos y rechazos; ADR-0014), sellos                                |
 | `workflow`   | Aprobaciones                  | approval_workflows, approval_requests, approval_decisions                                                      |
 | `catalog`    | Materias primas y proveedores | ingredients, suppliers, units, unit_conversions, supplier_prices                                               |
 | `recipes`    | Recetario y fichas técnicas   | recipes, recipe_versions, recipe_lines, recipe_steps, recipe_photos                                            |

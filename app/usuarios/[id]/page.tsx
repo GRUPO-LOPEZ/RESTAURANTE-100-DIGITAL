@@ -21,7 +21,10 @@ import { requireOperable } from "@/lib/auth/session";
 // no corresponden las rechaza la base (y quedan registradas); la pantalla no decide nada.
 export default function UsuarioPage({ params }: PageProps<"/usuarios/[id]">) {
   return (
-    <AppShell title="Persona">
+    <AppShell
+      title="Ficha de la persona"
+      description="Sus roles y lo que se puede hacer con su cuenta."
+    >
       <Suspense fallback={<Loading />}>
         <Person params={params} />
       </Suspense>
@@ -29,9 +32,9 @@ export default function UsuarioPage({ params }: PageProps<"/usuarios/[id]">) {
   );
 }
 
-function Reason({ id }: { id: string }) {
+function Reason({ id, label }: { id: string; label: string }) {
   return (
-    <Field id={id} label="Motivo" hint="Queda en el historial.">
+    <Field id={id} label={label} hint="Queda en el historial.">
       <Textarea name="reason" required maxLength={500} />
     </Field>
   );
@@ -47,7 +50,10 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
 
   return (
     <>
-      <Link href="/usuarios" className="text-base text-primary underline-offset-4 hover:underline">
+      <Link
+        href="/usuarios"
+        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+      >
         Volver a usuarios
       </Link>
       <Card className="flex flex-col gap-2">
@@ -88,7 +94,10 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
                 pendingLabel="Quitando…"
               >
                 <input type="hidden" name="assignmentId" value={r.assignment_id} />
-                <Reason id={`motivo-quitar-${r.assignment_id}`} />
+                <Reason
+                  id={`motivo-quitar-${r.assignment_id}`}
+                  label={`Motivo para quitar ${r.role_name}`}
+                />
               </ActionForm>
             </li>
           ))}
@@ -130,7 +139,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
                 ))}
               </Select>
             </Field>
-            <Reason id="motivo-dar" />
+            <Reason id="motivo-dar" label="Motivo para dar el rol" />
           </ActionForm>
         </Card>
       ) : null}
@@ -149,7 +158,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
               <p className="text-base text-ink">
                 Está bloqueada unos minutos por intentos fallidos. Podés liberarla antes.
               </p>
-              <Reason id="motivo-liberar" />
+              <Reason id="motivo-liberar" label="Motivo para liberar el bloqueo" />
             </ActionForm>
           ) : null}
           {user.status === "active" ? (
@@ -164,7 +173,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
                 Desactivar cierra todas sus sesiones al instante. Toda su historia se conserva. Para
                 reactivarla hace falta la aprobación de otra persona.
               </p>
-              <Reason id="motivo-desactivar" />
+              <Reason id="motivo-desactivar" label="Motivo para desactivar" />
             </ActionForm>
           ) : (
             <ActionForm
@@ -177,7 +186,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
               <p className="text-base text-ink">
                 La reactivación la aprueba otra persona, distinta de quien la desactivó.
               </p>
-              <Reason id="motivo-reactivar" />
+              <Reason id="motivo-reactivar" label="Motivo para reactivar" />
             </ActionForm>
           )}
         </Card>

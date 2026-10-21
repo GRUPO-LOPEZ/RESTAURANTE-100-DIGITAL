@@ -1,48 +1,86 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-20 (fin de la jornada), Fase 1 en construcción: M1 a M7 terminados, M8 y las pantallas en curso._
+_Última actualización: 2026-10-21. Fase 1 construida en local: M1 a M9, pantallas y las 23 pruebas. Falta subirla a GitHub y que Soy la valide._
 
-## Dónde quedamos (para retomar)
+## Resumen para Soy: la Fase 1 está construida
 
-| Paso                                                             | Estado                                                   | Rama / commit                                       |
-| ---------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
-| M5: permisos, lectura por la API con RLS                         | ✅ Terminado y revisado (db-reviewer y security-auditor) | `feat/fase-1-permisos` · `2d49eaa`                  |
-| M6 y M7: roles sin escalada, aprobaciones, registro de seguridad | ✅ Terminado y revisado (dos rondas de cada revisor)     | `feat/fase-1-roles-aprobaciones` · `607ebd4`        |
-| M8 y M9: cuentas, ingreso con hook, bloqueo, invitación, tablero | 🟡 Construido y probado en base; **falta revisión**      | `feat/fase-1-cuentas-pantallas` (commit "en curso") |
-| Pantallas (ingreso, MFA, usuarios, aprobaciones, historial)      | 🟡 Compilan; Playwright 26 de 28                         | misma rama                                          |
+**Qué se hizo:** el sistema ya tiene la base de todo lo que viene. Sabe **quién es cada persona, qué puede hacer y dónde**, y **registra cada cambio para siempre**.
 
-**Pruebas al cerrar:** pgTAP 508 de 508 ✅ · tipos, lint y compilación ✅ · Playwright 26 de 28. Las 2 que fallan son la misma prueba (desactivar y reactivar, una vez en celular y otra en computadora). Pasa el límite de 30 s porque espera el próximo código de doble verificación: hay que darle más tiempo.
+- **Ingreso:**
+  - Se entra solo por invitación, con correo y contraseña.
+  - Los roles de los niveles 1 a 4 y Controller además usan una **app de doble verificación** en el celular.
+  - **Cinco intentos fallidos bloquean la cuenta 10 minutos.** Un administrador la puede liberar antes.
+- **Permisos por lugar:**
+  - Cada persona ve y hace solo lo de su grupo, su marca o su local.
+  - El cocinero no ve costos.
+  - Nadie se puede dar permisos a sí mismo.
+  - Los roles que aprueban cosas los tiene que aprobar otra persona.
+  - El Superadministrador puede **pedir** cualquier rol, pero lo aprueba Dirección General.
+- **Aprobaciones:** hay una bandeja para aprobar o rechazar cambios. Nadie aprueba lo que pidió, y quien bloquea una cuenta no puede reactivarla.
+- **Cuentas:** desactivar una cuenta la saca al instante y cierra todas sus sesiones. Para reactivarla hace falta la aprobación de otra persona.
+- **Historial:** se ve quién cambió qué, cuándo y por qué. Es inalterable y está sellado cada hora.
+- **Pantallas:**
+  - ingreso;
+  - doble verificación;
+  - inicio;
+  - **tablero de usuarios** ("¿Quién tiene acceso y dónde?");
+  - ficha de cada persona;
+  - invitar;
+  - aprobaciones;
+  - historial.
 
-**Para mañana, en orden:**
+  Todas están en español, pensadas primero para el celular y con los colores pastel.
 
-1. Arreglar el tiempo de esa prueba y correr todo `npm run test`.
-2. Revisiones de M8 y de las pantallas: `db-reviewer`, `security-auditor` y `ui-reviewer`. Mirar las pantallas en celular y computadora.
-3. CI: prender `edge-runtime` y `mailpit` en `supabase start` y pasar las variables públicas de `.env.example` al build.
-4. ADRs nuevos:
-   - el superadmin pide y Dirección General aprueba;
-   - separación de funciones;
-   - Edge Functions y registro de seguridad.
+**Cómo está probado (en la computadora de desarrollo, 2026-10-21):**
 
-   Actualizar también:
-   - `database.md`: `security_events` en lugar de `authentication_security_events`;
-   - el diccionario de datos;
-   - el plan de la Fase 1;
-   - el mapa de las 23 pruebas;
-   - el resumen para Soy.
+| Prueba                                                                   | Resultado                                                   |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Base de datos (pgTAP)                                                    | ✅ 520 de 520                                               |
+| Lógica y configuración (Vitest)                                          | ✅ 73 de 73                                                 |
+| Pantallas en celular y computadora, con accesibilidad (Playwright + axe) | ✅ 28 de 28                                                 |
+| Lint, formato, tipos y compilación                                       | ✅                                                          |
+| Las **13 pruebas obligatorias y las 10 adicionales** del Módulo Maestro  | ✅ todas, en local (mapa en `docs/modulos/00-identidad.md`) |
 
-5. Preguntas para Joaco:
-   - ¿Un superadmin le puede quitar el rol a otro superadmin sin aprobación? Hoy sí.
-   - ¿Un local cerrado o borrado deja de dar permisos a quienes tenían rol ahí? Hoy no.
-   - Hoy nadie puede desactivar a una persona de Dirección General, salvo con una migración. ¿Está bien?
-   - Un cambio de matriz sobre el rol Dirección General solo se puede hacer con una migración. ¿Está bien?
-   - Controller también aprueba roles sensibles, según ADR-0008. ¿Se mantiene?
-6. Confirmación de Joaco para subir las ramas y ver GitHub Actions en verde.
+**Revisiones:** cada paso pasó por los revisores de base de datos, seguridad y diseño, varias veces. Los graves que encontraron se corrigieron.
+
+- **Seguridad:** en la primera ronda de M6 y M7 encontró dos huecos graves en cómo el Superadministrador daba y quitaba roles. Están cerrados.
+- **Base:** encontró consultas que con mucho volumen tardaban segundos. Ahora tardan milisegundos.
+- **Diseño:** pidió una pantalla de error, una página de "no encontrada" en español y un historial en lenguaje simple. Las tres están hechas.
+
+**Qué falta para cerrar la Fase 1:**
+
+1. Subir las ramas a GitHub y ver las pruebas en verde allá (es requisito). Necesita la confirmación de Joaco.
+2. Que usted recorra la **checklist de validación** (sección 14 del prompt maestro) con los usuarios de prueba.
+3. Las decisiones que están abajo.
+
+## Preguntas para Joaco (no frenan el cierre en local, pero sí la salida a producción)
+
+1. ¿Un superadmin le puede quitar el rol a otro superadmin sin aprobación, siempre que quede uno? Hoy sí.
+2. ¿Un local cerrado o borrado deja de dar permisos a quienes tenían rol ahí? Hoy no.
+3. Nadie puede desactivar a una persona de Dirección General, ni cambiar los permisos de ese rol, salvo con una migración documentada. ¿Está bien?
+4. Controller puede aprobar que se le dé a alguien un rol que aprueba cosas (ADR-0008). ¿Se mantiene?
+5. ¿Quién aprueba una reactivación? Hoy, otra persona con permiso sobre esa cuenta. ¿Tiene que ser alguien de igual o mayor alcance que quien la desactivó?
+6. Ante el bloqueo a propósito de una cuenta (alguien falla 5 veces cada 10 minutos), ¿dejamos entrar igual a quien pone la contraseña y el código de doble verificación correctos?
+7. El tablero de usuarios muestra el **estado actual**, sin comparar con un período anterior. ¿Lo aceptamos como excepción a la regla de tableros?
+
+Riesgos técnicos antes de producción: ADR-0014, sección "Riesgos que quedan".
+
+## Dónde está cada cosa
+
+| Paso                                                | Rama / commit                                |
+| --------------------------------------------------- | -------------------------------------------- |
+| M5: permisos y lectura por la API                   | `feat/fase-1-permisos` · `2d49eaa`           |
+| M6 y M7: roles, aprobaciones, registro de seguridad | `feat/fase-1-roles-aprobaciones` · `607ebd4` |
+| M8 y M9, pantallas, Edge Functions, CI              | `feat/fase-1-cuentas-pantallas`              |
+
+Las ramas están apiladas una sobre la otra y **todavía no están en GitHub**.
 
 **Notas técnicas:**
 
-- `.env.example` ahora tiene la clave pública (publishable) de Supabase local. La clave de servidor no está ahí ni en ningún otro archivo.
-- Supabase local ahora prende las Edge Functions (`auth-login` e `invite-user`), el hook de ingreso y la doble verificación TOTP.
-- Playwright recrea la base antes de correr (`tests/e2e/global-setup.ts`).
+- `.env.example` tiene la clave pública (publishable) de Supabase local. La CI verifica que coincida con la suya.
+- Supabase local prende las Edge Functions (`auth-login` e `invite-user`), el hook de ingreso y la doble verificación TOTP.
+- Playwright recrea la base antes de correr.
+- Usuarios de prueba: `<rol>@ejemplo.test` con la contraseña `Demo-Local-2026!`. Los roles con doble verificación usan el secreto TOTP ficticio `JBSWY3DPEHPK3PXP`.
 
 ## Resumen para Soy: personas, roles y permisos (M4)
 

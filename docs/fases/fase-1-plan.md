@@ -1,7 +1,7 @@
 # Plan de la Fase 1 — Fundaciones: identidad, permisos y auditoría
 
 - **Fecha:** 2026-10-20 (revisado el mismo día con `db-reviewer` y `security-auditor`)
-- **Estado:** borrador para revisar con Joaco y Soy. **No se empieza a construir** hasta responder las preguntas abiertas marcadas como **bloqueantes**.
+- **Estado:** en construcción (2026-10-21). Preguntas bloqueantes resueltas; M1 a M7 construidos y revisados, M8 y M9 construidos y en revisión. Lo construido manda sobre este plan cuando difieren: ver ADR-0012, ADR-0013 y ADR-0014.
 - **Fuentes:** prompt maestro (secciones 5, 6, 9 y 14). El Módulo Maestro de Usuarios de Soy (`docs/modulos/00-identidad.md`) **todavía no está en el repositorio**: donde este plan depende de él, se marca como pregunta abierta en lugar de suponer.
 
 ## Objetivo, en simple
@@ -64,7 +64,7 @@ Archivo: `supabase/migrations/20261020173811_audit_events.sql`. Pruebas: `supaba
   - recorta el motivo a 500 caracteres y descarta orígenes inválidos;
   - **rechaza los cambios con la clave de servidor que no declaran origen**.
 - **Pendiente:**
-  - `audit.authentication_security_events`: registro de seguridad de ingresos e intentos frenados (ADR-0009 y ADR-0010);
+  - ✅ `audit.security_events`: registro de seguridad de ingresos e intentos frenados, con sellos (M7, ADR-0014);
   - la tarea programada que sella cada hora;
   - la exportación externa con la última huella;
   - la lectura con `audit.view`, que tiene que **ocultar costos** a quien no tenga `costing.view_costs` (ADR-0006).
@@ -117,7 +117,7 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
   - La guarda del seed aborta si la base tiene SSL (Supabase alojado siempre lo usa) o si ya hay grupos o usuarios.
 - `config.toml`: en la CLI, `[auth.email] enable_signup = false` apagaba **todo** el ingreso con correo. Ahora el alta libre se cierra solo con `[auth] enable_signup = false`. Está probado que el alta libre devuelve `signup_disabled`.
 
-### M5 — Las funciones que deciden
+### M5 — Las funciones que deciden ✅ construida (`20261020222115_core_permissions.sql`, ADR-0012)
 
 - `core.has_permission(permission_code, restaurant_id) returns boolean`: `stable`, `security definer`, `search_path` fijo.
   - **`restaurant_id` es obligatorio. Si viene nulo, devuelve `false`.** Así una política no puede abrir por error una tabla entera.
@@ -138,7 +138,7 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
 
   Las FKs compuestas no se aflojan.
 
-### M6 — Asignación de roles sin escalada de privilegios
+### M6 — Asignación de roles sin escalada de privilegios ✅ construida junto con M7 (`20261020223502_roles_and_approvals.sql`, ADR-0013)
 
 - `core.assign_role(user_id, role_id, scope...)`: es **la única vía** para crear asignaciones. Ningún rol de la API tiene `insert` directo sobre `user_role_assignments`. La base valida que:
   1. quien asigna tenga `roles.assign` en ese alcance;
@@ -153,7 +153,7 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
 - Hay que tomar `for share`/`for update` sobre la membresía y el perfil, como ya hace el trigger de M4.
 - Una prueba pgTAP de "no puede" por cada regla.
 
-### M7 — Aprobaciones (`workflow`) y prueba de catálogo
+### M7 — Aprobaciones (`workflow`) y prueba de catálogo ✅ construida (misma migración que M6)
 
 - Tipo `workflow.request_status`: `pending`, `approved`, `rejected`, `cancelled`.
 - `workflow.approval_workflows`: qué tipo de cambio aprueba, qué permiso hace falta, cuántas aprobaciones pide y `requires_different_approver`.
@@ -168,7 +168,7 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
 - Tipo `core.version_status` (borrador, en revisión, aprobada, publicada, archivada), para los módulos siguientes. La regla "versión publicada inmutable" se prueba con una tabla de prueba.
 - **Prueba de catálogo:** ninguna tabla de ningún esquema sin RLS o sin políticas, ninguna función con `execute` para `public` y ninguna política que use `has_permission_anywhere`.
 
-### M8 — Cuentas: invitación, MFA y bloqueo
+### M8 — Cuentas: invitación, MFA y bloqueo ✅ construida (`20261020225120_accounts_and_login.sql`, Edge Functions, ADR-0014), en revisión
 
 - **Invitación** (el flujo va del servidor a la base, no al revés):
   1. Una Edge Function de servidor (con `edge_runtime` prendido) valida con RPC que quien invita tenga `users.invite` en ese alcance. También valida el nombre (hasta 80 caracteres): uno más largo hace fallar el alta entera en Auth. Los nombres pueden traer HTML, así que la interfaz nunca los muestra como HTML crudo.
@@ -195,7 +195,7 @@ Archivo: `supabase/migrations/20261020181421_org_structure.sql`. Pruebas: `supab
 - La cuenta técnica del seed no tiene contraseña, pero podría entrar por enlace mágico. Para la Fase 5: correos que no reciban mensajes, o bloquear ese ingreso.
 - CI: un paso que falle si algún workflow usa `--include-seed` contra un remoto. Después de cada despliegue, verificar que no haya `%@ejemplo.test` en `auth.users`.
 
-### M9 — Seed ficticio (`supabase/seed.sql`)
+### M9 — Seed ficticio (`supabase/seed.sql`) ✅ (una persona por rol, segunda Dirección General, factores TOTP ficticios y cuentas para Playwright)
 
 - "Grupo Demo", con 3 marcas y 4 restaurantes ficticios y sus áreas básicas.
 - Un usuario de prueba por rol (P1), con correos `@ejemplo.test`, contraseñas de prueba solo locales y una cuenta técnica de prueba.

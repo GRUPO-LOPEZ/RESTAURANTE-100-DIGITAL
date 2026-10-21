@@ -64,3 +64,14 @@ export const getMenus = cache(async () => {
   ]);
   return { users, invite, approvals, audit };
 });
+
+// Pantallas con menú propio: si la persona no tiene ese menú, vuelve al inicio. Solo interfaz:
+// los datos ya los filtra la base. Usa los mismos menús, sin repetir la lógica de permisos.
+export async function requireMenu(
+  menu: "users" | "invite" | "approvals" | "audit",
+): Promise<MySession> {
+  const session = await requireOperable();
+  const menus = await getMenus();
+  if (!menus[menu]) redirect("/");
+  return session;
+}

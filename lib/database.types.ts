@@ -344,6 +344,34 @@ export type Database = {
         };
         Relationships: [];
       };
+      login_throttles: {
+        Row: {
+          email: string;
+          failed_count: number;
+          last_failed_at: string | null;
+          locked_until: string | null;
+          updated_at: string;
+          window_started_at: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          email: string;
+          failed_count?: number;
+          last_failed_at?: string | null;
+          locked_until?: string | null;
+          updated_at?: string;
+          window_started_at?: string | null;
+        };
+        Update: {
+          email?: string;
+          failed_count?: number;
+          last_failed_at?: string | null;
+          locked_until?: string | null;
+          updated_at?: string;
+          window_started_at?: string | null;
+        };
+        Relationships: [];
+      };
       permissions: {
         Row: {
           code: string;
@@ -711,10 +739,8 @@ export type Database = {
           disabled_by: string | null;
           disabled_reason: string | null;
           email: string;
-          failed_login_count: number;
           first_name: string | null;
           id: string;
-          last_failed_login_at: string | null;
           last_name: string | null;
           locked_until: string | null;
           status: Database["core"]["Enums"]["account_status"];
@@ -731,10 +757,8 @@ export type Database = {
           disabled_by?: string | null;
           disabled_reason?: string | null;
           email: string;
-          failed_login_count?: number;
           first_name?: string | null;
           id: string;
-          last_failed_login_at?: string | null;
           last_name?: string | null;
           locked_until?: string | null;
           status?: Database["core"]["Enums"]["account_status"];
@@ -750,10 +774,8 @@ export type Database = {
           disabled_by?: string | null;
           disabled_reason?: string | null;
           email?: string;
-          failed_login_count?: number;
           first_name?: string | null;
           id?: string;
-          last_failed_login_at?: string | null;
           last_name?: string | null;
           locked_until?: string | null;
           status?: Database["core"]["Enums"]["account_status"];
@@ -1119,6 +1141,7 @@ export type Database = {
         Args: {
           p_after_id?: string;
           p_after_key?: string;
+          p_brand_id?: string;
           p_limit?: number;
           p_restaurant_id?: string;
           p_search?: string;
@@ -1136,7 +1159,7 @@ export type Database = {
           status: Database["core"]["Enums"]["account_status"];
         }[];
       };
-      users_overview: { Args: Record<PropertyKey, never>; Returns: Json };
+      users_overview: { Args: { p_brand_id?: string; p_restaurant_id?: string }; Returns: Json };
       visible_assignment_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
       visible_brand_ids: { Args: { p_permission: string }; Returns: string[] };
       visible_user_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
@@ -1723,7 +1746,12 @@ export type Database = {
       };
       decision_blocker: { Args: { p_request_id: string }; Returns: string };
       inbox: {
-        Args: { p_limit?: number };
+        Args: {
+          p_before_created_at?: string;
+          p_before_id?: string;
+          p_limit?: number;
+          p_pending?: boolean;
+        };
         Returns: {
           can_decide: boolean;
           id: string;

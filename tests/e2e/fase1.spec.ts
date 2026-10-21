@@ -92,7 +92,11 @@ test.describe("8 y A5. una cuenta desactivada pierde el acceso; reactivada vuelv
   test("desactivar, pedir la reactivación, que la apruebe otra persona y volver a entrar", async ({
     page,
   }, testInfo) => {
+    // Dos ingresos con doble verificación: cada uno puede esperar el próximo código (hasta 30 s).
+    test.setTimeout(120_000);
     const email = `e2e-baja-${testInfo.project.name}@ejemplo.test`;
+    const who =
+      testInfo.project.name === "celular" ? "Prueba Baja Celular" : "Prueba Baja Computadora";
 
     // La persona entra normalmente.
     await login(page, email);
@@ -120,7 +124,7 @@ test.describe("8 y A5. una cuenta desactivada pierde el acceso; reactivada vuelv
     await page.goto("/aprobaciones");
     const request = page
       .getByRole("listitem")
-      .filter({ hasText: "Reactivar la cuenta de Prueba Baja" })
+      .filter({ hasText: `Reactivar la cuenta de ${who}` })
       .first();
     await expect(request.getByText("La tiene que decidir otra persona con permiso.")).toBeVisible();
     await expect(request.getByRole("button", { name: "Aprobar" })).toHaveCount(0);
@@ -135,12 +139,18 @@ test.describe("8 y A5. una cuenta desactivada pierde el acceso; reactivada vuelv
     await page.goto("/aprobaciones");
     const pending = page
       .getByRole("listitem")
-      .filter({ hasText: "Reactivar la cuenta de Prueba Baja" })
+      .filter({ hasText: `Reactivar la cuenta de ${who}` })
       .filter({ hasText: "Pendiente" })
       .first();
     await pending.getByLabel("Comentario").fill("Confirmado con el local");
     await pending.getByRole("button", { name: "Aprobar" }).click();
-    await expect(page.getByText(/Solicitud aprobada y aplicada/)).toBeVisible();
+    // Al aplicarse, la tarjeta pasa a "Aprobada" con quién la resolvió (el formulario ya no hace falta).
+    const done = page
+      .getByRole("listitem")
+      .filter({ hasText: `Reactivar la cuenta de ${who}` })
+      .first();
+    await expect(done.getByText("Aprobada", { exact: true })).toBeVisible();
+    await expect(done.getByText(/Resolvió .*Confirmado con el local/)).toBeVisible();
     await logout(page);
 
     // Vuelve a entrar.
@@ -150,12 +160,14 @@ test.describe("8 y A5. una cuenta desactivada pierde el acceso; reactivada vuelv
 
 test.describe("tablero de usuarios", () => {
   test("responde la pregunta, muestra la fecha de los datos y pasa axe", async ({ page }) => {
+    // Ingreso con doble verificación: puede esperar el próximo código (hasta 30 s).
+    test.setTimeout(90_000);
     await login(page, "director@ejemplo.test", { mfa: true });
     await page.goto("/usuarios");
     await expect(
       page.getByRole("heading", { level: 1, name: "¿Quién tiene acceso y dónde?" }),
     ).toBeVisible();
-    await expect(page.getByText(/^Datos al /)).toBeVisible();
+    await expect(page.getByText(/Estado actual · Datos al /)).toBeVisible();
     await expect(page.getByText("Cuentas activas")).toBeVisible();
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])

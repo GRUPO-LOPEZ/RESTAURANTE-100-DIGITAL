@@ -56,12 +56,10 @@ export async function revokeRoleAction(
   if (!assignmentId.success) return { status: "bad", message: "Elegí el rol que querés quitar." };
   if (missing) return missing;
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("core")
-    .rpc("revoke_role", {
-      p_assignment_id: assignmentId.data,
-      p_reason: String(formData.get("reason")).trim(),
-    });
+  const { data, error } = await supabase.schema("core").rpc("revoke_role", {
+    p_assignment_id: assignmentId.data,
+    p_reason: String(formData.get("reason")).trim(),
+  });
   revalidatePath("/usuarios", "layout");
   return toActionState(data, error);
 }

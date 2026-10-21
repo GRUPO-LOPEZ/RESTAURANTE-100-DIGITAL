@@ -4,6 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 
 // Lecturas para las pantallas. Todo pasa por la base con la sesión de la persona: lo que
 // devuelve ya está filtrado por sus permisos (RLS y funciones de M5 a M8).
+// Si una lectura falla, se corta con un error (lo muestra app/error.tsx): nunca se muestra
+// "no hay datos" cuando en realidad no se pudo consultar.
+
+function failed(what: string): never {
+  throw new Error(`No pudimos cargar ${what}.`);
+}
 
 const roleChip = z.object({
   assignment_id: z.string(),
@@ -28,6 +34,7 @@ export type UserRow = z.infer<typeof userRow>;
 
 export type UsersFilter = {
   search?: string;
+  brandId?: string;
   restaurantId?: string;
   status?: string;
   afterKey?: string;
@@ -38,14 +45,16 @@ export async function getUsers(filter: UsersFilter, limit = 25): Promise<UserRow
   const supabase = await createClient();
   const { data, error } = await supabase.schema("core").rpc("users_dashboard", {
     p_search: filter.search || undefined,
+    p_brand_id: filter.brandId || undefined,
     p_restaurant_id: filter.restaurantId || undefined,
     p_status: filter.status || undefined,
     p_after_key: filter.afterKey || undefined,
     p_after_id: filter.afterId || undefined,
     p_limit: limit,
   });
-  if (error) return [];
-  return z.array(userRow).catch([]).parse(data);
+  if (error) failed("las personas");
+  const parsed = z.array(userRow).safeParse(data);
+  return parsed.success ? parsed.data : failed("las personas");
 }
 
 export async function getUser(userId: string): Promise<UserRow | null> {
@@ -53,8 +62,9 @@ export async function getUser(userId: string): Promise<UserRow | null> {
   const { data, error } = await supabase
     .schema("core")
     .rpc("users_dashboard", { p_user_id: userId, p_limit: 1 });
-  if (error) return null;
-  return z.array(userRow).catch([]).parse(data)[0] ?? null;
+  if (error) failed("la persona");
+  const parsed = z.array(userRow).safeParse(data);
+  return parsed.success ? (parsed.data[0] ?? null) : failed("la persona");
 }
 
 const overview = z.object({
@@ -68,12 +78,17 @@ const overview = z.object({
 });
 export type UsersOverview = z.infer<typeof overview>;
 
-export async function getUsersOverview(): Promise<UsersOverview | null> {
+export async function getUsersOverview(
+  filter: Pick<UsersFilter, "brandId" | "restaurantId">,
+): Promise<UsersOverview> {
   const supabase = await createClient();
-  const { data, error } = await supabase.schema("core").rpc("users_overview");
-  if (error || !data) return null;
+  const { data, error } = await supabase.schema("core").rpc("users_overview", {
+    p_brand_id: filter.brandId || undefined,
+    p_restaurant_id: filter.restaurantId || undefined,
+  });
+  if (error) failed("los indicadores");
   const parsed = overview.safeParse(data);
-  return parsed.success ? parsed.data : null;
+  return parsed.success ? parsed.data : failed("los indicadores");
 }
 
 const inboxRow = z.object({
@@ -93,11 +108,14 @@ const inboxRow = z.object({
 });
 export type InboxRow = z.infer<typeof inboxRow>;
 
-export async function getInbox(): Promise<InboxRow[]> {
+export async function getInbox(pending: boolean, limit = 50): Promise<InboxRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.schema("workflow").rpc("inbox", { p_limit: 100 });
-  if (error) return [];
-  return z.array(inboxRow).catch([]).parse(data);
+  const { data, error } = await supabase
+    .schema("workflow")
+    .rpc("inbox", { p_pending: pending, p_limit: limit });
+  if (error) failed("las solicitudes");
+  const parsed = z.array(inboxRow).safeParse(data);
+  return parsed.success ? parsed.data : failed("las solicitudes");
 }
 
 const historyRow = z.object({
@@ -122,19 +140,21 @@ export async function getHistory(before?: number): Promise<HistoryRow[]> {
   const { data, error } = await supabase
     .schema("core")
     .rpc("audit_history", { p_limit: 50, p_before: before });
-  if (error) return [];
-  return z.array(historyRow).catch([]).parse(data);
+  if (error) failed("el historial");
+  const parsed = z.array(historyRow).safeParse(data);
+  return parsed.success ? parsed.data : failed("el historial");
 }
 
-// Catálogo de roles y lugares visibles (para formularios).
+// Catálogo de roles y lugares visibles (para formularios y filtros).
 export async function getRoles(): Promise<{ code: string; name: string; level: number | null }[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .schema("core")
     .from("roles")
     .select("code, name, level")
     .is("deleted_at", null)
     .order("level");
+  if (error) failed("los roles");
   return data ?? [];
 }
 
@@ -158,6 +178,7 @@ export async function getPlaces(): Promise<Place[]> {
       .is("deleted_at", null)
       .order("name"),
   ]);
+  if (groups.error || brands.error || restaurants.error) failed("los lugares");
   const places: Place[] = [];
   for (const g of groups.data ?? [])
     places.push({ value: `group:${g.id}::`, label: `Todo el grupo · ${g.name}` });
@@ -172,15 +193,22 @@ export async function getPlaces(): Promise<Place[]> {
   return places;
 }
 
-export async function getRestaurants(): Promise<{ id: string; name: string }[]> {
+export async function getBrandsAndRestaurants(): Promise<{
+  brands: { id: string; name: string }[];
+  restaurants: { id: string; name: string; brand_id: string }[];
+}> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .schema("org")
-    .from("restaurants")
-    .select("id, name")
-    .is("deleted_at", null)
-    .order("name");
-  return data ?? [];
+  const [brands, restaurants] = await Promise.all([
+    supabase.schema("org").from("brands").select("id, name").is("deleted_at", null).order("name"),
+    supabase
+      .schema("org")
+      .from("restaurants")
+      .select("id, name, brand_id")
+      .is("deleted_at", null)
+      .order("name"),
+  ]);
+  if (brands.error || restaurants.error) failed("las marcas y los locales");
+  return { brands: brands.data ?? [], restaurants: restaurants.data ?? [] };
 }
 
 const placeSchema = z
@@ -223,6 +251,67 @@ export const TABLE_LABELS: Record<string, string> = {
   "workflow.approval_decisions": "Decisión de aprobación",
   "workflow.approval_workflows": "Tipo de aprobación",
 };
+
+// Campos que se muestran en el historial, con su nombre en español. Los que no están acá
+// (ids, datos técnicos) no se muestran: el historial completo queda en la base.
+export const FIELD_LABELS: Record<string, string> = {
+  name: "Nombre",
+  status: "Estado",
+  first_name: "Nombre",
+  last_name: "Apellido",
+  email: "Correo",
+  code: "Código",
+  address: "Dirección",
+  locality: "Barrio o localidad",
+  legal_name: "Razón social",
+  tax_id: "CUIT",
+  phone: "Teléfono",
+  opened_on: "Fecha de apertura",
+  time_zone: "Zona horaria",
+  scope_type: "Alcance",
+  valid_from: "Desde",
+  valid_until: "Hasta",
+  disabled_at: "Desactivada el",
+  disabled_reason: "Motivo de la baja",
+  locked_until: "Bloqueada hasta",
+  decision: "Decisión",
+  comment: "Comentario",
+  reason: "Motivo",
+  resolved_at: "Resuelta el",
+  resolution_comment: "Comentario de la resolución",
+  deleted_at: "Borrado el",
+  description: "Descripción",
+};
+
+const VALUE_LABELS: Record<string, string> = {
+  active: "Activa",
+  inactive: "Cerrada",
+  disabled: "Desactivada",
+  pending: "Pendiente",
+  approved: "Aprobada",
+  rejected: "Rechazada",
+  cancelled: "Retirada",
+  group: "Todo el grupo",
+  brand: "Marca",
+  restaurant: "Local",
+  draft: "Borrador",
+  in_review: "En revisión",
+  published: "Publicada",
+  archived: "Archivada",
+};
+
+// Un valor del historial en lenguaje simple: fechas formateadas, estados traducidos, sin JSON.
+export function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "boolean") return value ? "Sí" : "No";
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string") {
+    if (VALUE_LABELS[value]) return VALUE_LABELS[value];
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return formatDateTime(value);
+    return value;
+  }
+  return "(dato técnico)";
+}
 
 export const SCOPE_LABELS = { group: "Grupo", brand: "Marca", restaurant: "Local" } as const;
 
