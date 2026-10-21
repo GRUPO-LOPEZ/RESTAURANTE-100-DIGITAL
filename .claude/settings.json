@@ -32,7 +32,15 @@
       "Bash(git log:*)",
       "Bash(git show:*)",
       "Bash(git branch --show-current)",
-      "Bash(git branch --list:*)"
+      "Bash(git branch --list:*)",
+      "mcp__supabase-local__list_tables",
+      "mcp__supabase-local__list_extensions",
+      "mcp__supabase-local__list_migrations",
+      "mcp__supabase-local__search_docs",
+      "mcp__supabase-local__get_advisors",
+      "mcp__supabase-local__query_logs",
+      "mcp__supabase-local__generate_typescript_types",
+      "mcp__supabase-local__get_project_url"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -48,7 +56,8 @@
       "PowerShell(npx supabase migration repair:*)",
       "PowerShell(supabase migration repair:*)",
       "PowerShell(npm install:*)",
-      "PowerShell(npm i :*)"
+      "PowerShell(npm i :*)",
+      "mcp__supabase-local__execute_sql"
     ],
     "deny": [
       "Read(./.env)",
@@ -94,7 +103,9 @@
       "PowerShell(npx supabase functions deploy:*)",
       "PowerShell(git -C:*)",
       "PowerShell(git branch -D:*)",
-      "PowerShell(Remove-Item -Recurse:*)"
+      "PowerShell(Remove-Item -Recurse:*)",
+      "mcp__supabase-local__apply_migration",
+      "mcp__supabase-local__get_publishable_keys"
     ]
   },
   "hooks": {

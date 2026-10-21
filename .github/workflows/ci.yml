@@ -18,7 +18,7 @@ jobs:
   pruebas:
     name: Lint, tipos, Vitest, pgTAP y Playwright
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       CI: true
     steps:
@@ -59,8 +59,22 @@ jobs:
 
       # Supabase LOCAL dentro del runner, con la misma versión de CLI que package.json.
       # Nunca se conecta a staging ni a producción desde este job.
+      # Las Edge Functions (edge-runtime) hacen falta para el ingreso (auth-login, ADR-0010).
       - name: Levantar Supabase local
-        run: npx supabase start -x studio,imgproxy,realtime,storage-api,mailpit,postgres-meta,vector,logflare,edge-runtime,supavisor
+        run: npx supabase start -x studio,imgproxy,realtime,storage-api,mailpit,postgres-meta,vector,logflare,supavisor
+
+      # La app y Playwright usan los valores PÚBLICOS de desarrollo de .env.example (URL y clave
+      # publishable local). Se verifica, sin mostrarla, que la clave coincida con la de esta Supabase
+      # local. Ninguna clave de servidor sale de la CLI ni se guarda.
+      - name: Variables públicas de desarrollo
+        run: |
+          grep -E '^NEXT_PUBLIC_[A-Z_]+=' .env.example >> "$GITHUB_ENV"
+          expected=$(grep -E '^NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=' .env.example | cut -d= -f2-)
+          actual=$(npx supabase status -o env | grep -E '^PUBLISHABLE_KEY=' | cut -d= -f2- | tr -d '"')
+          if [ "$expected" != "$actual" ]; then
+            echo "::error::La clave publishable de .env.example no coincide con la de Supabase local. Actualizala con la de npx supabase status."
+            exit 1
+          fi
 
       - name: Aplicar migraciones desde cero
         run: npx supabase db reset
@@ -74,8 +88,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # pgTAP deja la base como estaba (todo en transacciones con rollback): no hace falta recrearla.
       - name: Pruebas de flujos y accesibilidad (Playwright + axe)
         run: npm run test:e2e
+        env:
+          E2E_SKIP_RESET: "1"
 
       - name: Guardar reporte de Playwright
         if: failure()
