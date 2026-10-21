@@ -240,6 +240,7 @@ export type Database = {
         Returns: string;
       };
       redact: { Args: { p_excluded?: string[]; p_value: Json }; Returns: Json };
+      seal_all: { Args: Record<PropertyKey, never>; Returns: Json };
       seal_events: {
         Args: { p_min_age?: string };
         Returns: {
@@ -308,7 +309,7 @@ export type Database = {
     };
     Enums: {
       action: "insert" | "update" | "soft_delete" | "restore" | "delete";
-      change_origin: "app" | "edge_function" | "agent" | "import" | "seed" | "maintenance";
+      change_origin: "app" | "edge_function" | "agent" | "import" | "seed" | "maintenance" | "auth";
       security_event_type:
         | "login_succeeded"
         | "login_failed"
@@ -707,6 +708,7 @@ export type Database = {
           deleted_at: string | null;
           deleted_by: string | null;
           disabled_at: string | null;
+          disabled_by: string | null;
           disabled_reason: string | null;
           email: string;
           failed_login_count: number;
@@ -726,6 +728,7 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           disabled_at?: string | null;
+          disabled_by?: string | null;
           disabled_reason?: string | null;
           email: string;
           failed_login_count?: number;
@@ -744,6 +747,7 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           disabled_at?: string | null;
+          disabled_by?: string | null;
           disabled_reason?: string | null;
           email?: string;
           failed_login_count?: number;
@@ -767,6 +771,13 @@ export type Database = {
           {
             foreignKeyName: "user_profiles_deleted_by_fkey";
             columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_profiles_disabled_by_fkey";
+            columns: ["disabled_by"];
             isOneToOne: false;
             referencedRelation: "actors";
             referencedColumns: ["id"];
@@ -893,8 +904,14 @@ export type Database = {
         }[];
       };
       actor_roles_snapshot: { Args: { p_actor_id: string }; Returns: Json };
+      add_member: {
+        Args: { p_group_id: string; p_reason: string; p_user_id: string };
+        Returns: Json;
+      };
+      apply_reactivation: { Args: { p_request_id: string }; Returns: undefined };
       apply_role_assignment: { Args: { p_request_id: string }; Returns: undefined };
       apply_role_permission_change: { Args: { p_request_id: string }; Returns: undefined };
+      apply_role_revocation: { Args: { p_request_id: string }; Returns: undefined };
       assign_role: {
         Args: {
           p_brand_id?: string;
@@ -908,6 +925,38 @@ export type Database = {
         };
         Returns: Json;
       };
+      audit_history: {
+        Args: { p_before?: number; p_limit?: number; p_record_id?: string };
+        Returns: {
+          action: string;
+          actor_name: string;
+          changed_fields: string[];
+          new_values: Json;
+          occurred_at: string;
+          old_values: Json;
+          origin: string;
+          place_name: string;
+          reason: string;
+          record_id: string;
+          schema_name: string;
+          sequence_number: number;
+          table_name: string;
+        }[];
+      };
+      can_invite: {
+        Args: {
+          p_brand_id?: string;
+          p_email?: string;
+          p_group_id: string;
+          p_restaurant_id?: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: Json;
+      };
+      can_see_costs: {
+        Args: { p_brand_id: string; p_group_id: string; p_restaurant_id: string };
+        Returns: boolean;
+      };
       can_view_scope: {
         Args: {
           p_brand_id?: string;
@@ -919,6 +968,15 @@ export type Database = {
         Returns: boolean;
       };
       can_view_user: { Args: { p_user_id: string }; Returns: boolean };
+      cannot_act_on_user: { Args: { p_permission: string; p_user_id: string }; Returns: string };
+      check_person_separation: {
+        Args: { p_group_id: string; p_role_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+      check_role_permission_change: {
+        Args: { p_grant: boolean; p_permission_code: string; p_role_id: string };
+        Returns: undefined;
+      };
       check_scope: {
         Args: {
           p_brand_id: string;
@@ -932,6 +990,7 @@ export type Database = {
       current_actor_id: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_subject: { Args: Record<PropertyKey, never>; Returns: string };
       current_session_ok: { Args: Record<PropertyKey, never>; Returns: boolean };
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json };
       deny: {
         Args: {
           p_brand_id?: string;
@@ -943,6 +1002,12 @@ export type Database = {
           p_target_user_id?: string;
         };
         Returns: Json;
+      };
+      disable_user: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
+      display_name: { Args: { p_user_id: string }; Returns: string };
+      group_governance_gap: {
+        Args: { p_group_id: string; p_without_assignment: string; p_without_user: string };
+        Returns: string;
       };
       has_permission: { Args: { p_permission: string; p_restaurant_id: string }; Returns: boolean };
       has_permission_anywhere: { Args: { p_permission: string }; Returns: boolean };
@@ -974,10 +1039,14 @@ export type Database = {
         };
         Returns: boolean;
       };
+      hide_costs: { Args: { p_value: Json }; Returns: Json };
       is_assignment_current: {
         Args: { p_valid_from: string; p_valid_until: string };
         Returns: boolean;
       };
+      is_sensitive_role: { Args: { p_role_id: string }; Returns: boolean };
+      lock_group_roles: { Args: { p_group_id: string }; Returns: undefined };
+      login_status: { Args: { p_email: string }; Returns: Json };
       missing_permissions_for_role: {
         Args: {
           p_brand_id: string;
@@ -988,7 +1057,15 @@ export type Database = {
         };
         Returns: string[];
       };
+      my_session: { Args: Record<PropertyKey, never>; Returns: Json };
+      permitted_brand_ids: { Args: { p_permission: string }; Returns: string[] };
+      permitted_group_ids: { Args: { p_permission: string }; Returns: string[] };
       permitted_restaurant_ids: { Args: { p_permission: string }; Returns: string[] };
+      record_failed_login: {
+        Args: { p_email: string; p_ip?: string; p_user_agent?: string };
+        Returns: Json;
+      };
+      request_reactivation: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
       request_role_permission_change: {
         Args: {
           p_grant: boolean;
@@ -1000,7 +1077,66 @@ export type Database = {
         Returns: Json;
       };
       revoke_role: { Args: { p_assignment_id: string; p_reason: string }; Returns: Json };
+      role_holders: { Args: { p_role_id: string }; Returns: Json };
+      role_permission_codes: { Args: { p_role_id: string }; Returns: string[] };
       set_change_context: { Args: { p_origin: string; p_reason: string }; Returns: undefined };
+      unlock_user: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
+      user_group: { Args: { p_user_id: string }; Returns: string };
+      user_has_permission_for_scope: {
+        Args: {
+          p_brand_id?: string;
+          p_group_id: string;
+          p_permission: string;
+          p_restaurant_id?: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+          p_user_id: string;
+        };
+        Returns: boolean;
+      };
+      user_has_role_for_scope: {
+        Args: {
+          p_brand_id?: string;
+          p_group_id: string;
+          p_restaurant_id?: string;
+          p_role_codes: string[];
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+          p_user_id: string;
+        };
+        Returns: boolean;
+      };
+      user_missing_permissions_for_role: {
+        Args: {
+          p_brand_id: string;
+          p_group_id: string;
+          p_restaurant_id: string;
+          p_role_id: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+          p_user_id: string;
+        };
+        Returns: string[];
+      };
+      users_dashboard: {
+        Args: {
+          p_after_id?: string;
+          p_after_key?: string;
+          p_limit?: number;
+          p_restaurant_id?: string;
+          p_search?: string;
+          p_status?: string;
+          p_user_id?: string;
+        };
+        Returns: {
+          email: string;
+          first_name: string;
+          id: string;
+          last_name: string;
+          locked: boolean;
+          roles: Json;
+          sort_key: string;
+          status: Database["core"]["Enums"]["account_status"];
+        }[];
+      };
+      users_overview: { Args: Record<PropertyKey, never>; Returns: Json };
       visible_assignment_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
       visible_brand_ids: { Args: { p_permission: string }; Returns: string[] };
       visible_user_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
@@ -1537,7 +1673,38 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      approved_request: {
+        Args: { p_request_id: string };
+        Returns: {
+          brand_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          payload: NonNullable<Json>;
+          reason: string;
+          requested_by: string;
+          resolution_comment: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          restaurant_id: string | null;
+          status: Database["workflow"]["Enums"]["request_status"];
+          subject_user_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          workflow_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "approval_requests";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       cancel_request: { Args: { p_reason: string; p_request_id: string }; Returns: Json };
+      cannot_apply: { Args: { p_why: string }; Returns: undefined };
       create_request: {
         Args: {
           p_brand_id: string;
@@ -1553,6 +1720,25 @@ export type Database = {
       decide: {
         Args: { p_comment?: string; p_decision: string; p_request_id: string };
         Returns: Json;
+      };
+      decision_blocker: { Args: { p_request_id: string }; Returns: string };
+      inbox: {
+        Args: { p_limit?: number };
+        Returns: {
+          can_decide: boolean;
+          id: string;
+          place_name: string;
+          reason: string;
+          requested_at: string;
+          requested_by_name: string;
+          resolution_comment: string;
+          resolved_at: string;
+          resolved_by_name: string;
+          status: Database["workflow"]["Enums"]["request_status"];
+          summary: string;
+          workflow_code: string;
+          workflow_name: string;
+        }[];
       };
     };
     Enums: {
@@ -1670,7 +1856,7 @@ export const Constants = {
   audit: {
     Enums: {
       action: ["insert", "update", "soft_delete", "restore", "delete"],
-      change_origin: ["app", "edge_function", "agent", "import", "seed", "maintenance"],
+      change_origin: ["app", "edge_function", "agent", "import", "seed", "maintenance", "auth"],
       security_event_type: [
         "login_succeeded",
         "login_failed",

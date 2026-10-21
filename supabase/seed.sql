@@ -79,7 +79,17 @@ insert into seed_people values
   ('00000000-0000-4000-8000-000000000411', 'gerente2@ejemplo.test',    'Nora',    'Dos Locales', 'restaurant_manager', 'restaurant',
     '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
   ('00000000-0000-4000-8000-000000000411', 'gerente2@ejemplo.test',    'Nora',    'Dos Locales', 'restaurant_manager', 'restaurant',
-    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000202');
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000202'),
+  -- Cuentas de prueba para Playwright (ids ...05NN): una por proyecto (celular y computadora)
+  -- para las pruebas que bloquean o desactivan cuentas, así no se pisan entre sí.
+  ('00000000-0000-4000-8000-000000000501', 'e2e-bloqueo-celular@ejemplo.test',     'Prueba', 'Bloqueo Celular',     'cook', 'restaurant',
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
+  ('00000000-0000-4000-8000-000000000502', 'e2e-bloqueo-computadora@ejemplo.test', 'Prueba', 'Bloqueo Computadora', 'cook', 'restaurant',
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
+  ('00000000-0000-4000-8000-000000000503', 'e2e-baja-celular@ejemplo.test',        'Prueba', 'Baja Celular',        'cook', 'restaurant',
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
+  ('00000000-0000-4000-8000-000000000504', 'e2e-baja-computadora@ejemplo.test',    'Prueba', 'Baja Computadora',    'cook', 'restaurant',
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201');
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -108,6 +118,14 @@ insert into core.user_role_assignments (user_id, role_id, scope_type, group_id, 
 select p.id, r.id, p.scope, '00000000-0000-4000-8000-000000000001', p.brand_id, p.restaurant_id
 from seed_people p
 join core.roles r on r.code = p.role_code;
+
+-- Doble verificación ya registrada para las personas con roles que la exigen (niveles 1 a 4 y
+-- Controller). Secreto TOTP FICTICIO, solo local y público a propósito: JBSWY3DPEHPK3PXP.
+-- Las pruebas de Playwright calculan el código con ese secreto.
+insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, secret, created_at, updated_at)
+select gen_random_uuid(), p.id, 'App de prueba', 'totp', 'verified', 'JBSWY3DPEHPK3PXP', now(), now()
+  from (select distinct p.id from seed_people p
+          join core.roles r on r.code = p.role_code and r.requires_mfa) as p;
 
 -- Cuenta técnica de prueba (sin roles ni permisos: los agentes llegan en la Fase 5).
 insert into auth.users (

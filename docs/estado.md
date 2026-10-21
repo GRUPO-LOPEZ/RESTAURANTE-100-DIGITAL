@@ -1,6 +1,48 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-20, adelanto de la Fase 1 (M1 a M4)._
+_Última actualización: 2026-10-20 (fin de la jornada), Fase 1 en construcción: M1 a M7 terminados, M8 y las pantallas en curso._
+
+## Dónde quedamos (para retomar)
+
+| Paso                                                             | Estado                                                   | Rama / commit                                       |
+| ---------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
+| M5: permisos, lectura por la API con RLS                         | ✅ Terminado y revisado (db-reviewer y security-auditor) | `feat/fase-1-permisos` · `2d49eaa`                  |
+| M6 y M7: roles sin escalada, aprobaciones, registro de seguridad | ✅ Terminado y revisado (dos rondas de cada revisor)     | `feat/fase-1-roles-aprobaciones` · `607ebd4`        |
+| M8 y M9: cuentas, ingreso con hook, bloqueo, invitación, tablero | 🟡 Construido y probado en base; **falta revisión**      | `feat/fase-1-cuentas-pantallas` (commit "en curso") |
+| Pantallas (ingreso, MFA, usuarios, aprobaciones, historial)      | 🟡 Compilan; Playwright 26 de 28                         | misma rama                                          |
+
+**Pruebas al cerrar:** pgTAP 508 de 508 ✅ · tipos, lint y compilación ✅ · Playwright 26 de 28. Las 2 que fallan son la misma prueba (desactivar y reactivar, una vez en celular y otra en computadora). Pasa el límite de 30 s porque espera el próximo código de doble verificación: hay que darle más tiempo.
+
+**Para mañana, en orden:**
+
+1. Arreglar el tiempo de esa prueba y correr todo `npm run test`.
+2. Revisiones de M8 y de las pantallas: `db-reviewer`, `security-auditor` y `ui-reviewer`. Mirar las pantallas en celular y computadora.
+3. CI: prender `edge-runtime` y `mailpit` en `supabase start` y pasar las variables públicas de `.env.example` al build.
+4. ADRs nuevos:
+   - el superadmin pide y Dirección General aprueba;
+   - separación de funciones;
+   - Edge Functions y registro de seguridad.
+
+   Actualizar también:
+   - `database.md`: `security_events` en lugar de `authentication_security_events`;
+   - el diccionario de datos;
+   - el plan de la Fase 1;
+   - el mapa de las 23 pruebas;
+   - el resumen para Soy.
+
+5. Preguntas para Joaco:
+   - ¿Un superadmin le puede quitar el rol a otro superadmin sin aprobación? Hoy sí.
+   - ¿Un local cerrado o borrado deja de dar permisos a quienes tenían rol ahí? Hoy no.
+   - Hoy nadie puede desactivar a una persona de Dirección General, salvo con una migración. ¿Está bien?
+   - Un cambio de matriz sobre el rol Dirección General solo se puede hacer con una migración. ¿Está bien?
+   - Controller también aprueba roles sensibles, según ADR-0008. ¿Se mantiene?
+6. Confirmación de Joaco para subir las ramas y ver GitHub Actions en verde.
+
+**Notas técnicas:**
+
+- `.env.example` ahora tiene la clave pública (publishable) de Supabase local. La clave de servidor no está ahí ni en ningún otro archivo.
+- Supabase local ahora prende las Edge Functions (`auth-login` e `invite-user`), el hook de ingreso y la doble verificación TOTP.
+- Playwright recrea la base antes de correr (`tests/e2e/global-setup.ts`).
 
 ## Resumen para Soy: personas, roles y permisos (M4)
 

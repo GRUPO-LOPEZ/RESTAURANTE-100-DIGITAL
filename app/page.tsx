@@ -1,50 +1,83 @@
-import { CircleCheck } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
+import { ClipboardCheck, History, Users } from "lucide-react";
 
-import { Badge, type BadgeStatus } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { AppShell, Loading } from "@/components/app-shell";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { SCOPE_LABELS, getUser } from "@/lib/data";
+import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
 
-// Página de verificación del entorno (Fase 0). No es una pantalla de negocio:
-// muestra la paleta y la tipografía para que Playwright y axe las revisen.
-const STATUSES: { status: BadgeStatus; label: string }[] = [
-  { status: "ok", label: "Aprobado" },
-  { status: "warn", label: "Pendiente" },
-  { status: "bad", label: "Rechazado" },
-  { status: "info", label: "Información" },
-  { status: "review", label: "En revisión" },
-  { status: "draft", label: "Borrador" },
-];
-
-export default function Home() {
+export default function InicioPage() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-12">
-      <header className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-ink-muted">Grupo LF</p>
-        <h1 className="text-2xl">Sistema Operativo Gastronómico</h1>
-        <p className="text-ink-muted">
-          El entorno de desarrollo está listo. Las pantallas llegan después de identidad, permisos y
-          auditoría.
-        </p>
-      </header>
+    <AppShell title="Inicio">
+      <Suspense fallback={<Loading />}>
+        <Home />
+      </Suspense>
+    </AppShell>
+  );
+}
 
-      <section
-        aria-labelledby="estado-entorno"
-        className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-6"
-      >
-        <h2 id="estado-entorno" className="flex items-center gap-2 text-xl">
-          <CircleCheck aria-hidden className="size-5 text-ok-ink" />
-          Fase 0: entorno
-        </h2>
-        <ul className="flex flex-wrap gap-2" aria-label="Estados del sistema de diseño">
-          {STATUSES.map(({ status, label }) => (
-            <li key={status}>
-              <Badge status={status}>{label}</Badge>
+async function Home() {
+  const session = await requireOperable();
+  const [me, menus] = await Promise.all([getUser(session.user_id ?? ""), getMenus()]);
+
+  const shortcuts = [
+    {
+      href: "/usuarios",
+      label: "Usuarios",
+      text: "Quién tiene acceso y dónde.",
+      Icon: Users,
+      show: menus.users,
+    },
+    {
+      href: "/aprobaciones",
+      label: "Aprobaciones",
+      text: "Pedidos que esperan una decisión.",
+      Icon: ClipboardCheck,
+      show: menus.approvals,
+    },
+    {
+      href: "/historial",
+      label: "Historial",
+      text: "Quién cambió qué, cuándo y por qué.",
+      Icon: History,
+      show: menus.audit,
+    },
+  ].filter((s) => s.show);
+
+  return (
+    <>
+      <Card className="flex flex-col gap-2">
+        <CardTitle>Hola, {displayName(session)}</CardTitle>
+        <CardDescription>Estos son tus roles y dónde los tenés.</CardDescription>
+        <ul className="flex flex-col gap-1">
+          {(me?.roles ?? []).map((r) => (
+            <li key={r.assignment_id} className="text-base text-ink">
+              {r.role_name}{" "}
+              <span className="text-ink-muted">
+                · {SCOPE_LABELS[r.scope_type]} {r.scope_name}
+              </span>
             </li>
           ))}
         </ul>
-        <Button asChild size="wide" className="sm:w-fit">
-          <a href="https://github.com/GRUPO-LOPEZ/RESTAURANTE-100-DIGITAL">Ver el repositorio</a>
-        </Button>
-      </section>
-    </main>
+      </Card>
+      {shortcuts.length > 0 ? (
+        <nav aria-label="Accesos" className="grid gap-4 sm:grid-cols-3">
+          {shortcuts.map(({ href, label, text, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-4 hover:bg-line/50"
+            >
+              <span className="flex items-center gap-2 text-xl font-semibold text-ink">
+                <Icon aria-hidden="true" className="size-5" />
+                {label}
+              </span>
+              <span className="text-sm text-ink-muted">{text}</span>
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+    </>
   );
 }

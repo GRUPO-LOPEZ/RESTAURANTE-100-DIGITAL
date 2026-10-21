@@ -53,13 +53,13 @@ select is(
   (select array_agg(n.nspname || '.' || p.proname order by n.nspname || '.' || p.proname collate "C")
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = any (pg_temp.business_schemas()) and has_function_privilege('authenticated', p.oid, 'execute')),
-  array['core.assign_role', 'core.can_view_scope', 'core.can_view_user', 'core.current_aal', 'core.current_actor_id',
-        'core.current_actor_subject', 'core.current_session_ok',
+  array['core.add_member', 'core.assign_role', 'core.audit_history', 'core.can_invite', 'core.can_view_scope', 'core.can_view_user', 'core.current_aal', 'core.current_actor_id',
+        'core.current_actor_subject', 'core.current_session_ok', 'core.disable_user',
         'core.has_permission', 'core.has_permission_anywhere', 'core.has_permission_for_scope',
-        'core.has_permission_in_brand', 'core.has_permission_in_group', 'core.is_assignment_current',
-        'core.permitted_brand_ids', 'core.permitted_group_ids', 'core.permitted_restaurant_ids', 'core.request_role_permission_change', 'core.revoke_role', 'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_user_ids',
+        'core.has_permission_in_brand', 'core.has_permission_in_group', 'core.is_assignment_current', 'core.my_session',
+        'core.permitted_brand_ids', 'core.permitted_group_ids', 'core.permitted_restaurant_ids', 'core.request_reactivation', 'core.request_role_permission_change', 'core.revoke_role', 'core.unlock_user', 'core.users_dashboard', 'core.users_overview', 'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_user_ids',
         'org.create_area', 'org.create_brand', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted',
-        'org.update_area', 'org.update_brand', 'org.update_group', 'org.update_restaurant', 'workflow.cancel_request', 'workflow.decide'],
+        'org.update_area', 'org.update_brand', 'org.update_group', 'org.update_restaurant', 'workflow.cancel_request', 'workflow.decide', 'workflow.inbox'],
   'authenticated solo puede llamar a estas funciones (en los 12 esquemas de negocio)'
 );
 select is(
@@ -122,7 +122,7 @@ select is(pg_temp.call(pg_temp.u(411), 'org.update_restaurant(''00000000-0000-40
 
 -- Prueba 5: dirección ve lo consolidado según permisos.
 select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from org.restaurants'), '4', '5. dirección ve todos los locales del grupo');
-select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from core.user_profiles'), '12', '5. dirección ve a todas las personas (users.view de grupo)');
+select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from core.user_profiles'), '16', '5. dirección ve a todas las personas (users.view de grupo)');
 select is(
   pg_temp.q(pg_temp.u(402), 'select (core.has_permission(''approvals.decide'', ''00000000-0000-4000-8000-000000000203'')
                                      and not core.has_permission(''org.manage'', ''00000000-0000-4000-8000-000000000203''))::text'),
@@ -203,7 +203,7 @@ select is(pg_temp.q(pg_temp.u(401), 'select count(*)::text from audit.audit_even
 -- Ver personas (users.view por alcance)
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(404), 'select string_agg(right(id::text, 3), '','' order by id) from core.user_profiles'),
-  '404,406,411', 'el gerente ve a las personas con roles en su local (y a sí mismo)');
+  '404,406,411,501,502,503,504', 'el gerente ve a las personas con roles en su local (y a sí mismo)');
 select is(pg_temp.q(pg_temp.u(406), 'select string_agg(right(id::text, 3), '','' order by id) from core.user_profiles'),
   '406', 'el jefe de cocina solo se ve a sí mismo');
 select is(pg_temp.q(pg_temp.u(406), 'select count(*)::text from core.roles'), '10', 'cualquier persona activa ve el catálogo de roles');
@@ -245,7 +245,7 @@ select throws_ok(
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(406), 'select count(*)::text from core.user_role_assignments'), '1', 'el jefe de cocina ve solo su asignación');
 select is(pg_temp.q(pg_temp.u(404), 'select string_agg(right(user_id::text, 3), '','' order by user_id) from core.user_role_assignments where deleted_at is null'),
-  '404,406,411', 'el gerente ve las asignaciones vigentes de su local');
+  '404,406,411,501,502,503,504', 'el gerente ve las asignaciones vigentes de su local');
 select is(pg_temp.q(pg_temp.u(404), 'select count(*)::text from core.user_role_assignments', 'aal1'), '0', 'el gerente sin doble verificación no ve asignaciones');
 select is(pg_temp.q(pg_temp.u(406), 'select count(*)::text from core.user_memberships'), '1', 'el jefe de cocina ve solo su membresía');
 

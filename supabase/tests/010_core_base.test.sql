@@ -180,13 +180,13 @@ select is(
     select count(*)::int
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
-    cross join unnest(array['anon', 'service_role']) as r
+    cross join unnest(array['anon']) as r
     where n.nspname in ('core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
                         'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting')
       and has_function_privilege(r, p.oid, 'execute')
   ),
   0,
-  'anon y service_role no pueden ejecutar ninguna función de negocio'
+  'anon no puede ejecutar ninguna función de negocio (service_role: solo las dos de ingreso, ver 080)'
 );
 select is(
   (
