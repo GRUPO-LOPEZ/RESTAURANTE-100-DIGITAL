@@ -23,9 +23,12 @@ export function AppShell({
 }) {
   return (
     <div className="flex min-h-full flex-col">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-2">
-          <Link href="/" className="flex min-h-touch items-center text-base font-semibold text-ink">
+      <header className="relative border-b border-line bg-surface">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-2 px-4 py-2">
+          <Link
+            href="/"
+            className="mr-auto flex min-h-touch items-center text-base font-semibold text-ink"
+          >
             Grupo LF
           </Link>
           <Suspense fallback={<span className="text-sm text-ink-muted">Cargando…</span>}>
@@ -65,8 +68,10 @@ async function SessionMenu() {
     .filter((l) => l.show)
     .map(({ href, label, count }) => ({ href, label, count }));
 
+  // Celular: arriba la marca, "Menú" y "Salir"; abajo el selector de local a todo el ancho.
+  // Computadora: arriba la marca, el selector y "Salir"; abajo el menú completo.
   return (
-    <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+    <>
       {scopes.length > 1 ? (
         <RestaurantSelector
           value={scopes.some((s) => s.restaurant_id === activeId) ? activeId : null}
@@ -76,14 +81,14 @@ async function SessionMenu() {
           }))}
         />
       ) : null}
-      <form action={signOut} className="sm:order-last">
+      <MainNav links={links} />
+      <form action={signOut}>
         <Button type="submit" variant="ghost" aria-label={`Salir (${displayName(session)})`}>
           <LogOut aria-hidden="true" />
           Salir
         </Button>
       </form>
-      <MainNav links={links} />
-    </div>
+    </>
   );
 }
 

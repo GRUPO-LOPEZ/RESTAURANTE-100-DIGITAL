@@ -103,7 +103,21 @@ La Fase 1 se construyó con el prompt maestro y con las decisiones de Joaco (ADR
 | `login_denied` como acción de auditoría                                | Va al registro de seguridad                                                         | La misma sección 6 lo manda ahí.                                                                                                 |
 | Pantalla de usuarios con el tablero                                    | `/usuarios` es el tablero; la lista está en `/usuarios/lista`                       | En el celular, tablero y lista juntos quedaban demasiado largos.                                                                 |
 
-## Pendiente de decidir con Joaco
+## Respuestas de Joaco a las preguntas abiertas (2026-10-22)
+
+1. **La Chef no publica lo que ella misma mandó a revisión:** publica otra persona.
+2. **El último acceso, quién invitó y el motivo de la suspensión o la baja** los ve solo quien administra a la persona.
+3. **Los permisos de ensayo sumados** al Gerente, al Director de Marca y al Superadmin quedan aprobados.
+4. **Gráficos:** se suman tonos más oscuros, solo para los gráficos.
+5. **KPI:** todos se comparan con los 7 días anteriores.
+6. **React Hook Form** se suma a los formularios.
+7. **"Recordar mi sesión"** viene sin marcar.
+8. **Exportación:** sin límite de frecuencia ni período máximo. Queda el tope por archivo, por rendimiento. Si hace falta, se cambia después.
+9. **El lugar de la membresía limita los roles** que se le pueden dar a la persona.
+
+Se implementan con un plan aparte. El detalle original de cada pregunta sigue abajo.
+
+## Pendiente de decidir con Joaco (respondido arriba)
 
 - **La Chef publica lo que ella misma mandó a revisión.** Hoy se permite. La revisión de seguridad propone exigir que publique otra persona, que es lo que harán las recetas reales de la Fase 2.
 - **Columnas que ve quien tiene `users.view`:** el último acceso, el motivo de la suspensión o la baja y quién invitó. ¿Las ve todo el que ve a la persona, o solo quien la administra?

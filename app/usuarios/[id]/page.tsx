@@ -20,7 +20,7 @@ import { Field, Select, Textarea } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/kpi";
 import {
   ACTION_LABELS,
-  SCOPE_LABELS,
+  scopeLabel,
   TABLE_LABELS,
   UUID,
   formatDateTime,
@@ -251,9 +251,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
             >
               <p className="text-base text-ink">
                 {r.role_name}{" "}
-                <span className="text-ink-muted">
-                  · {SCOPE_LABELS[r.scope_type]} {r.scope_name}
-                </span>
+                <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
               </p>
               <Action summary="Quitar…">
                 <ActionForm

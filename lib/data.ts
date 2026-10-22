@@ -692,6 +692,12 @@ export function formatValue(value: unknown, roleNames?: Record<string, string>):
 
 export const SCOPE_LABELS = { group: "Grupo", brand: "Marca", restaurant: "Local" } as const;
 
+// "Marca Demo Pastas", "Local Demo Pastas Centro". El grupo va solo con su nombre, que ya dice
+// "Grupo" (si no, se leía "Grupo Grupo LF").
+export function scopeLabel(type: keyof typeof SCOPE_LABELS, name: string | null) {
+  return type === "group" ? (name ?? "") : `${SCOPE_LABELS[type]} ${name ?? ""}`;
+}
+
 export const STATUS_LABELS: Record<AccountStatus, string> = {
   active: "Activa",
   suspended: "Suspendida",

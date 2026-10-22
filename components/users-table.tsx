@@ -6,7 +6,8 @@ import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-tab
 import { Badge } from "@/components/ui/badge";
 import type { UserRow } from "@/lib/data";
 
-const SCOPE = { group: "Grupo", brand: "Marca", restaurant: "Local" } as const;
+// El grupo va solo con su nombre, que ya dice "Grupo" (como scopeLabel de lib/data.ts).
+const SCOPE = { group: "", brand: "Marca ", restaurant: "Local " } as const;
 
 function name(row: UserRow) {
   return [row.first_name, row.last_name].filter(Boolean).join(" ") || row.email;
@@ -33,7 +34,8 @@ function Roles({ row }: { row: UserRow }) {
         <li key={r.assignment_id} className="text-sm text-ink">
           {r.role_name}{" "}
           <span className="text-ink-muted">
-            · {SCOPE[r.scope_type]} {r.scope_name}
+            · {SCOPE[r.scope_type]}
+            {r.scope_name}
           </span>
         </li>
       ))}

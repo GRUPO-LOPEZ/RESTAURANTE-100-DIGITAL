@@ -4,7 +4,7 @@ import { ClipboardCheck, FileText, History, KeyRound, Users } from "lucide-react
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { SCOPE_LABELS, getUser } from "@/lib/data";
+import { getUser, scopeLabel } from "@/lib/data";
 import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
 
 export default function InicioPage() {
@@ -68,9 +68,7 @@ async function Home() {
           {(me?.roles ?? []).map((r) => (
             <li key={r.assignment_id} className="text-base text-ink">
               {r.role_name}{" "}
-              <span className="text-ink-muted">
-                · {SCOPE_LABELS[r.scope_type]} {r.scope_name}
-              </span>
+              <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
             </li>
           ))}
         </ul>
