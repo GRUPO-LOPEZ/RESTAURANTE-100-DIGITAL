@@ -828,6 +828,7 @@ export type Database = {
           group_id: string;
           id: string;
           restaurant_id: string | null;
+          review_requested_by: string | null;
           status: Database["core"]["Enums"]["version_status"];
           title: string;
           updated_at: string;
@@ -848,6 +849,7 @@ export type Database = {
           group_id: string;
           id?: string;
           restaurant_id?: string | null;
+          review_requested_by?: string | null;
           status?: Database["core"]["Enums"]["version_status"];
           title: string;
           updated_at?: string;
@@ -867,6 +869,7 @@ export type Database = {
           group_id?: string;
           id?: string;
           restaurant_id?: string | null;
+          review_requested_by?: string | null;
           status?: Database["core"]["Enums"]["version_status"];
           title?: string;
           updated_at?: string;
@@ -886,6 +889,13 @@ export type Database = {
             columns: ["deleted_by"];
             isOneToOne: false;
             referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "test_documents_review_requested_by_fkey";
+            columns: ["review_requested_by"];
+            isOneToOne: false;
+            referencedRelation: "user_profiles";
             referencedColumns: ["id"];
           },
           {
@@ -1215,6 +1225,7 @@ export type Database = {
           group_id: string | null;
           id: string | null;
           restaurant_id: string | null;
+          review_requested_by: string | null;
           status: Database["core"]["Enums"]["version_status"] | null;
           title: string | null;
           updated_at: string | null;
@@ -1233,6 +1244,7 @@ export type Database = {
           group_id?: string | null;
           id?: string | null;
           restaurant_id?: string | null;
+          review_requested_by?: string | null;
           status?: Database["core"]["Enums"]["version_status"] | null;
           title?: string | null;
           updated_at?: string | null;
@@ -1250,6 +1262,7 @@ export type Database = {
           group_id?: string | null;
           id?: string | null;
           restaurant_id?: string | null;
+          review_requested_by?: string | null;
           status?: Database["core"]["Enums"]["version_status"] | null;
           title?: string | null;
           updated_at?: string | null;
@@ -1262,6 +1275,13 @@ export type Database = {
             columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "test_documents_review_requested_by_fkey";
+            columns: ["review_requested_by"];
+            isOneToOne: false;
+            referencedRelation: "user_profiles";
             referencedColumns: ["id"];
           },
           {
@@ -1398,6 +1418,7 @@ export type Database = {
         Args: { p_from: string; p_to: string };
         Returns: Record<string, unknown>;
       };
+      can_administer_user: { Args: { p_user_id: string }; Returns: boolean };
       can_invite: {
         Args: {
           p_brand_id?: string;
@@ -1516,6 +1537,17 @@ export type Database = {
       lock_group_roles: { Args: { p_group_id: string }; Returns: undefined };
       login_status: { Args: { p_email: string }; Returns: Json };
       mark_notifications_read: { Args: { p_ids?: string[] }; Returns: number };
+      membership_covers: {
+        Args: {
+          p_brand_id?: string;
+          p_except_membership_id?: string;
+          p_group_id: string;
+          p_restaurant_id?: string;
+          p_scope_type: Database["core"]["Enums"]["scope_type"];
+          p_user_id: string;
+        };
+        Returns: boolean;
+      };
       missing_permissions_for_role: {
         Args: {
           p_brand_id: string;
@@ -1527,6 +1559,7 @@ export type Database = {
         Returns: string[];
       };
       my_account: { Args: Record<PropertyKey, never>; Returns: Json };
+      my_active_restaurant: { Args: Record<PropertyKey, never>; Returns: string };
       my_scopes: {
         Args: Record<PropertyKey, never>;
         Returns: {

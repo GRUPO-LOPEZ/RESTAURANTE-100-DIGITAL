@@ -202,9 +202,12 @@ select is(pg_temp.r(pg_temp.u(405), $$core.create_test_document_draft('00000000-
   'applied', '7. corregir es crear la versión 2 del mismo documento');
 select is(pg_temp.r(pg_temp.u(405), format('core.request_test_document_review(%L, %L)', (select id from core.test_documents
             where document_key = '99999999-9999-9999-9999-999999999990' and version_number = 2), 'Revisión'))
+          -- Quien la mandó a revisión no la publica (respuesta 1 de Joaco): la publica la directora de marca.
           || '/' || pg_temp.r(pg_temp.u(405), format('core.publish_test_document(%L, %L)', (select id from core.test_documents
+            where document_key = '99999999-9999-9999-9999-999999999990' and version_number = 2), 'La publico yo'))
+          || '/' || pg_temp.r(pg_temp.u(403), format('core.publish_test_document(%L, %L)', (select id from core.test_documents
             where document_key = '99999999-9999-9999-9999-999999999990' and version_number = 2), 'Publicada')),
-  'applied/applied', '7. la versión 2 se revisa y se publica');
+  'applied/denied/applied', '7. la versión 2 se revisa, quien la mandó no la publica y otra persona sí');
 select ok((select bool_and(case version_number when 1 then status = 'archived' and content like '%40 minutos%' and cost = 1520.5
                                                else status = 'published' and cost = 1520.5 end)
              from core.test_documents where document_key = '99999999-9999-9999-9999-999999999990'),

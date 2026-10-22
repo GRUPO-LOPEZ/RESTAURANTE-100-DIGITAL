@@ -49,8 +49,8 @@ select is(
 -- Catálogo del Módulo Maestro
 -- ---------------------------------------------------------------------------
 select is((select count(*)::int from core.roles where deleted_at is null), 10, 'hay 10 roles');
-select is((select count(*)::int from core.permissions where deleted_at is null and module <> 'test_documents'), 17,
-  'hay 17 permisos de la Fase 1 (los 14 de M4 más permissions.manage, security.view y org.archive, ADR-0015)');
+select is((select count(*)::int from core.permissions where deleted_at is null and module <> 'test_documents'), 18,
+  'hay 18 permisos de la Fase 1 (los 14 de M4 más permissions.manage, security.view, org.archive y users.view_admin_details, ADR-0015)');
 select is(
   (select array_agg(code order by level) from core.roles where requires_mfa),
   array['superadmin', 'general_management', 'brand_director', 'restaurant_manager', 'controller'],
@@ -98,14 +98,17 @@ create function pg_temp.sorted(p text[]) returns text[] language sql as $$
 $$;
 select is(pg_temp.perms('superadmin'), pg_temp.sorted(array['org.view', 'org.manage', 'org.transfer', 'users.view',
   'users.invite', 'users.manage', 'users.deactivate', 'roles.assign', 'roles.manage', 'audit.view', 'audit.export',
-  'workflows.manage', 'approvals.view', 'permissions.manage', 'security.view', 'org.archive']), 'matriz completa de Superadministrador');
+  'workflows.manage', 'approvals.view', 'permissions.manage', 'security.view', 'org.archive',
+  'users.view_admin_details']), 'matriz completa de Superadministrador');
 select is(pg_temp.perms('general_management'), pg_temp.sorted(array['org.view', 'org.transfer', 'users.view',
-  'audit.view', 'audit.export', 'approvals.view', 'approvals.decide', 'security.view']), 'matriz completa de Dirección General');
+  'audit.view', 'audit.export', 'approvals.view', 'approvals.decide', 'security.view', 'users.view_admin_details']),
+  'matriz completa de Dirección General');
 select is(pg_temp.perms('brand_director'), pg_temp.sorted(array['org.view', 'org.manage', 'users.view', 'users.invite',
-  'users.manage', 'users.deactivate', 'roles.assign', 'audit.view', 'approvals.view', 'approvals.decide', 'org.archive']),
+  'users.manage', 'users.deactivate', 'roles.assign', 'audit.view', 'approvals.view', 'approvals.decide', 'org.archive',
+  'users.view_admin_details']),
   'matriz completa de Director de Marca');
 select is(pg_temp.perms('restaurant_manager'), pg_temp.sorted(array['org.view', 'org.manage', 'users.view',
-  'users.invite', 'users.manage', 'users.deactivate', 'roles.assign', 'approvals.view']),
+  'users.invite', 'users.manage', 'users.deactivate', 'roles.assign', 'approvals.view', 'users.view_admin_details']),
   'matriz completa de Gerente de Restaurante');
 select is(pg_temp.perms('executive_chef'), pg_temp.sorted(array['org.view', 'approvals.view', 'approvals.decide']),
   'matriz completa de Chef Ejecutivo');

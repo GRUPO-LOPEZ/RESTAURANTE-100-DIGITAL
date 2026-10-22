@@ -7,7 +7,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(71);
+select plan(73);
 
 -- Corre una consulta como una persona (o sin sesión si p_user es nulo) y devuelve el resultado
 -- como texto, o "ERROR <código>" si falla. Vuelve siempre a postgres.
@@ -58,7 +58,7 @@ select is(
         'core.current_actor_id', 'core.current_actor_subject', 'core.current_session_ok', 'core.disable_user',
         'core.has_permission', 'core.has_permission_anywhere', 'core.has_permission_for_scope',
         'core.has_permission_in_brand', 'core.has_permission_in_group', 'core.is_assignment_current',
-        'core.lift_suspension', 'core.mark_notifications_read', 'core.my_account', 'core.my_scopes',
+        'core.lift_suspension', 'core.mark_notifications_read', 'core.my_account', 'core.my_active_restaurant', 'core.my_scopes',
         'core.my_session', 'core.permission_matrix', 'core.permitted_brand_ids', 'core.permitted_group_ids',
         'core.permitted_restaurant_ids', 'core.publish_test_document', 'core.request_reactivation',
         'core.request_role_permission_change', 'core.request_test_document_review', 'core.revoke_role',
@@ -76,10 +76,27 @@ select is(
     where n.nspname = any (pg_temp.business_schemas()) and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege('authenticated', c.oid, 'select')),
   array['core.notifications', 'core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships',
-        'core.user_profiles', 'core.user_role_assignments', 'core.v_test_documents', 'org.areas', 'org.brands',
+        'core.user_role_assignments', 'core.v_test_documents', 'org.areas', 'org.brands',
         'org.groups', 'org.restaurants', 'org.time_zones', 'workflow.approval_decisions',
-        'workflow.approval_requests', 'workflow.approval_workflows'],
-  'authenticated solo puede leer estas tablas (y nada de audit ni de cuentas técnicas)'
+        'workflow.approval_workflows'],
+  'authenticated solo puede leer estas tablas enteras (y nada de audit ni de cuentas técnicas)'
+);
+-- Personas y solicitudes se leen por columna: sin los datos de administración ni el "antes" de
+-- una solicitud (respuesta 2 de Joaco, ADR-0015).
+select is(
+  (select array_agg(a.attname::text order by a.attname::text collate "C") from pg_attribute a
+    where a.attrelid = 'core.user_profiles'::regclass and a.attnum > 0 and not a.attisdropped
+      and has_column_privilege('authenticated', a.attrelid, a.attnum, 'select')),
+  array['area_id', 'created_at', 'created_by', 'deactivated_at', 'deleted_at', 'deleted_by', 'email',
+        'first_name', 'id', 'job_title', 'last_name', 'locked_until', 'status', 'suspended_at',
+        'updated_at', 'updated_by', 'username'],
+  'de las personas se leen estas columnas: no el primer ni el último acceso, quién invitó, el local elegido ni los motivos'
+);
+select is(
+  (select array_agg(a.attname::text order by a.attname::text collate "C") from pg_attribute a
+    where a.attrelid = 'workflow.approval_requests'::regclass and a.attnum > 0 and not a.attisdropped
+      and not has_column_privilege('authenticated', a.attrelid, a.attnum, 'select')),
+  array['previous_values'], 'de las solicitudes se lee todo menos el antes (sale por la bandeja)'
 );
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace

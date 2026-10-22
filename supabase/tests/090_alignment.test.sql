@@ -258,9 +258,11 @@ select '77777777-7777-7777-7777-777777777777', id, 'group', pg_temp.u(1) from co
 select ok(core.user_has_permission_for_scope('77777777-7777-7777-7777-777777777777', 'audit.view', 'group', pg_temp.u(1)),
   'con membresía vigente, el rol vale');
 alter table core.user_memberships disable trigger validate_identity;
+alter table core.user_memberships disable trigger validate_membership_place;
 update core.user_memberships set ends_at = now() + interval '1 millisecond' where user_id = '77777777-7777-7777-7777-777777777777';
 update core.user_memberships set starts_at = now() + interval '1 day', ends_at = null where user_id = '77777777-7777-7777-7777-777777777777';
 alter table core.user_memberships enable trigger validate_identity;
+alter table core.user_memberships enable trigger validate_membership_place;
 select ok(not core.user_has_permission_for_scope('77777777-7777-7777-7777-777777777777', 'audit.view', 'group', pg_temp.u(1)),
   'con la membresía todavía sin empezar, el rol no vale');
 select is(pg_temp.q('77777777-7777-7777-7777-777777777777',
