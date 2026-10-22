@@ -1,6 +1,78 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-21. Fase 1 construida en local: M1 a M9, pantallas y las 23 pruebas. Falta subirla a GitHub y que Soy la valide._
+_Última actualización: 2026-10-22. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`) y verificada en local. Falta subirla a GitHub, ver la CI en verde y armar staging para la demo de cierre._
+
+## Alineación de la Fase 1 con el documento de Soy (terminada en local)
+
+Plan aprobado: `C:\Users\julym\.claude\plans\dapper-dazzling-haven.md`. Decisiones y diferencias que quedan: ADR-0015. Informe para Soy: `docs/fases/fase-1-cierre.md`.
+
+**Qué se hizo:**
+
+- **Base de datos.** Cuatro migraciones nuevas:
+  - `20261021180000_phase_doc_enums.sql`
+  - `20261021180100_align_with_phase_doc.sql`
+  - `20261021190000_phase_doc_features.sql`
+  - `20261021200000_phase_doc_screens.sql`
+
+  Contenido:
+  - nombres y columnas de las secciones 4 a 7;
+  - estados activo, suspendido y desactivado;
+  - membresías con lugar y fechas;
+  - permisos nuevos;
+  - avisos dentro de la app;
+  - tabla de ensayo;
+  - historial con filtros y exportación;
+  - tablero de control;
+  - sesiones cerradas que dejan de operar en el momento.
+
+- **Pantallas:**
+  - recuperar la contraseña;
+  - "recordar sesión";
+  - mi cuenta;
+  - selector de local;
+  - tablero de usuarios y lista con filtros;
+  - ficha;
+  - roles y permisos;
+  - bandeja con el antes y el después;
+  - historial con filtros y CSV;
+  - ensayo;
+  - menú y filtros plegables en el celular.
+- **Revisiones:**
+  - `db-reviewer` y `security-auditor`, en los tres pasos de base;
+  - `ui-reviewer`, en las pantallas.
+
+  Graves y medios corregidos. Lo que queda abierto está en ADR-0015.
+
+- **Ajuste de configuración local:** el límite de ingresos de Auth subió de 30 a 300 cada 5 minutos, **solo en `supabase/config.toml`** (local y CI), porque la suite de pantallas ingresa muchas veces desde la misma IP. Staging y producción conservan el suyo.
+- **Diccionario de datos:** se regenera con `npm run db:dictionary` (script nuevo, `scripts/data-dictionary.mjs`).
+
+**Verificación completa (2026-10-22, `npm run test` desde una base nueva):**
+
+| Prueba                                                                   | Resultado                                                            |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| Formato, lint y tipos                                                    | ✅                                                                   |
+| Lógica y configuración (Vitest)                                          | ✅ 73 de 73                                                          |
+| Base de datos (pgTAP)                                                    | ✅ 691 de 691 (A10: todo por debajo de 300 ms; lo más lento, 150 ms) |
+| Pantallas en celular y computadora, con accesibilidad (Playwright + axe) | ✅ 50 de 50                                                          |
+
+**Preguntas para Joaco** (detalle en ADR-0015):
+
+1. ¿La Chef puede publicar lo que ella misma mandó a revisión, o tiene que publicarlo otra persona?
+2. ¿Quién ve el último acceso de alguien y el motivo de su suspensión o baja?
+3. ¿Aprobás los permisos de ensayo sumados al Gerente, al Director de Marca y al Superadmin?
+4. ¿Sumamos tonos más oscuros solo para los gráficos?
+5. ¿Comparamos todos los KPI con el período anterior, o los de "estado actual" quedan como excepción?
+6. ¿Sumamos React Hook Form, o dejamos escrita la excepción?
+7. ¿"Recordar mi sesión" tiene que venir sin marcar (tablets compartidas)?
+8. Exportación: ¿hace falta un límite de frecuencia o un período máximo?
+9. ¿El lugar de la membresía tiene que limitar los roles?
+
+**Lo que falta, fuera del código:**
+
+- subir la rama y ver GitHub Actions en verde;
+- proyectos de Supabase de desarrollo en la nube y de staging, a nombre de Soy, más Vercel;
+- la demo de la compuerta sobre staging;
+- proteger `main`.
 
 ## Resumen para Soy: la Fase 1 está construida
 

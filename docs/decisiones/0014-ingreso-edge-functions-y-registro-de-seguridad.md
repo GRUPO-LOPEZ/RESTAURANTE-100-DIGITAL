@@ -6,6 +6,7 @@
 ## Decisión
 
 1. **Registro de seguridad: `audit.security_events`.** Reemplaza al nombre `authentication_security_events` de la primera versión de `database.md`, porque guarda más que ingresos.
+   - **Actualizado por ADR-0015 (2026-10-21):** el documento de Soy manda, y la tabla volvió a llamarse `audit.authentication_security_events`, con `user_id`, `ip_address` y `detail`.
    - Qué guarda: ingresos buenos y fallidos, bloqueos y liberaciones, operaciones rechazadas, desactivaciones y reactivaciones.
    - Protección: solo de inserción, con sus propios sellos (`audit.security_event_seals`). Nadie lo lee por la API.
 2. **Edge Function `auth-login` (pública).** La usa la acción de servidor de `/ingresar`. Pasos:
