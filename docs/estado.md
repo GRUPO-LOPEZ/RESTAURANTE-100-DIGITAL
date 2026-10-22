@@ -67,6 +67,12 @@ Plan aprobado: `C:\Users\julym\.claude\plans\dapper-dazzling-haven.md`. Decision
 8. Exportación: ¿hace falta un límite de frecuencia o un período máximo?
 9. ¿El lugar de la membresía tiene que limitar los roles?
 
+**Visto al abrir la app (2026-10-22, recorrido con capturas como Dirección):**
+
+- **Para corregir:** en el celular, el encabezado se desordena. "Grupo LF", el selector de local, "Cambiar", "Salir" y "Menú" se apilan torcidos y ocupan media pantalla. Las pruebas no lo detectan, porque no miran el diseño. Hay que arreglarlo antes de mostrárselo a Soy.
+- **Antes de una demo, correr `npm run db:reset`:** las pruebas automáticas dejan datos en la base local, como el pico de ingresos del día y los motivos "Prueba automática" en los cambios críticos.
+- **Para abrir la app en local hace falta `.env.local`.** Se copia de `.env.example`, que tiene los valores públicos de desarrollo local.
+
 **Lo que falta, fuera del código:**
 
 - subir la rama y ver GitHub Actions en verde;
