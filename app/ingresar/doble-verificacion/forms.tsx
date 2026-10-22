@@ -28,10 +28,11 @@ function CodeInput() {
   );
 }
 
-export function VerifyForm() {
+export function VerifyForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(verifyCode, {});
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <input type="hidden" name="next" value={next} />
       <CodeInput />
       <FormNotice state={state} />
       <Button type="submit" size="wide" disabled={pending}>
@@ -41,7 +42,7 @@ export function VerifyForm() {
   );
 }
 
-export function EnrollForm() {
+export function EnrollForm({ next }: { next: string }) {
   const [enrollment, setEnrollment] = useState<EnrollState>({});
   const [starting, startTransition] = useTransition();
   const [state, formAction, pending] = useActionState<EnrollState, FormData>(confirmEnrollment, {});
@@ -75,6 +76,7 @@ export function EnrollForm() {
         <span className="font-medium break-all text-ink">{enrollment.secret}</span>
       </p>
       <input type="hidden" name="factorId" value={enrollment.factorId} />
+      <input type="hidden" name="next" value={next} />
       <CodeInput />
       <FormNotice state={state} />
       <Button type="submit" size="wide" disabled={pending}>

@@ -20,7 +20,8 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local --schema public,core,org,audit,workflow > lib/database.types.ts && prettier --write lib/database.types.ts"
+    "db:types": "supabase gen types typescript --local --schema public,core,org,audit,workflow > lib/database.types.ts && prettier --write lib/database.types.ts",
+    "db:dictionary": "node scripts/data-dictionary.mjs && prettier --write docs/modulos/diccionario-datos.md"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

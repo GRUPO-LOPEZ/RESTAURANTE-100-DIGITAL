@@ -8,9 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 // La seguridad real está en la base; esto solo decide a qué pantalla mandar a la persona.
 const mySessionSchema = z.object({
   signed_in: z.boolean(),
+  session_active: z.boolean().optional(),
   user_id: z.string().uuid().optional(),
   has_profile: z.boolean().optional(),
-  status: z.enum(["active", "disabled"]).nullable().optional(),
+  status: z.enum(["active", "suspended", "deactivated"]).nullable().optional(),
   deleted: z.boolean().optional(),
   locked: z.boolean().optional(),
   first_name: z.string().nullable().optional(),
@@ -39,7 +40,8 @@ export function displayName(session: MySession): string {
 // Exige una sesión que pueda operar; si no, manda a la pantalla que corresponde.
 export async function requireOperable(): Promise<MySession> {
   const session = await getMySession();
-  if (!session.signed_in) redirect("/ingresar");
+  // Una sesión cerrada desde otro dispositivo (o por una baja) vuelve a ingresar.
+  if (!session.signed_in || session.session_active === false) redirect("/ingresar");
   if (!session.has_profile || session.deleted || session.status !== "active" || session.locked)
     redirect("/sin-acceso");
   if (session.requires_mfa && session.aal !== "aal2") redirect("/ingresar/doble-verificacion");
@@ -56,20 +58,23 @@ export const getMenus = cache(async () => {
       .rpc("has_permission_anywhere", { p_permission: permission });
     return data === true;
   };
-  const [users, invite, approvals, audit] = await Promise.all([
+  const [users, invite, approvals, audit, auditExport, roles, testDocuments] = await Promise.all([
     check("users.view"),
     check("users.invite"),
     check("approvals.view"),
     check("audit.view"),
+    check("audit.export"),
+    check("permissions.manage"),
+    check("test_documents.view"),
   ]);
-  return { users, invite, approvals, audit };
+  return { users, invite, approvals, audit, auditExport, roles, testDocuments };
 });
+
+export type Menus = Awaited<ReturnType<typeof getMenus>>;
 
 // Pantallas con menú propio: si la persona no tiene ese menú, vuelve al inicio. Solo interfaz:
 // los datos ya los filtra la base. Usa los mismos menús, sin repetir la lógica de permisos.
-export async function requireMenu(
-  menu: "users" | "invite" | "approvals" | "audit",
-): Promise<MySession> {
+export async function requireMenu(menu: keyof Menus): Promise<MySession> {
   const session = await requireOperable();
   const menus = await getMenus();
   if (!menus[menu]) redirect("/");

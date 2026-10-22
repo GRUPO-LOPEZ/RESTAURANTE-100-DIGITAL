@@ -2,11 +2,21 @@ import { Suspense } from "react";
 
 import { decideAction } from "@/app/usuarios/actions";
 import { DecisionForm } from "@/app/aprobaciones/decision-form";
+import { markNotificationsReadAction } from "@/app/shell-actions";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardDescription } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/kpi";
-import { formatDateTime, getInbox, type InboxRow } from "@/lib/data";
+import {
+  FIELD_LABELS,
+  formatDateTime,
+  formatValue,
+  getInbox,
+  getRoles,
+  getUnreadCount,
+  type InboxRow,
+} from "@/lib/data";
 import { requireMenu } from "@/lib/auth/session";
 
 const STATUS: Record<InboxRow["status"], { label: string; status: BadgeStatus }> = {
@@ -16,6 +26,8 @@ const STATUS: Record<InboxRow["status"], { label: string; status: BadgeStatus }>
   cancelled: { label: "Retirada", status: "neutral" },
 };
 
+// Bandeja de aprobaciones (sección 9): las pendientes con el antes y el después, aprobar o
+// rechazar con motivo, y las resueltas recientemente.
 export default function AprobacionesPage() {
   return (
     <AppShell
@@ -32,36 +44,86 @@ export default function AprobacionesPage() {
 async function Inbox() {
   await requireMenu("approvals");
   // Las pendientes (hasta 100) y las últimas 20 resueltas.
-  const [pending, resolved] = await Promise.all([getInbox(true, 100), getInbox(false, 20)]);
-  if (pending.length === 0 && resolved.length === 0) {
-    return <EmptyState title="No hay solicitudes para mostrar." />;
-  }
+  const [pending, resolved, roles, unread] = await Promise.all([
+    getInbox(true, 100),
+    getInbox(false, 20),
+    getRoles(),
+    getUnreadCount(),
+  ]);
+  const roleNames = Object.fromEntries(roles.map((r) => [r.code, r.name]));
 
   return (
     <>
-      <section aria-labelledby="pendientes" className="flex flex-col gap-4">
-        <h2 id="pendientes" className="text-xl text-ink">
-          Pendientes ({pending.length})
-        </h2>
-        {pending.length === 0 ? (
-          <EmptyState title="No hay nada esperando una decisión." />
-        ) : (
-          <RequestList rows={pending} />
-        )}
-      </section>
-      {resolved.length > 0 ? (
-        <section aria-labelledby="resueltas" className="flex flex-col gap-4">
-          <h2 id="resueltas" className="text-xl text-ink">
-            Resueltas recientemente
-          </h2>
-          <RequestList rows={resolved} />
-        </section>
+      {unread > 0 ? (
+        <Card className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-base text-ink">
+            Tenés {unread} {unread === 1 ? "aviso nuevo" : "avisos nuevos"} de solicitudes que podés
+            decidir.
+          </p>
+          <form action={markNotificationsReadAction}>
+            <Button type="submit" variant="outline" className="w-full sm:w-auto">
+              Marcar como leídos
+            </Button>
+          </form>
+        </Card>
       ) : null}
+      {pending.length === 0 && resolved.length === 0 ? (
+        <EmptyState title="No hay solicitudes para mostrar." />
+      ) : (
+        <>
+          <section aria-labelledby="pendientes" className="flex flex-col gap-4">
+            <h2 id="pendientes" className="text-xl text-ink">
+              Pendientes ({pending.length >= 100 ? "100 o más" : pending.length})
+            </h2>
+            {pending.length === 0 ? (
+              <EmptyState title="No hay nada esperando una decisión." />
+            ) : (
+              <RequestList rows={pending} roleNames={roleNames} />
+            )}
+          </section>
+          {resolved.length > 0 ? (
+            <section aria-labelledby="resueltas" className="flex flex-col gap-4">
+              <h2 id="resueltas" className="text-xl text-ink">
+                Resueltas recientemente
+              </h2>
+              <RequestList rows={resolved} roleNames={roleNames} />
+            </section>
+          ) : null}
+        </>
+      )}
     </>
   );
 }
 
-function RequestList({ rows }: { rows: InboxRow[] }) {
+// El antes y el después: los campos con nombre en español que están en lo que se pide.
+function BeforeAfter({ row, roleNames }: { row: InboxRow; roleNames: Record<string, string> }) {
+  const before = row.previous_values ?? {};
+  const after = row.proposed_changes ?? {};
+  const fields = Object.keys(before).filter((f) => FIELD_LABELS[f]);
+  const added = Object.keys(after).filter((f) => FIELD_LABELS[f] && !(f in before));
+  if (fields.length === 0 && added.length === 0) return null;
+  return (
+    <dl className="flex flex-col gap-1 rounded-sm border border-line p-3 text-sm">
+      {fields.map((f) => (
+        <div key={f} className="flex flex-col sm:flex-row sm:gap-2">
+          <dt className="font-medium text-ink sm:w-40 sm:shrink-0">{FIELD_LABELS[f]}</dt>
+          <dd className="break-words text-ink-muted">
+            Antes: {formatValue(before[f], roleNames)} → Después:{" "}
+            {f in after ? formatValue(after[f], roleNames) : "sin cambios"}
+          </dd>
+        </div>
+      ))}
+      {added.map((f) => (
+        <div key={f} className="flex flex-col sm:flex-row sm:gap-2">
+          <dt className="font-medium text-ink sm:w-40 sm:shrink-0">{FIELD_LABELS[f]}</dt>
+          <dd className="break-words text-ink-muted">{formatValue(after[f], roleNames)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function RequestList({ rows, roleNames }: { rows: InboxRow[]; roleNames: Record<string, string> }) {
   return (
     <ul className="flex flex-col gap-4">
       {rows.map((r) => (
@@ -76,6 +138,7 @@ function RequestList({ rows }: { rows: InboxRow[] }) {
               {r.place_name ? ` · ${r.place_name}` : ""}
             </CardDescription>
             <p className="text-base text-ink">Motivo: {r.reason}</p>
+            <BeforeAfter row={r} roleNames={roleNames} />
             {r.resolved_at ? (
               <p className="text-sm text-ink-muted">
                 Resolvió {r.resolved_by_name ?? "alguien"} el {formatDateTime(r.resolved_at)}

@@ -64,7 +64,8 @@ export async function revokeRoleAction(
   return toActionState(data, error);
 }
 
-type AccountRpc = "disable_user" | "request_reactivation" | "unlock_user";
+type AccountRpc =
+  "disable_user" | "request_reactivation" | "unlock_user" | "suspend_user" | "lift_suspension";
 
 async function accountAction(fn: AccountRpc, formData: FormData): Promise<ActionState> {
   const userId = uuid.safeParse(formData.get("userId"));
@@ -87,6 +88,13 @@ export async function requestReactivationAction(_prev: ActionState, formData: Fo
 }
 export async function unlockUserAction(_prev: ActionState, formData: FormData) {
   return accountAction("unlock_user", formData);
+}
+// Suspender es una pausa: se levanta sin aprobación (decisión de Joaco, 2026-10-21).
+export async function suspendUserAction(_prev: ActionState, formData: FormData) {
+  return accountAction("suspend_user", formData);
+}
+export async function liftSuspensionAction(_prev: ActionState, formData: FormData) {
+  return accountAction("lift_suspension", formData);
 }
 
 // Invitación: va a la Edge Function invite-user con la sesión de quien invita, que valida
@@ -169,7 +177,7 @@ export async function decideAction(_prev: ActionState, formData: FormData): Prom
     return { status: "bad", message: "Para rechazar, escribí el motivo." };
   }
   const supabase = await createClient();
-  const { data, error } = await supabase.schema("workflow").rpc("decide", {
+  const { data, error } = await supabase.schema("workflow").rpc("decide_approval", {
     p_request_id: parsed.data.requestId,
     p_decision: parsed.data.decision,
     p_comment: parsed.data.comment || undefined,

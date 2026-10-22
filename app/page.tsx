@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ClipboardCheck, History, Users } from "lucide-react";
+import { ClipboardCheck, FileText, History, KeyRound, Users } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,7 @@ async function Home() {
     {
       href: "/usuarios",
       label: "Usuarios",
-      text: "Quién tiene acceso y dónde.",
+      text: "Quién tiene acceso y qué está pasando.",
       Icon: Users,
       show: menus.users,
     },
@@ -42,6 +42,20 @@ async function Home() {
       text: "Quién cambió qué, cuándo y por qué.",
       Icon: History,
       show: menus.audit,
+    },
+    {
+      href: "/roles",
+      label: "Roles y permisos",
+      text: "Qué puede hacer cada rol.",
+      Icon: KeyRound,
+      show: menus.roles,
+    },
+    {
+      href: "/ensayo",
+      label: "Ensayo",
+      text: "Documentos de prueba de la Fase 1.",
+      Icon: FileText,
+      show: menus.testDocuments,
     },
   ].filter((s) => s.show);
 
