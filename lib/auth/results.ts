@@ -7,7 +7,12 @@ const resultSchema = z.object({
   request_id: z.string().optional(),
 });
 
-export type ActionState = { status?: "ok" | "info" | "warn" | "bad"; message?: string };
+export type ActionState = {
+  status?: "ok" | "info" | "warn" | "bad";
+  message?: string;
+  // Un error por campo, con el nombre del campo (ADR-0016): el formulario lo muestra debajo.
+  fieldErrors?: Record<string, string>;
+};
 
 const MESSAGES: Record<string, { status: NonNullable<ActionState["status"]>; message: string }> = {
   applied: { status: "ok", message: "Listo." },

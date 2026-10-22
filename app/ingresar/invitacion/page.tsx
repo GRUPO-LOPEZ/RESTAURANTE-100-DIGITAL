@@ -2,29 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
-
 import { FormNotice } from "@/components/form-notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/field";
+import { FormInput, ServerForm, useServerForm } from "@/components/ui/form";
+import type { ActionState } from "@/lib/auth/results";
+import { fieldErrors, formValues, schemas } from "@/lib/forms/schemas";
 import { createClient } from "@/lib/supabase/client";
-
-// Contraseña: mínimo 12 caracteres, con letras y números (P8; mismo criterio que Auth).
-const passwordSchema = z
-  .string()
-  .min(12, "La contraseña tiene que tener al menos 12 caracteres.")
-  .regex(/[A-Za-z]/, "La contraseña tiene que tener letras.")
-  .regex(/[0-9]/, "La contraseña tiene que tener números.");
-
-type State = { status?: "ok" | "info" | "warn" | "bad"; message?: string };
 
 // Aceptar una invitación: el enlace del correo trae la sesión en el fragmento de la URL.
 export default function InvitacionPage() {
   const router = useRouter();
   const [ready, setReady] = useState<"loading" | "ok" | "invalid">("loading");
-  const [state, setState] = useState<State>({});
-  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.hash.slice(1));
@@ -41,24 +30,20 @@ export default function InvitacionPage() {
     void check.then((ok) => setReady(ok ? "ok" : "invalid"));
   }, []);
 
-  async function onSubmit(formData: FormData) {
-    const password = String(formData.get("password") ?? "");
-    const repeat = String(formData.get("repeat") ?? "");
-    const parsed = passwordSchema.safeParse(password);
-    if (!parsed.success)
-      return setState({ status: "bad", message: parsed.error.issues[0]?.message });
-    if (password !== repeat)
-      return setState({ status: "bad", message: "Las dos contraseñas no coinciden." });
-    setPending(true);
-    const { error } = await createClient().auth.updateUser({ password });
-    setPending(false);
-    if (error)
-      return setState({
-        status: "bad",
-        message: "No pudimos guardar la contraseña. Probá con otra.",
-      });
-    router.replace("/");
-  }
+  // La contraseña se guarda desde el navegador, con la sesión de la invitación. Mismo esquema que
+  // la contraseña nueva de recuperación (lib/forms/schemas.ts).
+  const form = useServerForm<ActionState>({
+    schema: "newPassword",
+    action: async (_prev, formData) => {
+      const parsed = schemas.newPassword.safeParse(formValues(formData));
+      if (!parsed.success) return { status: "bad", fieldErrors: fieldErrors(parsed.error) };
+      const { error } = await createClient().auth.updateUser({ password: parsed.data.password });
+      if (error)
+        return { status: "bad", message: "No pudimos guardar la contraseña. Probá con otra." };
+      router.replace("/");
+      return {};
+    },
+  });
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 py-10">
@@ -86,18 +71,30 @@ export default function InvitacionPage() {
               <CardTitle>Elegí tu contraseña</CardTitle>
               <CardDescription>Mínimo 12 caracteres, con letras y números.</CardDescription>
             </div>
-            <form action={onSubmit} className="flex flex-col gap-4">
-              <Field id="password" label="Contraseña nueva">
-                <Input name="password" type="password" autoComplete="new-password" required />
-              </Field>
-              <Field id="repeat" label="Repetí la contraseña">
-                <Input name="repeat" type="password" autoComplete="new-password" required />
-              </Field>
-              <FormNotice state={state} />
-              <Button type="submit" size="wide" disabled={pending}>
-                {pending ? "Guardando…" : "Guardar y entrar"}
+            <ServerForm form={form} className="flex flex-col gap-4">
+              <FormInput
+                id="password"
+                label="Contraseña nueva"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                maxLength={200}
+              />
+              <FormInput
+                id="repeat"
+                label="Repetí la contraseña"
+                name="repeat"
+                type="password"
+                autoComplete="new-password"
+                required
+                maxLength={200}
+              />
+              <FormNotice state={form.state} />
+              <Button type="submit" size="wide" disabled={form.pending}>
+                {form.pending ? "Guardando…" : "Guardar y entrar"}
               </Button>
-            </form>
+            </ServerForm>
           </>
         ) : null}
       </Card>

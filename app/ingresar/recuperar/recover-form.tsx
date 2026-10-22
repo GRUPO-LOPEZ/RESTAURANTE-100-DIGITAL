@@ -1,23 +1,27 @@
 "use client";
 
-import { useActionState } from "react";
-
-import { requestRecovery, type FormState } from "@/app/ingresar/actions";
+import { requestRecovery } from "@/app/ingresar/actions";
 import { FormNotice } from "@/components/form-notice";
 import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/field";
+import { FormInput, ServerForm, useServerForm } from "@/components/ui/form";
 
 export function RecoverForm() {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(requestRecovery, {});
+  const form = useServerForm({ schema: "recover", action: requestRecovery });
   return (
-    <form action={formAction} className="flex flex-col gap-4" noValidate>
-      <Field id="email" label="Correo">
-        <Input name="email" type="email" autoComplete="username" inputMode="email" required />
-      </Field>
-      <FormNotice state={state} />
-      <Button type="submit" size="wide" disabled={pending}>
-        {pending ? "Enviando…" : "Enviar el enlace"}
+    <ServerForm form={form} className="flex flex-col gap-4">
+      <FormInput
+        id="email"
+        label="Correo"
+        name="email"
+        type="email"
+        autoComplete="username"
+        inputMode="email"
+        required
+      />
+      <FormNotice state={form.state} />
+      <Button type="submit" size="wide" disabled={form.pending}>
+        {form.pending ? "Enviando…" : "Enviar el enlace"}
       </Button>
-    </form>
+    </ServerForm>
   );
 }

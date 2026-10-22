@@ -14,7 +14,7 @@ import Link from "next/link";
 
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/kpi";
-import { Field, Input } from "@/components/ui/field";
+import { FormInput } from "@/components/ui/form";
 import { requireOperable } from "@/lib/auth/session";
 import { formatDateTime, getMyAccount } from "@/lib/data";
 
@@ -64,7 +64,10 @@ async function Account() {
   if (!account)
     return (
       <EmptyState title="No pudimos cargar tu cuenta.">
-        <Link href="/mi-cuenta" className="text-primary underline-offset-4 hover:underline">
+        <Link
+          href="/mi-cuenta"
+          className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
+        >
           Probá de nuevo
         </Link>
       </EmptyState>
@@ -87,26 +90,27 @@ async function Account() {
         </div>
         <ActionForm
           action={updateMyProfileAction}
+          schema="profile"
           submitLabel="Guardar mis datos"
           pendingLabel="Guardando…"
-          className="grid gap-4 sm:grid-cols-2 sm:items-end"
+          className="grid gap-4 sm:grid-cols-2 sm:items-start"
         >
-          <Field id="first_name" label="Nombre">
-            <Input
-              name="first_name"
-              defaultValue={account.first_name ?? ""}
-              autoComplete="given-name"
-              required
-            />
-          </Field>
-          <Field id="last_name" label="Apellido">
-            <Input
-              name="last_name"
-              defaultValue={account.last_name ?? ""}
-              autoComplete="family-name"
-              required
-            />
-          </Field>
+          <FormInput
+            id="first_name"
+            label="Nombre"
+            name="first_name"
+            defaultValue={account.first_name ?? ""}
+            autoComplete="given-name"
+            required
+          />
+          <FormInput
+            id="last_name"
+            label="Apellido"
+            name="last_name"
+            defaultValue={account.last_name ?? ""}
+            autoComplete="family-name"
+            required
+          />
         </ActionForm>
         <p className="text-sm text-ink-muted">
           El correo, el puesto y el área los cambia quien administra tu local.
@@ -119,22 +123,38 @@ async function Account() {
         </div>
         <ActionForm
           action={changePasswordAction}
+          schema="changePassword"
           submitLabel="Cambiar la contraseña"
           pendingLabel="Cambiando…"
         >
-          <Field id="current" label="Contraseña actual">
-            <Input name="current" type="password" autoComplete="current-password" required />
-          </Field>
-          <Field
+          <FormInput
+            id="current"
+            label="Contraseña actual"
+            name="current"
+            type="password"
+            maxLength={200}
+            autoComplete="current-password"
+            required
+          />
+          <FormInput
             id="password-new"
             label="Contraseña nueva"
             hint="Mínimo 12 caracteres, con letras y números."
-          >
-            <Input name="password" type="password" autoComplete="new-password" required />
-          </Field>
-          <Field id="repeat" label="Repetí la contraseña nueva">
-            <Input name="repeat" type="password" autoComplete="new-password" required />
-          </Field>
+            name="password"
+            type="password"
+            maxLength={200}
+            autoComplete="new-password"
+            required
+          />
+          <FormInput
+            id="repeat"
+            label="Repetí la contraseña nueva"
+            name="repeat"
+            type="password"
+            maxLength={200}
+            autoComplete="new-password"
+            required
+          />
         </ActionForm>
       </Card>
 

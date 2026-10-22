@@ -5,7 +5,7 @@ import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { EmptyState } from "@/components/ui/kpi";
 import {
   formatDateTime,
@@ -42,14 +42,19 @@ const STATUS: Record<TestDocument["status"], { label: string; status: BadgeStatu
 
 function Reason({ id }: { id: string }) {
   return (
-    <Field id={id} label="Motivo" hint="Queda en el historial.">
-      <Textarea name="reason" required maxLength={500} />
-    </Field>
+    <FormTextarea
+      id={id}
+      label="Motivo"
+      hint="Queda en el historial."
+      name="reason"
+      required
+      maxLength={500}
+    />
   );
 }
 
 async function Documents() {
-  await requireMenu("testDocuments");
+  const session = await requireMenu("testDocuments");
   const supabase = await createClient();
   const can = async (permission: string) =>
     (await supabase.schema("core").rpc("has_permission_anywhere", { p_permission: permission }))
@@ -107,21 +112,36 @@ async function Documents() {
                     </summary>
                     <ActionForm
                       action={requestReviewAction}
+                      schema="reason"
                       submitLabel="Pedir la revisión"
                       variant="outline"
                     >
-                      <input type="hidden" name="id" value={d.id} />
+                      <input type="hidden" name="documentId" value={d.id} />
                       <Reason id={`motivo-revision-${d.id}`} />
                     </ActionForm>
                   </details>
                 ) : null}
-                {canPublish && d.status === "in_review" ? (
+                {canPublish &&
+                d.status === "in_review" &&
+                d.review_requested_by === session.user_id ? (
+                  <p className="text-sm text-ink-muted">
+                    Lo mandaste vos a revisión: lo tiene que publicar otra persona.
+                  </p>
+                ) : null}
+                {canPublish &&
+                d.status === "in_review" &&
+                d.review_requested_by !== session.user_id ? (
                   <details>
                     <summary className="flex min-h-touch cursor-pointer items-center text-base text-primary underline-offset-4 hover:underline">
                       Aprobar y publicar
                     </summary>
-                    <ActionForm action={publishAction} submitLabel="Publicar" variant="outline">
-                      <input type="hidden" name="id" value={d.id} />
+                    <ActionForm
+                      action={publishAction}
+                      schema="reason"
+                      submitLabel="Aprobar y publicar"
+                      variant="outline"
+                    >
+                      <input type="hidden" name="documentId" value={d.id} />
                       <Reason id={`motivo-publicar-${d.id}`} />
                     </ActionForm>
                   </details>
@@ -133,6 +153,7 @@ async function Documents() {
                     </summary>
                     <ActionForm
                       action={createDraftAction}
+                      schema="testCorrection"
                       submitLabel="Crear la versión nueva"
                       variant="outline"
                     >
@@ -147,9 +168,13 @@ async function Documents() {
                         value={`${d.brand_id}:${d.restaurant_id ?? ""}`}
                       />
                       <input type="hidden" name="title" value={d.title} />
-                      <Field id={`contenido-${d.id}`} label="Contenido corregido">
-                        <Textarea name="content" defaultValue={d.content ?? ""} maxLength={4000} />
-                      </Field>
+                      <FormTextarea
+                        id={`contenido-${d.id}`}
+                        label="Contenido corregido"
+                        name="content"
+                        defaultValue={d.content ?? ""}
+                        maxLength={4000}
+                      />
                       <Reason id={`motivo-version-${d.id}`} />
                     </ActionForm>
                   </details>
@@ -171,40 +196,36 @@ async function Documents() {
           </div>
           <ActionForm
             action={createDraftAction}
+            schema="testDraft"
             submitLabel="Crear el borrador"
             pendingLabel="Creando…"
           >
-            <Field id="lugar" label="Dónde">
-              <Select name="place" required defaultValue="">
-                <option value="" disabled>
-                  Elegí la marca o el local
+            <FormSelect id="lugar" label="Dónde" name="place" required defaultValue="">
+              <option value="" disabled>
+                Elegí la marca o el local
+              </option>
+              {places.brands.map((b) => (
+                <option key={b.id} value={`${b.id}:`}>
+                  Toda la marca · {b.name}
                 </option>
-                {places.brands.map((b) => (
-                  <option key={b.id} value={`${b.id}:`}>
-                    Toda la marca · {b.name}
-                  </option>
-                ))}
-                {places.restaurants.map((r) => (
-                  <option key={r.id} value={`${r.brand_id}:${r.id}`}>
-                    Local · {r.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field id="titulo" label="Título">
-              <Input name="title" required maxLength={120} />
-            </Field>
-            <Field id="contenido" label="Contenido">
-              <Textarea name="content" maxLength={4000} />
-            </Field>
+              ))}
+              {places.restaurants.map((r) => (
+                <option key={r.id} value={`${r.brand_id}:${r.id}`}>
+                  Local · {r.name}
+                </option>
+              ))}
+            </FormSelect>
+            <FormInput id="titulo" label="Título" name="title" required maxLength={120} />
+            <FormTextarea id="contenido" label="Contenido" name="content" maxLength={4000} />
             {canSeeCosts ? (
-              <Field
+              <FormInput
                 id="costo"
                 label="Costo (ARS)"
                 hint="Opcional. Solo lo ven quienes pueden ver costos."
-              >
-                <Input name="cost" inputMode="decimal" placeholder="1520,50" />
-              </Field>
+                name="cost"
+                inputMode="decimal"
+                placeholder="1520,50"
+              />
             ) : null}
             <Reason id="motivo-nuevo" />
           </ActionForm>

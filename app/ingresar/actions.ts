@@ -4,24 +4,18 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { type ActionState } from "@/lib/auth/results";
+import { fieldErrors, formValues, schemas } from "@/lib/forms/schemas";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { REMEMBER_COOKIE } from "@/lib/supabase/remember";
 import { createClient } from "@/lib/supabase/server";
 
-export type FormState = { status?: "ok" | "info" | "warn" | "bad"; message?: string };
+export type FormState = ActionState;
 
-// Contraseña: mínimo 12 caracteres, con letras y números (P8; mismo criterio que Auth).
-const passwordRules = z
-  .string()
-  .min(12, "La contraseña tiene que tener al menos 12 caracteres.")
-  .max(200)
-  .regex(/[A-Za-z]/, "La contraseña tiene que tener letras.")
-  .regex(/[0-9]/, "La contraseña tiene que tener números.");
-
-const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(320),
-  password: z.string().min(1).max(200),
-});
+// Lo mismo que validó el navegador (lib/forms/schemas.ts), con un error por campo.
+function invalid(error: z.ZodError, message?: string): FormState {
+  return { status: "bad", message, fieldErrors: fieldErrors(error) };
+}
 
 const sessionSchema = z.object({
   session: z.object({ access_token: z.string(), refresh_token: z.string() }),
@@ -31,11 +25,8 @@ const messageSchema = z.object({ message: z.string() });
 // Ingreso: pasa por la Edge Function auth-login, que cuenta los intentos y bloquea al quinto
 // fallo (ADR-0010). Si sale bien, la sesión queda en cookies.
 export async function signIn(_prev: FormState, formData: FormData): Promise<FormState> {
-  const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
-  if (!parsed.success) return { status: "bad", message: "Ingresá tu correo y tu contraseña." };
+  const parsed = schemas.login.safeParse(formValues(formData));
+  if (!parsed.success) return invalid(parsed.error, "Ingresá tu correo y tu contraseña.");
 
   const { url, key } = supabaseEnv();
   const h = await headers();
@@ -90,12 +81,6 @@ export async function signOut(): Promise<void> {
 }
 
 // Doble verificación (MFA): verifica el código de la app de autenticación.
-const codeSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .regex(/^[0-9]{6}$/),
-});
 
 // Solo una ruta interna de la app: nunca otro sitio.
 function safeNext(value: FormDataEntryValue | null): string {
@@ -104,8 +89,8 @@ function safeNext(value: FormDataEntryValue | null): string {
 }
 
 export async function verifyCode(_prev: FormState, formData: FormData): Promise<FormState> {
-  const parsed = codeSchema.safeParse({ code: formData.get("code") });
-  if (!parsed.success) return { status: "bad", message: "El código tiene 6 números." };
+  const parsed = schemas.code.safeParse(formValues(formData));
+  if (!parsed.success) return invalid(parsed.error);
   const supabase = await createClient();
   const { data: factors } = await supabase.auth.mfa.listFactors();
   const factor = factors?.totp.find((f) => f.status === "verified");
@@ -157,7 +142,8 @@ export async function confirmEnrollment(
     factorId: formData.get("factorId"),
     code: formData.get("code"),
   });
-  if (!parsed.success) return { ...prev, status: "bad", message: "El código tiene 6 números." };
+  if (!parsed.success)
+    return { ...prev, status: "bad", fieldErrors: { code: "El código tiene 6 números." } };
   const supabase = await createClient();
   const { error } = await supabase.auth.mfa.challengeAndVerify({
     factorId: parsed.data.factorId,
@@ -174,11 +160,10 @@ export async function confirmEnrollment(
 
 // Recuperar la contraseña (sección 9). El mensaje es siempre el mismo: nunca dice si el correo
 // existe. El enlace del correo vuelve a /ingresar/confirmar, que abre una sesión de recuperación.
-const recoverSchema = z.object({ email: z.string().trim().toLowerCase().email().max(320) });
 
 export async function requestRecovery(_prev: FormState, formData: FormData): Promise<FormState> {
-  const parsed = recoverSchema.safeParse({ email: formData.get("email") });
-  if (!parsed.success) return { status: "bad", message: "Revisá el correo." };
+  const parsed = schemas.recover.safeParse(formValues(formData));
+  if (!parsed.success) return invalid(parsed.error);
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "127.0.0.1:3000"}`;
   const supabase = await createClient({ remember: false });
@@ -192,19 +177,11 @@ export async function requestRecovery(_prev: FormState, formData: FormData): Pro
   };
 }
 
-const newPasswordSchema = z
-  .object({ password: passwordRules, repeat: z.string() })
-  .refine((v) => v.password === v.repeat, { message: "Las dos contraseñas no coinciden." });
-
 // Guarda la contraseña nueva con la sesión de recuperación. Si la cuenta usa doble verificación,
 // Auth pide primero el código (aal2): la pantalla de doble verificación vuelve acá.
 export async function setNewPassword(_prev: FormState, formData: FormData): Promise<FormState> {
-  const parsed = newPasswordSchema.safeParse({
-    password: formData.get("password"),
-    repeat: formData.get("repeat"),
-  });
-  if (!parsed.success)
-    return { status: "bad", message: parsed.error.issues[0]?.message ?? "Revisá la contraseña." };
+  const parsed = schemas.newPassword.safeParse(formValues(formData));
+  if (!parsed.success) return invalid(parsed.error);
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims) return { status: "bad", message: "El enlace venció. Pedí uno nuevo." };

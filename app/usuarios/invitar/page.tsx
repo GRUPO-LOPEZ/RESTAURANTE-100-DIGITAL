@@ -5,7 +5,7 @@ import { inviteAction } from "@/app/usuarios/actions";
 import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Card, CardDescription } from "@/components/ui/card";
-import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { getPlaces, getRoles } from "@/lib/data";
 import { requireMenu } from "@/lib/auth/session";
 
@@ -37,52 +37,54 @@ async function InviteForm() {
         <CardDescription>
           Solo podés invitar a los lugares y con los roles que tus permisos permiten.
         </CardDescription>
-        <ActionForm action={inviteAction} submitLabel="Enviar invitación" pendingLabel="Enviando…">
-          <Field id="email" label="Correo">
-            <Input
-              name="email"
-              type="email"
-              inputMode="email"
-              autoComplete="off"
-              required
-              maxLength={320}
-            />
-          </Field>
+        <ActionForm
+          action={inviteAction}
+          schema="invite"
+          submitLabel="Enviar invitación"
+          pendingLabel="Enviando…"
+        >
+          <FormInput
+            id="email"
+            label="Correo"
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="off"
+            required
+            maxLength={320}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="first_name" label="Nombre">
-              <Input name="first_name" required maxLength={80} />
-            </Field>
-            <Field id="last_name" label="Apellido">
-              <Input name="last_name" required maxLength={80} />
-            </Field>
+            <FormInput id="first_name" label="Nombre" name="first_name" required maxLength={80} />
+            <FormInput id="last_name" label="Apellido" name="last_name" required maxLength={80} />
           </div>
-          <Field id="role_code" label="Rol">
-            <Select name="role_code" required defaultValue="">
-              <option value="" disabled>
-                Elegí un rol
+          <FormSelect id="role_code" label="Rol" name="role_code" required defaultValue="">
+            <option value="" disabled>
+              Elegí un rol
+            </option>
+            {roles.map((r) => (
+              <option key={r.code} value={r.code}>
+                {r.name}
               </option>
-              {roles.map((r) => (
-                <option key={r.code} value={r.code}>
-                  {r.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field id="place" label="Dónde">
-            <Select name="place" required defaultValue="">
-              <option value="" disabled>
-                Elegí el lugar
+            ))}
+          </FormSelect>
+          <FormSelect id="place" label="Dónde" name="place" required defaultValue="">
+            <option value="" disabled>
+              Elegí el lugar
+            </option>
+            {places.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
               </option>
-              {places.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field id="reason" label="Motivo" hint="Queda en el historial.">
-            <Textarea name="reason" required maxLength={500} />
-          </Field>
+            ))}
+          </FormSelect>
+          <FormTextarea
+            id="reason"
+            label="Motivo"
+            hint="Queda en el historial."
+            name="reason"
+            required
+            maxLength={500}
+          />
         </ActionForm>
       </Card>
     </>

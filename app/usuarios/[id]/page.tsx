@@ -16,7 +16,7 @@ import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Field, Select, Textarea } from "@/components/ui/field";
+import { FormSelect, FormTextarea } from "@/components/ui/form";
 import { EmptyState } from "@/components/ui/kpi";
 import {
   ACTION_LABELS,
@@ -56,9 +56,14 @@ const EVENT_LABELS: Record<string, string> = {
 
 function Reason({ id, label }: { id: string; label: string }) {
   return (
-    <Field id={id} label={label} hint="Queda en el historial.">
-      <Textarea name="reason" required maxLength={500} />
-    </Field>
+    <FormTextarea
+      id={id}
+      name="reason"
+      label={label}
+      hint="Queda en el historial."
+      required
+      maxLength={500}
+    />
   );
 }
 
@@ -127,15 +132,21 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
         <dl className="flex flex-col gap-1">
           <Row label="Puesto" value={detail.job_title} />
           <Row label="Área" value={detail.area_name} />
-          <Row
-            label="Último acceso"
-            value={detail.last_seen_at ? formatDateTime(detail.last_seen_at) : "Todavía no entró"}
-          />
-          <Row
-            label="Primer ingreso"
-            value={detail.activated_at ? formatDateTime(detail.activated_at) : null}
-          />
-          <Row label="La invitó" value={detail.invited_by_name} />
+          {detail.can_view_admin_details ? (
+            <>
+              <Row
+                label="Último acceso"
+                value={
+                  detail.last_seen_at ? formatDateTime(detail.last_seen_at) : "Todavía no entró"
+                }
+              />
+              <Row
+                label="Primer ingreso"
+                value={detail.activated_at ? formatDateTime(detail.activated_at) : null}
+              />
+              <Row label="La invitó" value={detail.invited_by_name} />
+            </>
+          ) : null}
           <Row
             label="Trabaja en"
             value={
@@ -165,6 +176,12 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
             />
           ) : null}
         </dl>
+        {detail.can_view_admin_details ? null : (
+          <p className="text-sm text-ink-muted">
+            El último acceso, el primer ingreso, quién la invitó y quién la suspendió o le dio de
+            baja, con el motivo, los ve quien administra a la persona.
+          </p>
+        )}
       </Card>
 
       {detail.can_view_activity ? (
@@ -253,9 +270,10 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
                 {r.role_name}{" "}
                 <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
               </p>
-              <Action summary="Quitar…">
+              <Action summary={`Quitar ${r.role_name}…`}>
                 <ActionForm
                   action={revokeRoleAction}
+                  schema="reason"
                   submitLabel="Quitar este rol"
                   variant="outline"
                   pendingLabel="Quitando…"
@@ -281,32 +299,33 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
               persona lo apruebe.
             </CardDescription>
           </div>
-          <ActionForm action={assignRoleAction} submitLabel="Dar el rol" pendingLabel="Guardando…">
+          <ActionForm
+            action={assignRoleAction}
+            schema="assignRole"
+            submitLabel="Dar el rol"
+            pendingLabel="Guardando…"
+          >
             <input type="hidden" name="userId" value={user.id} />
-            <Field id="rol" label="Rol">
-              <Select name="role" required defaultValue="">
-                <option value="" disabled>
-                  Elegí un rol
+            <FormSelect id="rol" name="role" label="Rol" defaultValue="">
+              <option value="" disabled>
+                Elegí un rol
+              </option>
+              {roles.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.name}
                 </option>
-                {roles.map((r) => (
-                  <option key={r.code} value={r.code}>
-                    {r.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field id="lugar" label="Dónde">
-              <Select name="place" required defaultValue="">
-                <option value="" disabled>
-                  Elegí el lugar
+              ))}
+            </FormSelect>
+            <FormSelect id="lugar" name="place" label="Dónde" defaultValue="">
+              <option value="" disabled>
+                Elegí el lugar
+              </option>
+              {places.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
                 </option>
-                {places.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+              ))}
+            </FormSelect>
             <Reason id="motivo-dar" label="Motivo para dar el rol" />
           </ActionForm>
         </Card>
@@ -319,6 +338,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
             <Action key="unlock" summary="Liberar el bloqueo…">
               <ActionForm
                 action={unlockUserAction}
+                schema="reason"
                 submitLabel="Liberar el bloqueo"
                 variant="outline"
                 pendingLabel="Liberando…"
@@ -335,6 +355,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
             <Action key="suspend" summary="Suspender…">
               <ActionForm
                 action={suspendUserAction}
+                schema="reason"
                 submitLabel="Suspender la cuenta"
                 variant="outline"
                 pendingLabel="Suspendiendo…"
@@ -352,6 +373,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
             <Action key="lift" summary="Levantar la suspensión…">
               <ActionForm
                 action={liftSuspensionAction}
+                schema="reason"
                 submitLabel="Levantar la suspensión"
                 variant="outline"
                 pendingLabel="Levantando…"
@@ -366,6 +388,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
             <Action key="deactivate" summary="Desactivar…">
               <ActionForm
                 action={disableUserAction}
+                schema="reason"
                 submitLabel="Desactivar la cuenta"
                 variant="destructive"
                 pendingLabel="Desactivando…"
@@ -383,6 +406,7 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
             <Action key="reactivate" summary="Pedir la reactivación…">
               <ActionForm
                 action={requestReactivationAction}
+                schema="reason"
                 submitLabel="Pedir la reactivación"
                 variant="outline"
                 pendingLabel="Enviando…"

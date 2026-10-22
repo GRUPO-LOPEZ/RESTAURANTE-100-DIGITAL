@@ -19,9 +19,9 @@ function shortDay(day: string): string {
 }
 
 // Gráfico principal del tablero: accesos por día (sección 9). Dos series con leyenda de texto, y
-// los valores al pasar el dedo o el mouse. Los colores pastel del sistema de diseño tienen poco
-// contraste con el fondo: por eso cada barra lleva borde oscuro y la misma información va en una
-// tabla (visible con "Ver los números") y para lectores de pantalla.
+// los valores al pasar el dedo o el mouse. Las barras usan los tonos fuertes de gráficos (3:1 sobre
+// el fondo, ADR-0015); la leyenda va en el color de texto, y la misma información va en una tabla
+// (visible con "Ver los números") y para lectores de pantalla.
 // Con períodos largos, una barra por día no se distingue en el celular: se agrupa por semana.
 const WEEKLY_AFTER_DAYS = 45;
 
@@ -80,22 +80,20 @@ export function LoginsByDayChart({ data }: { data: Day[] }) {
               align="left"
               iconType="square"
               wrapperStyle={{ color: "var(--color-ink)", fontSize: 14, paddingBottom: 8 }}
+              // Los tonos fuertes son solo para las barras: el texto va en el color de texto.
+              formatter={(value: string) => <span className="text-ink">{value}</span>}
             />
             <Bar
               dataKey="succeeded"
               name="Ingresos buenos"
-              fill="var(--color-chart-1)"
-              stroke="var(--color-info-ink)"
-              strokeWidth={1}
+              fill="var(--color-chart-strong-1)"
               radius={[4, 4, 0, 0]}
               isAnimationActive={false}
             />
             <Bar
               dataKey="failed"
               name="Ingresos fallidos"
-              fill="var(--color-chart-4)"
-              stroke="var(--color-bad-ink)"
-              strokeWidth={1}
+              fill="var(--color-chart-strong-4)"
               radius={[4, 4, 0, 0]}
               isAnimationActive={false}
             />

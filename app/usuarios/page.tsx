@@ -45,6 +45,15 @@ function comparison(now: number, before: number): string {
   return `${diff > 0 ? "+" : ""}${diff} contra los 7 días anteriores (${before})`;
 }
 
+// Para los KPI de estado: el valor de hoy contra cómo estaba hace 7 días, con la fecha (regla de
+// tableros 2). No depende del período filtrado.
+function weekAgo(now: number, before: number, asOf: string): string {
+  const when = formatDate(asOf);
+  if (now === before) return `Igual que el ${when} (${before})`;
+  const diff = now - before;
+  return `${diff > 0 ? "+" : ""}${diff} contra el ${when} (${before})`;
+}
+
 async function Dashboard({
   searchParams,
 }: {
@@ -68,6 +77,7 @@ async function Dashboard({
     getMenus(),
   ]);
   const off = panel.deactivated + panel.suspended;
+  const offBefore = panel.deactivated_prev + panel.suspended_prev;
 
   const brandName = (id?: string) => places.brands.find((b) => b.id === id)?.name;
   const restaurantName = (id?: string) => places.restaurants.find((r) => r.id === id)?.name;
@@ -145,21 +155,26 @@ async function Dashboard({
         <Kpi
           label="Cuentas activas"
           value={panel.active}
-          detail={panel.locked > 0 ? `${panel.locked} bloqueadas unos minutos` : "Estado actual"}
+          detail={[
+            weekAgo(panel.active, panel.active_prev, panel.prev_as_of),
+            panel.locked > 0 ? `${panel.locked} bloqueadas unos minutos` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
           status="ok"
           statusLabel="Operando"
         />
         <Kpi
           label="Desactivadas o suspendidas"
           value={off}
-          detail={`${panel.deactivated} desactivadas · ${panel.suspended} suspendidas`}
+          detail={`${weekAgo(off, offBefore, panel.prev_as_of)} · ${panel.deactivated} desactivadas · ${panel.suspended} suspendidas`}
           status={off > 0 ? "warn" : "ok"}
           statusLabel={off > 0 ? "Revisar" : "Ninguna"}
         />
         <Kpi
           label="Aprobaciones pendientes"
           value={panel.pending_approvals}
-          detail="Estado actual"
+          detail={weekAgo(panel.pending_approvals, panel.pending_prev, panel.prev_as_of)}
           status={panel.pending_approvals > 0 ? "info" : "ok"}
           statusLabel={panel.pending_approvals > 0 ? "Esperan decisión" : "Nada pendiente"}
         />

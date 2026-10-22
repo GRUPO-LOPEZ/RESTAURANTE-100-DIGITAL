@@ -42,12 +42,14 @@ async function recoveryLink(request: APIRequestContext, email: string): Promise<
 }
 
 test.describe("ingreso", () => {
-  test("sin marcar «recordar», la sesión se borra al cerrar el navegador", async ({ page }) => {
+  test("«recordar» viene sin marcar y la sesión se borra al cerrar el navegador", async ({
+    page,
+  }) => {
     await page.goto("/ingresar");
     await axe(page);
     await page.getByLabel("Correo").fill("cocinero@ejemplo.test");
     await page.getByLabel("Contraseña").fill(PASSWORD);
-    await page.getByLabel("Recordar mi sesión en este dispositivo").uncheck();
+    await expect(page.getByLabel("Recordar mi sesión en este dispositivo")).not.toBeChecked();
     await page.getByRole("button", { name: "Ingresar" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
     const auth = (await page.context().cookies()).filter((c) => c.name.includes("auth-token"));
@@ -58,7 +60,12 @@ test.describe("ingreso", () => {
   });
 
   test("marcando «recordar», la sesión queda guardada", async ({ page }) => {
-    await login(page, "cocinero@ejemplo.test");
+    await page.goto("/ingresar");
+    await page.getByLabel("Correo").fill("cocinero@ejemplo.test");
+    await page.getByLabel("Contraseña").fill(PASSWORD);
+    await page.getByLabel("Recordar mi sesión en este dispositivo").check();
+    await page.getByRole("button", { name: "Ingresar" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
     const auth = (await page.context().cookies()).filter((c) => c.name.includes("auth-token"));
     for (const c of auth) expect(c.expires).toBeGreaterThan(Date.now() / 1000);
     await logout(page);
@@ -100,7 +107,11 @@ test.describe("recuperar la contraseña y mi cuenta", () => {
     await page.getByLabel("Contraseña nueva").fill("corta1");
     await page.getByLabel("Repetí la contraseña").fill("corta1");
     await page.getByRole("button", { name: "Guardar y entrar" }).click();
-    await expect(notice(page)).toContainText("al menos 12 caracteres");
+    // El error va debajo del campo, antes de enviar (React Hook Form, ADR-0016).
+    await expect(
+      page.getByText("La contraseña tiene que tener al menos 12 caracteres."),
+    ).toBeVisible();
+    await expect(page.getByLabel("Contraseña nueva")).toHaveAttribute("aria-invalid", "true");
     await page.getByLabel("Contraseña nueva").fill(first);
     await page.getByLabel("Repetí la contraseña").fill(first);
     await page.getByRole("button", { name: "Guardar y entrar" }).click();

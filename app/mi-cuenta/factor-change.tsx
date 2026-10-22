@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import {
   confirmFactorChangeAction,
@@ -9,19 +9,16 @@ import {
 } from "@/app/mi-cuenta/actions";
 import { FormNotice } from "@/components/form-notice";
 import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/field";
+import { FormInput, ServerForm, useServerForm } from "@/components/ui/form";
 
 // Cambiar de app de autenticación (por ejemplo, celular nuevo). La anterior se da de baja recién
 // cuando el código de la nueva es correcto.
 export function FactorChange() {
   const [enrollment, setEnrollment] = useState<FactorState>({});
   const [starting, startTransition] = useTransition();
-  const [state, formAction, pending] = useActionState<FactorState, FormData>(
-    confirmFactorChangeAction,
-    {},
-  );
+  const form = useServerForm({ schema: "code", action: confirmFactorChangeAction });
 
-  if (state.status === "ok") return <FormNotice state={state} />;
+  if (form.state.status === "ok") return <FormNotice state={form.state} />;
 
   if (!enrollment.factorId) {
     return (
@@ -43,7 +40,7 @@ export function FactorChange() {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <ServerForm form={form} className="flex flex-col gap-4">
       {enrollment.qrCode ? (
         // El código QR lo genera Supabase Auth como imagen SVG.
         // eslint-disable-next-line @next/next/no-img-element
@@ -58,20 +55,20 @@ export function FactorChange() {
         <span className="font-medium break-all text-ink">{enrollment.secret}</span>
       </p>
       <input type="hidden" name="factorId" value={enrollment.factorId} />
-      <Field id="code-new" label="Código de 6 números de la app nueva">
-        <Input
-          name="code"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]{6}"
-          maxLength={6}
-          required
-        />
-      </Field>
-      <FormNotice state={state} />
+      <FormInput
+        id="code-new"
+        label="Código de 6 números de la app nueva"
+        name="code"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        pattern="[0-9]{6}"
+        maxLength={6}
+        required
+      />
+      <FormNotice state={form.state} />
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-          {pending ? "Verificando…" : "Usar la app nueva"}
+        <Button type="submit" disabled={form.pending} className="w-full sm:w-auto">
+          {form.pending ? "Verificando…" : "Usar la app nueva"}
         </Button>
         {/* Cancelar no cambia nada: la app anterior sigue activa. */}
         <Button
@@ -83,6 +80,6 @@ export function FactorChange() {
           Cancelar
         </Button>
       </div>
-    </form>
+    </ServerForm>
   );
 }

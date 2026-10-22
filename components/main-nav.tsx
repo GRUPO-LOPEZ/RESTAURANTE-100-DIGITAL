@@ -46,8 +46,17 @@ export function MainNav({ links }: { links: NavLink[] }) {
   }, [pathname]);
   return (
     <>
-      <details ref={menu} className="group sm:hidden">
-        <summary className="flex min-h-touch cursor-pointer list-none items-center gap-2 rounded-sm px-3 text-base font-medium text-ink hover:bg-line/50">
+      <details
+        ref={menu}
+        className="group sm:hidden"
+        // Escape cierra el menú y devuelve el foco al botón.
+        onKeyDown={(event) => {
+          if (event.key !== "Escape" || !menu.current?.open) return;
+          menu.current.open = false;
+          menu.current.querySelector("summary")?.focus();
+        }}
+      >
+        <summary className="flex min-h-touch cursor-pointer list-none items-center gap-2 rounded-sm px-3 text-base font-medium text-ink hover:bg-line/50 [&::-webkit-details-marker]:hidden">
           <Menu aria-hidden="true" className="size-5" />
           Menú
         </summary>

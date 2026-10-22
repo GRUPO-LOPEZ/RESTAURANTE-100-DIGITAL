@@ -7,7 +7,8 @@ import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Field, Select, Textarea } from "@/components/ui/field";
+import { Field, Select } from "@/components/ui/field";
+import { FormTextarea } from "@/components/ui/form";
 import { EmptyState } from "@/components/ui/kpi";
 import { first, formatDateTime, getBrandsAndRestaurants, getPermissionMatrix } from "@/lib/data";
 import { requireMenu } from "@/lib/auth/session";
@@ -130,6 +131,7 @@ async function Matrix({ searchParams }: { searchParams: PageProps<"/roles">["sea
                           </summary>
                           <ActionForm
                             action={requestMatrixChangeAction}
+                            schema="reason"
                             submitLabel={granted ? "Pedir quitarlo" : "Pedir darlo"}
                             pendingLabel="Enviando…"
                             variant="outline"
@@ -138,13 +140,14 @@ async function Matrix({ searchParams }: { searchParams: PageProps<"/roles">["sea
                             <input type="hidden" name="role" value={role.code} />
                             <input type="hidden" name="permission" value={p.code} />
                             <input type="hidden" name="grant" value={granted ? "false" : "true"} />
-                            <Field
+                            <FormTextarea
                               id={`motivo-${p.code}`}
                               label="Motivo"
                               hint="Queda en el historial y lo ve quien aprueba."
-                            >
-                              <Textarea name="reason" required maxLength={500} />
-                            </Field>
+                              name="reason"
+                              required
+                              maxLength={500}
+                            />
                           </ActionForm>
                         </details>
                       ) : null}

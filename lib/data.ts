@@ -117,6 +117,12 @@ const controlPanel = z.object({
   deactivated: z.number(),
   locked: z.number(),
   pending_approvals: z.number(),
+  // El mismo estado hace 7 días, según la auditoría (regla de tableros 2).
+  prev_as_of: z.string(),
+  active_prev: z.number(),
+  suspended_prev: z.number(),
+  deactivated_prev: z.number(),
+  pending_prev: z.number(),
   rejected_7d: z.number().nullable(),
   rejected_prev_7d: z.number().nullable(),
   logins_by_day: z
@@ -165,6 +171,8 @@ const userDetail = z.object({
   job_title: z.string().nullable(),
   area_id: z.string().nullable(),
   area_name: z.string().nullable(),
+  // El primer y el último acceso, quién la invitó y los motivos: solo para quien la administra.
+  can_view_admin_details: z.boolean(),
   activated_at: z.string().nullable(),
   last_seen_at: z.string().nullable(),
   invited_by_name: z.string().nullable(),
@@ -404,13 +412,9 @@ export async function getMyScopes(): Promise<ScopeRow[]> {
 export async function getActiveRestaurantId(userId: string | undefined): Promise<string | null> {
   if (!userId) return null;
   const supabase = await createClient();
-  const { data } = await supabase
-    .schema("core")
-    .from("user_profiles")
-    .select("last_restaurant_id")
-    .eq("id", userId)
-    .maybeSingle();
-  return data?.last_restaurant_id ?? null;
+  // Por función: la columna ya no se lee por la API, y cada uno ve solo el suyo (ADR-0015).
+  const { data } = await supabase.schema("core").rpc("my_active_restaurant");
+  return typeof data === "string" ? data : null;
 }
 
 // Documentos de ensayo (la vista ya oculta el costo a quien no lo puede ver).
@@ -426,6 +430,8 @@ export type TestDocument = {
   currency: string;
   status: "draft" | "in_review" | "approved" | "published" | "archived";
   updated_at: string;
+  // Quien la mandó a revisión no la publica (ADR-0015, respuesta 1).
+  review_requested_by: string | null;
 };
 
 export async function getTestDocuments(): Promise<TestDocument[]> {
@@ -434,7 +440,7 @@ export async function getTestDocuments(): Promise<TestDocument[]> {
     .schema("core")
     .from("v_test_documents")
     .select(
-      "id, brand_id, restaurant_id, document_key, version_number, title, content, cost, currency, status, updated_at",
+      "id, brand_id, restaurant_id, document_key, version_number, title, content, cost, currency, status, updated_at, review_requested_by",
     )
     .neq("status", "archived")
     .order("title")
@@ -456,6 +462,7 @@ export async function getTestDocuments(): Promise<TestDocument[]> {
             currency: d.currency ?? "ARS",
             status: d.status,
             updated_at: d.updated_at,
+            review_requested_by: d.review_requested_by,
           },
         ]
       : [],

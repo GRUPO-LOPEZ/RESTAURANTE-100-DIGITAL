@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { toActionState, type ActionState } from "@/lib/auth/results";
+import { fieldErrors, formValues, schemas } from "@/lib/forms/schemas";
 import { getMySession } from "@/lib/auth/session";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -11,21 +12,17 @@ import { createClient } from "@/lib/supabase/server";
 // Acciones de "Mi cuenta" (sección 9): datos propios, contraseña, doble verificación y sesiones.
 // Todo sobre la propia cuenta: la base no deja tocar nada más desde acá.
 
-const nameSchema = z.object({
-  first_name: z.string().trim().min(1, "Escribí tu nombre.").max(80),
-  last_name: z.string().trim().min(1, "Escribí tu apellido.").max(80),
-});
+// Lo mismo que validó el navegador (lib/forms/schemas.ts), con un error por campo.
+function invalid(error: z.ZodError): ActionState {
+  return { status: "bad", message: "Revisá los campos marcados.", fieldErrors: fieldErrors(error) };
+}
 
 export async function updateMyProfileAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = nameSchema.safeParse({
-    first_name: formData.get("first_name"),
-    last_name: formData.get("last_name"),
-  });
-  if (!parsed.success)
-    return { status: "bad", message: parsed.error.issues[0]?.message ?? "Revisá los datos." };
+  const parsed = schemas.profile.safeParse(formValues(formData));
+  if (!parsed.success) return invalid(parsed.error);
   const supabase = await createClient();
   const { data, error } = await supabase.schema("core").rpc("update_my_profile", {
     p_first_name: parsed.data.first_name,
@@ -36,31 +33,13 @@ export async function updateMyProfileAction(
 }
 
 // Contraseña: mínimo 12 caracteres, con letras y números (P8; mismo criterio que Auth).
-const passwordSchema = z
-  .object({
-    current: z.string().min(1, "Escribí tu contraseña actual.").max(200),
-    password: z
-      .string()
-      .min(12, "La contraseña nueva tiene que tener al menos 12 caracteres.")
-      .max(200)
-      .regex(/[A-Za-z]/, "La contraseña nueva tiene que tener letras.")
-      .regex(/[0-9]/, "La contraseña nueva tiene que tener números."),
-    repeat: z.string(),
-  })
-  .refine((v) => v.password === v.repeat, { message: "Las dos contraseñas nuevas no coinciden." })
-  .refine((v) => v.password !== v.current, { message: "La contraseña nueva tiene que ser otra." });
 
 export async function changePasswordAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = passwordSchema.safeParse({
-    current: formData.get("current"),
-    password: formData.get("password"),
-    repeat: formData.get("repeat"),
-  });
-  if (!parsed.success)
-    return { status: "bad", message: parsed.error.issues[0]?.message ?? "Revisá los datos." };
+  const parsed = schemas.changePassword.safeParse(formValues(formData));
+  if (!parsed.success) return invalid(parsed.error);
   const session = await getMySession();
   if (!session.signed_in || !session.email)
     return { status: "bad", message: "Tu sesión venció. Volvé a ingresar." };
@@ -142,7 +121,8 @@ export async function confirmFactorChangeAction(
     factorId: formData.get("factorId"),
     code: formData.get("code"),
   });
-  if (!parsed.success) return { ...prev, status: "bad", message: "El código tiene 6 números." };
+  if (!parsed.success)
+    return { ...prev, status: "bad", fieldErrors: { code: "El código tiene 6 números." } };
   const supabase = await createClient();
   const { error } = await supabase.auth.mfa.challengeAndVerify({
     factorId: parsed.data.factorId,
