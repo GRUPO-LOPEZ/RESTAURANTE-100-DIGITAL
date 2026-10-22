@@ -147,11 +147,11 @@ select throws_ok($$insert into test_fixtures.wrong_wiring (name) values ('x')$$,
 -- ---------------------------------------------------------------------------
 -- Contexto del cambio
 -- ---------------------------------------------------------------------------
-select throws_ok($$select core.set_change_context('', 'app')$$, '22023', null, 'el motivo vacío se rechaza');
-select throws_ok($$select core.set_change_context(repeat('x', 501), 'app')$$, '22023', null, 'un motivo de más de 500 caracteres se rechaza');
+select throws_ok($$select core.set_change_context('', 'manual')$$, '22023', null, 'el motivo vacío se rechaza');
+select throws_ok($$select core.set_change_context(repeat('x', 501), 'manual')$$, '22023', null, 'un motivo de más de 500 caracteres se rechaza');
 select throws_ok($$select core.set_change_context('Motivo', 'cualquiera')$$, '22023', null, 'un origen fuera de la lista se rechaza');
 select lives_ok($$select core.set_change_context('Prueba de motivo', 'maintenance')$$, 'un motivo válido se acepta');
-select is(current_setting('app.reason', true), 'Prueba de motivo', 'el motivo queda en la transacción');
+select is(current_setting('app.change_reason', true), 'Prueba de motivo', 'el motivo queda en la transacción');
 
 -- ---------------------------------------------------------------------------
 -- Privilegios

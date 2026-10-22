@@ -48,7 +48,7 @@ as $$
 $$;
 create function pg_temp.req(p_role text, p_user uuid) returns uuid language sql as $$
   select r.id from workflow.approval_requests r
-   where r.payload ->> 'role_code' = p_role and r.subject_user_id = p_user and r.status = 'pending'
+   where r.proposed_changes ->> 'role_code' = p_role and r.subject_user_id = p_user and r.status = 'pending'
 $$;
 
 -- Personas nuevas, miembros del grupo, sin roles.
@@ -67,9 +67,9 @@ select is(pg_temp.assign(pg_temp.u(401), pg_temp.u(401), 'cook', 'restaurant', 1
 select is(pg_temp.assign(pg_temp.u(404), pg_temp.u(404), 'cook', 'restaurant', 101, 201), 'denied', 'A1. el gerente no se da roles a sí mismo');
 select is((select count(*)::int from core.user_role_assignments a join core.roles r on r.id = a.role_id
             where a.user_id in (pg_temp.u(401), pg_temp.u(404)) and r.code = 'cook'), 0, 'A1. no se creó ninguna asignación');
-select is((select count(*)::int from audit.security_events
+select is((select count(*)::int from audit.authentication_security_events
             where event_type = 'operation_denied' and operation = 'core.assign_role'
-              and actor_id = target_user_id and actor_id in (pg_temp.u(401), pg_temp.u(404))), 2,
+              and actor_id = user_id and actor_id in (pg_temp.u(401), pg_temp.u(404))), 2,
   'A1. los dos intentos quedaron en el registro de seguridad');
 
 -- ---------------------------------------------------------------------------
@@ -77,9 +77,9 @@ select is((select count(*)::int from audit.security_events
 -- ---------------------------------------------------------------------------
 select is(pg_temp.assign(pg_temp.u(409), '11111111-1111-1111-1111-111111111111', 'cook', 'restaurant', 101, 201), 'denied',
   'el cocinero no puede dar roles');
-select ok(exists (select 1 from audit.security_events
+select ok(exists (select 1 from audit.authentication_security_events
                    where event_type = 'operation_denied' and actor_id = pg_temp.u(409) and operation = 'core.assign_role'
-                     and target_user_id = '11111111-1111-1111-1111-111111111111' and scope_restaurant_id = pg_temp.u(201)),
+                     and user_id = '11111111-1111-1111-1111-111111111111' and scope_restaurant_id = pg_temp.u(201)),
   '11. la operación rechazada del cocinero quedó registrada, con quién, a quién y dónde');
 select is(pg_temp.assign(pg_temp.u(404), '11111111-1111-1111-1111-111111111111', 'cook', 'restaurant', 101, 201), 'applied',
   'el gerente da el rol de cocinero en su local');
@@ -91,7 +91,7 @@ select is(pg_temp.assign(pg_temp.u(404), '11111111-1111-1111-1111-111111111111',
   'el gerente no da roles en otro local');
 select is(pg_temp.assign(pg_temp.u(404), '11111111-1111-1111-1111-111111111111', 'executive_chef', 'restaurant', 101, 201), 'denied',
   'el gerente (nivel 4) no da Chef Ejecutivo (nivel 5): se comparan permisos, no niveles');
-select ok(exists (select 1 from audit.security_events where actor_id = pg_temp.u(404) and details -> 'missing_permissions' ? 'approvals.decide'),
+select ok(exists (select 1 from audit.authentication_security_events where actor_id = pg_temp.u(404) and detail -> 'missing_permissions' ? 'approvals.decide'),
   'el rechazo explica qué permisos le faltan');
 select is(pg_temp.assign(pg_temp.u(404), '11111111-1111-1111-1111-111111111111', 'restaurant_manager', 'restaurant', 101, 201), 'applied',
   'el gerente puede dar un rol igual al suyo, que no aprueba nada');
@@ -151,13 +151,13 @@ select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from workflow.approva
 select is(pg_temp.q(pg_temp.u(403), 'select count(*)::text from workflow.approval_requests where created_at = now()'), '1', 'el director ve las solicitudes de su marca');
 
 -- A2: no se aprueba la propia solicitud
-select is(pg_temp.r(pg_temp.u(403), format('workflow.decide(%L, ''approved'', ''La apruebo yo'')', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
+select is(pg_temp.r(pg_temp.u(403), format('workflow.decide_approval(%L, ''approved'', ''La apruebo yo'')', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
   'denied', 'A2. el director no aprueba su propia solicitud');
-select ok(exists (select 1 from audit.security_events where actor_id = pg_temp.u(403) and operation = 'workflow.decide'),
+select ok(exists (select 1 from audit.authentication_security_events where actor_id = pg_temp.u(403) and operation = 'workflow.decide_approval'),
   'A2. el intento de autoaprobación quedó registrado');
-select is(pg_temp.r(pg_temp.u(409), format('workflow.decide(%L, ''approved'', null)', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
+select is(pg_temp.r(pg_temp.u(409), format('workflow.decide_approval(%L, ''approved'', null)', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
   'denied', 'el cocinero no decide aprobaciones');
-select is(pg_temp.r(pg_temp.u(405), format('workflow.decide(%L, ''approved'', ''Conozco a la persona'')', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
+select is(pg_temp.r(pg_temp.u(405), format('workflow.decide_approval(%L, ''approved'', ''Conozco a la persona'')', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
   'approved', 'otra persona con approvals.decide en la marca (el chef ejecutivo) aprueba');
 select ok(exists (select 1 from core.user_role_assignments a join core.roles r on r.id = a.role_id
                    where a.user_id = '22222222-2222-2222-2222-222222222222' and r.code = 'executive_chef'
@@ -169,33 +169,33 @@ select ok(
      from workflow.approval_decisions d join workflow.approval_requests r on r.id = d.request_id
     where r.subject_user_id = '22222222-2222-2222-2222-222222222222'),
   '12. la aprobación guarda identidad, fecha, decisión y comentario');
-select is(pg_temp.r(pg_temp.u(402), format('workflow.decide(%L, ''approved'', null)',
+select is(pg_temp.r(pg_temp.u(402), format('workflow.decide_approval(%L, ''approved'', null)',
             (select id from workflow.approval_requests where subject_user_id = '22222222-2222-2222-2222-222222222222'))),
   'already_resolved', 'una solicitud resuelta no se vuelve a decidir');
 
-select is(pg_temp.r(pg_temp.u(407), format('workflow.decide(%L, ''approved'', null)', pg_temp.req('superadmin', '11111111-1111-1111-1111-111111111111'))),
+select is(pg_temp.r(pg_temp.u(407), format('workflow.decide_approval(%L, ''approved'', null)', pg_temp.req('superadmin', '11111111-1111-1111-1111-111111111111'))),
   'denied', 'Controller (aprueba precios) no aprueba un superadmin: hace falta Dirección General');
-select is(pg_temp.r(pg_temp.u(402), format('workflow.decide(%L, ''approved'', ''Reemplazo de vacaciones'')', pg_temp.req('superadmin', '11111111-1111-1111-1111-111111111111'))),
+select is(pg_temp.r(pg_temp.u(402), format('workflow.decide_approval(%L, ''approved'', ''Reemplazo de vacaciones'')', pg_temp.req('superadmin', '11111111-1111-1111-1111-111111111111'))),
   'approved', 'Dirección General aprueba el nuevo superadmin');
 select ok(exists (select 1 from core.user_role_assignments a join core.roles r on r.id = a.role_id
                    where a.user_id = '11111111-1111-1111-1111-111111111111' and r.code = 'superadmin' and a.deleted_at is null),
   'el nuevo superadmin quedó asignado');
 
 -- 11: un rechazo queda registrado
-select is(pg_temp.r(pg_temp.u(412), format('workflow.decide(%L, ''rejected'', ''No corresponde'')', pg_temp.req('general_management', '11111111-1111-1111-1111-111111111111'))),
+select is(pg_temp.r(pg_temp.u(412), format('workflow.decide_approval(%L, ''rejected'', ''No corresponde'')', pg_temp.req('general_management', '11111111-1111-1111-1111-111111111111'))),
   'rejected', 'la segunda persona de Dirección rechaza el pedido');
 select ok(
   (select r.status = 'rejected' and d.decision = 'rejected' and d.decided_by = pg_temp.u(412) and d.comment = 'No corresponde'
      from workflow.approval_requests r join workflow.approval_decisions d on d.request_id = r.id
-    where r.subject_user_id = '11111111-1111-1111-1111-111111111111' and r.payload ->> 'role_code' = 'general_management'),
+    where r.subject_user_id = '11111111-1111-1111-1111-111111111111' and r.proposed_changes ->> 'role_code' = 'general_management'),
   '11. la solicitud rechazada queda registrada con quién, cuándo y por qué');
 select ok(not exists (select 1 from core.user_role_assignments a join core.roles r on r.id = a.role_id
                        where a.user_id = '11111111-1111-1111-1111-111111111111' and r.code = 'general_management'),
   'lo rechazado no se aplica');
 
 -- Matriz aprobada
-select is(pg_temp.r(pg_temp.u(402), format('workflow.decide(%L, ''approved'', null)',
-            (select id from workflow.approval_requests where payload ->> 'permission_code' = 'approvals.view'))),
+select is(pg_temp.r(pg_temp.u(402), format('workflow.decide_approval(%L, ''approved'', null)',
+            (select id from workflow.approval_requests where proposed_changes ->> 'permission_code' = 'approvals.view'))),
   'approved', 'Dirección General aprueba el cambio de la matriz');
 select ok(exists (select 1 from core.role_permissions rp join core.roles r on r.id = rp.role_id join core.permissions p on p.id = rp.permission_id
                    where r.code = 'cook' and p.code = 'approvals.view' and rp.deleted_at is null),
@@ -206,7 +206,7 @@ select is(pg_temp.r(pg_temp.u(404), format('org.request_transfer(%L, %L, null, '
   'denied', 'el gerente no pide traspasos');
 select is(pg_temp.r(pg_temp.u(401), format('org.request_transfer(%L, %L, ''Demo Parrilla Norte'', ''Cambio de concepto'')', pg_temp.u(202), pg_temp.u(102))),
   'pending_approval', 'el superadmin pide traspasar un local: queda pendiente');
-select is(pg_temp.r(pg_temp.u(412), format('workflow.decide(%L, ''approved'', null)',
+select is(pg_temp.r(pg_temp.u(412), format('workflow.decide_approval(%L, ''approved'', null)',
             (select r.id from workflow.approval_requests r join workflow.approval_workflows w on w.id = r.workflow_id
               where w.code = 'org.transfer_restaurant'))),
   'approved', 'Dirección General aprueba el traspaso');
@@ -224,7 +224,7 @@ select ok(
   'los roles pasaron al local nuevo y se quitaron del viejo');
 
 -- Lo que se aprueba es lo que se aplica: solicitudes y decisiones no se tocan
-select throws_ok($$update workflow.approval_requests set payload = '{"user_id": "x"}' where status = 'pending'$$
+select throws_ok($$update workflow.approval_requests set proposed_changes = '{"user_id": "x"}' where status = 'pending'$$
                  || ' or status = ''approved''', '42501', null, 'lo que pide una solicitud no cambia');
 select throws_ok($$update workflow.approval_requests set status = 'pending', resolved_at = null where status = 'approved'$$,
   '42501', null, 'una solicitud resuelta no vuelve a pendiente');
@@ -248,11 +248,11 @@ select is(pg_temp.assign(pg_temp.u(401), '22222222-2222-2222-2222-222222222222',
 select is((select w.code from workflow.approval_requests r join workflow.approval_workflows w on w.id = r.workflow_id
             where r.id = pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222')),
   'core.assign_by_superadmin', 'G1. usa la aprobación de Dirección General');
-select is(pg_temp.r(pg_temp.u(405), format('workflow.decide(%L, ''approved'', null)', pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222')))
-          || '/' || pg_temp.r(pg_temp.u(407), format('workflow.decide(%L, ''approved'', null)', pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222')))
-          || '/' || pg_temp.r(pg_temp.u(403), format('workflow.decide(%L, ''approved'', null)', pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222'))),
+select is(pg_temp.r(pg_temp.u(405), format('workflow.decide_approval(%L, ''approved'', null)', pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222')))
+          || '/' || pg_temp.r(pg_temp.u(407), format('workflow.decide_approval(%L, ''approved'', null)', pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222')))
+          || '/' || pg_temp.r(pg_temp.u(403), format('workflow.decide_approval(%L, ''approved'', null)', pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222'))),
   'denied/denied/denied', 'G1. ni el chef ejecutivo, ni Controller, ni el director de marca lo aprueban');
-select is(pg_temp.r(pg_temp.u(402), format('workflow.decide(%L, ''approved'', null)', pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222'))),
+select is(pg_temp.r(pg_temp.u(402), format('workflow.decide_approval(%L, ''approved'', null)', pg_temp.req('brand_director', '22222222-2222-2222-2222-222222222222'))),
   'approved', 'G1. Dirección General sí lo aprueba');
 
 -- Separación de funciones por persona: quien administra la seguridad no suma un rol que aprueba.
@@ -270,8 +270,8 @@ select is(pg_temp.r(pg_temp.u(401), format('core.request_role_permission_change(
   'ERROR 23514', 'M2. un rol que aprueba no puede administrar la seguridad técnica');
 select is(pg_temp.r(pg_temp.u(401), format('core.request_role_permission_change(%L, ''general_management'', ''approvals.decide'', false, ''Prueba'')', pg_temp.u(1))),
   'ERROR 23514', 'M2. no se le puede quitar approvals.decide a Dirección General');
-select ok((select r.payload -> 'excluded_approvers' @> to_jsonb(pg_temp.u(409)::text)
-             from workflow.approval_requests r where r.payload ->> 'permission_code' = 'approvals.view'),
+select ok((select r.proposed_changes -> 'excluded_approvers' @> to_jsonb(pg_temp.u(409)::text)
+             from workflow.approval_requests r where r.proposed_changes ->> 'permission_code' = 'approvals.view'),
   'M2. quienes tienen el rol que se cambia quedan excluidos de aprobarlo');
 
 -- M4: al aplicar se vuelve a validar (quien pidió perdió el permiso).
@@ -281,7 +281,7 @@ insert into core.user_memberships (user_id, group_id) values ('44444444-4444-444
 select is(pg_temp.assign(pg_temp.u(403), '44444444-4444-4444-4444-444444444444', 'executive_chef', 'brand', 101, null), 'pending_approval',
   'M4. el director pide Chef Ejecutivo');
 update core.user_role_assignments set deleted_at = now() where user_id = pg_temp.u(403);
-select is(pg_temp.q(pg_temp.u(405), format('select workflow.decide(%L, ''approved'', null) ->> ''result''', pg_temp.req('executive_chef', '44444444-4444-4444-4444-444444444444'))),
+select is(pg_temp.q(pg_temp.u(405), format('select workflow.decide_approval(%L, ''approved'', null) ->> ''result''', pg_temp.req('executive_chef', '44444444-4444-4444-4444-444444444444'))),
   'ERROR 23514', 'M4. si quien pidió ya no tiene permiso, la aprobación no se aplica');
 select is((select status::text from workflow.approval_requests where id = pg_temp.req('executive_chef', '44444444-4444-4444-4444-444444444444')),
   'pending', 'M4. la solicitud sigue pendiente (no quedó aprobada a medias)');
@@ -292,11 +292,11 @@ select is(pg_temp.r(pg_temp.u(401), format('core.revoke_role(%L, ''Cambio de pue
   'pending_approval', 'G2. el superadmin pide quitar Dirección General: queda pendiente');
 select ok(exists (select 1 from core.user_role_assignments where user_id = pg_temp.u(402) and deleted_at is null),
   'G2. mientras tanto, la persona conserva su rol');
-select is(pg_temp.r(pg_temp.u(402), format('workflow.decide(%L, ''approved'', null)',
+select is(pg_temp.r(pg_temp.u(402), format('workflow.decide_approval(%L, ''approved'', null)',
             (select r.id from workflow.approval_requests r join workflow.approval_workflows w on w.id = r.workflow_id
               where w.code = 'core.revoke_by_superadmin' and r.status = 'pending'))),
   'denied', 'G2. la persona afectada no aprueba que le quiten el rol');
-select is(pg_temp.r(pg_temp.u(412), format('workflow.decide(%L, ''approved'', null)',
+select is(pg_temp.r(pg_temp.u(412), format('workflow.decide_approval(%L, ''approved'', null)',
             (select r.id from workflow.approval_requests r join workflow.approval_workflows w on w.id = r.workflow_id
               where w.code = 'core.revoke_by_superadmin' and r.status = 'pending'))),
   'approved', 'G2. otra persona de Dirección General lo aprueba');
@@ -396,9 +396,9 @@ select is(pg_temp.q(pg_temp.u(405), 'select count(*)::text from public.test_reci
 -- ---------------------------------------------------------------------------
 -- Registro de seguridad: inalterable y fuera de la API
 -- ---------------------------------------------------------------------------
-select is(pg_temp.q(pg_temp.u(401), 'select count(*)::text from audit.security_events'), 'ERROR 42501', 'el registro de seguridad no se lee por la API');
-select throws_ok($$update audit.security_events set reason = 'x'$$, '42501', null, 'el registro de seguridad no se modifica');
-select throws_ok($$delete from audit.security_events$$, '42501', null, 'el registro de seguridad no se borra');
+select is(pg_temp.q(pg_temp.u(401), 'select count(*)::text from audit.authentication_security_events'), 'ERROR 42501', 'el registro de seguridad no se lee por la API');
+select throws_ok($$update audit.authentication_security_events set reason = 'x'$$, '42501', null, 'el registro de seguridad no se modifica');
+select throws_ok($$delete from audit.authentication_security_events$$, '42501', null, 'el registro de seguridad no se borra');
 -- Sellar y verificar solo lo puede hacer audit_owner, que no ve pgTAP: el resultado pasa por una tabla temporal.
 create temporary table seal_check (sealed int, valid boolean);
 grant insert, update on seal_check to audit_owner;

@@ -59,7 +59,7 @@ select ok(
 -- ---------------------------------------------------------------------------
 -- Alta, con motivo y origen
 -- ---------------------------------------------------------------------------
-do $$ begin perform core.set_change_context('Alta de prueba', 'app'); end $$;
+do $$ begin perform core.set_change_context('Alta de prueba', 'manual'); end $$;
 set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
 set local role authenticated;
 insert into test_fixtures.items (id, group_id, restaurant_id, name, api_token, internal_note, settings) values (
@@ -72,13 +72,13 @@ reset role;
 
 select is(pg_temp.events('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'), 1, 'el alta deja un evento');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).action, 'insert'::audit.action, 'la acción es insert');
-select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).actor_id, '11111111-1111-1111-1111-111111111111'::uuid, 'registra quién');
+select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).actor_user_id, '11111111-1111-1111-1111-111111111111'::uuid, 'registra quién');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).actor_type, 'user'::core.actor_type, 'registra el tipo de actor');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).jwt_role, 'authenticated', 'registra el rol del JWT');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).db_user, session_user::text, 'registra el usuario de la conexión');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).occurred_at, now(), 'registra cuándo');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).reason, 'Alta de prueba', 'registra por qué');
-select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).origin, 'app'::audit.change_origin, 'registra el origen');
+select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).source, 'manual'::audit.change_origin, 'registra el origen');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).scope_restaurant_id, 'cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid, 'registra el restaurante');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).scope_group_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid, 'registra el grupo');
 select is((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).table_name, 'items', 'registra la tabla');
@@ -153,18 +153,18 @@ select ok((pg_temp.last_event('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')).new_value
 -- ---------------------------------------------------------------------------
 -- Sin contexto, actor desconocido, motivo y origen cargados a mano
 -- ---------------------------------------------------------------------------
-set local app.reason to '';
-set local app.origin to '';
+set local app.change_reason to '';
+set local app.change_source to '';
 set local request.jwt.claims to '{"sub": "99999999-9999-9999-9999-999999999999", "role": "authenticated"}';
 insert into test_fixtures.items (id, name) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'sin actor');
 select ok(
-  (pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).actor_id is null
+  (pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).actor_user_id is null
   and (pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).actor_subject = '99999999-9999-9999-9999-999999999999',
   'si el actor no está registrado, se guarda su identificador igual'
 );
 select ok(
   (pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).reason is null
-  and (pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).origin is null,
+  and (pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).source is null,
   'sin contexto, motivo y origen quedan vacíos'
 );
 select ok(
@@ -173,19 +173,19 @@ select ok(
   'una fila sin grupo ni restaurante deja el alcance vacío'
 );
 
-do $$ begin perform set_config('app.reason', repeat('m', 2000), true); end $$;
-set local app.origin to 'inventado';
+do $$ begin perform set_config('app.change_reason', repeat('m', 2000), true); end $$;
+set local app.change_source to 'inventado';
 update test_fixtures.items set name = 'con motivo largo' where id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
 select is(length((pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).reason), 500,
   'un motivo cargado a mano se recorta a 500 caracteres');
-select ok((pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).origin is null,
+select ok((pg_temp.last_event('dddddddd-dddd-dddd-dddd-dddddddddddd')).source is null,
   'un origen inválido cargado a mano queda vacío, sin romper el cambio');
 
 -- ---------------------------------------------------------------------------
 -- Clave de servidor: el origen es obligatorio
 -- ---------------------------------------------------------------------------
-set local app.reason to '';
-set local app.origin to '';
+set local app.change_reason to '';
+set local app.change_source to '';
 set local request.jwt.claims to '{"role": "service_role"}';
 set local role service_role;
 select throws_ok(
@@ -199,7 +199,7 @@ insert into test_fixtures.items (id, name) values ('eeeeeeee-eeee-eeee-eeee-eeee
 reset role;
 select ok(
   (pg_temp.last_event('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee')).jwt_role = 'service_role'
-  and (pg_temp.last_event('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee')).origin = 'edge_function',
+  and (pg_temp.last_event('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee')).source = 'edge_function',
   'con origen declarado, el cambio de servidor queda registrado con su rol'
 );
 
@@ -230,7 +230,7 @@ select throws_ok($$alter table audit.audit_events disable trigger audit_events_n
 set local role authenticated;
 select throws_ok($$select * from audit.audit_events$$, '42501', null, 'un usuario autenticado no puede leer la auditoría directamente');
 select throws_ok(
-  $$insert into audit.audit_events (schema_name, table_name, record_id, action, new_values) values ('x', 'y', gen_random_uuid(), 'insert', '{}')$$,
+  $$insert into audit.audit_events (table_schema, table_name, record_id, action, new_values) values ('x', 'y', gen_random_uuid(), 'insert', '{}')$$,
   '42501', null, 'un usuario autenticado no puede inventar eventos'
 );
 reset role;

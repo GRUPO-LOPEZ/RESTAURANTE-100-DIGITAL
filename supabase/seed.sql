@@ -26,13 +26,14 @@ $$;
 
 select core.set_change_context('Datos de prueba locales', 'seed');
 
-insert into org.groups (id, name) values
-  ('00000000-0000-4000-8000-000000000001', 'Grupo Demo');
+-- Razón social y CUIT ficticios (el CUIT no es válido a propósito).
+insert into org.groups (id, name, legal_name, tax_id) values
+  ('00000000-0000-4000-8000-000000000001', 'Grupo Demo', 'Grupo Demo S.A. (ficticia)', '00000000000');
 
-insert into org.brands (id, group_id, name) values
-  ('00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000001', 'Demo Pastas'),
-  ('00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000001', 'Demo Parrilla'),
-  ('00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000001', 'Demo Café');
+insert into org.brands (id, group_id, name, code) values
+  ('00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000001', 'Demo Pastas', 'PASTAS'),
+  ('00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000001', 'Demo Parrilla', 'PARRILLA'),
+  ('00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000001', 'Demo Café', 'CAFE');
 
 insert into org.restaurants (id, group_id, brand_id, name) values
   ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101', 'Demo Pastas Centro'),
@@ -89,6 +90,16 @@ insert into seed_people values
   ('00000000-0000-4000-8000-000000000503', 'e2e-baja-celular@ejemplo.test',        'Prueba', 'Baja Celular',        'cook', 'restaurant',
     '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
   ('00000000-0000-4000-8000-000000000504', 'e2e-baja-computadora@ejemplo.test',    'Prueba', 'Baja Computadora',    'cook', 'restaurant',
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
+  -- Suspender y levantar la suspensión (pantalla de la ficha).
+  ('00000000-0000-4000-8000-000000000505', 'e2e-pausa-celular@ejemplo.test',       'Prueba', 'Pausa Celular',       'cook', 'restaurant',
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
+  ('00000000-0000-4000-8000-000000000506', 'e2e-pausa-computadora@ejemplo.test',   'Prueba', 'Pausa Computadora',   'cook', 'restaurant',
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
+  -- Recuperar y cambiar la contraseña (cambian la contraseña: nadie más las usa).
+  ('00000000-0000-4000-8000-000000000507', 'e2e-clave-celular@ejemplo.test',       'Prueba', 'Clave Celular',       'cook', 'restaurant',
+    '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
+  ('00000000-0000-4000-8000-000000000508', 'e2e-clave-computadora@ejemplo.test',   'Prueba', 'Clave Computadora',   'cook', 'restaurant',
     '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201');
 
 insert into auth.users (
@@ -143,5 +154,55 @@ insert into core.service_accounts (id, code, name, description, owner_user_id) v
   '00000000-0000-4000-8000-000000000499', 'agente-prueba', 'Agente de prueba',
   'Cuenta técnica ficticia para probar la estructura. Sin permisos.', '00000000-0000-4000-8000-000000000401'
 );
+
+-- ---------------------------------------------------------------------------
+-- Datos de la Fase 1 según el documento de Soy: dónde trabaja cada persona, puestos y áreas,
+-- documentos de ensayo e ingresos de los últimos 30 días (todo ficticio).
+-- ---------------------------------------------------------------------------
+-- Quienes tienen un rol de local trabajan en ese local.
+insert into core.user_memberships (user_id, group_id, brand_id, restaurant_id)
+select distinct p.id, '00000000-0000-4000-8000-000000000001'::uuid, p.brand_id, p.restaurant_id
+  from seed_people p where p.scope = 'restaurant';
+
+update core.user_profiles set job_title = v.job_title, area_id = v.area_id::uuid
+  from (values
+    ('00000000-0000-4000-8000-000000000404', 'Gerente del local', null),
+    ('00000000-0000-4000-8000-000000000406', 'Jefe de cocina', '00000000-0000-4000-8000-000000000311'),
+    ('00000000-0000-4000-8000-000000000409', 'Cocinera de línea', '00000000-0000-4000-8000-000000000311'),
+    ('00000000-0000-4000-8000-000000000405', 'Chef de la marca', null),
+    ('00000000-0000-4000-8000-000000000407', 'Analista de costos', null),
+    ('00000000-0000-4000-8000-000000000408', 'Responsable de compras', null)
+  ) as v (id, job_title, area_id)
+ where core.user_profiles.id = v.id::uuid;
+
+-- Documentos de ensayo: uno vigente de la marca (con costo), uno vigente de un local y un borrador.
+insert into core.test_documents (id, group_id, brand_id, restaurant_id, document_key, version_number, title, content, cost) values
+  ('00000000-0000-4000-8000-000000000601', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101', null,
+   '00000000-0000-4000-8000-000000000611', 1, 'Salsa de tomate de la casa',
+   'Sofreír ajo y cebolla, agregar tomate triturado y cocinar 40 minutos a fuego bajo.', 1520.50),
+  ('00000000-0000-4000-8000-000000000602', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000102',
+   '00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000612', 1, 'Chimichurri',
+   'Perejil, ajo, orégano, ají molido, vinagre y aceite. Reposar 12 horas.', 830.00),
+  ('00000000-0000-4000-8000-000000000603', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101',
+   '00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000613', 1, 'Ñoquis de papa',
+   'Papa, harina y huevo. Borrador del jefe de cocina.', null);
+update core.test_documents set status = 'in_review' where id in ('00000000-0000-4000-8000-000000000601', '00000000-0000-4000-8000-000000000602');
+update core.test_documents set status = 'approved' where id in ('00000000-0000-4000-8000-000000000601', '00000000-0000-4000-8000-000000000602');
+update core.test_documents set status = 'published' where id in ('00000000-0000-4000-8000-000000000601', '00000000-0000-4000-8000-000000000602');
+
+-- Ingresos ficticios de los últimos 30 días, para el gráfico del tablero.
+set role audit_owner;
+insert into audit.authentication_security_events (event_type, occurred_at, operation, reason, user_id, email, scope_group_id)
+select case when (d * 7 + n) % 9 = 0 then 'login_failed'::audit.security_event_type else 'login_succeeded' end,
+       now() - make_interval(days => d, hours => n % 10),
+       'auth.login', 'Dato de prueba del seed', p.id, p.email, '00000000-0000-4000-8000-000000000001'
+  from generate_series(1, 29) as d
+ cross join generate_series(1, 6) as n
+ -- Ids y correos fijos del seed (audit_owner no lee los perfiles).
+ join (values (0, '00000000-0000-4000-8000-000000000409'::uuid, 'cocinero@ejemplo.test'),
+              (1, '00000000-0000-4000-8000-000000000404'::uuid, 'gerente@ejemplo.test'),
+              (2, '00000000-0000-4000-8000-000000000406'::uuid, 'jefecocina@ejemplo.test')) as p (k, id, email)
+   on p.k = n % 3;
+reset role;
 
 commit;

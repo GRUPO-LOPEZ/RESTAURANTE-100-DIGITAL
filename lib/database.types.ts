@@ -6,76 +6,91 @@ export type Database = {
       audit_events: {
         Row: {
           action: Database["audit"]["Enums"]["action"];
-          actor_id: string | null;
+          actor_role_code: string | null;
           actor_roles: Json | null;
+          actor_service_account_id: string | null;
           actor_subject: string | null;
           actor_type: Database["core"]["Enums"]["actor_type"] | null;
+          actor_user_id: string | null;
           changed_fields: string[] | null;
           db_user: string;
           id: string;
           jwt_role: string | null;
+          module: string | null;
           new_values: Json | null;
           occurred_at: string;
           old_values: Json | null;
-          origin: Database["audit"]["Enums"]["change_origin"] | null;
+          operation_id: string | null;
           reason: string | null;
           record_id: string;
-          schema_name: string;
           scope_brand_id: string | null;
           scope_group_id: string | null;
           scope_restaurant_id: string | null;
           sequence_number: number;
+          source: Database["audit"]["Enums"]["change_origin"] | null;
+          status: string | null;
           table_name: string;
+          table_schema: string;
           transaction_id: number;
           event_digest: string | null;
         };
         ComputedFields: "event_digest";
         Insert: {
           action: Database["audit"]["Enums"]["action"];
-          actor_id?: string | null;
+          actor_role_code?: string | null;
           actor_roles?: Json | null;
+          actor_service_account_id?: string | null;
           actor_subject?: string | null;
           actor_type?: Database["core"]["Enums"]["actor_type"] | null;
+          actor_user_id?: string | null;
           changed_fields?: string[] | null;
           db_user?: string;
           id?: string;
           jwt_role?: string | null;
+          module?: string | null;
           new_values?: Json | null;
           occurred_at?: string;
           old_values?: Json | null;
-          origin?: Database["audit"]["Enums"]["change_origin"] | null;
+          operation_id?: string | null;
           reason?: string | null;
           record_id: string;
-          schema_name: string;
           scope_brand_id?: string | null;
           scope_group_id?: string | null;
           scope_restaurant_id?: string | null;
           sequence_number?: never;
+          source?: Database["audit"]["Enums"]["change_origin"] | null;
+          status?: string | null;
           table_name: string;
+          table_schema: string;
           transaction_id?: number;
         };
         Update: {
           action?: Database["audit"]["Enums"]["action"];
-          actor_id?: string | null;
+          actor_role_code?: string | null;
           actor_roles?: Json | null;
+          actor_service_account_id?: string | null;
           actor_subject?: string | null;
           actor_type?: Database["core"]["Enums"]["actor_type"] | null;
+          actor_user_id?: string | null;
           changed_fields?: string[] | null;
           db_user?: string;
           id?: string;
           jwt_role?: string | null;
+          module?: string | null;
           new_values?: Json | null;
           occurred_at?: string;
           old_values?: Json | null;
-          origin?: Database["audit"]["Enums"]["change_origin"] | null;
+          operation_id?: string | null;
           reason?: string | null;
           record_id?: string;
-          schema_name?: string;
           scope_brand_id?: string | null;
           scope_group_id?: string | null;
           scope_restaurant_id?: string | null;
           sequence_number?: never;
+          source?: Database["audit"]["Enums"]["change_origin"] | null;
+          status?: string | null;
           table_name?: string;
+          table_schema?: string;
           transaction_id?: number;
         };
         Relationships: [];
@@ -111,7 +126,7 @@ export type Database = {
         };
         Relationships: [];
       };
-      security_event_seals: {
+      authentication_security_event_seals: {
         Row: {
           chain_hash: string;
           event_count: number;
@@ -142,16 +157,16 @@ export type Database = {
         };
         Relationships: [];
       };
-      security_events: {
+      authentication_security_events: {
         Row: {
           actor_id: string | null;
           actor_subject: string | null;
           db_user: string;
-          details: Json | null;
+          detail: Json | null;
           email: string | null;
           event_type: Database["audit"]["Enums"]["security_event_type"];
           id: string;
-          ip: string | null;
+          ip_address: string | null;
           jwt_role: string | null;
           occurred_at: string;
           operation: string | null;
@@ -160,8 +175,8 @@ export type Database = {
           scope_group_id: string | null;
           scope_restaurant_id: string | null;
           sequence_number: number;
-          target_user_id: string | null;
           user_agent: string | null;
+          user_id: string | null;
           security_event_digest: string | null;
         };
         ComputedFields: "security_event_digest";
@@ -169,11 +184,11 @@ export type Database = {
           actor_id?: string | null;
           actor_subject?: string | null;
           db_user?: string;
-          details?: Json | null;
+          detail?: Json | null;
           email?: string | null;
           event_type: Database["audit"]["Enums"]["security_event_type"];
           id?: string;
-          ip?: string | null;
+          ip_address?: string | null;
           jwt_role?: string | null;
           occurred_at?: string;
           operation?: string | null;
@@ -182,18 +197,18 @@ export type Database = {
           scope_group_id?: string | null;
           scope_restaurant_id?: string | null;
           sequence_number?: never;
-          target_user_id?: string | null;
           user_agent?: string | null;
+          user_id?: string | null;
         };
         Update: {
           actor_id?: string | null;
           actor_subject?: string | null;
           db_user?: string;
-          details?: Json | null;
+          detail?: Json | null;
           email?: string | null;
           event_type?: Database["audit"]["Enums"]["security_event_type"];
           id?: string;
-          ip?: string | null;
+          ip_address?: string | null;
           jwt_role?: string | null;
           occurred_at?: string;
           operation?: string | null;
@@ -202,14 +217,39 @@ export type Database = {
           scope_group_id?: string | null;
           scope_restaurant_id?: string | null;
           sequence_number?: never;
-          target_user_id?: string | null;
           user_agent?: string | null;
+          user_id?: string | null;
         };
         Relationships: [];
       };
     };
     Views: {
-      [_ in never]: never;
+      v_field_changes: {
+        Row: {
+          action: Database["audit"]["Enums"]["action"] | null;
+          actor_role_code: string | null;
+          actor_service_account_id: string | null;
+          actor_user_id: string | null;
+          event_id: string | null;
+          field: string | null;
+          module: string | null;
+          new_value: Json | null;
+          occurred_at: string | null;
+          old_value: Json | null;
+          operation_id: string | null;
+          reason: string | null;
+          record_id: string | null;
+          scope_brand_id: string | null;
+          scope_group_id: string | null;
+          scope_restaurant_id: string | null;
+          sequence_number: number | null;
+          source: Database["audit"]["Enums"]["change_origin"] | null;
+          table_name: string | null;
+          table_schema: string | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
     };
     Functions: {
       event_digest: {
@@ -239,7 +279,9 @@ export type Database = {
         };
         Returns: string;
       };
+      module_for: { Args: { p_schema: string; p_table: string }; Returns: string };
       redact: { Args: { p_excluded?: string[]; p_value: Json }; Returns: Json };
+      row_digest: { Args: { p_row: Json }; Returns: string };
       seal_all: { Args: Record<PropertyKey, never>; Returns: Json };
       seal_events: {
         Args: { p_min_age?: string };
@@ -272,7 +314,7 @@ export type Database = {
         };
         SetofOptions: {
           from: "*";
-          to: "security_event_seals";
+          to: "authentication_security_event_seals";
           isOneToOne: true;
           isSetofReturn: false;
         };
@@ -280,14 +322,15 @@ export type Database = {
       security_event_digest: {
         Args: {
           p_event: Omit<
-            Database["audit"]["Tables"]["security_events"]["Row"],
-            Database["audit"]["Tables"]["security_events"]["ComputedFields"]
+            Database["audit"]["Tables"]["authentication_security_events"]["Row"],
+            Database["audit"]["Tables"]["authentication_security_events"]["ComputedFields"]
           >;
         };
         Returns: string;
       };
       security_genesis_hash: { Args: Record<PropertyKey, never>; Returns: string };
       try_uuid: { Args: { p_value: string }; Returns: string };
+      untracked_columns: { Args: { p_schema: string; p_table: string }; Returns: string[] };
       verify_seals: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -308,8 +351,24 @@ export type Database = {
       };
     };
     Enums: {
-      action: "insert" | "update" | "soft_delete" | "restore" | "delete";
-      change_origin: "app" | "edge_function" | "agent" | "import" | "seed" | "maintenance" | "auth";
+      action:
+        | "insert"
+        | "update"
+        | "soft_delete"
+        | "restore"
+        | "delete"
+        | "approve"
+        | "reject"
+        | "publish";
+      change_origin:
+        | "manual"
+        | "edge_function"
+        | "agent"
+        | "import"
+        | "integration"
+        | "seed"
+        | "maintenance"
+        | "auth";
       security_event_type:
         | "login_succeeded"
         | "login_failed"
@@ -317,7 +376,12 @@ export type Database = {
         | "account_unlocked"
         | "operation_denied"
         | "account_disabled"
-        | "account_reactivated";
+        | "account_reactivated"
+        | "account_suspended"
+        | "account_unsuspended"
+        | "password_changed"
+        | "mfa_enrolled"
+        | "audit_exported";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -372,8 +436,93 @@ export type Database = {
         };
         Relationships: [];
       };
+      notifications: {
+        Row: {
+          body: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          kind: Database["core"]["Enums"]["notification_kind"];
+          link: string | null;
+          read_at: string | null;
+          recipient_user_id: string;
+          request_id: string | null;
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          body?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          kind: Database["core"]["Enums"]["notification_kind"];
+          link?: string | null;
+          read_at?: string | null;
+          recipient_user_id: string;
+          request_id?: string | null;
+          title: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          body?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          kind?: Database["core"]["Enums"]["notification_kind"];
+          link?: string | null;
+          read_at?: string | null;
+          recipient_user_id?: string;
+          request_id?: string | null;
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_user_id_fkey";
+            columns: ["recipient_user_id"];
+            isOneToOne: false;
+            referencedRelation: "user_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       permissions: {
         Row: {
+          action: string;
           code: string;
           created_at: string;
           created_by: string | null;
@@ -388,6 +537,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          action: string;
           code: string;
           created_at?: string;
           created_by?: string | null;
@@ -401,6 +551,7 @@ export type Database = {
           updated_by?: string | null;
         };
         Update: {
+          action?: string;
           code?: string;
           created_at?: string;
           created_by?: string | null;
@@ -663,37 +814,132 @@ export type Database = {
           },
         ];
       };
+      test_documents: {
+        Row: {
+          brand_id: string;
+          content: string | null;
+          cost: number | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          document_key: string;
+          group_id: string;
+          id: string;
+          restaurant_id: string | null;
+          status: Database["core"]["Enums"]["version_status"];
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+          version_number: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id: string;
+          content?: string | null;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          document_key: string;
+          group_id: string;
+          id?: string;
+          restaurant_id?: string | null;
+          status?: Database["core"]["Enums"]["version_status"];
+          title: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          version_number: number;
+        };
+        Update: {
+          brand_id?: string;
+          content?: string | null;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          document_key?: string;
+          group_id?: string;
+          id?: string;
+          restaurant_id?: string | null;
+          status?: Database["core"]["Enums"]["version_status"];
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          version_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "test_documents_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "test_documents_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "test_documents_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       user_memberships: {
         Row: {
+          brand_id: string | null;
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          ends_at: string | null;
           group_id: string;
           id: string;
+          restaurant_id: string | null;
+          starts_at: string;
           updated_at: string;
           updated_by: string | null;
           user_id: string;
         };
         ComputedFields: never;
         Insert: {
+          brand_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          ends_at?: string | null;
           group_id: string;
           id?: string;
+          restaurant_id?: string | null;
+          starts_at?: string;
           updated_at?: string;
           updated_by?: string | null;
           user_id: string;
         };
         Update: {
+          brand_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          ends_at?: string | null;
           group_id?: string;
           id?: string;
+          restaurant_id?: string | null;
+          starts_at?: string;
           updated_at?: string;
           updated_by?: string | null;
           user_id?: string;
@@ -731,61 +977,98 @@ export type Database = {
       };
       user_profiles: {
         Row: {
+          activated_at: string | null;
+          area_id: string | null;
           created_at: string;
           created_by: string | null;
+          deactivated_at: string | null;
+          deactivated_by: string | null;
+          deactivation_reason: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
-          disabled_at: string | null;
-          disabled_by: string | null;
-          disabled_reason: string | null;
           email: string;
           first_name: string | null;
           id: string;
+          invited_by: string | null;
+          job_title: string | null;
           last_name: string | null;
+          last_restaurant_id: string | null;
+          last_seen_at: string | null;
           locked_until: string | null;
           status: Database["core"]["Enums"]["account_status"];
+          suspended_at: string | null;
+          suspended_by: string | null;
+          suspension_reason: string | null;
           updated_at: string;
           updated_by: string | null;
+          username: string | null;
         };
         ComputedFields: never;
         Insert: {
+          activated_at?: string | null;
+          area_id?: string | null;
           created_at?: string;
           created_by?: string | null;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
+          deactivation_reason?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
-          disabled_at?: string | null;
-          disabled_by?: string | null;
-          disabled_reason?: string | null;
           email: string;
           first_name?: string | null;
           id: string;
+          invited_by?: string | null;
+          job_title?: string | null;
           last_name?: string | null;
+          last_restaurant_id?: string | null;
+          last_seen_at?: string | null;
           locked_until?: string | null;
           status?: Database["core"]["Enums"]["account_status"];
+          suspended_at?: string | null;
+          suspended_by?: string | null;
+          suspension_reason?: string | null;
           updated_at?: string;
           updated_by?: string | null;
+          username?: string | null;
         };
         Update: {
+          activated_at?: string | null;
+          area_id?: string | null;
           created_at?: string;
           created_by?: string | null;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
+          deactivation_reason?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
-          disabled_at?: string | null;
-          disabled_by?: string | null;
-          disabled_reason?: string | null;
           email?: string;
           first_name?: string | null;
           id?: string;
+          invited_by?: string | null;
+          job_title?: string | null;
           last_name?: string | null;
+          last_restaurant_id?: string | null;
+          last_seen_at?: string | null;
           locked_until?: string | null;
           status?: Database["core"]["Enums"]["account_status"];
+          suspended_at?: string | null;
+          suspended_by?: string | null;
+          suspension_reason?: string | null;
           updated_at?: string;
           updated_by?: string | null;
+          username?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: "user_profiles_created_by_fkey";
             columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_profiles_deactivated_by_fkey";
+            columns: ["deactivated_by"];
             isOneToOne: false;
             referencedRelation: "actors";
             referencedColumns: ["id"];
@@ -798,16 +1081,23 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "user_profiles_disabled_by_fkey";
-            columns: ["disabled_by"];
+            foreignKeyName: "user_profiles_id_fkey";
+            columns: ["id"];
+            isOneToOne: true;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_profiles_invited_by_fkey";
+            columns: ["invited_by"];
             isOneToOne: false;
             referencedRelation: "actors";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "user_profiles_id_fkey";
-            columns: ["id"];
-            isOneToOne: true;
+            foreignKeyName: "user_profiles_suspended_by_fkey";
+            columns: ["suspended_by"];
+            isOneToOne: false;
             referencedRelation: "actors";
             referencedColumns: ["id"];
           },
@@ -913,7 +1203,76 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      v_test_documents: {
+        Row: {
+          brand_id: string | null;
+          content: string | null;
+          cost: number | null;
+          created_at: string | null;
+          created_by: string | null;
+          currency: string | null;
+          document_key: string | null;
+          group_id: string | null;
+          id: string | null;
+          restaurant_id: string | null;
+          status: Database["core"]["Enums"]["version_status"] | null;
+          title: string | null;
+          updated_at: string | null;
+          updated_by: string | null;
+          version_number: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id?: string | null;
+          content?: string | null;
+          cost?: never;
+          created_at?: string | null;
+          created_by?: string | null;
+          currency?: string | null;
+          document_key?: string | null;
+          group_id?: string | null;
+          id?: string | null;
+          restaurant_id?: string | null;
+          status?: Database["core"]["Enums"]["version_status"] | null;
+          title?: string | null;
+          updated_at?: string | null;
+          updated_by?: string | null;
+          version_number?: number | null;
+        };
+        Update: {
+          brand_id?: string | null;
+          content?: string | null;
+          cost?: never;
+          created_at?: string | null;
+          created_by?: string | null;
+          currency?: string | null;
+          document_key?: string | null;
+          group_id?: string | null;
+          id?: string | null;
+          restaurant_id?: string | null;
+          status?: Database["core"]["Enums"]["version_status"] | null;
+          title?: string | null;
+          updated_at?: string | null;
+          updated_by?: string | null;
+          version_number?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "test_documents_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "test_documents_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Functions: {
       actor_grants: {
@@ -927,7 +1286,13 @@ export type Database = {
       };
       actor_roles_snapshot: { Args: { p_actor_id: string }; Returns: Json };
       add_member: {
-        Args: { p_group_id: string; p_reason: string; p_user_id: string };
+        Args: {
+          p_brand_id?: string;
+          p_group_id: string;
+          p_reason: string;
+          p_restaurant_id?: string;
+          p_user_id: string;
+        };
         Returns: Json;
       };
       apply_reactivation: { Args: { p_request_id: string }; Returns: undefined };
@@ -947,23 +1312,91 @@ export type Database = {
         };
         Returns: Json;
       };
-      audit_history: {
-        Args: { p_before?: number; p_limit?: number; p_record_id?: string };
+      audit_export: {
+        Args: {
+          p_actor_id?: string;
+          p_brand_id?: string;
+          p_from?: string;
+          p_limit?: number;
+          p_module?: string;
+          p_record_id?: string;
+          p_restaurant_id?: string;
+          p_to?: string;
+        };
         Returns: {
           action: string;
           actor_name: string;
-          changed_fields: string[];
-          new_values: Json;
+          actor_role_code: string;
+          field: string;
+          module: string;
+          new_value: string;
           occurred_at: string;
-          old_values: Json;
-          origin: string;
+          old_value: string;
+          operation_id: string;
           place_name: string;
           reason: string;
           record_id: string;
-          schema_name: string;
-          sequence_number: number;
+          source: string;
           table_name: string;
         }[];
+      };
+      audit_history: {
+        Args: {
+          p_actor_id?: string;
+          p_before?: number;
+          p_brand_id?: string;
+          p_critical_only?: boolean;
+          p_from?: string;
+          p_limit?: number;
+          p_module?: string;
+          p_record_id?: string;
+          p_restaurant_id?: string;
+          p_to?: string;
+        };
+        Returns: {
+          action: string;
+          actor_name: string;
+          actor_role_code: string;
+          changed_fields: string[];
+          module: string;
+          new_values: Json;
+          occurred_at: string;
+          old_values: Json;
+          place_name: string;
+          reason: string;
+          record_id: string;
+          sequence_number: number;
+          source: string;
+          table_name: string;
+          table_schema: string;
+        }[];
+      };
+      audit_scope_events: {
+        Args: {
+          p_actor_id: string;
+          p_after: number;
+          p_before: number;
+          p_bids: string[];
+          p_from: string;
+          p_gids: string[];
+          p_limit: number;
+          p_module: string;
+          p_record_id: string;
+          p_rids: string[];
+          p_tables: string[];
+          p_to: string;
+        };
+        Returns: Database["audit"]["Tables"]["audit_events"]["Row"][];
+        SetofOptions: {
+          from: "*";
+          to: "audit_events";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      audit_sequence_bounds: {
+        Args: { p_from: string; p_to: string };
+        Returns: Record<string, unknown>;
       };
       can_invite: {
         Args: {
@@ -1007,6 +1440,18 @@ export type Database = {
           p_scope_type: Database["core"]["Enums"]["scope_type"];
         };
         Returns: undefined;
+      };
+      create_test_document_draft: {
+        Args: {
+          p_brand_id: string;
+          p_content?: string;
+          p_cost?: number;
+          p_document_key?: string;
+          p_reason: string;
+          p_restaurant_id?: string;
+          p_title: string;
+        };
+        Returns: Json;
       };
       current_aal: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_id: { Args: Record<PropertyKey, never>; Returns: string };
@@ -1067,8 +1512,10 @@ export type Database = {
         Returns: boolean;
       };
       is_sensitive_role: { Args: { p_role_id: string }; Returns: boolean };
+      lift_suspension: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
       lock_group_roles: { Args: { p_group_id: string }; Returns: undefined };
       login_status: { Args: { p_email: string }; Returns: Json };
+      mark_notifications_read: { Args: { p_ids?: string[] }; Returns: number };
       missing_permissions_for_role: {
         Args: {
           p_brand_id: string;
@@ -1079,10 +1526,24 @@ export type Database = {
         };
         Returns: string[];
       };
+      my_account: { Args: Record<PropertyKey, never>; Returns: Json };
+      my_scopes: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          brand_code: string;
+          brand_id: string;
+          brand_name: string;
+          restaurant_code: string;
+          restaurant_id: string;
+          restaurant_name: string;
+        }[];
+      };
       my_session: { Args: Record<PropertyKey, never>; Returns: Json };
+      permission_matrix: { Args: { p_group_id: string }; Returns: Json };
       permitted_brand_ids: { Args: { p_permission: string }; Returns: string[] };
       permitted_group_ids: { Args: { p_permission: string }; Returns: string[] };
       permitted_restaurant_ids: { Args: { p_permission: string }; Returns: string[] };
+      publish_test_document: { Args: { p_id: string; p_reason: string }; Returns: Json };
       record_failed_login: {
         Args: { p_email: string; p_ip?: string; p_user_agent?: string };
         Returns: Json;
@@ -1098,11 +1559,16 @@ export type Database = {
         };
         Returns: Json;
       };
+      request_test_document_review: { Args: { p_id: string; p_reason: string }; Returns: Json };
       revoke_role: { Args: { p_assignment_id: string; p_reason: string }; Returns: Json };
       role_holders: { Args: { p_role_id: string }; Returns: Json };
       role_permission_codes: { Args: { p_role_id: string }; Returns: string[] };
+      set_active_restaurant: { Args: { p_restaurant_id?: string }; Returns: Json };
       set_change_context: { Args: { p_origin: string; p_reason: string }; Returns: undefined };
+      suspend_user: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
       unlock_user: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
+      update_my_profile: { Args: { p_first_name: string; p_last_name: string }; Returns: Json };
+      user_detail: { Args: { p_user_id: string }; Returns: Json };
       user_group: { Args: { p_user_id: string }; Returns: string };
       user_has_permission_for_scope: {
         Args: {
@@ -1137,22 +1603,37 @@ export type Database = {
         };
         Returns: string[];
       };
+      users_control_panel: {
+        Args: {
+          p_brand_id?: string;
+          p_from?: string;
+          p_module?: string;
+          p_restaurant_id?: string;
+          p_to?: string;
+        };
+        Returns: Json;
+      };
       users_dashboard: {
         Args: {
           p_after_id?: string;
           p_after_key?: string;
+          p_area_id?: string;
           p_brand_id?: string;
           p_limit?: number;
           p_restaurant_id?: string;
+          p_role_code?: string;
           p_search?: string;
           p_status?: string;
           p_user_id?: string;
         };
         Returns: {
+          area_name: string;
           email: string;
           first_name: string;
           id: string;
+          job_title: string;
           last_name: string;
+          last_seen_at: string;
           locked: boolean;
           roles: Json;
           sort_key: string;
@@ -1165,8 +1646,9 @@ export type Database = {
       visible_user_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
     };
     Enums: {
-      account_status: "active" | "disabled";
+      account_status: "active" | "suspended" | "deactivated";
       actor_type: "user" | "service_account";
+      notification_kind: "approval_requested";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -1233,6 +1715,7 @@ export type Database = {
       };
       brands: {
         Row: {
+          code: string;
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
@@ -1246,6 +1729,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          code: string;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
@@ -1258,6 +1742,7 @@ export type Database = {
           updated_by?: string | null;
         };
         Update: {
+          code?: string;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
@@ -1286,8 +1771,10 @@ export type Database = {
           deleted_at: string | null;
           deleted_by: string | null;
           id: string;
+          legal_name: string | null;
           name: string;
           status: Database["org"]["Enums"]["unit_status"];
+          tax_id: string | null;
           updated_at: string;
           updated_by: string | null;
         };
@@ -1298,8 +1785,10 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           id?: string;
+          legal_name?: string | null;
           name: string;
           status?: Database["org"]["Enums"]["unit_status"];
+          tax_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -1309,8 +1798,10 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           id?: string;
+          legal_name?: string | null;
           name?: string;
           status?: Database["org"]["Enums"]["unit_status"];
+          tax_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -1440,7 +1931,7 @@ export type Database = {
         Returns: string;
       };
       create_brand: {
-        Args: { p_group_id: string; p_name: string; p_reason: string };
+        Args: { p_code: string; p_group_id: string; p_name: string; p_reason: string };
         Returns: string;
       };
       create_restaurant: {
@@ -1565,10 +2056,14 @@ export type Database = {
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          entity_id: string | null;
+          entity_table: string | null;
           group_id: string;
           id: string;
-          payload: NonNullable<Json>;
+          previous_values: Json | null;
+          proposed_changes: NonNullable<Json>;
           reason: string;
+          requested_at: string;
           requested_by: string;
           resolution_comment: string | null;
           resolved_at: string | null;
@@ -1587,10 +2082,14 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          entity_id?: string | null;
+          entity_table?: string | null;
           group_id: string;
           id?: string;
-          payload: NonNullable<Json>;
+          previous_values?: Json | null;
+          proposed_changes: NonNullable<Json>;
           reason: string;
+          requested_at?: string;
           requested_by: string;
           resolution_comment?: string | null;
           resolved_at?: string | null;
@@ -1608,10 +2107,14 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          entity_id?: string | null;
+          entity_table?: string | null;
           group_id?: string;
           id?: string;
-          payload?: NonNullable<Json>;
+          previous_values?: Json | null;
+          proposed_changes?: NonNullable<Json>;
           reason?: string;
+          requested_at?: string;
           requested_by?: string;
           resolution_comment?: string | null;
           resolved_at?: string | null;
@@ -1635,8 +2138,8 @@ export type Database = {
       };
       approval_workflows: {
         Row: {
+          allow_self_approval: boolean;
           apply_function: unknown;
-          approver_permission: string;
           approver_role_codes: string[] | null;
           code: string;
           created_at: string;
@@ -1644,18 +2147,19 @@ export type Database = {
           deleted_at: string | null;
           deleted_by: string | null;
           description: string | null;
+          entity_table: string | null;
           id: string;
           is_active: boolean;
+          min_approvers: number;
           name: string;
-          required_approvals: number;
-          requires_different_approver: boolean;
+          required_permission: string;
           updated_at: string;
           updated_by: string | null;
         };
         ComputedFields: never;
         Insert: {
+          allow_self_approval?: boolean;
           apply_function: unknown;
-          approver_permission?: string;
           approver_role_codes?: string[] | null;
           code: string;
           created_at?: string;
@@ -1663,17 +2167,18 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           description?: string | null;
+          entity_table?: string | null;
           id?: string;
           is_active?: boolean;
+          min_approvers?: number;
           name: string;
-          required_approvals?: number;
-          requires_different_approver?: boolean;
+          required_permission?: string;
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: {
+          allow_self_approval?: boolean;
           apply_function?: unknown;
-          approver_permission?: string;
           approver_role_codes?: string[] | null;
           code?: string;
           created_at?: string;
@@ -1681,11 +2186,12 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           description?: string | null;
+          entity_table?: string | null;
           id?: string;
           is_active?: boolean;
+          min_approvers?: number;
           name?: string;
-          required_approvals?: number;
-          requires_different_approver?: boolean;
+          required_permission?: string;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -1704,10 +2210,14 @@ export type Database = {
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          entity_id: string | null;
+          entity_table: string | null;
           group_id: string;
           id: string;
-          payload: NonNullable<Json>;
+          previous_values: Json | null;
+          proposed_changes: NonNullable<Json>;
           reason: string;
+          requested_at: string;
           requested_by: string;
           resolution_comment: string | null;
           resolved_at: string | null;
@@ -1728,19 +2238,7 @@ export type Database = {
       };
       cancel_request: { Args: { p_reason: string; p_request_id: string }; Returns: Json };
       cannot_apply: { Args: { p_why: string }; Returns: undefined };
-      create_request: {
-        Args: {
-          p_brand_id: string;
-          p_group_id: string;
-          p_payload: Json;
-          p_reason: string;
-          p_restaurant_id: string;
-          p_subject_user_id: string;
-          p_workflow_code: string;
-        };
-        Returns: string;
-      };
-      decide: {
+      decide_approval: {
         Args: { p_comment?: string; p_decision: string; p_request_id: string };
         Returns: Json;
       };
@@ -1754,8 +2252,11 @@ export type Database = {
         };
         Returns: {
           can_decide: boolean;
+          entity_table: string;
           id: string;
           place_name: string;
+          previous_values: Json;
+          proposed_changes: Json;
           reason: string;
           requested_at: string;
           requested_by_name: string;
@@ -1767,6 +2268,20 @@ export type Database = {
           workflow_code: string;
           workflow_name: string;
         }[];
+      };
+      request_approval: {
+        Args: {
+          p_brand_id: string;
+          p_entity_id: string;
+          p_group_id: string;
+          p_previous_values: Json;
+          p_proposed_changes: Json;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_subject_user_id: string;
+          p_workflow_code: string;
+        };
+        Returns: string;
       };
     };
     Enums: {
@@ -1883,8 +2398,26 @@ export type CompositeTypes<
 export const Constants = {
   audit: {
     Enums: {
-      action: ["insert", "update", "soft_delete", "restore", "delete"],
-      change_origin: ["app", "edge_function", "agent", "import", "seed", "maintenance", "auth"],
+      action: [
+        "insert",
+        "update",
+        "soft_delete",
+        "restore",
+        "delete",
+        "approve",
+        "reject",
+        "publish",
+      ],
+      change_origin: [
+        "manual",
+        "edge_function",
+        "agent",
+        "import",
+        "integration",
+        "seed",
+        "maintenance",
+        "auth",
+      ],
       security_event_type: [
         "login_succeeded",
         "login_failed",
@@ -1893,13 +2426,19 @@ export const Constants = {
         "operation_denied",
         "account_disabled",
         "account_reactivated",
+        "account_suspended",
+        "account_unsuspended",
+        "password_changed",
+        "mfa_enrolled",
+        "audit_exported",
       ],
     },
   },
   core: {
     Enums: {
-      account_status: ["active", "disabled"],
+      account_status: ["active", "suspended", "deactivated"],
       actor_type: ["user", "service_account"],
+      notification_kind: ["approval_requested"],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
     },
