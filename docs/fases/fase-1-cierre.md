@@ -36,22 +36,25 @@ El sistema ya sabe **quién es cada persona, qué puede hacer y dónde**, y **gu
   - el gráfico de ingresos de 30 días;
   - las personas por local y por rol;
   - los últimos cambios importantes.
-- **Documento de ensayo:** imita una receta para probar que el cocinero no ve costos y que una versión publicada no se modifica. Se borra al empezar la Fase 2.
+- **Documento de ensayo:** imita una receta para probar que el cocinero no ve costos y que una versión publicada no se modifica. Quien lo manda a revisión no lo puede publicar: lo publica otra persona. Se borra al empezar la Fase 2.
+- **Dónde trabaja cada persona limita sus roles:** a alguien de un local solo se le dan roles de ese local.
+- **Datos sensibles de cada persona:** el último acceso, quién la invitó y por qué se la suspendió o dio de baja los ve solo quien la administra.
+- **Formularios más claros:** si falta algo, el error aparece debajo del campo antes de enviar.
 
 ## Pruebas
 
-Verificación completa del 2026-10-22, en la computadora de desarrollo y desde una base nueva:
+Verificación completa del 2026-10-22, en la computadora de desarrollo y desde una base nueva, ya con las respuestas de Joaco:
 
 | Prueba                                                                                         | Resultado                                           |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Base de datos: permisos, auditoría, aprobaciones y rendimiento (pgTAP)                         | ✅ 691 de 691                                       |
-| Lógica y configuración (Vitest)                                                                | ✅ 73 de 73                                         |
-| Pantallas en celular y computadora, con accesibilidad (Playwright + axe)                       | ✅ 50 de 50                                         |
+| Base de datos: permisos, auditoría, aprobaciones y rendimiento (pgTAP)                         | ✅ 736 de 736                                       |
+| Lógica y configuración (Vitest)                                                                | ✅ 95 de 95                                         |
+| Pantallas en celular y computadora, con accesibilidad (Playwright + axe)                       | ✅ 58 de 58                                         |
 | Formato, lint y tipos                                                                          | ✅                                                  |
 | Las 13 pruebas obligatorias y las 10 adicionales del Módulo Maestro                            | ✅ (mapa en `docs/modulos/00-identidad.md`)         |
 | Rendimiento del tablero, el historial y la bandeja, con 500 a 2.000 personas y 100.000 eventos | ✅ todo por debajo de 300 ms (lo más lento, 150 ms) |
 
-Además, la revisaron los tres revisores automáticos (base de datos, seguridad y diseño). Lo grave y lo medio está corregido; lo que queda para decidir está abajo.
+Además, la revisaron los tres revisores automáticos (base de datos, seguridad y diseño), dos veces. Lo grave y lo medio está corregido.
 
 **Todavía no se vio en GitHub:** la primera corrida en GitHub Actions es al subir el pull request.
 
@@ -79,9 +82,6 @@ Además, la revisaron los tres revisores automáticos (base de datos, seguridad 
 
 ## Riesgos y decisiones abiertas
 
-- **Decisiones para Joaco:** las 7 de `docs/estado.md` y las nuevas de ADR-0015.
-  - ¿La Chef publica lo que ella misma mandó a revisión?
-  - ¿Quién ve el último acceso y los motivos de suspensión?
-  - ¿Sumamos colores más oscuros para los gráficos?
+- **Decisiones de Joaco:** las 9 preguntas abiertas están respondidas e implementadas (ADR-0015). Siguen abiertas las preguntas anteriores de `docs/estado.md`, que no frenan la demo pero sí la salida a producción.
 - **Antes de producción** (ADR-0014): CAPTCHA o el plan Teams de Supabase, una política de contenido completa (CSP) y límites de frecuencia.
 - **Sellos de la auditoría:** la migración de alineación solo se puede aplicar antes del primer sello. Hoy se cumple, porque no existen staging ni producción. Si alguna base ya selló algo, hay que recrearla.

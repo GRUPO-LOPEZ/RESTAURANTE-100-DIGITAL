@@ -36,7 +36,8 @@ Fondo pastel + texto oscuro del mismo tono.
 
 ## Gráficos
 
-- Series: `#93C5FD`, `#86EFAC`, `#FCD34D`, `#FDA4AF`, `#C4B5FD`, `#FDBA74` (tokens `chart-1` a `chart-6`).
+- Series pastel: `#93C5FD`, `#86EFAC`, `#FCD34D`, `#FDA4AF`, `#C4B5FD`, `#FDBA74` (tokens `chart-1` a `chart-6`), para fondos de áreas y rellenos suaves.
+- **Barras, líneas y puntos** van con los tonos fuertes, que llegan a 3:1 sobre el fondo (WCAG 1.4.11): `#2563EB`, `#16A34A`, `#D97706`, `#E11D48`, `#7C3AED`, `#EA580C` (tokens `chart-strong-1` a `chart-strong-6`). Solo en gráficos: nunca para fondos, estados ni texto (ADR-0015).
 - Máximo **4 series** por gráfico.
 - El color **nunca** es la única señal: siempre con etiqueta o ícono.
 

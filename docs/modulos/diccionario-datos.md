@@ -261,25 +261,26 @@ Cuenta técnica de un agente o integración. Es un usuario de Auth de tipo cuent
 
 Documentos de ensayo de la Fase 1 (sección 10 del documento de Soy): imitan una receta con versiones, borrador y costo para probar permisos y auditoría. Se borran al cerrar la Fase 1; en la Fase 2 las pruebas se repiten sobre las recetas reales.
 
-| Columna          | Tipo                       | Nulo | Qué guarda                                                                                              |
-| ---------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
-| `id`             | `uuid`                     | no   | Identificador de la versión.                                                                            |
-| `group_id`       | `uuid`                     | no   | Grupo del documento.                                                                                    |
-| `brand_id`       | `uuid`                     | no   | Marca del documento (como una receta estándar de la marca).                                             |
-| `restaurant_id`  | `uuid`                     | sí   | Local, si el documento es propio de un local. Vacío si es de toda la marca.                             |
-| `document_key`   | `uuid`                     | no   | Identifica al documento: todas sus versiones comparten este valor.                                      |
-| `version_number` | `integer`                  | no   | Número de versión (1, 2, 3...). Corregir es crear una versión nueva.                                    |
-| `title`          | `text`                     | no   | Título del documento.                                                                                   |
-| `content`        | `text`                     | sí   | Contenido (por ejemplo, los pasos de una receta).                                                       |
-| `cost`           | `numeric(14,4)`            | sí   | Costo del documento. Solo lo ven quienes tienen test_documents.view_costs (el cocinero no).             |
-| `currency`       | `character(3)`             | no   | Moneda del costo (ISO 4217).                                                                            |
-| `status`         | `core.version_status`      | no   | Estado de la versión: borrador, en revisión, aprobada, publicada o archivada. Desde aprobada no cambia. |
-| `created_at`     | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                       |
-| `created_by`     | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                        |
-| `updated_at`     | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                      |
-| `updated_by`     | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                       |
-| `deleted_at`     | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                                  |
-| `deleted_by`     | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                       |
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                                                                  |
+| --------------------- | -------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no   | Identificador de la versión.                                                                                                                                |
+| `group_id`            | `uuid`                     | no   | Grupo del documento.                                                                                                                                        |
+| `brand_id`            | `uuid`                     | no   | Marca del documento (como una receta estándar de la marca).                                                                                                 |
+| `restaurant_id`       | `uuid`                     | sí   | Local, si el documento es propio de un local. Vacío si es de toda la marca.                                                                                 |
+| `document_key`        | `uuid`                     | no   | Identifica al documento: todas sus versiones comparten este valor.                                                                                          |
+| `version_number`      | `integer`                  | no   | Número de versión (1, 2, 3...). Corregir es crear una versión nueva.                                                                                        |
+| `title`               | `text`                     | no   | Título del documento.                                                                                                                                       |
+| `content`             | `text`                     | sí   | Contenido (por ejemplo, los pasos de una receta).                                                                                                           |
+| `cost`                | `numeric(14,4)`            | sí   | Costo del documento. Solo lo ven quienes tienen test_documents.view_costs (el cocinero no).                                                                 |
+| `currency`            | `character(3)`             | no   | Moneda del costo (ISO 4217).                                                                                                                                |
+| `status`              | `core.version_status`      | no   | Estado de la versión: borrador, en revisión, aprobada, publicada o archivada. Desde aprobada no cambia.                                                     |
+| `created_at`          | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                           |
+| `created_by`          | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                                            |
+| `updated_at`          | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                          |
+| `updated_by`          | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                           |
+| `deleted_at`          | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                                                                                      |
+| `deleted_by`          | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                                                           |
+| `review_requested_by` | `uuid`                     | sí   | Quién mandó la versión a revisión (lo pone la base). Esa persona no la puede publicar. Vacía en las versiones que estaban en revisión antes del 2026-10-22. |
 
 ## `core.user_memberships`
 
@@ -359,23 +360,24 @@ Qué rol tiene cada persona y dónde: en todo el grupo, en una marca o en un loc
 
 Documentos de ensayo que la sesión puede ver: publicados a su alcance (y borradores si puede editar). El costo sale vacío sin test_documents.view_costs.
 
-| Columna          | Tipo                       | Nulo | Qué guarda                                                                                              |
-| ---------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
-| `id`             | `uuid`                     | sí   | Identificador de la versión.                                                                            |
-| `group_id`       | `uuid`                     | sí   | Grupo del documento.                                                                                    |
-| `brand_id`       | `uuid`                     | sí   | Marca del documento (como una receta estándar de la marca).                                             |
-| `restaurant_id`  | `uuid`                     | sí   | Local, si el documento es propio de un local. Vacío si es de toda la marca.                             |
-| `document_key`   | `uuid`                     | sí   | Identifica al documento: todas sus versiones comparten este valor.                                      |
-| `version_number` | `integer`                  | sí   | Número de versión (1, 2, 3...). Corregir es crear una versión nueva.                                    |
-| `title`          | `text`                     | sí   | Título del documento.                                                                                   |
-| `content`        | `text`                     | sí   | Contenido (por ejemplo, los pasos de una receta).                                                       |
-| `cost`           | `numeric`                  | sí   | Costo del documento. Vacío si la sesión no tiene test_documents.view_costs.                             |
-| `currency`       | `character(3)`             | sí   | Moneda del costo (ISO 4217).                                                                            |
-| `status`         | `core.version_status`      | sí   | Estado de la versión: borrador, en revisión, aprobada, publicada o archivada. Desde aprobada no cambia. |
-| `created_at`     | `timestamp with time zone` | sí   | Cuándo se creó (lo pone la base).                                                                       |
-| `created_by`     | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                        |
-| `updated_at`     | `timestamp with time zone` | sí   | Cuándo se cambió por última vez (lo pone la base).                                                      |
-| `updated_by`     | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                       |
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                              |
+| --------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | sí   | Identificador de la versión.                                                                            |
+| `group_id`            | `uuid`                     | sí   | Grupo del documento.                                                                                    |
+| `brand_id`            | `uuid`                     | sí   | Marca del documento (como una receta estándar de la marca).                                             |
+| `restaurant_id`       | `uuid`                     | sí   | Local, si el documento es propio de un local. Vacío si es de toda la marca.                             |
+| `document_key`        | `uuid`                     | sí   | Identifica al documento: todas sus versiones comparten este valor.                                      |
+| `version_number`      | `integer`                  | sí   | Número de versión (1, 2, 3...). Corregir es crear una versión nueva.                                    |
+| `title`               | `text`                     | sí   | Título del documento.                                                                                   |
+| `content`             | `text`                     | sí   | Contenido (por ejemplo, los pasos de una receta).                                                       |
+| `cost`                | `numeric`                  | sí   | Costo del documento. Vacío si la sesión no tiene test_documents.view_costs.                             |
+| `currency`            | `character(3)`             | sí   | Moneda del costo (ISO 4217).                                                                            |
+| `status`              | `core.version_status`      | sí   | Estado de la versión: borrador, en revisión, aprobada, publicada o archivada. Desde aprobada no cambia. |
+| `created_at`          | `timestamp with time zone` | sí   | Cuándo se creó (lo pone la base).                                                                       |
+| `created_by`          | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                        |
+| `updated_at`          | `timestamp with time zone` | sí   | Cuándo se cambió por última vez (lo pone la base).                                                      |
+| `updated_by`          | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                       |
+| `review_requested_by` | `uuid`                     | sí   | Quién mandó la versión a revisión. Esa persona no la puede publicar.                                    |
 
 ## `org.areas`
 

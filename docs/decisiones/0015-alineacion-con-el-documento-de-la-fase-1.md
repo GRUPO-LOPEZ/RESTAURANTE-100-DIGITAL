@@ -115,7 +115,37 @@ La Fase 1 se construyó con el prompt maestro y con las decisiones de Joaco (ADR
 8. **Exportación:** sin límite de frecuencia ni período máximo. Queda el tope por archivo, por rendimiento. Si hace falta, se cambia después.
 9. **El lugar de la membresía limita los roles** que se le pueden dar a la persona.
 
-Se implementan con un plan aparte. El detalle original de cada pregunta sigue abajo.
+Joaco además decidió (2026-10-22, al revisar la seguridad):
+
+- **El historial muestra todo.** Quien tiene `audit.view` ve los motivos de suspensión y de baja en el historial y en la exportación, aunque no administre a la persona: el historial es para auditar. Queda como excepción a la respuesta 2.
+- **Bandeja:** el motivo de una baja en el "antes" de un pedido de reactivación lo ve solo quien administra a la persona o quien puede decidir el pedido.
+
+### Cómo se implementaron
+
+Migración `20261022120000_phase_1_answers.sql`, pruebas `120_answers.test.sql`. Formularios en ADR-0016.
+
+1. **Publicar lo propio.** `core.test_documents.review_requested_by` guarda quién mandó la versión a revisión. `publish_test_document` rechaza que publique esa misma persona (`denied`) y lo deja en el registro de seguridad. La pantalla tampoco le ofrece "Aprobar y publicar".
+   - Para las recetas de la Fase 2, conviene llevar esta regla al trigger de versiones (revisión de seguridad, m5).
+2. **Quién administra.** Hay un permiso nuevo, `users.view_admin_details`, que tienen el Superadmin, Dirección General, el Director de Marca y el Gerente. Vale si alcanza **todos** los roles vigentes de la persona; si la persona no tiene roles, el lugar donde trabaja. Cada uno se ve a sí mismo.
+   - Lo decide `core.can_administer_user`, que usan la ficha, la lista y la bandeja.
+   - La tabla `core.user_profiles` se lee por columnas: no entrega por la API el primer ni el último acceso, quién invitó, el local elegido ni los motivos (hallazgo grave de la revisión de seguridad).
+   - El local elegido se lee con `core.my_active_restaurant()`.
+   - El "antes" de las solicitudes (`previous_values`) sale solo por `workflow.inbox`.
+3. **Permisos de ensayo:** sin cambios. Quedan aprobados.
+4. **Colores:** tokens `chart-strong-1` a `chart-strong-6`, con contraste de 3:1 o más sobre el fondo. Se usan solo en barras, líneas y puntos, y una prueba de Vitest los controla.
+5. **KPI.** Cuentas activas, desactivadas o suspendidas y aprobaciones pendientes se comparan con su valor de hace 7 días.
+   - El valor de hace 7 días se reconstruye con el último cambio auditado de cada registro antes de esa fecha.
+   - Se calcula sobre las personas que la sesión ve hoy: quien se sumó después no cuenta.
+6. **React Hook Form:** ADR-0016.
+7. **"Recordar mi sesión"** viene sin marcar.
+8. **Exportación:** sin cambios.
+9. **Lugar de la membresía.** `core.membership_covers` y un trigger en asignaciones y membresías lo hacen cumplir en cualquier camino de escritura:
+   - un rol nuevo necesita una membresía que cubra su lugar;
+   - una membresía no se termina ni se borra si deja un rol sin cubrir. Mientras se revisa, se bloquean todas las membresías de la persona, así dos operaciones a la vez no se cruzan;
+   - `assign_role` y la aplicación de una solicitud aprobada lo revisan con un mensaje claro;
+   - el traspaso de un local suma la membresía del local nuevo y termina la del viejo.
+
+El detalle original de cada pregunta sigue abajo.
 
 ## Pendiente de decidir con Joaco (respondido arriba)
 

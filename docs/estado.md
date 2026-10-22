@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-22. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`) y verificada en local. Falta subirla a GitHub, ver la CI en verde y armar staging para la demo de cierre._
+_Última actualización: 2026-10-22. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`), con las 9 respuestas de Joaco implementadas, y verificada en local. Falta subirla a GitHub, ver la CI en verde y armar staging para la demo de cierre._
 
 ## Alineación de la Fase 1 con el documento de Soy (terminada en local)
 
@@ -46,32 +46,56 @@ Plan aprobado: `C:\Users\julym\.claude\plans\dapper-dazzling-haven.md`. Decision
 - **Ajuste de configuración local:** el límite de ingresos de Auth subió de 30 a 300 cada 5 minutos, **solo en `supabase/config.toml`** (local y CI), porque la suite de pantallas ingresa muchas veces desde la misma IP. Staging y producción conservan el suyo.
 - **Diccionario de datos:** se regenera con `npm run db:dictionary` (script nuevo, `scripts/data-dictionary.mjs`).
 
-**Verificación completa (2026-10-22, `npm run test` desde una base nueva):**
+**Respuestas de Joaco a las 9 preguntas (2026-10-22), ya implementadas** (detalle en ADR-0015 y ADR-0016):
 
-| Prueba                                                                   | Resultado                                                            |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| Formato, lint y tipos                                                    | ✅                                                                   |
-| Lógica y configuración (Vitest)                                          | ✅ 73 de 73                                                          |
-| Base de datos (pgTAP)                                                    | ✅ 691 de 691 (A10: todo por debajo de 300 ms; lo más lento, 150 ms) |
-| Pantallas en celular y computadora, con accesibilidad (Playwright + axe) | ✅ 50 de 50                                                          |
+1. La Chef **no** publica lo que ella misma mandó a revisión: lo publica otra persona. La base lo rechaza y la pantalla no le ofrece el botón.
+2. El último acceso, el primer ingreso, quién invitó y los motivos de suspensión o baja los ve solo quien administra a la persona: permiso nuevo `users.view_admin_details` (Superadmin, Dirección, Director de Marca y Gerente), sobre **todos** sus roles.
+   - La tabla de personas ya no entrega esas columnas por la API (hallazgo grave de seguridad, corregido).
+   - La bandeja oculta el motivo de una baja a quien no administra ni decide.
+   - El historial los sigue mostrando a quien tiene `audit.view`, porque es para auditar (decisión de Joaco).
+3. Los permisos de ensayo sumados quedan aprobados.
+4. Los gráficos usan tonos fuertes (`chart-strong-*`, 3:1 o más sobre el fondo); los pasteles quedan para fondos.
+5. Todos los KPI del tablero se comparan con hace 7 días, con la fecha a la vista.
+6. React Hook Form en todos los formularios: errores debajo de cada campo antes de enviar, con el mismo esquema que el servidor (`lib/forms/schemas.ts`). El adaptador de Zod es propio, porque `@hookform/resolvers` choca con las dependencias del proyecto (ADR-0016).
+7. "Recordar mi sesión" viene sin marcar.
+8. Exportación sin límite de frecuencia; queda el tope por archivo.
+9. El lugar donde trabaja una persona limita sus roles. La base no deja terminar una membresía que cubre un rol, y el traspaso de un local lleva la membresía al local nuevo.
 
-**Preguntas para Joaco** (detalle en ADR-0015):
+**También se corrigió:**
 
-1. ¿La Chef puede publicar lo que ella misma mandó a revisión, o tiene que publicarlo otra persona?
-2. ¿Quién ve el último acceso de alguien y el motivo de su suspensión o baja?
-3. ¿Aprobás los permisos de ensayo sumados al Gerente, al Director de Marca y al Superadmin?
-4. ¿Sumamos tonos más oscuros solo para los gráficos?
-5. ¿Comparamos todos los KPI con el período anterior, o los de "estado actual" quedan como excepción?
-6. ¿Sumamos React Hook Form, o dejamos escrita la excepción?
-7. ¿"Recordar mi sesión" tiene que venir sin marcar (tablets compartidas)?
-8. Exportación: ¿hace falta un límite de frecuencia o un período máximo?
-9. ¿El lugar de la membresía tiene que limitar los roles?
+- el encabezado del celular;
+- "Grupo Grupo Demo";
+- en `docs/modulos/00-identidad.md`, la tabla de roles copiada de Soy, que una edición anterior había pisado por error.
 
-**Visto al abrir la app (2026-10-22, recorrido con capturas como Dirección):**
+**Revisiones:**
 
-- **Para corregir:** en el celular, el encabezado se desordena. "Grupo LF", el selector de local, "Cambiar", "Salir" y "Menú" se apilan torcidos y ocupan media pantalla. Las pruebas no lo detectan, porque no miran el diseño. Hay que arreglarlo antes de mostrárselo a Soy.
-- **Antes de una demo, correr `npm run db:reset`:** las pruebas automáticas dejan datos en la base local, como el pico de ingresos del día y los motivos "Prueba automática" en los cambios críticos.
-- **Para abrir la app en local hace falta `.env.local`.** Se copia de `.env.example`, que tiene los valores públicos de desarrollo local.
+- `db-reviewer`: sin graves. Medios corregidos: un bloqueo entre transacciones en las membresías, el criterio de "administra" y pruebas más precisas.
+- `security-auditor`: 1 grave (las columnas de la tabla de personas) y 4 medios, corregidos. El del historial quedó como excepción decidida por Joaco.
+- `ui-reviewer`: 1 grave corregido. Sin JavaScript, el formulario se enviaba por la dirección; ahora va siempre por POST y hay una prueba que lo controla. También se corrigieron los medios:
+  - el foco y el aviso para lectores de pantalla;
+  - la invitación con el mismo esquema;
+  - la leyenda del gráfico;
+  - los mensajes en inglés.
+
+**Verificación completa (2026-10-22, `npm run test` desde una base nueva, sin nada más corriendo en paralelo):**
+
+| Prueba                                                                   | Resultado     |
+| ------------------------------------------------------------------------ | ------------- |
+| Formato, lint y tipos                                                    | ✅            |
+| Lógica y configuración (Vitest)                                          | ✅ 95 de 95   |
+| Base de datos (pgTAP), con A10 por debajo de 300 ms                      | ✅ 736 de 736 |
+| Pantallas en celular y computadora, con accesibilidad (Playwright + axe) | ✅ 58 de 58   |
+
+Además se miró la pantalla real: el tablero en computadora y celular, el error por campo y la ficha vista por el auditor.
+
+**Notas para trabajar en local:**
+
+- **Las pruebas de pantalla no se corren dos veces a la vez.** Comparten los usuarios de prueba: una corrida en paralelo bloquea cuentas y cierra sesiones de la otra, y aparecen fallas que no son del código (pasó el 2026-10-22).
+- **Antes de una demo, correr `npm run db:reset`:** las pruebas automáticas dejan datos en la base local.
+- **Para abrir la app en local hace falta `.env.local`,** copiado de `.env.example`, que tiene los valores públicos de desarrollo local.
+- **En una base recién cargada, "Cuentas activas" dice "+20 contra el …":** la comparación usa la historia de la auditoría, y las personas de prueba se crean al cargar la base.
+
+**Para la Fase 2:** llevar la regla "quien manda a revisión no publica" al trigger de versiones de las recetas reales (revisión de seguridad, m5).
 
 **Lo que falta, fuera del código:**
 
