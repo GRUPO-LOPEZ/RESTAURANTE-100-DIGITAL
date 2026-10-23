@@ -60,8 +60,9 @@ jobs:
       # Supabase LOCAL dentro del runner, con la misma versión de CLI que package.json.
       # Nunca se conecta a staging ni a producción desde este job.
       # Las Edge Functions (edge-runtime) hacen falta para el ingreso (auth-login, ADR-0010).
+      # Mailpit hace falta para la prueba de recuperar la contraseña (lee el correo con el enlace).
       - name: Levantar Supabase local
-        run: npx supabase start -x studio,imgproxy,realtime,storage-api,mailpit,postgres-meta,vector,logflare,supavisor
+        run: npx supabase start -x studio,imgproxy,realtime,storage-api,postgres-meta,vector,logflare,supavisor
 
       # La app y Playwright usan los valores PÚBLICOS de desarrollo de .env.example (URL y clave
       # publishable local). Se verifica, sin mostrarla, que la clave coincida con la de esta Supabase
