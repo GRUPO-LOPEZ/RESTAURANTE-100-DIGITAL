@@ -1,6 +1,12 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-23. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`), con las 9 respuestas de ADR-0015 y las 6 de ADR-0017 implementadas, y verificada en local. Falta subirla a GitHub, ver la CI en verde y armar staging para la demo de cierre._
+_Última actualización: 2026-10-23. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`), con las 9 respuestas de ADR-0015 y las 6 de ADR-0017 implementadas, y verificada en local. La rama `feat/fase-1-cuentas-pantallas` ya está subida a GitHub. Falta abrir el pull request, ver la CI en verde y armar staging para la demo de cierre._
+
+## Al retomar (2026-10-23)
+
+- **Hecho:** la rama `feat/fase-1-cuentas-pantallas` está subida a GitHub, con los 14 commits del 21 al 23 de octubre. Se puede juntar con `main` sin conflictos.
+- **Falta (Joaco):** abrir el pull request hacia `main` desde la web (en esta computadora no está la CLI `gh`) y mirar la CI en la pestaña "Checks". Si algo falla, se arregla la causa.
+- **Después:** Vercel y staging en Supabase (abajo).
 
 ## Próximo paso: ambiente de prueba (staging)
 
