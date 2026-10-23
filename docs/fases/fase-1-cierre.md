@@ -40,16 +40,18 @@ El sistema ya sabe **quién es cada persona, qué puede hacer y dónde**, y **gu
 - **Dónde trabaja cada persona limita sus roles:** a alguien de un local solo se le dan roles de ese local.
 - **Datos sensibles de cada persona:** el último acceso, quién la invitó y por qué se la suspendió o dio de baja los ve solo quien la administra.
 - **Formularios más claros:** si falta algo, el error aparece debajo del campo antes de enviar.
+- **Quienes gobiernan el grupo están protegidos:** a un Superadmin o a alguien de Dirección no se lo suspende, da de baja ni se le quita el rol sin la aprobación de otra persona de Dirección.
+- **Un local o una marca cerrados dejan de dar permisos** a quienes trabajaban ahí. La historia se sigue viendo.
 
 ## Pruebas
 
-Verificación completa del 2026-10-22, en la computadora de desarrollo y desde una base nueva, ya con las respuestas de Joaco:
+Verificación completa del 2026-10-23, en la computadora de desarrollo y desde una base nueva, con todas las respuestas de Joaco:
 
 | Prueba                                                                                         | Resultado                                           |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Base de datos: permisos, auditoría, aprobaciones y rendimiento (pgTAP)                         | ✅ 736 de 736                                       |
+| Base de datos: permisos, auditoría, aprobaciones y rendimiento (pgTAP)                         | ✅ 781 de 781                                       |
 | Lógica y configuración (Vitest)                                                                | ✅ 95 de 95                                         |
-| Pantallas en celular y computadora, con accesibilidad (Playwright + axe)                       | ✅ 58 de 58                                         |
+| Pantallas en celular y computadora, con accesibilidad (Playwright + axe)                       | ✅ 60 de 60                                         |
 | Formato, lint y tipos                                                                          | ✅                                                  |
 | Las 13 pruebas obligatorias y las 10 adicionales del Módulo Maestro                            | ✅ (mapa en `docs/modulos/00-identidad.md`)         |
 | Rendimiento del tablero, el historial y la bandeja, con 500 a 2.000 personas y 100.000 eventos | ✅ todo por debajo de 300 ms (lo más lento, 150 ms) |
@@ -82,6 +84,7 @@ Además, la revisaron los tres revisores automáticos (base de datos, seguridad 
 
 ## Riesgos y decisiones abiertas
 
-- **Decisiones de Joaco:** las 9 preguntas abiertas están respondidas e implementadas (ADR-0015). Siguen abiertas las preguntas anteriores de `docs/estado.md`, que no frenan la demo pero sí la salida a producción.
+- **Decisiones de Joaco:** las 9 preguntas de ADR-0015 y las 6 de ADR-0017 están respondidas e implementadas. Queda una para confirmar: si el rol Director de Marca se puede dar para todo el grupo.
+- **Bloqueo a propósito de una cuenta** (alguien falla la contraseña a propósito para dejar afuera a otra persona): se resuelve antes de producción, con "dispositivo de confianza" (ADR-0017).
 - **Antes de producción** (ADR-0014): CAPTCHA o el plan Teams de Supabase, una política de contenido completa (CSP) y límites de frecuencia.
 - **Sellos de la auditoría:** la migración de alineación solo se puede aplicar antes del primer sello. Hoy se cumple, porque no existen staging ni producción. Si alguna base ya selló algo, hay que recrearla.

@@ -1,6 +1,40 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-22. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`), con las 9 respuestas de Joaco implementadas, y verificada en local. Falta subirla a GitHub, ver la CI en verde y armar staging para la demo de cierre._
+_Última actualización: 2026-10-23. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`), con las 9 respuestas de ADR-0015 y las 6 de ADR-0017 implementadas, y verificada en local. Falta subirla a GitHub, ver la CI en verde y armar staging para la demo de cierre._
+
+## Las 6 preguntas pendientes (terminadas en local, 2026-10-23)
+
+Decisiones en ADR-0017. Migración `20261023120000_old_questions.sql`, pruebas `130_old_questions.test.sql`.
+
+1. Quitarle el rol a otro superadmin lo aprueba Dirección. También suspender o dar de baja su cuenta (Joaco, 2026-10-23, por la revisión de base).
+2. Un local o una marca cerrados o borrados dejan de dar permisos; los roles de marca y de grupo siguen viendo su historia.
+3. A alguien de Dirección lo da de baja o lo reactiva el superadmin u otra persona de Dirección, con la aprobación de otra persona de Dirección. Si no hay quién apruebe, se rechaza de entrada.
+4. Un rol sensible lo aprueba Dirección o el Director de Marca de ese lugar, y el Director solo si tiene todos los permisos del rol (Joaco, 2026-10-23). El Controller y la Chef ya no lo aprueban.
+5. La reactivación ya funcionaba así; hay prueba.
+6. El bloqueo a propósito de una cuenta pasa a "antes de producción", con dispositivo de confianza.
+
+**Rendimiento:**
+
+- El tablero de usuarios bajó de 213–668 ms a 55–123 ms.
+- El historial filtrado, de 147–374 ms a 129–205 ms.
+- Cómo: índices por tabla en la auditoría, planes con los valores reales y costos calculados una vez por consulta.
+
+**Revisiones:**
+
+- `db-reviewer`: un hallazgo grave (suspender o dar de baja a otro superadmin al instante) y medios; todos corregidos o decididos por Joaco.
+- `security-auditor`: sin graves. Medios corregidos: varios grupos y persona borrada.
+- `ui-reviewer`: sin graves. Medios corregidos: la ficha recibe de la base si una acción va con aprobación, con aviso destacado y botón "Pedir…"; la prueba de pantalla limpia pedidos viejos antes de empezar.
+
+**Pendiente de confirmar con Joaco:** ¿se puede dar el rol Director de Marca para todo el grupo? (ADR-0017)
+
+**Verificación completa (2026-10-23, `npm run test` desde una base nueva, sin nada más corriendo, con todos los cambios):**
+
+| Prueba                                                                   | Resultado     |
+| ------------------------------------------------------------------------ | ------------- |
+| Formato, lint y tipos                                                    | ✅            |
+| Lógica y configuración (Vitest)                                          | ✅ 95 de 95   |
+| Base de datos (pgTAP), con A10                                           | ✅ 781 de 781 |
+| Pantallas en celular y computadora, con accesibilidad (Playwright + axe) | ✅ 60 de 60   |
 
 ## Alineación de la Fase 1 con el documento de Soy (terminada en local)
 
@@ -155,7 +189,7 @@ Además se miró la pantalla real: el tablero en computadora y celular, el error
 2. Que usted recorra la **checklist de validación** (sección 14 del prompt maestro) con los usuarios de prueba.
 3. Las decisiones que están abajo.
 
-## Preguntas para Joaco (no frenan el cierre en local, pero sí la salida a producción)
+## Preguntas para Joaco (respondidas el 2026-10-22: ver ADR-0017)
 
 1. ¿Un superadmin le puede quitar el rol a otro superadmin sin aprobación, siempre que quede uno? Hoy sí.
 2. ¿Un local cerrado o borrado deja de dar permisos a quienes tenían rol ahí? Hoy no.

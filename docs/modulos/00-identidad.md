@@ -68,6 +68,13 @@ Confirmado por Joaco el 2026-10-20: llevan MFA los niveles 1 a 4 de la tabla (Su
 
 Aprobada por Joaco el 2026-10-20 y ampliada el 2026-10-21 con los permisos del documento de Soy (ADR-0015): `permissions.manage`, `security.view` y `org.archive`. El 2026-10-22 se sumó `users.view_admin_details`: ver el primer y el último acceso de una persona, quién la invitó y los motivos de su suspensión o baja, si alcanza todos sus roles (respuesta 2 de Joaco).
 
+**Aprobaciones (ADR-0017):**
+
+- Un rol sensible lo aprueba Dirección General o el Director de Marca de ese lugar; el Director, solo si tiene todos los permisos del rol.
+- Quitarle el rol, suspender o dar de baja a otro Superadministrador lo aprueba Dirección.
+- A alguien de Dirección lo da de baja o lo reactiva otra persona de Dirección.
+- Un local o una marca cerrados no dan permisos.
+
 **Dónde trabaja limita los roles** (respuesta 9): con una membresía de todo el grupo se puede dar cualquier rol; de una marca, roles de esa marca o de sus locales; de un local, solo roles de ese local. La base no deja terminar una membresía que cubre un rol vigente. Los permisos de ensayo (`test_documents.*`) están aparte, más abajo. El alcance lo da cada asignación (grupo, marca o local), no el rol. Los permisos de recetas, costos y compras se suman en la fase de cada módulo.
 
 | Rol                    | Permisos                                                                                                                                                                                                                                                                                         |
