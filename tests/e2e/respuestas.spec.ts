@@ -1,6 +1,6 @@
-// Respuestas de Joaco a las preguntas abiertas de la Fase 1 (ADR-0015, 2026-10-22), en pantalla:
-// errores por campo antes de enviar (React Hook Form), quién ve el último acceso y quién publica
-// un documento de ensayo. En celular y computadora, con axe.
+// Respuestas de Joaco a las preguntas abiertas de la Fase 1, en pantalla. ADR-0015: errores por
+// campo antes de enviar (React Hook Form), quién ve el último acceso y quién publica un documento de
+// ensayo. ADR-0017: la baja de alguien de Dirección con aprobación. En celular y computadora, con axe.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -20,6 +20,8 @@ test("un formulario muestra el error debajo del campo antes de enviar", async ({
   await login(page, "gerente@ejemplo.test", { mfa: true });
   await page.goto(COOK);
   await openAction(page, "Suspender…");
+  // La cocinera no es de Dirección ni Superadministrador: la acción es inmediata, sin aviso de aprobación.
+  await expect(page.locator('[data-slot="approval-note"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Suspender la cuenta" }).click();
   const reason = page.getByLabel("Motivo para suspender");
   await expect(reason).toHaveAttribute("aria-invalid", "true");
@@ -100,4 +102,70 @@ test("sin JavaScript, ingresar envía por POST: la contraseña nunca va en la di
   expect(page.url()).not.toContain("password");
   expect(page.url()).not.toContain("No-Es-La-Clave");
   await context.close();
+});
+
+// Rechaza desde la bandeja los pedidos pendientes que dicen ese resumen (si una corrida anterior se
+// cortó a la mitad, el pedido igual seguiría pendiente y el nuevo se rechazaría por repetido).
+async function rejectPending(page: Page, summary: string) {
+  await page.goto("/aprobaciones");
+  const pending = () =>
+    page.getByRole("listitem").filter({ hasText: summary }).filter({ hasText: "Pendiente" });
+  for (let n = await pending().count(); n > 0; n--) {
+    const item = pending().first();
+    await item.getByLabel("Comentario").fill("Limpieza de una prueba anterior");
+    await item.getByRole("button", { name: "Rechazar" }).click();
+    await expect(pending()).toHaveCount(n - 1);
+  }
+}
+
+test("la desactivación de alguien de Dirección General la decide otra persona de Dirección, desde la bandeja", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(180_000);
+  const summary = "Dar de baja a Delia Dirección (Dirección General)";
+  const reason = `Prueba de baja ${testInfo.project.name} ${Date.now()}`;
+
+  await login(page, "direccion@ejemplo.test", { mfa: true });
+  await rejectPending(page, summary);
+  await logout(page);
+
+  // El superadmin la pide: la ficha avisa que queda pendiente y el botón dice que se pide.
+  await login(page, "superadmin@ejemplo.test", { mfa: true });
+  await page.goto("/usuarios/00000000-0000-4000-8000-000000000412");
+  await openAction(page, "Desactivar…");
+  await expect(page.getByText("Esta persona es de Dirección General.")).toBeVisible();
+  await page.getByLabel("Motivo para desactivar").fill(reason);
+  await page.getByRole("button", { name: "Pedir la desactivación" }).click();
+  await expect(notice(page)).toContainText("otra persona de Dirección General");
+  await expect(page.getByText("Activa", { exact: true })).toBeVisible();
+  await axe(page);
+  // En su bandeja la ve, pero no la puede decidir.
+  await page.goto("/aprobaciones");
+  const mine = page
+    .getByRole("listitem")
+    .filter({ hasText: reason })
+    .filter({ hasText: "Pendiente" });
+  await expect(mine.getByText(summary, { exact: true })).toBeVisible();
+  await expect(mine.getByText("La tiene que decidir otra persona con permiso.")).toBeVisible();
+  await logout(page);
+
+  // Otra persona de Dirección la ve en la bandeja y la rechaza (así la cuenta de prueba sigue activa).
+  await login(page, "direccion@ejemplo.test", { mfa: true });
+  await page.goto("/aprobaciones");
+  const pending = page
+    .getByRole("listitem")
+    .filter({ hasText: reason })
+    .filter({ hasText: "Pendiente" });
+  await expect(pending.getByText(summary, { exact: true })).toBeVisible();
+  await axe(page);
+  await pending.getByLabel("Comentario").fill("No corresponde");
+  await pending.getByRole("button", { name: "Rechazar" }).click();
+  await expect(
+    page
+      .getByRole("listitem")
+      .filter({ hasText: reason })
+      .first()
+      .getByText("Rechazada", { exact: true }),
+  ).toBeVisible();
+  await logout(page);
 });

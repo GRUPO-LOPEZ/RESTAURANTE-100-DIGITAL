@@ -173,6 +173,13 @@ const userDetail = z.object({
   area_name: z.string().nullable(),
   // El primer y el último acceso, quién la invitó y los motivos: solo para quien la administra.
   can_view_admin_details: z.boolean(),
+  // Si dar de baja, reactivar o suspender a esta persona va con aprobación de Dirección (ADR-0017):
+  // lo decide la base para esta sesión; vacío = el camino de siempre.
+  governance: z.object({
+    deactivate: z.string().nullable(),
+    reactivate: z.string().nullable(),
+    suspend: z.string().nullable(),
+  }),
   activated_at: z.string().nullable(),
   last_seen_at: z.string().nullable(),
   invited_by_name: z.string().nullable(),

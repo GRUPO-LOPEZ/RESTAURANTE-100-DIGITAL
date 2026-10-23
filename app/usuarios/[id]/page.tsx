@@ -67,6 +67,18 @@ function Reason({ id, label }: { id: string; label: string }) {
   );
 }
 
+// Aviso de que la acción no es inmediata: queda pendiente de una aprobación (ADR-0017).
+function ApprovalNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      data-slot="approval-note"
+      className="rounded-sm border border-line bg-info p-3 text-base text-info-ink"
+    >
+      {children}
+    </p>
+  );
+}
+
 // Cada acción con motivo va plegada: así la ficha no muestra muchos formularios a la vez.
 function Action({ summary, children }: { summary: string; children: React.ReactNode }) {
   return (
@@ -104,6 +116,8 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
   ]);
   if (!user || !detail) notFound();
   const isMe = user.id === session.user_id;
+  // Lo que va con aprobación de Dirección (ADR-0017): lo dice la base, no se calcula acá.
+  const gov = detail.governance;
 
   return (
     <>
@@ -356,15 +370,22 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
               <ActionForm
                 action={suspendUserAction}
                 schema="reason"
-                submitLabel="Suspender la cuenta"
+                submitLabel={gov.suspend ? "Pedir la suspensión" : "Suspender la cuenta"}
                 variant="outline"
-                pendingLabel="Suspendiendo…"
+                pendingLabel={gov.suspend ? "Enviando…" : "Suspendiendo…"}
               >
                 <input type="hidden" name="userId" value={user.id} />
-                <p className="text-base text-ink">
-                  Suspender es una pausa (por ejemplo, una licencia): cierra sus sesiones y no puede
-                  entrar hasta que se levante. Se levanta sin aprobación.
-                </p>
+                {gov.suspend ? (
+                  <ApprovalNote>
+                    Esta persona es Superadministrador. Pedís la suspensión y queda pendiente hasta
+                    que la apruebe Dirección General. Cuando se aprueba, se cierran sus sesiones.
+                  </ApprovalNote>
+                ) : (
+                  <p className="text-base text-ink">
+                    Suspender es una pausa (por ejemplo, una licencia): cierra sus sesiones y no
+                    puede entrar hasta que se levante. Se levanta sin aprobación.
+                  </p>
+                )}
                 <Reason id="motivo-suspender" label="Motivo para suspender" />
               </ActionForm>
             </Action>
@@ -389,16 +410,25 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
               <ActionForm
                 action={disableUserAction}
                 schema="reason"
-                submitLabel="Desactivar la cuenta"
+                submitLabel={gov.deactivate ? "Pedir la desactivación" : "Desactivar la cuenta"}
                 variant="destructive"
-                pendingLabel="Desactivando…"
+                pendingLabel={gov.deactivate ? "Enviando…" : "Desactivando…"}
               >
                 <input type="hidden" name="userId" value={user.id} />
-                <p className="text-base text-ink">
-                  Desactivar es para quien deja de trabajar: cierra todas sus sesiones al instante y
-                  toda su historia se conserva. Para reactivarla hace falta la aprobación de otra
-                  persona.
-                </p>
+                {gov.deactivate ? (
+                  <ApprovalNote>
+                    {gov.deactivate === "core.change_general_management_status"
+                      ? "Esta persona es de Dirección General. Pedís la desactivación y queda pendiente hasta que la apruebe otra persona de Dirección General, que no seas vos."
+                      : "Esta persona es Superadministrador. Pedís la desactivación y queda pendiente hasta que la apruebe Dirección General."}{" "}
+                    Cuando se aprueba, se cierran sus sesiones y su historia se conserva.
+                  </ApprovalNote>
+                ) : (
+                  <p className="text-base text-ink">
+                    Desactivar es para quien deja de trabajar: cierra todas sus sesiones al instante
+                    y toda su historia se conserva. Para reactivarla hace falta la aprobación de
+                    otra persona.
+                  </p>
+                )}
                 <Reason id="motivo-desactivar" label="Motivo para desactivar" />
               </ActionForm>
             </Action>
@@ -412,9 +442,16 @@ async function Person({ params }: { params: PageProps<"/usuarios/[id]">["params"
                 pendingLabel="Enviando…"
               >
                 <input type="hidden" name="userId" value={user.id} />
-                <p className="text-base text-ink">
-                  La reactivación la aprueba otra persona, distinta de quien la desactivó.
-                </p>
+                {gov.reactivate ? (
+                  <ApprovalNote>
+                    Esta persona es de Dirección General. La reactivación la aprueba otra persona de
+                    Dirección General, que no seas vos ni quien la desactivó.
+                  </ApprovalNote>
+                ) : (
+                  <p className="text-base text-ink">
+                    La reactivación la aprueba otra persona, distinta de quien la desactivó.
+                  </p>
+                )}
                 <Reason id="motivo-reactivar" label="Motivo para reactivar" />
               </ActionForm>
             </Action>
