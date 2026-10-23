@@ -135,16 +135,16 @@ create temporary table request_notes as
   select n.recipient_user_id from core.notifications n
     join workflow.approval_requests r on r.id = n.request_id
    where r.subject_user_id = '88888888-8888-8888-8888-888888888888';
-select ok(exists (select 1 from request_notes where recipient_user_id = pg_temp.u(405)),
-  'avisa a quien puede decidir (el chef ejecutivo de la marca)');
+select ok(exists (select 1 from request_notes where recipient_user_id = pg_temp.u(402)),
+  'avisa a quien puede decidir (Dirección General)');
 select ok(not exists (select 1 from request_notes where recipient_user_id in (pg_temp.u(403), '88888888-8888-8888-8888-888888888888')),
   'no le avisa a quien pidió ni a la persona afectada');
-select ok(not exists (select 1 from request_notes where recipient_user_id in (pg_temp.u(404), pg_temp.u(409), pg_temp.u(401))),
-  'no le avisa a quien no puede decidir');
-select is(pg_temp.q(pg_temp.u(405), 'select count(*)::text from core.notifications where read_at is null'), '1',
-  'el chef ve su aviso sin leer');
+select ok(not exists (select 1 from request_notes where recipient_user_id in (pg_temp.u(404), pg_temp.u(409), pg_temp.u(401), pg_temp.u(405))),
+  'no le avisa a quien no puede decidir (tampoco a la chef: un rol sensible lo aprueba Dirección o el Director de Marca)');
+select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from core.notifications where read_at is null'), '1',
+  'Dirección ve su aviso sin leer');
 select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from core.notifications'), '0', 'cada persona ve solo sus avisos');
-select is(pg_temp.q(pg_temp.u(405), 'select core.mark_notifications_read()::text'), '1', 'marca su aviso como leído');
+select is(pg_temp.q(pg_temp.u(402), 'select core.mark_notifications_read()::text'), '1', 'marca su aviso como leído');
 select is(pg_temp.q(pg_temp.u(405), 'select core.mark_notifications_read()::text'), '0', 'la segunda vez no hay nada para marcar');
 select is(pg_temp.q(pg_temp.u(405), $$update core.notifications set read_at = null returning 'x'$$), 'ERROR 42501',
   'nadie edita los avisos directo');

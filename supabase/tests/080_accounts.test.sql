@@ -75,8 +75,8 @@ select ok(
 -- ---------------------------------------------------------------------------
 select is(pg_temp.r(pg_temp.u(404), format('core.disable_user(%L, ''Prueba'')', pg_temp.u(404))), 'denied', 'nadie se desactiva a sí mismo');
 select is(pg_temp.r(pg_temp.u(404), format('core.disable_user(%L, ''Prueba'')', pg_temp.u(403))), 'denied', 'el gerente no desactiva a su director');
-select is(pg_temp.r(pg_temp.u(401), format('core.disable_user(%L, ''Prueba'')', pg_temp.u(402))), 'denied',
-  'el superadmin no desactiva a Dirección General (tiene permisos que él no tiene)');
+select is(pg_temp.r(pg_temp.u(401), format('core.disable_user(%L, ''Prueba'')', pg_temp.u(402))), 'pending_approval',
+  'el superadmin no desactiva a Dirección General por su cuenta: queda pendiente de otra persona de Dirección (ADR-0017, pregunta 3)');
 select is(pg_temp.r(pg_temp.u(409), format('core.disable_user(%L, ''Prueba'')', pg_temp.u(406))), 'denied', 'el cocinero no desactiva cuentas');
 
 insert into auth.sessions (id, user_id, created_at, updated_at, aal) values (gen_random_uuid(), pg_temp.u(409), now(), now(), 'aal1');

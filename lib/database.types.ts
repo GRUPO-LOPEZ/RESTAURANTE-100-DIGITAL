@@ -1315,6 +1315,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      apply_governance_status: { Args: { p_request_id: string }; Returns: undefined };
       apply_reactivation: { Args: { p_request_id: string }; Returns: undefined };
       apply_role_assignment: { Args: { p_request_id: string }; Returns: undefined };
       apply_role_permission_change: { Args: { p_request_id: string }; Returns: undefined };
@@ -1331,6 +1332,10 @@ export type Database = {
           p_valid_until?: string;
         };
         Returns: Json;
+      };
+      assignment_unit_open: {
+        Args: { p_brand_id: string; p_restaurant_id: string };
+        Returns: boolean;
       };
       audit_export: {
         Args: {
@@ -1493,6 +1498,7 @@ export type Database = {
       };
       disable_user: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
       display_name: { Args: { p_user_id: string }; Returns: string };
+      governance_workflow: { Args: { p_action: string; p_user_id: string }; Returns: string };
       group_governance_gap: {
         Args: { p_group_id: string; p_without_assignment: string; p_without_user: string };
         Returns: string;
@@ -1528,6 +1534,10 @@ export type Database = {
         Returns: boolean;
       };
       hide_costs: { Args: { p_value: Json }; Returns: Json };
+      holds_group_role: {
+        Args: { p_group_id: string; p_role_code: string; p_user_id: string };
+        Returns: boolean;
+      };
       is_assignment_current: {
         Args: { p_valid_from: string; p_valid_until: string };
         Returns: boolean;
@@ -1579,6 +1589,10 @@ export type Database = {
       publish_test_document: { Args: { p_id: string; p_reason: string }; Returns: Json };
       record_failed_login: {
         Args: { p_email: string; p_ip?: string; p_user_agent?: string };
+        Returns: Json;
+      };
+      request_governance_status: {
+        Args: { p_action: string; p_reason: string; p_user_id: string };
         Returns: Json;
       };
       request_reactivation: { Args: { p_reason: string; p_user_id: string }; Returns: Json };

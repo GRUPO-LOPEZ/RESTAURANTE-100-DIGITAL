@@ -157,19 +157,21 @@ select ok(exists (select 1 from audit.authentication_security_events where actor
   'A2. el intento de autoaprobación quedó registrado');
 select is(pg_temp.r(pg_temp.u(409), format('workflow.decide_approval(%L, ''approved'', null)', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
   'denied', 'el cocinero no decide aprobaciones');
-select is(pg_temp.r(pg_temp.u(405), format('workflow.decide_approval(%L, ''approved'', ''Conozco a la persona'')', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
-  'approved', 'otra persona con approvals.decide en la marca (el chef ejecutivo) aprueba');
+-- Un rol sensible lo aprueba Dirección o el Director de Marca de ese lugar, no la Chef (ADR-0017, pregunta 4).
+select is(pg_temp.r(pg_temp.u(405), format('workflow.decide_approval(%L, ''approved'', ''Conozco a la persona'')', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222')))
+          || '/' || pg_temp.r(pg_temp.u(402), format('workflow.decide_approval(%L, ''approved'', ''Conozco a la persona'')', pg_temp.req('executive_chef', '22222222-2222-2222-2222-222222222222'))),
+  'denied/approved', 'la chef ya no aprueba un rol sensible; otra persona que puede decidir (Dirección) sí');
 select ok(exists (select 1 from core.user_role_assignments a join core.roles r on r.id = a.role_id
                    where a.user_id = '22222222-2222-2222-2222-222222222222' and r.code = 'executive_chef'
-                     and a.brand_id = pg_temp.u(101) and a.deleted_at is null and a.created_by = pg_temp.u(405)),
+                     and a.brand_id = pg_temp.u(101) and a.deleted_at is null and a.created_by = pg_temp.u(402)),
   'al aprobarse, el rol se aplicó en la misma transacción');
 select ok(
-  (select d.decided_by = pg_temp.u(405) and d.decision = 'approved' and d.decided_at is not null and d.comment = 'Conozco a la persona'
-          and r.status = 'approved' and r.resolved_by = pg_temp.u(405) and r.resolved_at is not null
+  (select d.decided_by = pg_temp.u(402) and d.decision = 'approved' and d.decided_at is not null and d.comment = 'Conozco a la persona'
+          and r.status = 'approved' and r.resolved_by = pg_temp.u(402) and r.resolved_at is not null
      from workflow.approval_decisions d join workflow.approval_requests r on r.id = d.request_id
     where r.subject_user_id = '22222222-2222-2222-2222-222222222222'),
   '12. la aprobación guarda identidad, fecha, decisión y comentario');
-select is(pg_temp.r(pg_temp.u(402), format('workflow.decide_approval(%L, ''approved'', null)',
+select is(pg_temp.r(pg_temp.u(412), format('workflow.decide_approval(%L, ''approved'', null)',
             (select id from workflow.approval_requests where subject_user_id = '22222222-2222-2222-2222-222222222222'))),
   'already_resolved', 'una solicitud resuelta no se vuelve a decidir');
 
@@ -281,7 +283,7 @@ insert into core.user_memberships (user_id, group_id) values ('44444444-4444-444
 select is(pg_temp.assign(pg_temp.u(403), '44444444-4444-4444-4444-444444444444', 'executive_chef', 'brand', 101, null), 'pending_approval',
   'M4. el director pide Chef Ejecutivo');
 update core.user_role_assignments set deleted_at = now() where user_id = pg_temp.u(403);
-select is(pg_temp.q(pg_temp.u(405), format('select workflow.decide_approval(%L, ''approved'', null) ->> ''result''', pg_temp.req('executive_chef', '44444444-4444-4444-4444-444444444444'))),
+select is(pg_temp.q(pg_temp.u(402), format('select workflow.decide_approval(%L, ''approved'', null) ->> ''result''', pg_temp.req('executive_chef', '44444444-4444-4444-4444-444444444444'))),
   'ERROR 23514', 'M4. si quien pidió ya no tiene permiso, la aprobación no se aplica');
 select is((select status::text from workflow.approval_requests where id = pg_temp.req('executive_chef', '44444444-4444-4444-4444-444444444444')),
   'pending', 'M4. la solicitud sigue pendiente (no quedó aprobada a medias)');
