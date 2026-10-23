@@ -2,6 +2,19 @@
 
 _Última actualización: 2026-10-23. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`), con las 9 respuestas de ADR-0015 y las 6 de ADR-0017 implementadas, y verificada en local. Falta subirla a GitHub, ver la CI en verde y armar staging para la demo de cierre._
 
+## Próximo paso: ambiente de prueba (staging)
+
+- Joaco ya creó un proyecto en Supabase y es Developer ahí.
+- **Antes de seguir, Joaco tiene que confirmar dos cosas:**
+  1. que ese proyecto es el de prueba (staging) y está en la organización de Soy;
+  2. su identificador ("Reference ID", en Project Settings → General).
+- **Después:** plan para aprobar, y recién ahí se escribe lo siguiente:
+  - el paso de GitHub Actions "Publicar en staging": migraciones, datos inventados, funciones y configuración de Auth;
+  - el ajuste de `config.toml` para staging: el límite de ingresos normal y las direcciones de la app;
+  - la guía en simple;
+  - el ADR.
+- Los secretos (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` y `STAGING_PROJECT_REF`) los carga Joaco en GitHub. Nunca van por el chat.
+
 ## Las 6 preguntas pendientes (terminadas en local, 2026-10-23)
 
 Decisiones en ADR-0017. Migración `20261023120000_old_questions.sql`, pruebas `130_old_questions.test.sql`.
