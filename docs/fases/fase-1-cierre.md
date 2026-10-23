@@ -84,7 +84,7 @@ Además, la revisaron los tres revisores automáticos (base de datos, seguridad 
 
 ## Riesgos y decisiones abiertas
 
-- **Decisiones de Joaco:** las 9 preguntas de ADR-0015 y las 6 de ADR-0017 están respondidas e implementadas. Queda una para confirmar: si el rol Director de Marca se puede dar para todo el grupo.
+- **Decisiones de Joaco:** las 9 preguntas de ADR-0015 y las 6 de ADR-0017 están respondidas e implementadas. El rol Director de Marca solo se da para una marca.
 - **Bloqueo a propósito de una cuenta** (alguien falla la contraseña a propósito para dejar afuera a otra persona): se resuelve antes de producción, con "dispositivo de confianza" (ADR-0017).
 - **Antes de producción** (ADR-0014): CAPTCHA o el plan Teams de Supabase, una política de contenido completa (CSP) y límites de frecuencia.
 - **Sellos de la auditoría:** la migración de alineación solo se puede aplicar antes del primer sello. Hoy se cumple, porque no existen staging ni producción. Si alguna base ya selló algo, hay que recrearla.

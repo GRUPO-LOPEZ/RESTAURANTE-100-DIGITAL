@@ -25,7 +25,7 @@ Decisiones en ADR-0017. Migración `20261023120000_old_questions.sql`, pruebas `
 - `security-auditor`: sin graves. Medios corregidos: varios grupos y persona borrada.
 - `ui-reviewer`: sin graves. Medios corregidos: la ficha recibe de la base si una acción va con aprobación, con aviso destacado y botón "Pedir…"; la prueba de pantalla limpia pedidos viejos antes de empezar.
 
-**Pendiente de confirmar con Joaco:** ¿se puede dar el rol Director de Marca para todo el grupo? (ADR-0017)
+**Decidido por Joaco (2026-10-23):** el rol Director de Marca solo se da para una marca (`20261023150000_brand_director_scope.sql`).
 
 **Verificación completa (2026-10-23, `npm run test` desde una base nueva, sin nada más corriendo, con todos los cambios):**
 

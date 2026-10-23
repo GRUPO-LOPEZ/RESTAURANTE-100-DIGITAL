@@ -34,7 +34,7 @@ En `docs/estado.md` quedaban seis preguntas sobre permisos y cuentas. No frenaba
    - **El Director de Marca solo aprueba si tiene todos los permisos del rol** (decisión de Joaco, 2026-10-23). Es la misma regla que para quien da el rol. Si no los tiene, lo aprueba Dirección.
    - Los demás tipos de aprobación siguen exigiendo el rol para todo el grupo.
    - Los avisos siguen la misma regla.
-   - **Pendiente de confirmar con Joaco:** hoy nada impide dar el rol Director de Marca para todo el grupo, con aprobación de Dirección. Quien lo tuviera aprobaría roles sensibles en todo el grupo.
+   - **El rol Director de Marca solo se da para una marca** (Joaco, 2026-10-23): para todo el grupo ya está Dirección, y un Director de todo el grupo aprobaría roles sensibles en todos los locales. Migración `20261023150000_brand_director_scope.sql`. La tabla también exige el alcance de los roles que gobiernan: Superadmin y Dirección, solo de grupo; Director de Marca, solo de marca. Si hace falta, se cambia con otra migración.
 5. **Quien aprueba una reactivación alcanza todos los roles de la persona.** Ya funcionaba así (`workflow.decision_blocker` con `cannot_act_on_user`). Se sumó una prueba.
 6. **Bloqueo a propósito de una cuenta (alguien falla 5 veces para dejar afuera a otra persona): se resuelve antes de producción.**
    - Lo recomendado al principio era dejar entrar con contraseña y código correctos aunque la cuenta esté bloqueada. Tenía un problema: la pantalla le mostraría al atacante cuándo acertó la contraseña, y podría seguir probando durante el bloqueo.

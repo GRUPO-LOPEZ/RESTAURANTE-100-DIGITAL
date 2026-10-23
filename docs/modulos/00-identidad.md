@@ -74,6 +74,7 @@ Aprobada por Joaco el 2026-10-20 y ampliada el 2026-10-21 con los permisos del d
 - Quitarle el rol, suspender o dar de baja a otro Superadministrador lo aprueba Dirección.
 - A alguien de Dirección lo da de baja o lo reactiva otra persona de Dirección.
 - Un local o una marca cerrados no dan permisos.
+- Alcance de los roles que gobiernan: Superadministrador y Dirección General, solo para todo el grupo; Director de Marca, solo para una marca.
 
 **Dónde trabaja limita los roles** (respuesta 9): con una membresía de todo el grupo se puede dar cualquier rol; de una marca, roles de esa marca o de sus locales; de un local, solo roles de ese local. La base no deja terminar una membresía que cubre un rol vigente. Los permisos de ensayo (`test_documents.*`) están aparte, más abajo. El alcance lo da cada asignación (grupo, marca o local), no el rol. Los permisos de recetas, costos y compras se suman en la fase de cada módulo.
 

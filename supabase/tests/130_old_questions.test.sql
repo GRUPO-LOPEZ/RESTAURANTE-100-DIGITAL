@@ -6,7 +6,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(45);
+select plan(49);
 
 create function pg_temp.q(p_user uuid, p_sql text, p_aal text default 'aal2')
 returns text
@@ -261,6 +261,31 @@ reset role;
 select is(pg_temp.q(pg_temp.u(403), $$select (new_values ->> 'cost') || '/' || (new_values ->> 'name')
                                         from core.audit_history(5, p_record_id => '99999999-0000-4000-8000-0000000000c1')$$),
   '[oculto]/Cocina', 'el historial sigue ocultando los costos a quien no los puede ver (y muestra el resto)');
+
+-- ---------------------------------------------------------------------------
+-- El rol Director de Marca solo se da para una marca (decisión de Joaco, 2026-10-23)
+-- ---------------------------------------------------------------------------
+select pg_temp.person('99999999-0000-4000-8000-000000000009', 'futuro-director@ejemplo.test', 'cook', 'restaurant', 101, 201);
+select is(pg_temp.r(pg_temp.u(401), $$core.assign_role('99999999-0000-4000-8000-000000000009', 'brand_director', 'group',
+            '00000000-0000-4000-8000-000000000001', p_reason => 'Director de todo')$$)
+          || '/' || pg_temp.r(pg_temp.u(401), $$core.assign_role('99999999-0000-4000-8000-000000000009', 'brand_director', 'restaurant',
+            '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201',
+            p_reason => 'Director de un local')$$),
+  'ERROR 23514/ERROR 23514', 'el Director de Marca no se da para todo el grupo ni para un local');
+select is(pg_temp.r(pg_temp.u(401), $$core.assign_role('99999999-0000-4000-8000-000000000009', 'brand_director', 'brand',
+            '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101', p_reason => 'Directora nueva')$$),
+  'pending_approval', 'para una marca, sí (y queda pendiente de Dirección)');
+select throws_ok($$insert into core.user_role_assignments (user_id, role_id, scope_type, group_id)
+                   select '99999999-0000-4000-8000-000000000009', id, 'group', '00000000-0000-4000-8000-000000000001'
+                     from core.roles where code = 'brand_director'$$,
+  '23514', 'El rol Director de Marca solo se da para una marca.',
+  'la base lo rechaza aunque no pase por la función');
+select throws_ok($$insert into core.user_role_assignments (user_id, role_id, scope_type, group_id, brand_id)
+                   select '99999999-0000-4000-8000-000000000009', id, 'brand', '00000000-0000-4000-8000-000000000001',
+                          '00000000-0000-4000-8000-000000000101'
+                     from core.roles where code = 'general_management'$$,
+  '23514', 'Ese rol solo se da para todo el grupo.',
+  'y Dirección General solo para todo el grupo, también en la tabla');
 
 select * from finish();
 rollback;
