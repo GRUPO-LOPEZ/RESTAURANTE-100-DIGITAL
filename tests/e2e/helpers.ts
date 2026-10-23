@@ -64,6 +64,25 @@ export async function logout(page: Page) {
   await expect(page).toHaveURL(/\/ingresar$/);
 }
 
+// Un enlace del menú principal. En el celular el menú está plegado detrás de "Menú": se abre.
+export async function menuLink(page: Page, name: string) {
+  // El encabezado llega en streaming, después del resto de la página: primero se lo espera.
+  await page.getByRole("button", { name: /^Salir/ }).waitFor();
+  const toggle = page.locator("summary", { hasText: "Menú" });
+  if (await toggle.isVisible()) {
+    const open = await toggle.evaluate((el) => (el.parentElement as HTMLDetailsElement).open);
+    if (!open) await toggle.click();
+  }
+  return page
+    .getByRole("navigation", { name: "Menú principal" })
+    .getByRole("link", { name, exact: true });
+}
+
+// Abre una acción plegada de la ficha (por ejemplo, "Desactivar…").
+export async function openAction(page: Page, summary: string) {
+  await page.locator("summary", { hasText: summary }).click();
+}
+
 // El aviso de la pantalla (no el anunciador de rutas de Next, que también es role=alert).
 export function notice(page: Page) {
   return page.locator('[data-slot="notice"]');

@@ -1,28 +1,36 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { UserPlus } from "lucide-react";
+import { List, UserPlus } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
-import { PeopleByRoleChart } from "@/components/people-by-role-chart";
-import { UsersTable } from "@/components/users-table";
+import { FiltersPanel } from "@/components/filters-panel";
+import { HistoryList } from "@/components/history-list";
+import { LoginsByDayChart } from "@/components/logins-by-day-chart";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
 import { EmptyState, Kpi } from "@/components/ui/kpi";
-import { formatDateTime, getBrandsAndRestaurants, getUsers, getUsersOverview } from "@/lib/data";
+import {
+  MODULE_LABELS,
+  first,
+  formatDate,
+  formatDateTime,
+  getActiveRestaurantId,
+  getBrandsAndRestaurants,
+  getControlPanel,
+  uuidOrUndefined,
+} from "@/lib/data";
+import { dateParam, restaurantFilter } from "@/lib/filters";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 
-const PAGE_SIZE = 25;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// Tablero de usuarios (reglas de tableros): una pregunta, filtros arriba, KPIs, gráfico, tabla
-// y la fecha de los datos. Muestra el estado ACTUAL de las cuentas (una foto del momento), por
-// eso no compara con un período anterior ni filtra por fecha.
+// Tablero de control de usuarios (sección 9 del documento de Soy): una pregunta, filtros fijos
+// arriba (fecha, marca, local y módulo), 4 tarjetas, el gráfico de accesos, dos tablas y los
+// últimos cambios críticos, siempre con la fecha de los datos.
 export default function UsuariosPage({ searchParams }: PageProps<"/usuarios">) {
   return (
     <AppShell
-      title="¿Quién tiene acceso y dónde?"
-      description="Personas de tu alcance, sus roles y el estado de su cuenta, en este momento."
+      title="¿Quién tiene acceso y qué está pasando?"
+      description="Las cuentas de tu alcance, los ingresos y los cambios importantes."
     >
       <Suspense fallback={<Loading />}>
         <Dashboard searchParams={searchParams} />
@@ -31,8 +39,19 @@ export default function UsuariosPage({ searchParams }: PageProps<"/usuarios">) {
   );
 }
 
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
+function comparison(now: number, before: number): string {
+  if (now === before) return `Igual que los 7 días anteriores (${before})`;
+  const diff = now - before;
+  return `${diff > 0 ? "+" : ""}${diff} contra los 7 días anteriores (${before})`;
+}
+
+// Para los KPI de estado: el valor de hoy contra cómo estaba hace 7 días, con la fecha (regla de
+// tableros 2). No depende del período filtrado.
+function weekAgo(now: number, before: number, asOf: string): string {
+  const when = formatDate(asOf);
+  if (now === before) return `Igual que el ${when} (${before})`;
+  const diff = now - before;
+  return `${diff > 0 ? "+" : ""}${diff} contra el ${when} (${before})`;
 }
 
 async function Dashboard({
@@ -40,48 +59,51 @@ async function Dashboard({
 }: {
   searchParams: PageProps<"/usuarios">["searchParams"];
 }) {
-  await requireMenu("users");
+  const session = await requireMenu("users");
   const params = await searchParams;
-  const brandId = first(params.marca);
-  const restaurantId = first(params.local);
-  const status = first(params.estado);
+  const activeId = await getActiveRestaurantId(session.user_id);
+  const local = restaurantFilter(first(params.local), activeId);
+  const moduleParam = first(params.modulo);
   const filter = {
-    search: first(params.q)?.slice(0, 100),
-    brandId: brandId && UUID.test(brandId) ? brandId : undefined,
-    restaurantId: restaurantId && UUID.test(restaurantId) ? restaurantId : undefined,
-    status: status && ["active", "locked", "disabled"].includes(status) ? status : undefined,
-    afterKey: first(params.despues_de),
-    afterId: first(params.despues_id),
+    from: dateParam(first(params.desde)),
+    to: dateParam(first(params.hasta)),
+    brandId: uuidOrUndefined(first(params.marca)),
+    restaurantId: local.restaurantId,
+    module: moduleParam && MODULE_LABELS[moduleParam] ? moduleParam : undefined,
   };
-  const [overview, rows, places, menus] = await Promise.all([
-    getUsersOverview(filter),
-    getUsers(filter, PAGE_SIZE + 1),
+  const [panel, places, menus] = await Promise.all([
+    getControlPanel(filter),
     getBrandsAndRestaurants(),
     getMenus(),
   ]);
-  const page = rows.slice(0, PAGE_SIZE);
-  const next = rows.length > PAGE_SIZE ? page[page.length - 1] : undefined;
-  const nextQuery = new URLSearchParams();
-  if (filter.search) nextQuery.set("q", filter.search);
-  if (filter.brandId) nextQuery.set("marca", filter.brandId);
-  if (filter.restaurantId) nextQuery.set("local", filter.restaurantId);
-  if (filter.status) nextQuery.set("estado", filter.status);
-  if (next) {
-    nextQuery.set("despues_de", next.sort_key);
-    nextQuery.set("despues_id", next.id);
-  }
-  const blocked = overview.locked + overview.disabled;
+  const off = panel.deactivated + panel.suspended;
+  const offBefore = panel.deactivated_prev + panel.suspended_prev;
+
+  const brandName = (id?: string) => places.brands.find((b) => b.id === id)?.name;
+  const restaurantName = (id?: string) => places.restaurants.find((r) => r.id === id)?.name;
+  const activeFilters = [
+    filter.from || filter.to ? `Del ${formatDate(panel.from)} al ${formatDate(panel.to)}` : null,
+    brandName(filter.brandId),
+    filter.restaurantId
+      ? `${restaurantName(filter.restaurantId) ?? "Local"}${local.fromSelector ? " (el que elegiste arriba)" : ""}`
+      : null,
+    filter.module ? MODULE_LABELS[filter.module] : null,
+  ].filter((x): x is string => Boolean(x));
 
   return (
     <>
-      <Card>
+      <FiltersPanel active={activeFilters}>
         <form
           method="get"
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
           role="search"
+          aria-label="Filtros del tablero"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end"
         >
-          <Field id="q" label="Buscar" className="lg:col-span-2">
-            <Input name="q" defaultValue={filter.search} placeholder="Nombre o correo" />
+          <Field id="desde" label="Desde">
+            <Input name="desde" type="date" defaultValue={filter.from ?? panel.from} />
+          </Field>
+          <Field id="hasta" label="Hasta">
+            <Input name="hasta" type="date" defaultValue={filter.to ?? panel.to} />
           </Field>
           <Field id="marca" label="Marca">
             <Select name="marca" defaultValue={filter.brandId ?? ""}>
@@ -93,9 +115,13 @@ async function Dashboard({
               ))}
             </Select>
           </Field>
-          <Field id="local" label="Local">
-            <Select name="local" defaultValue={filter.restaurantId ?? ""}>
-              <option value="">Todos</option>
+          <Field
+            id="local"
+            label="Local"
+            hint={local.fromSelector ? "El que elegiste arriba." : undefined}
+          >
+            <Select name="local" defaultValue={filter.restaurantId ?? "todos"}>
+              <option value="todos">Todos</option>
               {places.restaurants.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
@@ -103,78 +129,189 @@ async function Dashboard({
               ))}
             </Select>
           </Field>
-          <Field id="estado" label="Estado">
-            <Select name="estado" defaultValue={filter.status ?? ""}>
+          <Field id="modulo" label="Módulo de los cambios">
+            <Select name="modulo" defaultValue={filter.module ?? ""}>
               <option value="">Todos</option>
-              <option value="active">Activas</option>
-              <option value="locked">Bloqueadas</option>
-              <option value="disabled">Desactivadas</option>
+              {Object.entries(MODULE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </Select>
           </Field>
-          <Button type="submit" className="lg:col-start-5">
-            Filtrar
-          </Button>
+          <Button type="submit">Filtrar</Button>
         </form>
-      </Card>
+      </FiltersPanel>
 
       <p className="text-sm text-ink-muted">
-        Estado actual · Datos al {formatDateTime(overview.as_of)} · Se actualizan en cada consulta
+        Del {formatDate(panel.from)} al {formatDate(panel.to)} · Datos al{" "}
+        {formatDateTime(panel.as_of)} · Se actualizan en cada consulta
       </p>
+
       <section
         aria-label="Indicadores"
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <Kpi label="Cuentas activas" value={overview.active} status="ok" statusLabel="Operando" />
         <Kpi
-          label="Bloqueadas o desactivadas"
-          value={blocked}
-          status={blocked > 0 ? "warn" : "ok"}
-          statusLabel={blocked > 0 ? "Revisar" : "Ninguna"}
+          label="Cuentas activas"
+          value={panel.active}
+          detail={[
+            weekAgo(panel.active, panel.active_prev, panel.prev_as_of),
+            panel.locked > 0 ? `${panel.locked} bloqueadas unos minutos` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          status="ok"
+          statusLabel="Operando"
         />
         <Kpi
-          label="Sin doble verificación"
-          value={overview.without_mfa}
-          status={overview.without_mfa > 0 ? "warn" : "ok"}
-          statusLabel={overview.without_mfa > 0 ? "Les falta registrarla" : "Todas al día"}
+          label="Desactivadas o suspendidas"
+          value={off}
+          detail={`${weekAgo(off, offBefore, panel.prev_as_of)} · ${panel.deactivated} desactivadas · ${panel.suspended} suspendidas`}
+          status={off > 0 ? "warn" : "ok"}
+          statusLabel={off > 0 ? "Revisar" : "Ninguna"}
         />
         <Kpi
           label="Aprobaciones pendientes"
-          value={overview.pending_approvals}
-          status={overview.pending_approvals > 0 ? "info" : "ok"}
-          statusLabel={overview.pending_approvals > 0 ? "Esperan decisión" : "Nada pendiente"}
+          value={panel.pending_approvals}
+          detail={weekAgo(panel.pending_approvals, panel.pending_prev, panel.prev_as_of)}
+          status={panel.pending_approvals > 0 ? "info" : "ok"}
+          statusLabel={panel.pending_approvals > 0 ? "Esperan decisión" : "Nada pendiente"}
         />
+        {panel.can_view_security && panel.rejected_7d !== null ? (
+          <Kpi
+            label="Accesos rechazados en 7 días"
+            value={panel.rejected_7d}
+            detail={comparison(panel.rejected_7d, panel.rejected_prev_7d ?? 0)}
+            status={panel.rejected_7d > (panel.rejected_prev_7d ?? 0) ? "warn" : "ok"}
+            statusLabel={
+              panel.rejected_7d > (panel.rejected_prev_7d ?? 0) ? "Subieron" : "Sin aumento"
+            }
+          />
+        ) : (
+          <Kpi
+            label="Accesos rechazados en 7 días"
+            value="Sin permiso"
+            detail="Lo ven quienes tienen permiso sobre el registro de seguridad."
+          />
+        )}
       </section>
-      {overview.by_role.length > 0 ? (
-        <Card>
-          <PeopleByRoleChart data={overview.by_role} />
-        </Card>
-      ) : null}
 
       <Card className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle>Personas</CardTitle>
-          {menus.invite ? (
-            <Button asChild variant="outline">
-              <Link href="/usuarios/invitar">
-                <UserPlus aria-hidden="true" />
-                Invitar a una persona
-              </Link>
-            </Button>
-          ) : null}
-        </div>
-        {page.length === 0 ? (
-          <EmptyState title="No hay personas con esos filtros.">
-            Probá con otro nombre, marca, local o estado.
-          </EmptyState>
+        <CardTitle>Accesos por día</CardTitle>
+        {panel.logins_by_day &&
+        panel.logins_by_day.every((d) => d.succeeded === 0 && d.failed === 0) ? (
+          <EmptyState title="No hubo ingresos en el período." />
+        ) : panel.logins_by_day ? (
+          <LoginsByDayChart data={panel.logins_by_day} />
         ) : (
-          <UsersTable rows={page} />
+          <EmptyState title="No tenés permiso para ver los ingresos.">
+            Los ven Superadministración, Dirección y Auditoría.
+          </EmptyState>
         )}
-        {next ? (
-          <Button asChild variant="outline" className="self-start">
-            <Link href={`/usuarios?${nextQuery.toString()}`}>Ver más personas</Link>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <CardTitle>Personas por local</CardTitle>
+            <CardDescription>
+              Con un rol de ese local o de su marca. Con acceso a todo el grupo:{" "}
+              {panel.group_wide_people}.
+            </CardDescription>
+          </div>
+          {panel.by_restaurant.length === 0 ? (
+            <EmptyState title="No hay locales en tu alcance." />
+          ) : (
+            <table className="w-full text-left tabular-nums">
+              <caption className="sr-only">Personas por local</caption>
+              <thead>
+                <tr className="border-b border-line text-sm text-ink-muted">
+                  <th scope="col" className="py-2 font-medium">
+                    Local
+                  </th>
+                  <th scope="col" className="py-2 text-right font-medium">
+                    Personas
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {panel.by_restaurant.map((r) => (
+                  <tr key={r.restaurant_id} className="border-b border-line last:border-0">
+                    <th scope="row" className="py-2 font-normal text-ink">
+                      {r.restaurant_name}{" "}
+                      <span className="text-sm text-ink-muted">· {r.brand_name}</span>
+                    </th>
+                    <td className="py-2 text-right text-ink">{r.people}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Card>
+        <Card className="flex flex-col gap-4">
+          <CardTitle>Personas por rol</CardTitle>
+          {panel.by_role.length === 0 ? (
+            <EmptyState title="No hay personas con roles en tu alcance." />
+          ) : (
+            <table className="w-full text-left tabular-nums">
+              <caption className="sr-only">Personas por rol</caption>
+              <thead>
+                <tr className="border-b border-line text-sm text-ink-muted">
+                  <th scope="col" className="py-2 font-medium">
+                    Rol
+                  </th>
+                  <th scope="col" className="py-2 text-right font-medium">
+                    Personas
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {panel.by_role.map((r) => (
+                  <tr key={r.role_code} className="border-b border-line last:border-0">
+                    <th scope="row" className="py-2 font-normal text-ink">
+                      {r.role_name}
+                    </th>
+                    <td className="py-2 text-right text-ink">{r.people}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Card>
+      </div>
+
+      <section aria-labelledby="criticos" className="flex flex-col gap-4">
+        <h2 id="criticos" className="text-xl text-ink">
+          Últimos cambios críticos
+        </h2>
+        <p className="text-sm text-ink-muted">
+          Roles, permisos, cuentas y aprobaciones del período, dentro de lo que podés ver del
+          historial.
+        </p>
+        {panel.critical_changes.length === 0 ? (
+          <EmptyState title="No hubo cambios críticos en el período." />
+        ) : (
+          <HistoryList rows={panel.critical_changes} compact />
+        )}
+      </section>
+
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline">
+          <Link href="/usuarios/lista">
+            <List aria-hidden="true" />
+            Ver la lista de personas
+          </Link>
+        </Button>
+        {menus.invite ? (
+          <Button asChild variant="outline">
+            <Link href="/usuarios/invitar">
+              <UserPlus aria-hidden="true" />
+              Invitar a una persona
+            </Link>
           </Button>
         ) : null}
-      </Card>
+      </div>
     </>
   );
 }

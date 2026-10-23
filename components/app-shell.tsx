@@ -4,8 +4,11 @@ import { Suspense } from "react";
 import { LogOut } from "lucide-react";
 
 import { signOut } from "@/app/ingresar/actions";
+import { MainNav, type NavLink } from "@/components/main-nav";
+import { RestaurantSelector } from "@/components/restaurant-selector";
 import { Button } from "@/components/ui/button";
 import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
+import { getActiveRestaurantId, getMyScopes, getUnreadCount } from "@/lib/data";
 
 // Marco de las pantallas con sesión: encabezado fijo (parte estática) y menú según permisos,
 // que lee la sesión y por eso va detrás de un Suspense (Cache Components).
@@ -20,9 +23,12 @@ export function AppShell({
 }) {
   return (
     <div className="flex min-h-full flex-col">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-2">
-          <Link href="/" className="flex min-h-touch items-center text-base font-semibold text-ink">
+      <header className="relative border-b border-line bg-surface">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-2 px-4 py-2">
+          <Link
+            href="/"
+            className="mr-auto flex min-h-touch items-center text-base font-semibold text-ink"
+          >
             Grupo LF
           </Link>
           <Suspense fallback={<span className="text-sm text-ink-muted">Cargando…</span>}>
@@ -43,32 +49,46 @@ export function AppShell({
 
 async function SessionMenu() {
   const session = await requireOperable();
-  const menus = await getMenus();
-  const links = [
+  const [menus, scopes, activeId, unread] = await Promise.all([
+    getMenus(),
+    getMyScopes(),
+    getActiveRestaurantId(session.user_id),
+    getUnreadCount(),
+  ]);
+  const all: (NavLink & { show: boolean })[] = [
     { href: "/", label: "Inicio", show: true },
     { href: "/usuarios", label: "Usuarios", show: menus.users },
-    { href: "/aprobaciones", label: "Aprobaciones", show: menus.approvals },
+    { href: "/aprobaciones", label: "Aprobaciones", count: unread, show: menus.approvals },
     { href: "/historial", label: "Historial", show: menus.audit },
-  ].filter((l) => l.show);
+    { href: "/roles", label: "Roles y permisos", show: menus.roles },
+    { href: "/ensayo", label: "Ensayo", show: menus.testDocuments },
+    { href: "/mi-cuenta", label: "Mi cuenta", show: true },
+  ];
+  const links: NavLink[] = all
+    .filter((l) => l.show)
+    .map(({ href, label, count }) => ({ href, label, count }));
 
+  // Celular: arriba la marca, "Menú" y "Salir"; abajo el selector de local a todo el ancho.
+  // Computadora: arriba la marca, el selector y "Salir"; abajo el menú completo.
   return (
-    <nav aria-label="Menú principal" className="flex flex-wrap items-center gap-1">
-      {links.map((l) => (
-        <Link
-          key={l.href}
-          href={l.href}
-          className="flex min-h-touch items-center rounded-sm px-3 text-base text-ink hover:bg-line/50"
-        >
-          {l.label}
-        </Link>
-      ))}
+    <>
+      {scopes.length > 1 ? (
+        <RestaurantSelector
+          value={scopes.some((s) => s.restaurant_id === activeId) ? activeId : null}
+          options={scopes.map((s) => ({
+            id: s.restaurant_id,
+            label: `${s.restaurant_name} · ${s.brand_code}`,
+          }))}
+        />
+      ) : null}
+      <MainNav links={links} />
       <form action={signOut}>
         <Button type="submit" variant="ghost" aria-label={`Salir (${displayName(session)})`}>
           <LogOut aria-hidden="true" />
           Salir
         </Button>
       </form>
-    </nav>
+    </>
   );
 }
 

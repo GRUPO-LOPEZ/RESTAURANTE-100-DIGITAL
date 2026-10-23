@@ -47,7 +47,7 @@ select is((select count(*)::int from org.areas), 12, 'el seed tiene 3 áreas por
 select is((select name from org.areas where id = '00000000-0000-4000-8000-000000000342'), 'Salón',
   'las áreas del seed tienen ids fijos');
 select is(
-  (select count(*)::int from audit.audit_events where schema_name = 'org' and origin = 'seed'),
+  (select count(*)::int from audit.audit_events where table_schema = 'org' and source = 'seed'),
   20,
   'cada alta del seed quedó auditada con origen seed'
 );
@@ -56,8 +56,8 @@ select is(
 -- Alcance consistente por estructura
 -- ---------------------------------------------------------------------------
 insert into org.groups (id, name) values ('00000000-0000-4000-8000-000000000002', 'Otro Grupo');
-insert into org.brands (id, group_id, name) values
-  ('00000000-0000-4000-8000-000000000199', '00000000-0000-4000-8000-000000000002', 'Marca del otro grupo');
+insert into org.brands (id, group_id, name, code) values
+  ('00000000-0000-4000-8000-000000000199', '00000000-0000-4000-8000-000000000002', 'Marca del otro grupo', 'OTRA');
 
 select throws_ok(
   $$insert into org.restaurants (group_id, brand_id, name)
@@ -142,11 +142,11 @@ select throws_ok(
 -- Nombres
 -- ---------------------------------------------------------------------------
 select throws_ok(
-  $$insert into org.brands (group_id, name) values ('00000000-0000-4000-8000-000000000001', 'demo PASTAS')$$,
+  $$insert into org.brands (group_id, name, code) values ('00000000-0000-4000-8000-000000000001', 'demo PASTAS', 'PASTAS2')$$,
   '23505', null, 'una marca repetida en el mismo grupo se rechaza, aunque cambien las mayúsculas'
 );
 select lives_ok(
-  $$insert into org.brands (group_id, name) values ('00000000-0000-4000-8000-000000000002', 'Demo Pastas')$$,
+  $$insert into org.brands (group_id, name, code) values ('00000000-0000-4000-8000-000000000002', 'Demo Pastas', 'PASTAS')$$,
   'el mismo nombre de marca en otro grupo se permite'
 );
 select throws_ok(
@@ -180,7 +180,8 @@ select throws_ok(
   $$delete from org.groups where id = '00000000-0000-4000-8000-000000000001'$$,
   '23503', null, 'no se puede borrar físicamente un grupo que tiene marcas'
 );
-select throws_ok($$truncate org.areas$$, '42501', null, 'no se puede vaciar una tabla de org');
+-- Con cascade no frena ninguna clave foránea: lo frena el trigger.
+select throws_ok($$truncate org.areas cascade$$, '42501', null, 'no se puede vaciar una tabla de org');
 
 -- ---------------------------------------------------------------------------
 -- Columnas de control y alcance en la auditoría
@@ -188,7 +189,7 @@ select throws_ok($$truncate org.areas$$, '42501', null, 'no se puede vaciar una 
 insert into auth.users (id, email, raw_app_meta_data, aud, role) values
   ('11111111-1111-1111-1111-111111111111', 'persona@ejemplo.test', '{}', 'authenticated', 'authenticated');
 set local request.jwt.claims to '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}';
-do $$ begin perform core.set_change_context('Apertura de local de prueba', 'app'); end $$;
+do $$ begin perform core.set_change_context('Apertura de local de prueba', 'manual'); end $$;
 
 insert into org.restaurants (id, group_id, brand_id, name) values
   ('00000000-0000-4000-8000-000000000299', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000103', 'Demo Café Sur');

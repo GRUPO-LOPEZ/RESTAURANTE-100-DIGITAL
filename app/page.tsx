@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ClipboardCheck, History, Users } from "lucide-react";
+import { ClipboardCheck, FileText, History, KeyRound, Users } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { SCOPE_LABELS, getUser } from "@/lib/data";
+import { getUser, scopeLabel } from "@/lib/data";
 import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
 
 export default function InicioPage() {
@@ -25,7 +25,7 @@ async function Home() {
     {
       href: "/usuarios",
       label: "Usuarios",
-      text: "Quién tiene acceso y dónde.",
+      text: "Quién tiene acceso y qué está pasando.",
       Icon: Users,
       show: menus.users,
     },
@@ -43,6 +43,20 @@ async function Home() {
       Icon: History,
       show: menus.audit,
     },
+    {
+      href: "/roles",
+      label: "Roles y permisos",
+      text: "Qué puede hacer cada rol.",
+      Icon: KeyRound,
+      show: menus.roles,
+    },
+    {
+      href: "/ensayo",
+      label: "Ensayo",
+      text: "Documentos de prueba de la Fase 1.",
+      Icon: FileText,
+      show: menus.testDocuments,
+    },
   ].filter((s) => s.show);
 
   return (
@@ -54,9 +68,7 @@ async function Home() {
           {(me?.roles ?? []).map((r) => (
             <li key={r.assignment_id} className="text-base text-ink">
               {r.role_name}{" "}
-              <span className="text-ink-muted">
-                · {SCOPE_LABELS[r.scope_type]} {r.scope_name}
-              </span>
+              <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
             </li>
           ))}
         </ul>

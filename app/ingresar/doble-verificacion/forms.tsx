@@ -1,50 +1,50 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import {
   confirmEnrollment,
   startEnrollment,
   verifyCode,
   type EnrollState,
-  type FormState,
 } from "@/app/ingresar/actions";
 import { FormNotice } from "@/components/form-notice";
 import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/field";
+import { FormInput, ServerForm, useServerForm } from "@/components/ui/form";
 
 function CodeInput() {
   return (
-    <Field id="code" label="Código de 6 números">
-      <Input
-        name="code"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="[0-9]{6}"
-        maxLength={6}
-        required
-      />
-    </Field>
+    <FormInput
+      id="code"
+      label="Código de 6 números"
+      name="code"
+      inputMode="numeric"
+      autoComplete="one-time-code"
+      pattern="[0-9]{6}"
+      maxLength={6}
+      required
+    />
   );
 }
 
-export function VerifyForm() {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(verifyCode, {});
+export function VerifyForm({ next }: { next: string }) {
+  const form = useServerForm({ schema: "code", action: verifyCode });
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <ServerForm form={form} className="flex flex-col gap-4">
+      <input type="hidden" name="next" value={next} />
       <CodeInput />
-      <FormNotice state={state} />
-      <Button type="submit" size="wide" disabled={pending}>
-        {pending ? "Verificando…" : "Verificar"}
+      <FormNotice state={form.state} />
+      <Button type="submit" size="wide" disabled={form.pending}>
+        {form.pending ? "Verificando…" : "Verificar"}
       </Button>
-    </form>
+    </ServerForm>
   );
 }
 
-export function EnrollForm() {
+export function EnrollForm({ next }: { next: string }) {
   const [enrollment, setEnrollment] = useState<EnrollState>({});
   const [starting, startTransition] = useTransition();
-  const [state, formAction, pending] = useActionState<EnrollState, FormData>(confirmEnrollment, {});
+  const form = useServerForm({ schema: "code", action: confirmEnrollment });
 
   useEffect(() => {
     startTransition(async () => setEnrollment(await startEnrollment()));
@@ -60,7 +60,7 @@ export function EnrollForm() {
   if (!enrollment.factorId) return <FormNotice state={enrollment} />;
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <ServerForm form={form} className="flex flex-col gap-4">
       {enrollment.qrCode ? (
         // El código QR lo genera Supabase Auth como imagen SVG.
         // eslint-disable-next-line @next/next/no-img-element
@@ -75,11 +75,12 @@ export function EnrollForm() {
         <span className="font-medium break-all text-ink">{enrollment.secret}</span>
       </p>
       <input type="hidden" name="factorId" value={enrollment.factorId} />
+      <input type="hidden" name="next" value={next} />
       <CodeInput />
-      <FormNotice state={state} />
-      <Button type="submit" size="wide" disabled={pending}>
-        {pending ? "Registrando…" : "Registrar y entrar"}
+      <FormNotice state={form.state} />
+      <Button type="submit" size="wide" disabled={form.pending}>
+        {form.pending ? "Registrando…" : "Registrar y entrar"}
       </Button>
-    </form>
+    </ServerForm>
   );
 }

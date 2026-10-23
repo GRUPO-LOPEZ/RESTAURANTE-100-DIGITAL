@@ -1,35 +1,62 @@
-# Diccionario de datos — core, org, audit y workflow
+# Diccionario de datos — core, org, audit, workflow, ai
 
-> Generado desde los `comment on` de la base local el 2026-10-21. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-10-23 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+
+## `ai.integration_permissions`
+
+Permisos explícitos de cada cuenta técnica (agente o integración), con su alcance. Solo estructura en la Fase 1: no hay filas ni acceso por la API. En la Fase 5 los usará la función de permisos de las cuentas técnicas.
+
+| Columna              | Tipo                       | Nulo | Qué guarda                                               |
+| -------------------- | -------------------------- | ---- | -------------------------------------------------------- |
+| `id`                 | `uuid`                     | no   | Identificador del permiso de integración.                |
+| `service_account_id` | `uuid`                     | no   | Cuenta técnica que recibe el permiso.                    |
+| `permission_id`      | `uuid`                     | no   | Permiso que recibe.                                      |
+| `scope_type`         | `core.scope_type`          | no   | Alcance: grupo, marca o restaurante.                     |
+| `group_id`           | `uuid`                     | no   | Grupo del permiso (siempre).                             |
+| `brand_id`           | `uuid`                     | sí   | Marca, si el alcance es marca o restaurante.             |
+| `restaurant_id`      | `uuid`                     | sí   | Restaurante, si el alcance es restaurante.               |
+| `valid_from`         | `timestamp with time zone` | no   | Desde cuándo vale.                                       |
+| `valid_until`        | `timestamp with time zone` | sí   | Hasta cuándo vale. Vacío si no vence.                    |
+| `created_at`         | `timestamp with time zone` | no   | Cuándo se otorgó (lo pone la base).                      |
+| `created_by`         | `uuid`                     | sí   | Quién lo otorgó (lo pone la base).                       |
+| `updated_at`         | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).       |
+| `updated_by`         | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).        |
+| `deleted_at`         | `timestamp with time zone` | sí   | Cuándo se quitó (borrado lógico). Vacío si está vigente. |
+| `deleted_by`         | `uuid`                     | sí   | Quién lo quitó (lo pone la base).                        |
 
 ## `audit.audit_events`
 
 Historia inalterable de todos los cambios: quién, cuándo, qué (antes y después) y por qué. Solo se inserta desde audit.log_change(); nadie puede modificar ni borrar, y los sellos (audit_seals) detectan cualquier alteración.
 
-| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                          |
-| --------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no   | Identificador del evento.                                                                                           |
-| `sequence_number`     | `bigint`                   | no   | Orden exacto de los eventos, incluso dentro de una misma transacción. Base de los sellos.                           |
-| `occurred_at`         | `timestamp with time zone` | no   | Cuándo ocurrió el cambio (hora de la transacción).                                                                  |
-| `actor_id`            | `uuid`                     | sí   | Quién hizo el cambio. Nulo en migraciones, seed, clave de servidor o si el actor no estaba registrado.              |
-| `actor_type`          | `core.actor_type`          | sí   | Persona o cuenta técnica, en el momento del cambio.                                                                 |
-| `actor_subject`       | `text`                     | sí   | El sub del JWT cuando no corresponde a ningún actor registrado (para no perder el rastro).                          |
-| `jwt_role`            | `text`                     | sí   | Rol del JWT de la sesión (authenticated, service_role...). Nulo sin JWT, por ejemplo en una conexión directa.       |
-| `db_user`             | `text`                     | no   | Usuario de Postgres de la conexión (authenticator para la API, postgres para migraciones o el editor SQL).          |
-| `actor_roles`         | `jsonb`                    | sí   | Roles vigentes del actor en el momento del cambio. Se completa desde que existan los roles (M4).                    |
-| `scope_group_id`      | `uuid`                     | sí   | Grupo al que pertenece el registro cambiado, si tiene.                                                              |
-| `scope_brand_id`      | `uuid`                     | sí   | Marca a la que pertenece el registro cambiado, si tiene.                                                            |
-| `scope_restaurant_id` | `uuid`                     | sí   | Restaurante al que pertenece el registro cambiado, si tiene.                                                        |
-| `schema_name`         | `text`                     | no   | Esquema de la tabla cambiada.                                                                                       |
-| `table_name`          | `text`                     | no   | Tabla cambiada.                                                                                                     |
-| `record_id`           | `uuid`                     | no   | Id del registro cambiado.                                                                                           |
-| `action`              | `audit.action`             | no   | Qué pasó: alta, cambio, borrado lógico, restauración o borrado físico.                                              |
-| `old_values`          | `jsonb`                    | sí   | Valores anteriores, sin secretos. Nulo en un alta. OJO al exponer: incluye todas las columnas (por ejemplo costos). |
-| `new_values`          | `jsonb`                    | sí   | Valores nuevos, sin secretos. Nulo en un borrado físico. OJO al exponer: incluye todas las columnas.                |
-| `changed_fields`      | `text[]`                   | sí   | Columnas que cambiaron (solo en cambios, borrados lógicos y restauraciones).                                        |
-| `reason`              | `text`                     | sí   | Motivo del cambio (hasta 500 caracteres), informado por la función que lo hizo. Informativo.                        |
-| `origin`              | `audit.change_origin`      | sí   | Desde dónde se hizo el cambio. Nulo si no se informó o si el valor no era válido. Informativo.                      |
-| `transaction_id`      | `bigint`                   | no   | Transacción de Postgres: agrupa los eventos de una misma operación.                                                 |
+| Columna                    | Tipo                       | Nulo | Qué guarda                                                                                                             |
+| -------------------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------- |
+| `id`                       | `uuid`                     | no   | Identificador del evento.                                                                                              |
+| `sequence_number`          | `bigint`                   | no   | Orden exacto de los eventos, incluso dentro de una misma transacción. Base de los sellos.                              |
+| `occurred_at`              | `timestamp with time zone` | no   | Cuándo ocurrió el cambio (hora de la transacción).                                                                     |
+| `actor_user_id`            | `uuid`                     | sí   | Persona que hizo el cambio. Nulo si lo hizo una cuenta técnica, una migración, el seed o la clave de servidor.         |
+| `actor_type`               | `core.actor_type`          | sí   | Persona o cuenta técnica, en el momento del cambio.                                                                    |
+| `actor_subject`            | `text`                     | sí   | El sub del JWT cuando no corresponde a ningún actor registrado (para no perder el rastro).                             |
+| `jwt_role`                 | `text`                     | sí   | Rol del JWT de la sesión (authenticated, service_role...). Nulo sin JWT, por ejemplo en una conexión directa.          |
+| `db_user`                  | `text`                     | no   | Usuario de Postgres de la conexión (authenticator para la API, postgres para migraciones o el editor SQL).             |
+| `actor_roles`              | `jsonb`                    | sí   | Roles vigentes del actor en el momento del cambio. Se completa desde que existan los roles (M4).                       |
+| `scope_group_id`           | `uuid`                     | sí   | Grupo al que pertenece el registro cambiado, si tiene.                                                                 |
+| `scope_brand_id`           | `uuid`                     | sí   | Marca a la que pertenece el registro cambiado, si tiene.                                                               |
+| `scope_restaurant_id`      | `uuid`                     | sí   | Restaurante al que pertenece el registro cambiado, si tiene.                                                           |
+| `table_schema`             | `text`                     | no   | Esquema de la tabla cambiada.                                                                                          |
+| `table_name`               | `text`                     | no   | Tabla cambiada.                                                                                                        |
+| `record_id`                | `uuid`                     | no   | Id del registro cambiado.                                                                                              |
+| `action`                   | `audit.action`             | no   | Qué pasó: alta, cambio, borrado lógico, restauración, borrado físico, aprobación, rechazo o publicación.               |
+| `old_values`               | `jsonb`                    | sí   | Valores anteriores, sin secretos. Nulo en un alta. OJO al exponer: incluye todas las columnas (por ejemplo costos).    |
+| `new_values`               | `jsonb`                    | sí   | Valores nuevos, sin secretos. Nulo en un borrado físico. OJO al exponer: incluye todas las columnas.                   |
+| `changed_fields`           | `text[]`                   | sí   | Columnas que cambiaron (solo en cambios, borrados lógicos y restauraciones).                                           |
+| `reason`                   | `text`                     | sí   | Motivo del cambio (hasta 500 caracteres), informado por la función que lo hizo. Informativo.                           |
+| `source`                   | `audit.change_origin`      | sí   | Desde dónde se hizo el cambio. Nulo si no se informó o si el valor no era válido. Informativo.                         |
+| `transaction_id`           | `bigint`                   | no   | Transacción de Postgres: agrupa los eventos de una misma operación.                                                    |
+| `actor_service_account_id` | `uuid`                     | sí   | Cuenta técnica (agente o integración) que hizo el cambio, si fue una.                                                  |
+| `actor_role_code`          | `text`                     | sí   | Rol vigente de mayor nivel de quien hizo el cambio, en ese momento. El detalle de todos sus roles está en actor_roles. |
+| `module`                   | `text`                     | sí   | Módulo del cambio (org, users, roles, approvals...), para filtrar el historial.                                        |
+| `operation_id`             | `uuid`                     | sí   | Número de operación: agrupa todos los cambios de una misma acción (una transacción).                                   |
+| `status`                   | `text`                     | sí   | Estado del registro después del cambio (por ejemplo, deactivated), si la tabla tiene estado. Para filtrar.             |
 
 ## `audit.audit_seals`
 
@@ -45,7 +72,7 @@ Sellos de la auditoría: cada uno cubre un tramo de eventos y encadena su huella
 | `previous_hash`  | `bytea`                    | no   | Huella del sello anterior (o la huella inicial, en el primero). |
 | `chain_hash`     | `bytea`                    | no   | Huella acumulada hasta el último evento del tramo.              |
 
-## `audit.security_event_seals`
+## `audit.authentication_security_event_seals`
 
 Sellos del registro de seguridad: cada uno cubre un tramo de eventos y encadena su huella con el anterior.
 
@@ -59,9 +86,9 @@ Sellos del registro de seguridad: cada uno cubre un tramo de eventos y encadena 
 | `previous_hash`  | `bytea`                    | no   | Huella del sello anterior (o la inicial, en el primero). |
 | `chain_hash`     | `bytea`                    | no   | Huella acumulada hasta el último evento del tramo.       |
 
-## `audit.security_events`
+## `audit.authentication_security_events`
 
-Registro de seguridad inalterable: ingresos, intentos fallidos, bloqueos y operaciones rechazadas por falta de permiso (ADR-0009, ADR-0010). Solo se inserta desde audit.log_security_event(); los sellos detectan alteraciones.
+Registro de seguridad inalterable: ingresos, intentos fallidos, bloqueos, suspensiones, cambios de contraseña y operaciones rechazadas por falta de permiso (ADR-0009, ADR-0010, ADR-0015). Solo se inserta desde audit.log_security_event(); los sellos detectan alteraciones.
 
 | Columna               | Tipo                        | Nulo | Qué guarda                                                                                      |
 | --------------------- | --------------------------- | ---- | ----------------------------------------------------------------------------------------------- |
@@ -73,16 +100,43 @@ Registro de seguridad inalterable: ingresos, intentos fallidos, bloqueos y opera
 | `actor_subject`       | `text`                      | sí   | El sub del JWT cuando no corresponde a ningún actor registrado.                                 |
 | `jwt_role`            | `text`                      | sí   | Rol del JWT de la sesión (authenticated, service_role...).                                      |
 | `db_user`             | `text`                      | no   | Usuario de Postgres de la conexión.                                                             |
-| `target_user_id`      | `uuid`                      | sí   | Persona afectada (por ejemplo, la cuenta que se intentó usar o a quien se le quiso dar un rol). |
+| `user_id`             | `uuid`                      | sí   | Persona afectada (por ejemplo, la cuenta que se intentó usar o a quien se le quiso dar un rol). |
 | `email`               | `text`                      | sí   | Correo con el que se intentó ingresar, en minúsculas. Puede no existir.                         |
 | `operation`           | `text`                      | sí   | Función o acción que se intentó (por ejemplo, core.assign_role).                                |
 | `reason`              | `text`                      | sí   | Por qué se rechazó o qué pasó, en español.                                                      |
-| `details`             | `jsonb`                     | sí   | Datos de contexto, sin secretos.                                                                |
+| `detail`              | `jsonb`                     | sí   | Datos de contexto, sin secretos.                                                                |
 | `scope_group_id`      | `uuid`                      | sí   | Grupo afectado, si corresponde.                                                                 |
 | `scope_brand_id`      | `uuid`                      | sí   | Marca afectada, si corresponde.                                                                 |
 | `scope_restaurant_id` | `uuid`                      | sí   | Restaurante afectado, si corresponde.                                                           |
-| `ip`                  | `text`                      | sí   | Dirección IP informada por el servidor que atendió el pedido. Informativa: se puede falsear.    |
+| `ip_address`          | `text`                      | sí   | Dirección IP informada por el servidor que atendió el pedido. Informativa: se puede falsear.    |
 | `user_agent`          | `text`                      | sí   | Navegador o cliente informado. Informativo.                                                     |
+
+## `audit.v_field_changes` (vista)
+
+Cada campo cambiado en una fila: antes, después, quién, cuándo, por qué, módulo y número de operación (sección 6 del documento de Soy). Sin permisos para la API: se lee por core.audit_export, que filtra por alcance.
+
+| Columna                    | Tipo                       | Nulo | Qué guarda                                                                                                             |
+| -------------------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------- |
+| `sequence_number`          | `bigint`                   | sí   | Orden exacto de los eventos, incluso dentro de una misma transacción. Base de los sellos.                              |
+| `event_id`                 | `uuid`                     | sí   | Evento de auditoría del que sale la fila.                                                                              |
+| `occurred_at`              | `timestamp with time zone` | sí   | Cuándo ocurrió el cambio (hora de la transacción).                                                                     |
+| `actor_user_id`            | `uuid`                     | sí   | Persona que hizo el cambio. Nulo si lo hizo una cuenta técnica, una migración, el seed o la clave de servidor.         |
+| `actor_service_account_id` | `uuid`                     | sí   | Cuenta técnica (agente o integración) que hizo el cambio, si fue una.                                                  |
+| `actor_role_code`          | `text`                     | sí   | Rol vigente de mayor nivel de quien hizo el cambio, en ese momento. El detalle de todos sus roles está en actor_roles. |
+| `scope_group_id`           | `uuid`                     | sí   | Grupo al que pertenece el registro cambiado, si tiene.                                                                 |
+| `scope_brand_id`           | `uuid`                     | sí   | Marca a la que pertenece el registro cambiado, si tiene.                                                               |
+| `scope_restaurant_id`      | `uuid`                     | sí   | Restaurante al que pertenece el registro cambiado, si tiene.                                                           |
+| `module`                   | `text`                     | sí   | Módulo del cambio (org, users, roles, approvals...), para filtrar el historial.                                        |
+| `table_schema`             | `text`                     | sí   | Esquema de la tabla cambiada.                                                                                          |
+| `table_name`               | `text`                     | sí   | Tabla cambiada.                                                                                                        |
+| `record_id`                | `uuid`                     | sí   | Id del registro cambiado.                                                                                              |
+| `action`                   | `audit.action`             | sí   | Qué pasó: alta, cambio, borrado lógico, restauración, borrado físico, aprobación, rechazo o publicación.               |
+| `reason`                   | `text`                     | sí   | Motivo del cambio (hasta 500 caracteres), informado por la función que lo hizo. Informativo.                           |
+| `source`                   | `audit.change_origin`      | sí   | Desde dónde se hizo el cambio. Nulo si no se informó o si el valor no era válido. Informativo.                         |
+| `operation_id`             | `uuid`                     | sí   | Número de operación: agrupa todos los cambios de una misma acción (una transacción).                                   |
+| `field`                    | `text`                     | sí   | Campo que cambió.                                                                                                      |
+| `old_value`                | `jsonb`                    | sí   | Valor anterior del campo (vacío en un alta).                                                                           |
+| `new_value`                | `jsonb`                    | sí   | Valor nuevo del campo (vacío en un borrado físico).                                                                    |
 
 ## `core.actors`
 
@@ -107,23 +161,46 @@ Contador de intentos fallidos de ingreso por correo (exista o no la cuenta, así
 | `locked_until`      | `timestamp with time zone` | sí   | Hasta cuándo está bloqueado el ingreso con ese correo. Vacío si no lo está. |
 | `updated_at`        | `timestamp with time zone` | no   | Cuándo se cambió por última vez.                                            |
 
+## `core.notifications`
+
+Avisos dentro de la app para cada persona (por ejemplo, "hay una solicitud que podés decidir"). Los crea la base; cada persona ve y marca como leídos solo los suyos.
+
+| Columna             | Tipo                       | Nulo | Qué guarda                                                                      |
+| ------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no   | Identificador del aviso.                                                        |
+| `recipient_user_id` | `uuid`                     | no   | Persona que recibe el aviso.                                                    |
+| `group_id`          | `uuid`                     | no   | Grupo del aviso.                                                                |
+| `kind`              | `core.notification_kind`   | no   | Tipo de aviso: approval_requested (una solicitud que la persona puede decidir). |
+| `title`             | `text`                     | no   | Título del aviso, en español.                                                   |
+| `body`              | `text`                     | sí   | Detalle del aviso (por ejemplo, el motivo de la solicitud).                     |
+| `link`              | `text`                     | sí   | Pantalla de la app a la que lleva el aviso (ruta interna).                      |
+| `request_id`        | `uuid`                     | sí   | Solicitud de aprobación del aviso, si corresponde.                              |
+| `read_at`           | `timestamp with time zone` | sí   | Cuándo lo leyó. Vacío si no lo leyó. No se audita.                              |
+| `created_at`        | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                               |
+| `created_by`        | `uuid`                     | sí   | Quién lo generó (lo pone la base).                                              |
+| `updated_at`        | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                              |
+| `updated_by`        | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                               |
+| `deleted_at`        | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                          |
+| `deleted_by`        | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                               |
+
 ## `core.permissions`
 
 Catálogo de permisos. Un permiso es módulo + acción, por ejemplo recipes.publish. Se carga por migración.
 
-| Columna        | Tipo                       | Nulo | Qué guarda                                                  |
-| -------------- | -------------------------- | ---- | ----------------------------------------------------------- |
-| `id`           | `uuid`                     | no   | Identificador del permiso.                                  |
-| `code`         | `text`                     | no   | Código módulo.acción, en minúsculas.                        |
-| `module`       | `text`                     | no   | Módulo al que pertenece (la parte antes del punto).         |
-| `description`  | `text`                     | no   | Qué permite hacer, en español.                              |
-| `is_sensitive` | `boolean`                  | no   | Si es un permiso delicado (seguridad, usuarios, auditoría). |
-| `created_at`   | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                           |
-| `created_by`   | `uuid`                     | sí   | Quién lo creó (lo pone la base).                            |
-| `updated_at`   | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).          |
-| `updated_by`   | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).           |
-| `deleted_at`   | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                      |
-| `deleted_by`   | `uuid`                     | sí   | Quién lo borró (lo pone la base).                           |
+| Columna        | Tipo                       | Nulo | Qué guarda                                                                          |
+| -------------- | -------------------------- | ---- | ----------------------------------------------------------------------------------- |
+| `id`           | `uuid`                     | no   | Identificador del permiso.                                                          |
+| `code`         | `text`                     | no   | Código módulo.acción, en minúsculas.                                                |
+| `module`       | `text`                     | no   | Módulo al que pertenece (la parte antes del punto).                                 |
+| `description`  | `text`                     | no   | Qué permite hacer, en español.                                                      |
+| `is_sensitive` | `boolean`                  | no   | Si es un permiso delicado (seguridad, usuarios, auditoría).                         |
+| `created_at`   | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                   |
+| `created_by`   | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                    |
+| `updated_at`   | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                  |
+| `updated_by`   | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                   |
+| `deleted_at`   | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                              |
+| `deleted_by`   | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                   |
+| `action`       | `text`                     | no   | Acción del permiso (la parte después del punto). Tiene que coincidir con el código. |
 
 ## `core.role_permissions`
 
@@ -180,43 +257,82 @@ Cuenta técnica de un agente o integración. Es un usuario de Auth de tipo cuent
 | `deleted_at`    | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.              |
 | `deleted_by`    | `uuid`                     | sí   | Quién la borró (lo pone la base).                   |
 
+## `core.test_documents`
+
+Documentos de ensayo de la Fase 1 (sección 10 del documento de Soy): imitan una receta con versiones, borrador y costo para probar permisos y auditoría. Se borran al cerrar la Fase 1; en la Fase 2 las pruebas se repiten sobre las recetas reales.
+
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                                                                  |
+| --------------------- | -------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no   | Identificador de la versión.                                                                                                                                |
+| `group_id`            | `uuid`                     | no   | Grupo del documento.                                                                                                                                        |
+| `brand_id`            | `uuid`                     | no   | Marca del documento (como una receta estándar de la marca).                                                                                                 |
+| `restaurant_id`       | `uuid`                     | sí   | Local, si el documento es propio de un local. Vacío si es de toda la marca.                                                                                 |
+| `document_key`        | `uuid`                     | no   | Identifica al documento: todas sus versiones comparten este valor.                                                                                          |
+| `version_number`      | `integer`                  | no   | Número de versión (1, 2, 3...). Corregir es crear una versión nueva.                                                                                        |
+| `title`               | `text`                     | no   | Título del documento.                                                                                                                                       |
+| `content`             | `text`                     | sí   | Contenido (por ejemplo, los pasos de una receta).                                                                                                           |
+| `cost`                | `numeric(14,4)`            | sí   | Costo del documento. Solo lo ven quienes tienen test_documents.view_costs (el cocinero no).                                                                 |
+| `currency`            | `character(3)`             | no   | Moneda del costo (ISO 4217).                                                                                                                                |
+| `status`              | `core.version_status`      | no   | Estado de la versión: borrador, en revisión, aprobada, publicada o archivada. Desde aprobada no cambia.                                                     |
+| `created_at`          | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                           |
+| `created_by`          | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                                            |
+| `updated_at`          | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                          |
+| `updated_by`          | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                           |
+| `deleted_at`          | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                                                                                      |
+| `deleted_by`          | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                                                           |
+| `review_requested_by` | `uuid`                     | sí   | Quién mandó la versión a revisión (lo pone la base). Esa persona no la puede publicar. Vacía en las versiones que estaban en revisión antes del 2026-10-22. |
+
 ## `core.user_memberships`
 
-A qué grupo pertenece cada persona. Hace falta ser miembro para recibir roles en ese grupo.
+Dónde trabaja cada persona: en el grupo, en una marca o en un local, desde y hasta cuándo. Hace falta una membresía vigente en el grupo para que sus roles valgan.
 
-| Columna      | Tipo                       | Nulo | Qué guarda                                              |
-| ------------ | -------------------------- | ---- | ------------------------------------------------------- |
-| `id`         | `uuid`                     | no   | Identificador de la membresía.                          |
-| `user_id`    | `uuid`                     | no   | Persona.                                                |
-| `group_id`   | `uuid`                     | no   | Grupo al que pertenece.                                 |
-| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                       |
-| `created_by` | `uuid`                     | sí   | Quién la creó (lo pone la base).                        |
-| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).      |
-| `updated_by` | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).       |
-| `deleted_at` | `timestamp with time zone` | sí   | Cuándo terminó (borrado lógico). Vacío si está vigente. |
-| `deleted_by` | `uuid`                     | sí   | Quién la terminó (lo pone la base).                     |
+| Columna         | Tipo                       | Nulo | Qué guarda                                                                                                   |
+| --------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------ |
+| `id`            | `uuid`                     | no   | Identificador de la membresía.                                                                               |
+| `user_id`       | `uuid`                     | no   | Persona.                                                                                                     |
+| `group_id`      | `uuid`                     | no   | Grupo al que pertenece.                                                                                      |
+| `created_at`    | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                            |
+| `created_by`    | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                             |
+| `updated_at`    | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                           |
+| `updated_by`    | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                            |
+| `deleted_at`    | `timestamp with time zone` | sí   | Cuándo terminó (borrado lógico). Vacío si está vigente.                                                      |
+| `deleted_by`    | `uuid`                     | sí   | Quién la terminó (lo pone la base).                                                                          |
+| `brand_id`      | `uuid`                     | sí   | Marca donde trabaja, si es de una marca o de un local. Vacío si trabaja para todo el grupo.                  |
+| `restaurant_id` | `uuid`                     | sí   | Local donde trabaja, si es de un local.                                                                      |
+| `starts_at`     | `timestamp with time zone` | no   | Desde cuándo trabaja ahí.                                                                                    |
+| `ends_at`       | `timestamp with time zone` | sí   | Hasta cuándo trabaja ahí. Vacío si sigue. Terminada la última membresía del grupo, sus roles dejan de valer. |
 
 ## `core.user_profiles`
 
-Persona que usa el sistema. Una por cada usuario persona de Supabase Auth. Nunca se borra: se bloquea.
+Persona que usa el sistema. Una por cada usuario persona de Supabase Auth. Nunca se borra: se suspende o se desactiva.
 
-| Columna           | Tipo                       | Nulo | Qué guarda                                                                                                                                                  |
-| ----------------- | -------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`              | `uuid`                     | no   | Mismo id que el usuario en Auth y que su actor.                                                                                                             |
-| `first_name`      | `text`                     | sí   | Nombre.                                                                                                                                                     |
-| `last_name`       | `text`                     | sí   | Apellido.                                                                                                                                                   |
-| `email`           | `text`                     | no   | Correo con el que entra (copiado de Auth al darse de alta). No se edita a mano; la sincronización con los cambios de Auth llega en M8.                      |
-| `status`          | `core.account_status`      | no   | Si la cuenta puede operar o está bloqueada.                                                                                                                 |
-| `disabled_at`     | `timestamp with time zone` | sí   | Cuándo se bloqueó la cuenta. Vacío si está activa.                                                                                                          |
-| `disabled_reason` | `text`                     | sí   | Por qué se bloqueó la cuenta.                                                                                                                               |
-| `created_at`      | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                           |
-| `created_by`      | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                                            |
-| `updated_at`      | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                          |
-| `updated_by`      | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                                           |
-| `deleted_at`      | `timestamp with time zone` | sí   | Borrado lógico. Un perfil con historia no se borra: se bloquea.                                                                                             |
-| `deleted_by`      | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                           |
-| `locked_until`    | `timestamp with time zone` | sí   | Hasta cuándo está bloqueada temporalmente la cuenta por intentos fallidos (10 minutos, P18). Vacío si no lo está. El contador está en core.login_throttles. |
-| `disabled_by`     | `uuid`                     | sí   | Quién desactivó la cuenta. No puede ser quien apruebe la reactivación (ADR-0008).                                                                           |
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                                                                  |
+| --------------------- | -------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no   | Mismo id que el usuario en Auth y que su actor.                                                                                                             |
+| `first_name`          | `text`                     | sí   | Nombre.                                                                                                                                                     |
+| `last_name`           | `text`                     | sí   | Apellido.                                                                                                                                                   |
+| `email`               | `text`                     | no   | Correo con el que entra (copiado de Auth al darse de alta). No se edita a mano; la sincronización con los cambios de Auth llega en M8.                      |
+| `status`              | `core.account_status`      | no   | Estado de la cuenta: activa, suspendida (pausa) o desactivada (se fue).                                                                                     |
+| `deactivated_at`      | `timestamp with time zone` | sí   | Cuándo se desactivó la cuenta. Vacío si no está desactivada.                                                                                                |
+| `deactivation_reason` | `text`                     | sí   | Por qué se desactivó la cuenta.                                                                                                                             |
+| `created_at`          | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                           |
+| `created_by`          | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                                            |
+| `updated_at`          | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                          |
+| `updated_by`          | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                                           |
+| `deleted_at`          | `timestamp with time zone` | sí   | Borrado lógico. Un perfil con historia no se borra: se bloquea.                                                                                             |
+| `deleted_by`          | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                           |
+| `locked_until`        | `timestamp with time zone` | sí   | Hasta cuándo está bloqueada temporalmente la cuenta por intentos fallidos (10 minutos, P18). Vacío si no lo está. El contador está en core.login_throttles. |
+| `deactivated_by`      | `uuid`                     | sí   | Quién desactivó la cuenta. No puede ser quien apruebe la reactivación (ADR-0008).                                                                           |
+| `suspended_at`        | `timestamp with time zone` | sí   | Cuándo se suspendió la cuenta. Vacío si no está suspendida.                                                                                                 |
+| `suspended_by`        | `uuid`                     | sí   | Quién suspendió la cuenta.                                                                                                                                  |
+| `suspension_reason`   | `text`                     | sí   | Por qué se suspendió la cuenta.                                                                                                                             |
+| `username`            | `text`                     | sí   | Nombre de usuario opcional, en minúsculas. Único entre los perfiles vigentes. No se usa para ingresar (se ingresa con el correo).                           |
+| `job_title`           | `text`                     | sí   | Puesto de trabajo (por ejemplo, Jefa de cocina). Descriptivo: no da permisos.                                                                               |
+| `area_id`             | `uuid`                     | sí   | Área donde trabaja, de un local de su grupo. Descriptivo: no da permisos.                                                                                   |
+| `activated_at`        | `timestamp with time zone` | sí   | Cuándo entró por primera vez (lo pone el ingreso).                                                                                                          |
+| `last_seen_at`        | `timestamp with time zone` | sí   | Último acceso: el último ingreso o renovación de la sesión (lo pone el ingreso). No se audita.                                                              |
+| `invited_by`          | `uuid`                     | sí   | Quién la invitó (lo pone la invitación).                                                                                                                    |
+| `last_restaurant_id`  | `uuid`                     | sí   | Último local que eligió en el selector de local. No se audita.                                                                                              |
 
 ## `core.user_role_assignments`
 
@@ -240,6 +356,29 @@ Qué rol tiene cada persona y dónde: en todo el grupo, en una marca o en un loc
 | `deleted_at`    | `timestamp with time zone` | sí   | Cuándo se quitó el rol (borrado lógico). Vacío si está vigente. |
 | `deleted_by`    | `uuid`                     | sí   | Quién quitó el rol (lo pone la base).                           |
 
+## `core.v_test_documents` (vista)
+
+Documentos de ensayo que la sesión puede ver: publicados a su alcance (y borradores si puede editar). El costo sale vacío sin test_documents.view_costs.
+
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                              |
+| --------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | sí   | Identificador de la versión.                                                                            |
+| `group_id`            | `uuid`                     | sí   | Grupo del documento.                                                                                    |
+| `brand_id`            | `uuid`                     | sí   | Marca del documento (como una receta estándar de la marca).                                             |
+| `restaurant_id`       | `uuid`                     | sí   | Local, si el documento es propio de un local. Vacío si es de toda la marca.                             |
+| `document_key`        | `uuid`                     | sí   | Identifica al documento: todas sus versiones comparten este valor.                                      |
+| `version_number`      | `integer`                  | sí   | Número de versión (1, 2, 3...). Corregir es crear una versión nueva.                                    |
+| `title`               | `text`                     | sí   | Título del documento.                                                                                   |
+| `content`             | `text`                     | sí   | Contenido (por ejemplo, los pasos de una receta).                                                       |
+| `cost`                | `numeric`                  | sí   | Costo del documento. Vacío si la sesión no tiene test_documents.view_costs.                             |
+| `currency`            | `character(3)`             | sí   | Moneda del costo (ISO 4217).                                                                            |
+| `status`              | `core.version_status`      | sí   | Estado de la versión: borrador, en revisión, aprobada, publicada o archivada. Desde aprobada no cambia. |
+| `created_at`          | `timestamp with time zone` | sí   | Cuándo se creó (lo pone la base).                                                                       |
+| `created_by`          | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                        |
+| `updated_at`          | `timestamp with time zone` | sí   | Cuándo se cambió por última vez (lo pone la base).                                                      |
+| `updated_by`          | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                       |
+| `review_requested_by` | `uuid`                     | sí   | Quién mandó la versión a revisión. Esa persona no la puede publicar.                                    |
+
 ## `org.areas`
 
 Área de trabajo dentro de un restaurante (por ejemplo, cocina, salón o depósito).
@@ -261,18 +400,19 @@ Qué rol tiene cada persona y dónde: en todo el grupo, en una marca o en un loc
 
 Marca del grupo (por ejemplo, RAGU). Tiene sus recetas estándar, precios y reportes.
 
-| Columna      | Tipo                       | Nulo | Qué guarda                                                                              |
-| ------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------- |
-| `id`         | `uuid`                     | no   | Identificador de la marca.                                                              |
-| `group_id`   | `uuid`                     | no   | Grupo al que pertenece la marca.                                                        |
-| `name`       | `text`                     | no   | Nombre de la marca. Único dentro del grupo entre las vigentes, sin importar mayúsculas. |
-| `status`     | `org.unit_status`          | no   | Si la marca está operando o cerrada.                                                    |
-| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                       |
-| `created_by` | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                        |
-| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                      |
-| `updated_by` | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                       |
-| `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                |
-| `deleted_by` | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                       |
+| Columna      | Tipo                       | Nulo | Qué guarda                                                                                              |
+| ------------ | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador de la marca.                                                                              |
+| `group_id`   | `uuid`                     | no   | Grupo al que pertenece la marca.                                                                        |
+| `name`       | `text`                     | no   | Nombre de la marca. Único dentro del grupo entre las vigentes, sin importar mayúsculas.                 |
+| `status`     | `org.unit_status`          | no   | Si la marca está operando o cerrada.                                                                    |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                       |
+| `created_by` | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                        |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                      |
+| `updated_by` | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                       |
+| `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                |
+| `deleted_by` | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                       |
+| `code`       | `text`                     | no   | Código corto de la marca (por ejemplo, RAGU), en mayúsculas. Único dentro del grupo entre las vigentes. |
 
 ## `org.groups`
 
@@ -289,6 +429,8 @@ Grupo gastronómico: el nivel más alto de la organización (por ejemplo, Grupo 
 | `updated_by` | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                           |
 | `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                    |
 | `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                           |
+| `legal_name` | `text`                     | sí   | Razón social del grupo. Opcional.                                           |
+| `tax_id`     | `text`                     | sí   | CUIT del grupo: 11 dígitos, sin guiones. Opcional.                          |
 
 ## `org.restaurants`
 
@@ -348,62 +490,68 @@ Decisiones sobre las solicitudes: quién, cuándo y qué decidió. Solo de inser
 
 Solicitud de aprobación de un cambio. Lo que se pide (payload) no cambia después de creada: lo que se aprueba es exactamente lo que se aplica.
 
-| Columna              | Tipo                       | Nulo | Qué guarda                                                       |
-| -------------------- | -------------------------- | ---- | ---------------------------------------------------------------- |
-| `id`                 | `uuid`                     | no   | Identificador de la solicitud.                                   |
-| `workflow_id`        | `uuid`                     | no   | Tipo de aprobación.                                              |
-| `group_id`           | `uuid`                     | no   | Grupo del cambio.                                                |
-| `brand_id`           | `uuid`                     | sí   | Marca del cambio, si corresponde.                                |
-| `restaurant_id`      | `uuid`                     | sí   | Restaurante del cambio, si corresponde.                          |
-| `requested_by`       | `uuid`                     | no   | Quién pidió el cambio.                                           |
-| `subject_user_id`    | `uuid`                     | sí   | Persona afectada por el cambio, si hay una (no puede aprobarlo). |
-| `payload`            | `jsonb`                    | no   | Qué se va a aplicar si se aprueba. No cambia nunca.              |
-| `reason`             | `text`                     | no   | Por qué se pide.                                                 |
-| `status`             | `workflow.request_status`  | no   | Estado de la solicitud.                                          |
-| `resolved_at`        | `timestamp with time zone` | sí   | Cuándo se resolvió. Vacío mientras está pendiente.               |
-| `resolved_by`        | `uuid`                     | sí   | Quién la resolvió (aprobó, rechazó o retiró).                    |
-| `resolution_comment` | `text`                     | sí   | Comentario de la resolución.                                     |
-| `created_at`         | `timestamp with time zone` | no   | Cuándo se pidió (lo pone la base).                               |
-| `created_by`         | `uuid`                     | sí   | Quién la creó (lo pone la base).                                 |
-| `updated_at`         | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).               |
-| `updated_by`         | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                |
-| `deleted_at`         | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                           |
-| `deleted_by`         | `uuid`                     | sí   | Quién la borró (lo pone la base).                                |
+| Columna              | Tipo                       | Nulo | Qué guarda                                                                                                       |
+| -------------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`                     | no   | Identificador de la solicitud.                                                                                   |
+| `workflow_id`        | `uuid`                     | no   | Tipo de aprobación.                                                                                              |
+| `group_id`           | `uuid`                     | no   | Grupo del cambio.                                                                                                |
+| `brand_id`           | `uuid`                     | sí   | Marca del cambio, si corresponde.                                                                                |
+| `restaurant_id`      | `uuid`                     | sí   | Restaurante del cambio, si corresponde.                                                                          |
+| `requested_by`       | `uuid`                     | no   | Quién pidió el cambio.                                                                                           |
+| `subject_user_id`    | `uuid`                     | sí   | Persona afectada por el cambio, si hay una (no puede aprobarlo).                                                 |
+| `proposed_changes`   | `jsonb`                    | no   | Qué se va a aplicar si se aprueba. No cambia nunca.                                                              |
+| `reason`             | `text`                     | no   | Por qué se pide.                                                                                                 |
+| `status`             | `workflow.request_status`  | no   | Estado de la solicitud.                                                                                          |
+| `resolved_at`        | `timestamp with time zone` | sí   | Cuándo se resolvió. Vacío mientras está pendiente.                                                               |
+| `resolved_by`        | `uuid`                     | sí   | Quién la resolvió (aprobó, rechazó o retiró).                                                                    |
+| `resolution_comment` | `text`                     | sí   | Comentario de la resolución.                                                                                     |
+| `created_at`         | `timestamp with time zone` | no   | Cuándo se pidió (lo pone la base).                                                                               |
+| `created_by`         | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                 |
+| `updated_at`         | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                               |
+| `updated_by`         | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                |
+| `deleted_at`         | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                                           |
+| `deleted_by`         | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                |
+| `entity_table`       | `text`                     | sí   | Tabla del registro que cambia.                                                                                   |
+| `entity_id`          | `uuid`                     | sí   | Registro que cambia. Vacío si el cambio crea uno nuevo.                                                          |
+| `previous_values`    | `jsonb`                    | sí   | Cómo estaba lo que se quiere cambiar al momento de pedirlo, para mostrar el antes y el después. No cambia nunca. |
+| `requested_at`       | `timestamp with time zone` | no   | Cuándo se pidió.                                                                                                 |
 
 ## `workflow.approval_workflows`
 
 Qué tipos de cambio necesitan aprobación y quién la da (ADR-0008). Se ajusta desde el panel con workflows.manage.
 
-| Columna                       | Tipo                       | Nulo | Qué guarda                                                                                                                  |
-| ----------------------------- | -------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
-| `id`                          | `uuid`                     | no   | Identificador del tipo de aprobación.                                                                                       |
-| `code`                        | `text`                     | no   | Código del tipo de cambio (por ejemplo, core.assign_sensitive_role).                                                        |
-| `name`                        | `text`                     | no   | Nombre en español.                                                                                                          |
-| `description`                 | `text`                     | sí   | Qué cambio aprueba.                                                                                                         |
-| `approver_permission`         | `text`                     | no   | Permiso que tiene que tener quien aprueba, en el alcance de la solicitud.                                                   |
-| `approver_role_codes`         | `text[]`                   | sí   | Si no está vacío, quien aprueba además tiene que tener uno de estos roles en ese alcance (por ejemplo, general_management). |
-| `required_approvals`          | `smallint`                 | no   | Cuántas aprobaciones hacen falta (hoy, una).                                                                                |
-| `requires_different_approver` | `boolean`                  | no   | Si quien aprueba tiene que ser una persona distinta de quien pidió (y de la persona afectada).                              |
-| `apply_function`              | `regprocedure`             | no   | Función que aplica el cambio cuando se aprueba. Recibe el id de la solicitud.                                               |
-| `is_active`                   | `boolean`                  | no   | Si este tipo de aprobación está en uso.                                                                                     |
-| `created_at`                  | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                           |
-| `created_by`                  | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                            |
-| `updated_at`                  | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                          |
-| `updated_by`                  | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                           |
-| `deleted_at`                  | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                                                      |
-| `deleted_by`                  | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                           |
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                                         |
+| --------------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no   | Identificador del tipo de aprobación.                                                                                              |
+| `code`                | `text`                     | no   | Código del tipo de cambio (por ejemplo, core.assign_sensitive_role).                                                               |
+| `name`                | `text`                     | no   | Nombre en español.                                                                                                                 |
+| `description`         | `text`                     | sí   | Qué cambio aprueba.                                                                                                                |
+| `required_permission` | `text`                     | no   | Permiso que tiene que tener quien aprueba, en el alcance de la solicitud.                                                          |
+| `approver_role_codes` | `text[]`                   | sí   | Si no está vacío, quien aprueba además tiene que tener uno de estos roles en ese alcance (por ejemplo, general_management).        |
+| `min_approvers`       | `smallint`                 | no   | Cuántas aprobaciones hacen falta (hoy, una).                                                                                       |
+| `apply_function`      | `regprocedure`             | no   | Función que aplica el cambio cuando se aprueba. Recibe el id de la solicitud.                                                      |
+| `is_active`           | `boolean`                  | no   | Si este tipo de aprobación está en uso.                                                                                            |
+| `created_at`          | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                  |
+| `created_by`          | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                   |
+| `updated_at`          | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                 |
+| `updated_by`          | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                  |
+| `deleted_at`          | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                                                             |
+| `deleted_by`          | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                  |
+| `allow_self_approval` | `boolean`                  | no   | Si quien pidió puede aprobar lo suyo. Falso en todos: activarlo pide una migración documentada. La persona afectada nunca aprueba. |
+| `entity_table`        | `text`                     | sí   | Tabla que cambia cuando se aprueba (por ejemplo, core.user_role_assignments).                                                      |
 
 ## Tipos
 
-| Tipo                        | Valores                                                                                                                                | Qué significa                                                                                                                                                                                                                                          |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `audit.action`              | `insert`, `update`, `soft_delete`, `restore`, `delete`                                                                                 | Qué pasó con el registro: insert (alta), update (cambio), soft_delete (borrado lógico), restore (restauración) o delete (borrado físico, solo mantenimiento).                                                                                          |
-| `audit.change_origin`       | `app`, `edge_function`, `agent`, `import`, `seed`, `maintenance`, `auth`                                                               | Desde dónde se hizo un cambio: app (la aplicación), edge_function (función de servidor), agent (agente de IA), import (carga masiva), seed (datos de prueba), maintenance (mantenimiento documentado) o auth (Supabase Auth, por ejemplo al ingresar). |
-| `audit.security_event_type` | `login_succeeded`, `login_failed`, `account_locked`, `account_unlocked`, `operation_denied`, `account_disabled`, `account_reactivated` | Tipo de evento de seguridad: ingreso bueno o fallido, cuenta bloqueada o liberada (intentos fallidos), operación rechazada por falta de permiso, cuenta desactivada o reactivada.                                                                      |
-| `core.account_status`       | `active`, `disabled`                                                                                                                   | Estado de una cuenta: active (puede operar) o disabled (bloqueada; conserva toda su historia).                                                                                                                                                         |
-| `core.actor_type`           | `user`, `service_account`                                                                                                              | Tipo de actor: user (persona) o service_account (cuenta técnica de un agente o integración).                                                                                                                                                           |
-| `core.scope_type`           | `group`, `brand`, `restaurant`                                                                                                         | Alcance de una asignación de rol: group (todo el grupo), brand (una marca y sus locales) o restaurant (un local).                                                                                                                                      |
-| `core.version_status`       | `draft`, `in_review`, `approved`, `published`, `archived`                                                                              | Estado de una versión: draft (borrador), in_review (en revisión), approved (aprobada), published (publicada) o archived (archivada). Desde approved el contenido no cambia: corregir es crear una versión nueva.                                       |
-| `org.unit_status`           | `active`, `inactive`                                                                                                                   | Estado de un grupo, marca o restaurante: active (operando) o inactive (cerrado, pero visible en la historia). Borrar un registro es otra cosa: corrige un error de carga.                                                                              |
-| `workflow.decision`         | `approved`, `rejected`                                                                                                                 | Decisión de una persona sobre una solicitud: approved (aprueba) o rejected (rechaza).                                                                                                                                                                  |
-| `workflow.request_status`   | `pending`, `approved`, `rejected`, `cancelled`                                                                                         | Estado de una solicitud de aprobación: pending (esperando), approved (aprobada y aplicada), rejected (rechazada) o cancelled (retirada por quien la pidió).                                                                                            |
+| Tipo                        | Valores                                                                                                                                                                                                                                  | Qué significa                                                                                                                                                                                                                                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audit.action`              | `insert`, `update`, `soft_delete`, `restore`, `delete`, `approve`, `reject`, `publish`                                                                                                                                                   | Qué pasó con el registro: insert (alta), update (cambio), soft_delete (borrado lógico), restore (restauración), delete (borrado físico, solo mantenimiento), approve o reject (una decisión de aprobación) y publish (una versión publicada).                                                              |
+| `audit.change_origin`       | `manual`, `edge_function`, `agent`, `import`, `integration`, `seed`, `maintenance`, `auth`                                                                                                                                               | Desde dónde se hizo un cambio: manual (una persona desde la aplicación), edge_function (función de servidor), agent (agente de IA), import (carga masiva), integration (sistema externo), seed (datos de prueba), maintenance (mantenimiento documentado) o auth (Supabase Auth, por ejemplo al ingresar). |
+| `audit.security_event_type` | `login_succeeded`, `login_failed`, `account_locked`, `account_unlocked`, `operation_denied`, `account_disabled`, `account_reactivated`, `account_suspended`, `account_unsuspended`, `password_changed`, `mfa_enrolled`, `audit_exported` | Tipo de evento de seguridad: ingreso bueno o fallido, cuenta bloqueada o liberada (intentos fallidos), operación rechazada por falta de permiso, cuenta desactivada, reactivada, suspendida o con la suspensión levantada, contraseña cambiada, doble verificación registrada e historial exportado.       |
+| `core.account_status`       | `active`, `suspended`, `deactivated`                                                                                                                                                                                                     | Estado de una cuenta: active (puede operar), suspended (pausa temporal: no entra hasta que se levante, sin aprobación) o deactivated (la persona se fue: volver necesita una aprobación). Conserva toda su historia.                                                                                       |
+| `core.actor_type`           | `user`, `service_account`                                                                                                                                                                                                                | Tipo de actor: user (persona) o service_account (cuenta técnica de un agente o integración).                                                                                                                                                                                                               |
+| `core.notification_kind`    | `approval_requested`                                                                                                                                                                                                                     | Tipo de aviso: approval_requested (una solicitud que la persona puede decidir).                                                                                                                                                                                                                            |
+| `core.scope_type`           | `group`, `brand`, `restaurant`                                                                                                                                                                                                           | Alcance de una asignación de rol: group (todo el grupo), brand (una marca y sus locales) o restaurant (un local).                                                                                                                                                                                          |
+| `core.version_status`       | `draft`, `in_review`, `approved`, `published`, `archived`                                                                                                                                                                                | Estado de una versión: draft (borrador), in_review (en revisión), approved (aprobada), published (publicada) o archived (archivada). Desde approved el contenido no cambia: corregir es crear una versión nueva.                                                                                           |
+| `org.unit_status`           | `active`, `inactive`                                                                                                                                                                                                                     | Estado de un grupo, marca o restaurante: active (operando) o inactive (cerrado, pero visible en la historia). Borrar un registro es otra cosa: corrige un error de carga.                                                                                                                                  |
+| `workflow.decision`         | `approved`, `rejected`                                                                                                                                                                                                                   | Decisión de una persona sobre una solicitud: approved (aprueba) o rejected (rechaza).                                                                                                                                                                                                                      |
+| `workflow.request_status`   | `pending`, `approved`, `rejected`, `cancelled`                                                                                                                                                                                           | Estado de una solicitud de aprobación: pending (esperando), approved (aprobada y aplicada), rejected (rechazada) o cancelled (retirada por quien la pidió).                                                                                                                                                |

@@ -212,9 +212,13 @@ anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
-sign_in_sign_ups = 30
+# Grupo LF: más alto SOLO en local y en la CI, donde todas las pruebas de pantalla ingresan desde
+# la misma IP (unos 50 ingresos y verificaciones en pocos minutos). Staging y producción tienen
+# su propia configuración en Supabase y conservan el valor por defecto (30). El bloqueo de 5
+# intentos fallidos por cuenta (ADR-0010) no depende de esto.
+sign_in_sign_ups = 300
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
-token_verifications = 30
+token_verifications = 300
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
 web3 = 30
 

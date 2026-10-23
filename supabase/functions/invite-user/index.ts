@@ -88,7 +88,14 @@ Deno.serve(async (req) => {
 
   const member = await rpc(
     "add_member",
-    { p_user_id: invited.id, p_group_id: groupId, p_reason: reason },
+    // La membresía dice dónde trabaja: el mismo lugar del rol inicial.
+    {
+      p_user_id: invited.id,
+      p_group_id: groupId,
+      p_reason: reason,
+      p_brand_id: brandId,
+      p_restaurant_id: restaurantId,
+    },
     token,
   );
   const role = await rpc(

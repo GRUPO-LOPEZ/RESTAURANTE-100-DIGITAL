@@ -7,7 +7,12 @@ const resultSchema = z.object({
   request_id: z.string().optional(),
 });
 
-export type ActionState = { status?: "ok" | "info" | "warn" | "bad"; message?: string };
+export type ActionState = {
+  status?: "ok" | "info" | "warn" | "bad";
+  message?: string;
+  // Un error por campo, con el nombre del campo (ADR-0016): el formulario lo muestra debajo.
+  fieldErrors?: Record<string, string>;
+};
 
 const MESSAGES: Record<string, { status: NonNullable<ActionState["status"]>; message: string }> = {
   applied: { status: "ok", message: "Listo." },
@@ -19,8 +24,11 @@ const MESSAGES: Record<string, { status: NonNullable<ActionState["status"]>; mes
   rejected: { status: "ok", message: "Rechazado. Quedó registrado." },
   cancelled: { status: "ok", message: "Solicitud retirada." },
   already_resolved: { status: "warn", message: "La solicitud ya estaba resuelta." },
-  already_disabled: { status: "warn", message: "La cuenta ya estaba desactivada." },
+  already_deactivated: { status: "warn", message: "La cuenta ya estaba desactivada." },
   not_locked: { status: "warn", message: "La cuenta no estaba bloqueada." },
+  not_suspended: { status: "warn", message: "La cuenta no estaba suspendida." },
+  not_active: { status: "warn", message: "La cuenta no está activa: no se puede suspender." },
+  already_member: { status: "info", message: "La persona ya trabaja en ese lugar." },
   denied: {
     status: "bad",
     message: "No tenés permiso para hacer esto. El intento quedó registrado.",

@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { PASSWORD, fillLogin, freshTotp, login, logout, notice } from "./helpers";
+import { PASSWORD, fillLogin, freshTotp, login, logout, notice, openAction } from "./helpers";
 
 function publicEnv(name: string): string {
   const line = readFileSync(".env.example", "utf8")
@@ -15,7 +15,16 @@ function publicEnv(name: string): string {
 
 test.describe("1. sin sesión no se consulta información privada", () => {
   test("las pantallas mandan a ingresar", async ({ page }) => {
-    for (const path of ["/", "/usuarios", "/aprobaciones", "/historial"]) {
+    for (const path of [
+      "/",
+      "/usuarios",
+      "/usuarios/lista",
+      "/aprobaciones",
+      "/historial",
+      "/roles",
+      "/ensayo",
+      "/mi-cuenta",
+    ]) {
       await page.goto(path);
       await expect(page).toHaveURL(/\/ingresar$/);
     }
@@ -104,21 +113,22 @@ test.describe("8 y A5. una cuenta desactivada pierde el acceso; reactivada vuelv
 
     // El gerente la desactiva.
     await login(page, "gerente@ejemplo.test", { mfa: true });
-    await page.goto(`/usuarios?q=${encodeURIComponent(email)}`);
+    await page.goto(`/usuarios/lista?q=${encodeURIComponent(email)}`);
     await page
       .getByRole("link", { name: /Prueba Baja/ })
       .first()
       .click();
     await expect(page.getByRole("heading", { level: 2, name: /Prueba Baja/ })).toBeVisible();
-    await page.getByLabel("Motivo").last().fill("Prueba automática: baja temporal");
+    await openAction(page, "Desactivar…");
+    await page.getByLabel("Motivo para desactivar").fill("Prueba automática: baja temporal");
     await page.getByRole("button", { name: "Desactivar la cuenta" }).click();
-    await expect(
-      page.getByText("Cuenta desactivada. Se cerraron todas sus sesiones."),
-    ).toBeVisible();
+    // Al desactivarse, la ficha cambia: ahora ofrece pedir la reactivación.
+    await expect(page.locator("summary", { hasText: "Pedir la reactivación…" })).toBeVisible();
+    await expect(page.getByText("Desactivada", { exact: true }).first()).toBeVisible();
 
     // Pide la reactivación: no la puede aprobar él mismo.
-    await page.reload();
-    await page.getByLabel("Motivo").last().fill("Prueba automática: vuelve a trabajar");
+    await openAction(page, "Pedir la reactivación…");
+    await page.getByLabel("Motivo para reactivar").fill("Prueba automática: vuelve a trabajar");
     await page.getByRole("button", { name: "Pedir la reactivación" }).click();
     await expect(page.getByText(/pendiente hasta que la apruebe otra persona/)).toBeVisible();
     await page.goto("/aprobaciones");
@@ -165,10 +175,21 @@ test.describe("tablero de usuarios", () => {
     await login(page, "director@ejemplo.test", { mfa: true });
     await page.goto("/usuarios");
     await expect(
-      page.getByRole("heading", { level: 1, name: "¿Quién tiene acceso y dónde?" }),
+      page.getByRole("heading", { level: 1, name: "¿Quién tiene acceso y qué está pasando?" }),
     ).toBeVisible();
-    await expect(page.getByText(/Estado actual · Datos al /)).toBeVisible();
-    await expect(page.getByText("Cuentas activas")).toBeVisible();
+    await expect(page.getByText(/Datos al /)).toBeVisible();
+    // Las 4 tarjetas, el gráfico de accesos y las tablas de la sección 9.
+    for (const kpi of [
+      "Cuentas activas",
+      "Desactivadas o suspendidas",
+      "Aprobaciones pendientes",
+      "Accesos rechazados en 7 días",
+    ])
+      await expect(page.getByText(kpi, { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Accesos por día" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Personas por local" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Personas por rol" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Últimos cambios críticos" })).toBeVisible();
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
       .analyze();

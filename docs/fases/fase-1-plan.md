@@ -1,7 +1,7 @@
 # Plan de la Fase 1 — Fundaciones: identidad, permisos y auditoría
 
 - **Fecha:** 2026-10-20 (revisado el mismo día con `db-reviewer` y `security-auditor`)
-- **Estado:** en construcción (2026-10-21). Preguntas bloqueantes resueltas; M1 a M7 construidos y revisados, M8 y M9 construidos y en revisión. Lo construido manda sobre este plan cuando difieren: ver ADR-0012, ADR-0013 y ADR-0014.
+- **Estado:** construido y verificado en local (2026-10-22). M1 a M9 construidos y revisados. **El documento de Soy, [fase-1.md](fase-1.md), manda sobre este plan:** la alineación con él (nombres, columnas, pantallas y tablero) está en ADR-0015. Lo construido manda sobre este plan cuando difieren: ver ADR-0012 a ADR-0015.
 - **Fuentes:** prompt maestro (secciones 5, 6, 9 y 14). El Módulo Maestro de Usuarios de Soy (`docs/modulos/00-identidad.md`) **todavía no está en el repositorio**: donde este plan depende de él, se marca como pregunta abierta en lugar de suponer.
 
 ## Objetivo, en simple

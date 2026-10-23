@@ -45,6 +45,19 @@ describe("contraste de la paleta (WCAG AA)", () => {
     expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(4.5);
   });
 
+  // Los tonos fuertes de gráficos (barras, líneas, puntos): 3:1 como objeto gráfico (WCAG 1.4.11).
+  it.each(
+    [1, 2, 3, 4, 5, 6].flatMap(
+      (n) =>
+        [
+          [n, "surface"],
+          [n, "app"],
+        ] as const,
+    ),
+  )("chart-strong-%i sobre %s llega a 3:1", (n, bg) => {
+    expect(contrast(token(`chart-strong-${n}`), token(bg))).toBeGreaterThanOrEqual(3);
+  });
+
   it("los colores son los del prompt maestro", () => {
     expect(token("app").toUpperCase()).toBe("#FAFAF9");
     expect(token("ink").toUpperCase()).toBe("#1F2937");

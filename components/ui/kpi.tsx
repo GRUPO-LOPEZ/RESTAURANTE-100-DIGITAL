@@ -10,12 +10,15 @@ function Kpi({
   value,
   status,
   statusLabel,
+  detail,
   className,
 }: {
   label: string;
   value: number | string;
   status?: BadgeStatus;
   statusLabel?: string;
+  // Comparación con el período anterior o un dato que acompaña al valor (reglas de tableros).
+  detail?: string;
   className?: string;
 }) {
   return (
@@ -25,6 +28,7 @@ function Kpi({
     >
       <p className="text-sm font-medium text-ink-muted">{label}</p>
       <p className="text-kpi font-semibold text-ink tabular-nums">{value}</p>
+      {detail ? <p className="text-sm text-ink-muted tabular-nums">{detail}</p> : null}
       {status && statusLabel ? <Badge status={status}>{statusLabel}</Badge> : null}
     </div>
   );

@@ -1,6 +1,161 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-21. Fase 1 construida en local: M1 a M9, pantallas y las 23 pruebas. Falta subirla a GitHub y que Soy la valide._
+_Última actualización: 2026-10-23. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`), con las 9 respuestas de ADR-0015 y las 6 de ADR-0017 implementadas, y verificada en local. La rama `feat/fase-1-cuentas-pantallas` ya está subida a GitHub. Falta abrir el pull request, ver la CI en verde y armar staging para la demo de cierre._
+
+## Al retomar (2026-10-23)
+
+- **Hecho:** la rama `feat/fase-1-cuentas-pantallas` está subida a GitHub, con los 14 commits del 21 al 23 de octubre. Se puede juntar con `main` sin conflictos.
+- **Falta (Joaco):** abrir el pull request hacia `main` desde la web (en esta computadora no está la CLI `gh`) y mirar la CI en la pestaña "Checks". Si algo falla, se arregla la causa.
+- **Después:** Vercel y staging en Supabase (abajo).
+
+## Próximo paso: ambiente de prueba (staging)
+
+- Joaco ya creó un proyecto en Supabase y es Developer ahí.
+- **Antes de seguir, Joaco tiene que confirmar dos cosas:**
+  1. que ese proyecto es el de prueba (staging) y está en la organización de Soy;
+  2. su identificador ("Reference ID", en Project Settings → General).
+- **Después:** plan para aprobar, y recién ahí se escribe lo siguiente:
+  - el paso de GitHub Actions "Publicar en staging": migraciones, datos inventados, funciones y configuración de Auth;
+  - el ajuste de `config.toml` para staging: el límite de ingresos normal y las direcciones de la app;
+  - la guía en simple;
+  - el ADR.
+- Los secretos (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` y `STAGING_PROJECT_REF`) los carga Joaco en GitHub. Nunca van por el chat.
+
+## Las 6 preguntas pendientes (terminadas en local, 2026-10-23)
+
+Decisiones en ADR-0017. Migración `20261023120000_old_questions.sql`, pruebas `130_old_questions.test.sql`.
+
+1. Quitarle el rol a otro superadmin lo aprueba Dirección. También suspender o dar de baja su cuenta (Joaco, 2026-10-23, por la revisión de base).
+2. Un local o una marca cerrados o borrados dejan de dar permisos; los roles de marca y de grupo siguen viendo su historia.
+3. A alguien de Dirección lo da de baja o lo reactiva el superadmin u otra persona de Dirección, con la aprobación de otra persona de Dirección. Si no hay quién apruebe, se rechaza de entrada.
+4. Un rol sensible lo aprueba Dirección o el Director de Marca de ese lugar, y el Director solo si tiene todos los permisos del rol (Joaco, 2026-10-23). El Controller y la Chef ya no lo aprueban.
+5. La reactivación ya funcionaba así; hay prueba.
+6. El bloqueo a propósito de una cuenta pasa a "antes de producción", con dispositivo de confianza.
+
+**Rendimiento:**
+
+- El tablero de usuarios bajó de 213–668 ms a 55–123 ms.
+- El historial filtrado, de 147–374 ms a 129–205 ms.
+- Cómo: índices por tabla en la auditoría, planes con los valores reales y costos calculados una vez por consulta.
+
+**Revisiones:**
+
+- `db-reviewer`: un hallazgo grave (suspender o dar de baja a otro superadmin al instante) y medios; todos corregidos o decididos por Joaco.
+- `security-auditor`: sin graves. Medios corregidos: varios grupos y persona borrada.
+- `ui-reviewer`: sin graves. Medios corregidos: la ficha recibe de la base si una acción va con aprobación, con aviso destacado y botón "Pedir…"; la prueba de pantalla limpia pedidos viejos antes de empezar.
+
+**Decidido por Joaco (2026-10-23):** el rol Director de Marca solo se da para una marca (`20261023150000_brand_director_scope.sql`).
+
+**Verificación completa (2026-10-23, `npm run test` desde una base nueva, sin nada más corriendo, con todos los cambios):**
+
+| Prueba                                                                   | Resultado     |
+| ------------------------------------------------------------------------ | ------------- |
+| Formato, lint y tipos                                                    | ✅            |
+| Lógica y configuración (Vitest)                                          | ✅ 95 de 95   |
+| Base de datos (pgTAP), con A10                                           | ✅ 781 de 781 |
+| Pantallas en celular y computadora, con accesibilidad (Playwright + axe) | ✅ 60 de 60   |
+
+## Alineación de la Fase 1 con el documento de Soy (terminada en local)
+
+Plan aprobado: `C:\Users\julym\.claude\plans\dapper-dazzling-haven.md`. Decisiones y diferencias que quedan: ADR-0015. Informe para Soy: `docs/fases/fase-1-cierre.md`.
+
+**Qué se hizo:**
+
+- **Base de datos.** Cuatro migraciones nuevas:
+  - `20261021180000_phase_doc_enums.sql`
+  - `20261021180100_align_with_phase_doc.sql`
+  - `20261021190000_phase_doc_features.sql`
+  - `20261021200000_phase_doc_screens.sql`
+
+  Contenido:
+  - nombres y columnas de las secciones 4 a 7;
+  - estados activo, suspendido y desactivado;
+  - membresías con lugar y fechas;
+  - permisos nuevos;
+  - avisos dentro de la app;
+  - tabla de ensayo;
+  - historial con filtros y exportación;
+  - tablero de control;
+  - sesiones cerradas que dejan de operar en el momento.
+
+- **Pantallas:**
+  - recuperar la contraseña;
+  - "recordar sesión";
+  - mi cuenta;
+  - selector de local;
+  - tablero de usuarios y lista con filtros;
+  - ficha;
+  - roles y permisos;
+  - bandeja con el antes y el después;
+  - historial con filtros y CSV;
+  - ensayo;
+  - menú y filtros plegables en el celular.
+- **Revisiones:**
+  - `db-reviewer` y `security-auditor`, en los tres pasos de base;
+  - `ui-reviewer`, en las pantallas.
+
+  Graves y medios corregidos. Lo que queda abierto está en ADR-0015.
+
+- **Ajuste de configuración local:** el límite de ingresos de Auth subió de 30 a 300 cada 5 minutos, **solo en `supabase/config.toml`** (local y CI), porque la suite de pantallas ingresa muchas veces desde la misma IP. Staging y producción conservan el suyo.
+- **Diccionario de datos:** se regenera con `npm run db:dictionary` (script nuevo, `scripts/data-dictionary.mjs`).
+
+**Respuestas de Joaco a las 9 preguntas (2026-10-22), ya implementadas** (detalle en ADR-0015 y ADR-0016):
+
+1. La Chef **no** publica lo que ella misma mandó a revisión: lo publica otra persona. La base lo rechaza y la pantalla no le ofrece el botón.
+2. El último acceso, el primer ingreso, quién invitó y los motivos de suspensión o baja los ve solo quien administra a la persona: permiso nuevo `users.view_admin_details` (Superadmin, Dirección, Director de Marca y Gerente), sobre **todos** sus roles.
+   - La tabla de personas ya no entrega esas columnas por la API (hallazgo grave de seguridad, corregido).
+   - La bandeja oculta el motivo de una baja a quien no administra ni decide.
+   - El historial los sigue mostrando a quien tiene `audit.view`, porque es para auditar (decisión de Joaco).
+3. Los permisos de ensayo sumados quedan aprobados.
+4. Los gráficos usan tonos fuertes (`chart-strong-*`, 3:1 o más sobre el fondo); los pasteles quedan para fondos.
+5. Todos los KPI del tablero se comparan con hace 7 días, con la fecha a la vista.
+6. React Hook Form en todos los formularios: errores debajo de cada campo antes de enviar, con el mismo esquema que el servidor (`lib/forms/schemas.ts`). El adaptador de Zod es propio, porque `@hookform/resolvers` choca con las dependencias del proyecto (ADR-0016).
+7. "Recordar mi sesión" viene sin marcar.
+8. Exportación sin límite de frecuencia; queda el tope por archivo.
+9. El lugar donde trabaja una persona limita sus roles. La base no deja terminar una membresía que cubre un rol, y el traspaso de un local lleva la membresía al local nuevo.
+
+**También se corrigió:**
+
+- el encabezado del celular;
+- "Grupo Grupo Demo";
+- en `docs/modulos/00-identidad.md`, la tabla de roles copiada de Soy, que una edición anterior había pisado por error.
+
+**Revisiones:**
+
+- `db-reviewer`: sin graves. Medios corregidos: un bloqueo entre transacciones en las membresías, el criterio de "administra" y pruebas más precisas.
+- `security-auditor`: 1 grave (las columnas de la tabla de personas) y 4 medios, corregidos. El del historial quedó como excepción decidida por Joaco.
+- `ui-reviewer`: 1 grave corregido. Sin JavaScript, el formulario se enviaba por la dirección; ahora va siempre por POST y hay una prueba que lo controla. También se corrigieron los medios:
+  - el foco y el aviso para lectores de pantalla;
+  - la invitación con el mismo esquema;
+  - la leyenda del gráfico;
+  - los mensajes en inglés.
+
+**Verificación completa (2026-10-22, `npm run test` desde una base nueva, sin nada más corriendo en paralelo):**
+
+| Prueba                                                                   | Resultado     |
+| ------------------------------------------------------------------------ | ------------- |
+| Formato, lint y tipos                                                    | ✅            |
+| Lógica y configuración (Vitest)                                          | ✅ 95 de 95   |
+| Base de datos (pgTAP), con A10 por debajo de 300 ms                      | ✅ 736 de 736 |
+| Pantallas en celular y computadora, con accesibilidad (Playwright + axe) | ✅ 58 de 58   |
+
+Además se miró la pantalla real: el tablero en computadora y celular, el error por campo y la ficha vista por el auditor.
+
+**Notas para trabajar en local:**
+
+- **Las pruebas de pantalla no se corren dos veces a la vez.** Comparten los usuarios de prueba: una corrida en paralelo bloquea cuentas y cierra sesiones de la otra, y aparecen fallas que no son del código (pasó el 2026-10-22).
+- **Antes de una demo, correr `npm run db:reset`:** las pruebas automáticas dejan datos en la base local.
+- **Para abrir la app en local hace falta `.env.local`,** copiado de `.env.example`, que tiene los valores públicos de desarrollo local.
+- **En una base recién cargada, "Cuentas activas" dice "+20 contra el …":** la comparación usa la historia de la auditoría, y las personas de prueba se crean al cargar la base.
+
+**Para la Fase 2:** llevar la regla "quien manda a revisión no publica" al trigger de versiones de las recetas reales (revisión de seguridad, m5).
+
+**Lo que falta, fuera del código:**
+
+- subir la rama y ver GitHub Actions en verde;
+- proyectos de Supabase de desarrollo en la nube y de staging, a nombre de Soy, más Vercel;
+- la demo de la compuerta sobre staging;
+- proteger `main`.
 
 ## Resumen para Soy: la Fase 1 está construida
 
@@ -53,7 +208,7 @@ _Última actualización: 2026-10-21. Fase 1 construida en local: M1 a M9, pantal
 2. Que usted recorra la **checklist de validación** (sección 14 del prompt maestro) con los usuarios de prueba.
 3. Las decisiones que están abajo.
 
-## Preguntas para Joaco (no frenan el cierre en local, pero sí la salida a producción)
+## Preguntas para Joaco (respondidas el 2026-10-22: ver ADR-0017)
 
 1. ¿Un superadmin le puede quitar el rol a otro superadmin sin aprobación, siempre que quede uno? Hoy sí.
 2. ¿Un local cerrado o borrado deja de dar permisos a quienes tenían rol ahí? Hoy no.

@@ -41,6 +41,14 @@
   --color-chart-4: #fda4af;
   --color-chart-5: #c4b5fd;
   --color-chart-6: #fdba74;
+  /* Tonos fuertes, solo para barras, líneas y puntos de gráficos: llegan a 3:1 sobre el fondo
+     (WCAG 1.4.11). Nunca para fondos, estados ni texto (ADR-0015, respuesta 4). */
+  --color-chart-strong-1: #2563eb;
+  --color-chart-strong-2: #16a34a;
+  --color-chart-strong-3: #d97706;
+  --color-chart-strong-4: #e11d48;
+  --color-chart-strong-5: #7c3aed;
+  --color-chart-strong-6: #ea580c;
 
   /* Tipografía: Inter con respaldo en la fuente del sistema */
   --font-sans:

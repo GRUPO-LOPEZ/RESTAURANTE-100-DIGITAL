@@ -6,14 +6,22 @@ import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-tab
 import { Badge } from "@/components/ui/badge";
 import type { UserRow } from "@/lib/data";
 
-const SCOPE = { group: "Grupo", brand: "Marca", restaurant: "Local" } as const;
+// El grupo va solo con su nombre, que ya dice "Grupo" (como scopeLabel de lib/data.ts).
+const SCOPE = { group: "", brand: "Marca ", restaurant: "Local " } as const;
 
 function name(row: UserRow) {
   return [row.first_name, row.last_name].filter(Boolean).join(" ") || row.email;
 }
 
+// Puesto y área, si los tiene (descriptivos: no dan permisos).
+function Job({ row }: { row: UserRow }) {
+  const text = [row.job_title, row.area_name].filter(Boolean).join(" · ");
+  return text ? <span className="text-sm text-ink-muted">{text}</span> : null;
+}
+
 function StatusBadge({ row }: { row: UserRow }) {
-  if (row.status === "disabled") return <Badge status="bad">Desactivada</Badge>;
+  if (row.status === "deactivated") return <Badge status="bad">Desactivada</Badge>;
+  if (row.status === "suspended") return <Badge status="warn">Suspendida</Badge>;
   if (row.locked) return <Badge status="warn">Bloqueada</Badge>;
   return <Badge status="ok">Activa</Badge>;
 }
@@ -26,7 +34,8 @@ function Roles({ row }: { row: UserRow }) {
         <li key={r.assignment_id} className="text-sm text-ink">
           {r.role_name}{" "}
           <span className="text-ink-muted">
-            · {SCOPE[r.scope_type]} {r.scope_name}
+            · {SCOPE[r.scope_type]}
+            {r.scope_name}
           </span>
         </li>
       ))}
@@ -51,6 +60,7 @@ const columns = column.columns([
           {name(row.original)}
         </Link>
         <span className="text-sm text-ink-muted">{row.original.email}</span>
+        <Job row={row.original} />
       </div>
     ),
   }),
@@ -88,6 +98,7 @@ export function UsersTable({ rows }: { rows: UserRow[] }) {
               <StatusBadge row={row} />
             </div>
             <span className="text-sm break-all text-ink-muted">{row.email}</span>
+            <Job row={row} />
             <Roles row={row} />
           </li>
         ))}

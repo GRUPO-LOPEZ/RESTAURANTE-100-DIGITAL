@@ -49,7 +49,8 @@ select is(
 -- Catálogo del Módulo Maestro
 -- ---------------------------------------------------------------------------
 select is((select count(*)::int from core.roles where deleted_at is null), 10, 'hay 10 roles');
-select is((select count(*)::int from core.permissions where deleted_at is null), 14, 'hay 14 permisos de la Fase 1');
+select is((select count(*)::int from core.permissions where deleted_at is null and module <> 'test_documents'), 18,
+  'hay 18 permisos de la Fase 1 (los 14 de M4 más permissions.manage, security.view, org.archive y users.view_admin_details, ADR-0015)');
 select is(
   (select array_agg(code order by level) from core.roles where requires_mfa),
   array['superadmin', 'general_management', 'brand_director', 'restaurant_manager', 'controller'],
@@ -63,7 +64,8 @@ create function pg_temp.perms(p_role text) returns text[] language sql as $$
   from core.role_permissions rp
   join core.roles r on r.id = rp.role_id and r.code = p_role
   join core.permissions p on p.id = rp.permission_id
-  where rp.deleted_at is null
+  -- Los permisos de ensayo (temporales) se prueban aparte, en 100_features.
+  where rp.deleted_at is null and p.module <> 'test_documents'
 $$;
 create function pg_temp.has(p_role text, p_perm text) returns boolean language sql as $$
   select p_perm = any (pg_temp.perms(p_role))
@@ -90,27 +92,30 @@ select ok(
   'Auditor / Consulta: solo lectura'
 );
 
--- Matriz completa, fila por fila (la aprobada por Joaco el 2026-10-20).
+-- Matriz completa, fila por fila (la aprobada por Joaco el 2026-10-20, con los permisos del 2026-10-21).
 create function pg_temp.sorted(p text[]) returns text[] language sql as $$
   select array_agg(c order by c) from unnest(p) as c
 $$;
 select is(pg_temp.perms('superadmin'), pg_temp.sorted(array['org.view', 'org.manage', 'org.transfer', 'users.view',
   'users.invite', 'users.manage', 'users.deactivate', 'roles.assign', 'roles.manage', 'audit.view', 'audit.export',
-  'workflows.manage', 'approvals.view']), 'matriz completa de Superadministrador');
+  'workflows.manage', 'approvals.view', 'permissions.manage', 'security.view', 'org.archive',
+  'users.view_admin_details']), 'matriz completa de Superadministrador');
 select is(pg_temp.perms('general_management'), pg_temp.sorted(array['org.view', 'org.transfer', 'users.view',
-  'audit.view', 'audit.export', 'approvals.view', 'approvals.decide']), 'matriz completa de Dirección General');
+  'audit.view', 'audit.export', 'approvals.view', 'approvals.decide', 'security.view', 'users.view_admin_details']),
+  'matriz completa de Dirección General');
 select is(pg_temp.perms('brand_director'), pg_temp.sorted(array['org.view', 'org.manage', 'users.view', 'users.invite',
-  'users.manage', 'users.deactivate', 'roles.assign', 'audit.view', 'approvals.view', 'approvals.decide']),
+  'users.manage', 'users.deactivate', 'roles.assign', 'audit.view', 'approvals.view', 'approvals.decide', 'org.archive',
+  'users.view_admin_details']),
   'matriz completa de Director de Marca');
 select is(pg_temp.perms('restaurant_manager'), pg_temp.sorted(array['org.view', 'org.manage', 'users.view',
-  'users.invite', 'users.manage', 'users.deactivate', 'roles.assign', 'approvals.view']),
+  'users.invite', 'users.manage', 'users.deactivate', 'roles.assign', 'approvals.view', 'users.view_admin_details']),
   'matriz completa de Gerente de Restaurante');
 select is(pg_temp.perms('executive_chef'), pg_temp.sorted(array['org.view', 'approvals.view', 'approvals.decide']),
   'matriz completa de Chef Ejecutivo');
 select is(pg_temp.perms('controller'), pg_temp.sorted(array['org.view', 'audit.view', 'approvals.view',
   'approvals.decide']), 'matriz completa de Controller');
 select is(pg_temp.perms('auditor'), pg_temp.sorted(array['org.view', 'users.view', 'audit.view', 'audit.export',
-  'approvals.view']), 'matriz completa de Auditor');
+  'approvals.view', 'security.view']), 'matriz completa de Auditor');
 
 select throws_ok($$insert into core.permissions (code, module, description) values ('Org.View', 'org', 'x')$$,
   '23514', null, 'un código de permiso fuera de formato se rechaza');
@@ -142,8 +147,8 @@ select ok(
 );
 select is(
   (select count(*)::int from audit.audit_events
-    where schema_name = 'core' and table_name in ('roles', 'permissions', 'role_permissions')
-      and origin = 'maintenance' and reason = 'Catálogo inicial del Módulo Maestro'),
+    where table_schema = 'core' and table_name in ('roles', 'permissions', 'role_permissions')
+      and source = 'maintenance' and reason = 'Catálogo inicial del Módulo Maestro'),
   10 + 14 + 55,
   'el catálogo inicial quedó auditado (10 roles, 14 permisos, 55 relaciones)'
 );
@@ -167,7 +172,7 @@ select throws_ok(
   '42501', null, 'el correo del perfil no se cambia desde el perfil'
 );
 select throws_ok(
-  $$update core.user_profiles set status = 'disabled' where id = '11111111-1111-1111-1111-111111111111'$$,
+  $$update core.user_profiles set status = 'deactivated' where id = '11111111-1111-1111-1111-111111111111'$$,
   '23514', null, 'bloquear sin fecha de bloqueo se rechaza'
 );
 select throws_ok(
@@ -187,7 +192,7 @@ select throws_ok(
 
 insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data, aud, role) values
   ('44444444-4444-4444-4444-444444444444', 'bloqueada@ejemplo.test', '{}', '{}', 'authenticated', 'authenticated');
-update core.user_profiles set status = 'disabled', disabled_at = now(), disabled_reason = 'Prueba'
+update core.user_profiles set status = 'deactivated', deactivated_at = now(), deactivation_reason = 'Prueba'
  where id = '44444444-4444-4444-4444-444444444444';
 select throws_ok(
   $$insert into core.service_accounts (id, code, name, owner_user_id)
@@ -307,7 +312,7 @@ select throws_ok(
 );
 
 set local request.jwt.claims to '{"sub": "00000000-0000-4000-8000-000000000401", "role": "authenticated"}';
-do $$ begin perform core.set_change_context('Cambio de puesto', 'app'); end $$;
+do $$ begin perform core.set_change_context('Cambio de puesto', 'manual'); end $$;
 update core.user_role_assignments set deleted_at = now() where id = '33333333-3333-3333-3333-333333333333';
 select ok(
   (select deleted_by = '00000000-0000-4000-8000-000000000401' from core.user_role_assignments
@@ -335,7 +340,7 @@ insert into core.user_role_assignments (id, user_id, role_id, scope_type, group_
 values ('55555555-5555-5555-5555-555555555555', '00000000-0000-4000-8000-000000000401', pg_temp.role_id('tmp_role'),
         'group', '00000000-0000-4000-8000-000000000001');
 select ok(
-  (select action = 'insert' and actor_id = '00000000-0000-4000-8000-000000000401'
+  (select action = 'insert' and actor_user_id = '00000000-0000-4000-8000-000000000401'
       and scope_group_id = '00000000-0000-4000-8000-000000000001'
       and scope_brand_id is null and scope_restaurant_id is null
      from audit.audit_events where record_id = '55555555-5555-5555-5555-555555555555'),

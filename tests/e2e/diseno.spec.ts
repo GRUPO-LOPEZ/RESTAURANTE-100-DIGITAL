@@ -46,7 +46,10 @@ test.describe("pantalla de ingreso", () => {
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
     await expect(button).toHaveCSS("background-color", "rgb(79, 109, 154)"); // #4F6D9A
 
+    // Orden con el teclado: contraseña → "Recordar mi sesión" → Ingresar.
     await page.getByLabel("Contraseña").focus();
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Recordar mi sesión en este dispositivo")).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(button).toBeFocused();
     await expect(button).toHaveCSS("outline-style", "solid");
