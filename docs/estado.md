@@ -51,7 +51,22 @@ Plan aprobado: `C:\Users\julym\.claude\plans\silly-cuddling-ocean.md`. Decisión
   - m5: verificar el alias de Vercel después de publicar.
   - m6: fijar en `[remotes.staging]` lo que se hereda (signup, anónimos, restricciones de red) y probarlo.
   - m7: que la prueba vigile `event == 'push'`, `refs/heads/main` y que el paso de Vercel no tenga secretos de Supabase.
-- **Revisión de `db-reviewer`:** lanzada; si su resultado no quedó anotado acá, volver a pedirla después de las correcciones.
+
+### Revisión de `db-reviewer` (2026-10-26): sin graves, solo leyendo el código (sin Docker)
+
+- **Medio 1:** la contraseña aparece en dos sentencias, la del largo y la del hash, y puede ir a los logs de Postgres si falla. Coincide con M2 de seguridad.
+- **Medio 2:** en vez de `-v demo_password=...`, leerla con `\getenv demo_password STAGING_DEMO_PASSWORD` (psql 15 o más). Coincide con m1.
+- **Medio 3:** probarlo en local (carga, segunda corrida y otra base) y en staging:
+  - que el rol `postgres` pueda insertar en `auth.*`;
+  - que se pueda ingresar con correos `@ejemplo.test`, con y sin doble verificación.
+- **Menores:**
+  - costo `bf` 10;
+  - validar letras y dígitos;
+  - que el motivo de auditoría tenga el número de corrida de GitHub;
+  - que el comentario de uso sea igual al comando del flujo;
+  - documentar cómo se limpia un factor de doble verificación;
+  - `email_sent = 2` podría hacer fallar `config push`: si falla, sacar esa línea.
+- **Bien por lectura:** el mismo orden y los mismos triggers que el seed, una sola transacción, las guardas correctas y la auditoría con motivo y origen `seed`.
 
 ## Las 6 preguntas pendientes (terminadas en local, 2026-10-23)
 
