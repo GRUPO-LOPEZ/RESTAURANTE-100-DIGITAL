@@ -105,8 +105,14 @@ describe("Staging: cuándo se publica", () => {
 
   it("la app se publica recién después de la base, las funciones y la configuración", () => {
     expect(appJob).toMatch(/^ {4}needs: base$/m);
-    for (const step of ["db push", "functions deploy", "config push"]) {
-      expect(baseJob).toContain(step);
+    // El comando completo: "supabasedb push" (sin espacio) no es un comando de la CLI.
+    for (const step of [
+      "link --project-ref",
+      "db push --yes",
+      "functions deploy auth-login invite-user",
+      "config push --yes",
+    ]) {
+      expect(baseJob).toMatch(new RegExp(`^ {8}run: npx --no-install supabase ${step}`, "m"));
     }
     expect(baseJob).not.toContain("vercel");
   });
