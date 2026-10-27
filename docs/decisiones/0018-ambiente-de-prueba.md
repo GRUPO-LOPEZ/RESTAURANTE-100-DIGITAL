@@ -52,7 +52,7 @@ Joaco creó el proyecto de Supabase `grupo-lf-staging` (`tdbciscmemfdwjttgurj`, 
   - **`app`:** corre solo si `base` salió bien.
     - Trae la configuración de Vercel y comprueba dos cosas: que apunte a la base de staging, y que no tenga nada más que las dos variables públicas de Supabase y las del sistema de Vercel.
     - Arma y publica la app.
-    - Comprueba que `grupo-lf-staging.vercel.app` sea de este equipo de Vercel. No comprueba que apunte a esta publicación: si se reasignara a otro proyecto del mismo equipo, el paso pasaría igual (riesgo menor aceptado).
+    - Comprueba que `restaurante-100-digital.vercel.app` (la dirección del proyecto de Vercel de staging) sea de este equipo de Vercel. No comprueba que apunte a esta publicación: si se reasignara a otro proyecto del mismo equipo, el paso pasaría igual (riesgo menor aceptado).
   - **Secretos:** viven en el ambiente `staging` de GitHub y se declaran **paso por paso**.
     - Las claves de Supabase solo las ven los pasos de `supabase`.
     - El token de Vercel solo lo ven `pull`, `deploy` e `inspect`; la instalación y el armado de la app, que corren código de dependencias, no lo ven.

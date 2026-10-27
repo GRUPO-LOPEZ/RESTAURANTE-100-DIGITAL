@@ -152,7 +152,7 @@ jobs:
     timeout-minutes: 20
     environment:
       name: staging
-      url: https://grupo-lf-staging.vercel.app
+      url: https://restaurante-100-digital.vercel.app
     # Identificadores, no credenciales. El token se declara solo en los pasos que hablan con
     # Vercel: la instalación y el armado de la app (que corre código de dependencias) no lo ven.
     env:
@@ -203,4 +203,4 @@ jobs:
       - name: Verificar la dirección de staging
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npx --no-install vercel inspect grupo-lf-staging.vercel.app
+        run: npx --no-install vercel inspect restaurante-100-digital.vercel.app

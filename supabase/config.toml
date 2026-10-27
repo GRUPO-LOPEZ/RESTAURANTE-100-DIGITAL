@@ -453,8 +453,8 @@ project_id = "tdbciscmemfdwjttgurj"
 enabled = false
 
 [remotes.staging.auth]
-site_url = "https://grupo-lf-staging.vercel.app"
-additional_redirect_urls = ["https://grupo-lf-staging.vercel.app/**"]
+site_url = "https://restaurante-100-digital.vercel.app"
+additional_redirect_urls = ["https://restaurante-100-digital.vercel.app/**"]
 
 # Los valores normales de Supabase, no los de local y CI (ver [auth.rate_limit]).
 [remotes.staging.auth.rate_limit]

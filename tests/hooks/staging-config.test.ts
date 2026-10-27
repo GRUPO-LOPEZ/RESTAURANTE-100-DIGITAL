@@ -86,7 +86,9 @@ describe("Staging: cuándo se publica", () => {
     expect(baseJob).toMatch(/\[remotes\\\.staging\\\]/);
     expect(baseJob).toContain('[[ "$STAGING_DB_URL" =~ $pooler ]]');
     expect(appJob).toContain("NEXT_PUBLIC_SUPABASE_URL");
-    expect(appJob).toContain("vercel inspect grupo-lf-staging.vercel.app");
+    // La dirección que se verifica es la misma que usa Auth para los enlaces.
+    const siteHost = new URL(tomlSection(config, "remotes.staging.auth").site_url ?? "").host;
+    expect(appJob).toContain(`vercel inspect ${siteHost}`);
   });
 
   it("acepta solo la conexión del pooler de staging, sin contraseña ni parámetros", () => {

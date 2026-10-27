@@ -24,10 +24,10 @@ Para Joaco. Se hace una sola vez. Decisión técnica: ADR-0018.
 ## 2. Vercel
 
 1. Soy crea la cuenta y un equipo (team) a su nombre, y te invita como miembro.
-2. Creá un proyecto llamado `grupo-lf-staging`:
+2. El proyecto de Vercel de staging es `restaurante-100-digital`:
    - **No** lo conectes con el repositorio de GitHub: lo publica GitHub Actions.
    - **No** instales la integración de Supabase, porque copia la clave `service_role`.
-3. Fijate que la dirección del proyecto sea `https://grupo-lf-staging.vercel.app`. Si Vercel te da otra, avisame: hay que cambiarla en `supabase/config.toml` y en el flujo. El flujo además comprueba, después de publicar, que esa dirección sea de este equipo.
+3. La dirección del proyecto es `https://restaurante-100-digital.vercel.app`. Si cambia, hay que cambiarla en `supabase/config.toml`, en el flujo y en su prueba. El flujo además comprueba, después de publicar, que esa dirección sea de este equipo.
 4. **Variables:**
    - En **Settings → Environment Variables**, entorno **Production**, cargá:
      - `NEXT_PUBLIC_SUPABASE_URL`: en Supabase, **Project Settings → API → Project URL**;
@@ -66,7 +66,7 @@ Las dos contraseñas de la demo tienen que tener 16 caracteres o más, con letra
 1. Fusioná el pull request de staging. Cuando "Pruebas" termine en verde, arranca solo "Publicar en staging".
 2. Si falla, abrí la corrida, copiá el error y pasámelo. El error no muestra claves, porque GitHub las tapa.
 3. Cuando esté en verde: **Actions → Publicar en staging → Run workflow**, rama `main`, con la casilla **Cargar las personas y datos de prueba** tildada.
-4. **Antes de pasarle cualquier contraseña a otra persona,** entrá a `https://grupo-lf-staging.vercel.app` con **cada una** de las cuentas que tienen doble verificación (tabla de abajo), con `STAGING_DEMO_ADMIN_PASSWORD`. En cada una te va a pedir que la actives con una app del celular (Google Authenticator, Microsoft Authenticator o similar). Las de Dirección las puede activar Soy con su celular.
+4. **Antes de pasarle cualquier contraseña a otra persona,** entrá a `https://restaurante-100-digital.vercel.app` con **cada una** de las cuentas que tienen doble verificación (tabla de abajo), con `STAGING_DEMO_ADMIN_PASSWORD`. En cada una te va a pedir que la actives con una app del celular (Google Authenticator, Microsoft Authenticator o similar). Las de Dirección las puede activar Soy con su celular.
 
 ## Personas de prueba
 
