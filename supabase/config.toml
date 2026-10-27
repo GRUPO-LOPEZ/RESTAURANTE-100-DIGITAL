@@ -213,8 +213,8 @@ anonymous_users = 30
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
 # Grupo LF: más alto SOLO en local y en la CI, donde todas las pruebas de pantalla ingresan desde
-# la misma IP (unos 50 ingresos y verificaciones en pocos minutos). Staging y producción tienen
-# su propia configuración en Supabase y conservan el valor por defecto (30). El bloqueo de 5
+# la misma IP (unos 50 ingresos y verificaciones en pocos minutos). Staging conserva el valor
+# por defecto (30) en [remotes.staging.auth.rate_limit], al final del archivo. El bloqueo de 5
 # intentos fallidos por cuenta (ADR-0010) no depende de esto.
 sign_in_sign_ups = 300
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
@@ -437,3 +437,35 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# ---------------------------------------------------------------------------
+# Grupo LF: ambiente de prueba (staging), ADR-0018.
+# Hereda todo lo de arriba y cambia solo lo que sigue. Lo sube a Supabase el flujo
+# "Publicar en staging" de GitHub Actions (config push); nunca Claude Code ni cambios a mano
+# en el panel. El flujo corta si el secreto STAGING_PROJECT_REF no es este project_id.
+# ---------------------------------------------------------------------------
+[remotes.staging]
+project_id = "tdbciscmemfdwjttgurj"
+
+# Nunca se cargan los datos de prueba locales en staging (ADR-0005): sus personas de prueba
+# salen de supabase/staging/demo-data.sql, a pedido.
+[remotes.staging.db.seed]
+enabled = false
+
+[remotes.staging.auth]
+site_url = "https://restaurante-100-digital.vercel.app"
+additional_redirect_urls = ["https://restaurante-100-digital.vercel.app/**"]
+
+# Los valores normales de Supabase, no los de local y CI (ver [auth.rate_limit]).
+[remotes.staging.auth.rate_limit]
+email_sent = 2
+sms_sent = 30
+anonymous_users = 30
+token_refresh = 150
+sign_in_sign_ups = 30
+token_verifications = 30
+web3 = 30
+
+# Un correo por persona por minuto, como en Supabase alojado.
+[remotes.staging.auth.email]
+max_frequency = "1m0s"

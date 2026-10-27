@@ -1,0 +1,206 @@
+# Publica en el ambiente de prueba (staging), ADR-0018.
+# Corre solo con un commit de main cuyas pruebas ("Pruebas") terminaron en verde: automático
+# después de cada push, o a mano desde la pestaña Actions.
+# Dos jobs: primero la base (migraciones, funciones, configuración y datos de prueba) y después
+# la app. Si la base falla, la app no se publica. Cada secreto se declara solo en el paso que
+# lo usa: la instalación de dependencias y la CLI de Vercel nunca ven las claves de Supabase.
+name: Publicar en staging
+
+on:
+  workflow_run:
+    workflows: [Pruebas]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      load_demo_data:
+        description: "Cargar las personas y datos de prueba (solo si la base está vacía)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Una sola publicación a la vez, y nunca se corta una a la mitad.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  base:
+    name: Base de datos y funciones
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    # Leer las corridas de "Pruebas" (verificación de la corrida manual).
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+      project_ref: ${{ steps.target.outputs.project_ref }}
+    steps:
+      - name: Commit a publicar
+        id: commit
+        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.commit.outputs.sha }}
+
+      # A mano también se exige que "Pruebas" haya pasado sobre este mismo commit.
+      - name: Verificar que las pruebas pasaron
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&event=push&status=success" --jq '.total_count')
+          if ! [ "${passed:-0}" -ge 1 ] 2>/dev/null; then
+            echo "::error::\"Pruebas\" no terminó en verde para $SHA en main. No se publica."
+            exit 1
+          fi
+
+      # El proyecto de los secretos tiene que ser el de [remotes.staging] en supabase/config.toml.
+      # Así un secreto mal cargado nunca publica en otro proyecto (por ejemplo, producción).
+      - name: Verificar que el destino es staging
+        id: target
+        env:
+          STAGING_PROJECT_REF: ${{ secrets.STAGING_PROJECT_REF }}
+          STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+        run: |
+          expected=$(awk '/^\[remotes\.staging\]$/ {f=1; next} /^\[/ {f=0} f && /^project_id *=/ {gsub(/[" ]/, "", $0); split($0, a, "="); print a[2]}' supabase/config.toml)
+          if [ -z "$expected" ] || [ "$STAGING_PROJECT_REF" != "$expected" ]; then
+            echo "::error::STAGING_PROJECT_REF no coincide con [remotes.staging] de supabase/config.toml. No se publica."
+            exit 1
+          fi
+          # La conexión es la del pooler de Supabase, con el usuario postgres.<ref>, sin contraseña
+          # escrita y sin parámetros que cambien el usuario o el servidor.
+          pooler="^postgresql://postgres\.${expected}@aws-[0-9]+-[a-z0-9-]+\.pooler\.supabase\.com:(5432|6543)/postgres$"
+          if ! [[ "$STAGING_DB_URL" =~ $pooler ]]; then
+            echo "::error::STAGING_DB_URL no es la del pooler de staging (postgresql://postgres.$expected@aws-…pooler.supabase.com:5432/postgres, sin contraseña). No se publica."
+            exit 1
+          fi
+          echo "project_ref=$expected" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # Sin secretos en este paso: los scripts de instalación no ven ninguna clave.
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Misma versión de la CLI de Supabase que package.json. Sin --include-seed: los datos de
+      # prueba locales nunca llegan a staging (ADR-0005).
+      - name: Conectar con el proyecto de staging
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx --no-install supabaselink --project-ref "${{ steps.target.outputs.project_ref }}"
+
+      - name: Aplicar migraciones nuevas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx --no-install supabasedb push --yes
+
+      - name: Publicar Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx --no-install supabasefunctions deploy auth-login invite-user
+
+      - name: Subir la configuración de Auth y la API
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx --no-install supabaseconfig push --yes
+
+      # Las contraseñas se validan acá, antes de llegar a la base, y psql las lee de variables
+      # de entorno (\getenv), nunca de la línea de comando.
+      - name: Cargar personas y datos de prueba
+        if: github.event_name == 'workflow_dispatch' && inputs.load_demo_data
+        env:
+          STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
+          DEMO_ADMIN_PASSWORD: ${{ secrets.STAGING_DEMO_ADMIN_PASSWORD }}
+          DEMO_PASSWORD: ${{ secrets.STAGING_DEMO_PASSWORD }}
+        run: |
+          for name in DEMO_ADMIN_PASSWORD DEMO_PASSWORD; do
+            value="${!name}"
+            if [ ${#value} -lt 16 ] || ! [[ "$value" =~ [A-Za-z] ]] || ! [[ "$value" =~ [0-9] ]]; then
+              echo "::error::$name tiene que tener al menos 16 caracteres, con letras y números."
+              exit 1
+            fi
+          done
+          if [ "$DEMO_ADMIN_PASSWORD" = "$DEMO_PASSWORD" ]; then
+            echo "::error::Las dos contraseñas de la demo tienen que ser distintas."
+            exit 1
+          fi
+          psql -X --no-password -f supabase/staging/demo-data.sql "$STAGING_DB_URL"
+
+  app:
+    name: App en Vercel
+    needs: base
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://restaurante-100-digital.vercel.app
+    # Identificadores, no credenciales. El token se declara solo en los pasos que hablan con
+    # Vercel: la instalación y el armado de la app (que corre código de dependencias) no lo ven.
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.base.outputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # La CLI de Vercel sale del package-lock (versión fija, con verificación de integridad).
+      - name: Instalar dependencias
+        run: npm ci
+
+      # La app se arma con las variables del proyecto de Vercel. Se comprueba que apunten a la
+      # base de staging y que no haya nada más que las públicas de Supabase y las del sistema.
+      - name: Traer la configuración del proyecto de Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PROJECT_REF: ${{ needs.base.outputs.project_ref }}
+        run: |
+          npx --no-install vercel pull --yes --environment=production
+          vars=.vercel/.env.production.local
+          if ! grep -Eq "^NEXT_PUBLIC_SUPABASE_URL=\"?https://$PROJECT_REF\.supabase\.co/?\"?$" "$vars"; then
+            echo "::error::El proyecto de Vercel no apunta a la base de staging. No se publica."
+            exit 1
+          fi
+          extra=$(grep -Ev '^(#|$|NEXT_PUBLIC_SUPABASE_URL=|NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=|VERCEL_[A-Z0-9_]*=|TURBO_[A-Z0-9_]*=|NX_DAEMON=)' "$vars" | cut -d= -f1 || true)
+          if [ -n "$extra" ]; then
+            echo "::error::El proyecto de Vercel tiene variables de más (podrían ser claves de servidor): $extra. Sacalas y volvé a correr."
+            exit 1
+          fi
+
+      - name: Armar la app
+        run: npx --no-install vercel build --prod
+
+      - name: Publicar la app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --no-install vercel deploy --prebuilt --prod
+
+      # La dirección que usa Auth para los enlaces tiene que ser de este equipo de Vercel.
+      - name: Verificar la dirección de staging
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --no-install vercel inspect restaurante-100-digital.vercel.app

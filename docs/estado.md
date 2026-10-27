@@ -1,25 +1,52 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-23. La Fase 1 está alineada con el documento de Soy (`docs/fases/fase-1.md`), con las 9 respuestas de ADR-0015 y las 6 de ADR-0017 implementadas, y verificada en local. La rama `feat/fase-1-cuentas-pantallas` ya está subida a GitHub. Falta abrir el pull request, ver la CI en verde y armar staging para la demo de cierre._
+_Última actualización: 2026-10-27. La Fase 1 está en `main` (PR #10). El ambiente de prueba (staging) está listo para PR en la rama `chore/staging`, probado en local; falta que Joaco cargue las cuentas y secretos y que corra la primera publicación._
 
-## Al retomar (2026-10-23)
+## Al retomar (2026-10-27): staging listo para PR
 
-- **Hecho:** la rama `feat/fase-1-cuentas-pantallas` está subida a GitHub, con los 14 commits del 21 al 23 de octubre. Se puede juntar con `main` sin conflictos.
-- **Falta (Joaco):** abrir el pull request hacia `main` desde la web (en esta computadora no está la CLI `gh`) y mirar la CI en la pestaña "Checks". Si algo falla, se arregla la causa.
-- **Después:** Vercel y staging en Supabase (abajo).
+Plan aprobado: `C:\Users\julym\.claude\plans\silly-cuddling-ocean.md`. Decisión: ADR-0018. Guía para Joaco: `docs/guias/staging.md`.
 
-## Próximo paso: ambiente de prueba (staging)
-
-- Joaco ya creó un proyecto en Supabase y es Developer ahí.
-- **Antes de seguir, Joaco tiene que confirmar dos cosas:**
-  1. que ese proyecto es el de prueba (staging) y está en la organización de Soy;
-  2. su identificador ("Reference ID", en Project Settings → General).
-- **Después:** plan para aprobar, y recién ahí se escribe lo siguiente:
-  - el paso de GitHub Actions "Publicar en staging": migraciones, datos inventados, funciones y configuración de Auth;
-  - el ajuste de `config.toml` para staging: el límite de ingresos normal y las direcciones de la app;
-  - la guía en simple;
-  - el ADR.
-- Los secretos (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` y `STAGING_PROJECT_REF`) los carga Joaco en GitHub. Nunca van por el chat.
+- **Proyecto de Supabase:** `grupo-lf-staging`, Reference ID `tdbciscmemfdwjttgurj`. **Falta que Joaco confirme** que está en la organización de Soy.
+- **Decisiones de Joaco:**
+  - **2026-10-26:**
+    - personas de prueba con un script propio de staging;
+    - sin servicio de correo propio por ahora;
+    - la app la publica GitHub Actions en Vercel.
+  - **2026-10-27:**
+    - CLI de Vercel como devDependency exacta (63.1.2);
+    - dos contraseñas de demo;
+    - el token personal de Supabase se acepta hasta antes de producción.
+- **Hecho y probado en local:**
+  - `[remotes.staging]` en `config.toml` (la CLI lo acepta);
+  - el flujo `deploy-staging.yml`, en dos jobs, con las claves paso por paso;
+  - `supabase/staging/demo-data.sql`: carga 12 personas, una segunda corrida no cambia nada, aborta con otros datos y sin contraseña no arranca. Con las contraseñas: el cocinero entra solo con la suya y Dirección con la de los roles con doble verificación. La auditoría guarda el número de corrida.
+- **Pruebas (2026-10-27):**
+  - formato, lint y tipos ✅;
+  - Vitest 115 de 115 ✅;
+  - pgTAP 785 de 785 ✅;
+  - Playwright 60 de 60 ✅.
+- **Revisiones:**
+  - **`security-auditor`:**
+    - primera revisión: NO APTO, con 1 grave y 5 medios;
+    - segunda revisión: **apto**, con un medio nuevo (N1, el token de Vercel durante el armado de la app);
+    - N1 y los menores fáciles están corregidos; lo que queda está aceptado con motivo en el ADR.
+  - **`db-reviewer`:** sin graves; sus medios están corregidos.
+- **`npm audit`:**
+  - sobre lo que se publica (`--omit=dev`): 0 vulnerabilidades;
+  - completo: unas 30 altas y 1 crítica, todas de la CLI de Vercel; aceptado en el ADR.
+- **Bloqueantes para producción (ADR-0018):**
+  - mover staging a una organización de Supabase y a un equipo de Vercel aparte, con tokens de cuentas técnicas;
+  - fijar las acciones de GitHub por SHA;
+  - revisar `npm ci --ignore-scripts`.
+- **A verificar en la primera corrida de staging:**
+  - que `db push` funcione sobre Supabase alojado;
+  - que `config push` acepte `email_sent = 2`;
+  - que `vercel build` funcione sin token;
+  - el límite por IP del ingreso, mandando `x-client-ip` y `x-forwarded-for` falsos.
+- **Pendientes de Joaco:**
+  - abrir el PR de `chore/staging`;
+  - el PR `docs/estado-fase-1-en-main` sigue sin abrir (es solo documentación; se puede cerrar sin fusionar, porque este estado lo reemplaza);
+  - seguir la guía: Vercel a nombre de Soy y los secretos en el ambiente `staging` de GitHub.
 
 ## Las 6 preguntas pendientes (terminadas en local, 2026-10-23)
 
