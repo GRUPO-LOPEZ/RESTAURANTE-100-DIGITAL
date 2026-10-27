@@ -1,25 +1,36 @@
 -- Personas y datos de prueba para el ambiente de prueba (staging), ADR-0018. SOLO DATOS FICTICIOS.
--- Lo corre el flujo "Publicar en staging" de GitHub Actions, a pedido, con psql:
---   psql "$STAGING_DB_URL" -v demo_password="$STAGING_DEMO_PASSWORD" -f supabase/staging/demo-data.sql
+-- Lo corre el flujo "Publicar en staging" de GitHub Actions, a pedido, con psql 15 o más:
+--   psql -X --no-password -f supabase/staging/demo-data.sql "$STAGING_DB_URL"
+-- con PGPASSWORD, DEMO_ADMIN_PASSWORD y DEMO_PASSWORD como variables de entorno (el flujo ya
+-- validó largo, letras, números y que sean distintas).
 --
 -- Es el mismo grupo ficticio que supabase/seed.sql (ids fijos, un usuario por rol), sin lo que
 -- solo sirve para las pruebas automáticas: cuentas e2e-*, secreto TOTP público e ingresos inventados.
--- Quien tiene un rol con doble verificación la activa con su celular la primera vez que entra.
--- La contraseña llega desde un secreto de GitHub: nunca se escribe en este archivo.
+-- Dos contraseñas: DEMO_ADMIN_PASSWORD para los roles con doble verificación (solo Joaco y Soy, que
+-- la activan con su celular antes de repartir nada) y DEMO_PASSWORD para el resto.
+-- Las contraseñas nunca se escriben en este archivo.
 --
 -- Se puede correr más de una vez: si el grupo de prueba ya está, no cambia nada.
 -- Nunca corre sobre una base con otros datos (por ejemplo, producción).
 
 \set ON_ERROR_STOP on
 
-\if :{?demo_password}
+\getenv demo_admin_password DEMO_ADMIN_PASSWORD
+\getenv demo_password DEMO_PASSWORD
+\getenv run_id GITHUB_RUN_ID
+\if :{?run_id}
+  \set change_reason 'Datos de prueba de staging (corrida ' :run_id ' de GitHub Actions)'
 \else
-  do $$ begin raise exception 'Falta la contraseña de las personas de prueba (psql -v demo_password=...).'; end $$;
+  \set change_reason 'Datos de prueba de staging (a mano)'
 \endif
 
-select length(:'demo_password') < 12 as demo_password_too_short \gset
-\if :demo_password_too_short
-  do $$ begin raise exception 'La contraseña de las personas de prueba tiene que tener al menos 12 caracteres.'; end $$;
+\if :{?demo_admin_password}
+\else
+  do $$ begin raise exception 'Falta DEMO_ADMIN_PASSWORD (contraseña de los roles con doble verificación).'; end $$;
+\endif
+\if :{?demo_password}
+\else
+  do $$ begin raise exception 'Falta DEMO_PASSWORD (contraseña del resto de las personas de prueba).'; end $$;
 \endif
 
 select exists (select 1 from org.groups where id = '00000000-0000-4000-8000-000000000001') as demo_loaded \gset
@@ -39,11 +50,14 @@ begin
 end
 $$;
 
--- La única sentencia que lleva la contraseña: de acá en adelante solo se usa su hash.
-create temporary table demo_secret on commit drop as
-  select extensions.crypt(:'demo_password', extensions.gen_salt('bf')) as password_hash;
+-- La única sentencia que lleva las contraseñas, y es una consulta (no DDL, que Postgres puede
+-- registrar). De acá en adelante solo se usan los hash, con el costo de Supabase Auth (10).
+select extensions.crypt(:'demo_admin_password', extensions.gen_salt('bf', 10)) as demo_admin_hash,
+       extensions.crypt(:'demo_password', extensions.gen_salt('bf', 10)) as demo_hash \gset
+\unset demo_admin_password
+\unset demo_password
 
-select core.set_change_context('Datos de prueba de staging', 'seed');
+select core.set_change_context(:'change_reason', 'seed');
 
 -- Razón social y CUIT ficticios (el CUIT no es válido a propósito).
 insert into org.groups (id, name, legal_name, tax_id) values
@@ -102,12 +116,12 @@ insert into auth.users (
 )
 select distinct on (p.id)
   '00000000-0000-0000-0000-000000000000', p.id, 'authenticated', 'authenticated', p.email,
-  s.password_hash, now(),
+  case when r.requires_mfa then :'demo_admin_hash' else :'demo_hash' end, now(),
   '{"provider": "email", "providers": ["email"]}',
   jsonb_build_object('first_name', p.first_name, 'last_name', p.last_name),
   now(), now(), '', '', '', ''
 from demo_people p
-cross join demo_secret s;
+join core.roles r on r.code = p.role_code;
 
 insert into auth.identities (id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at)
 select distinct on (p.id)

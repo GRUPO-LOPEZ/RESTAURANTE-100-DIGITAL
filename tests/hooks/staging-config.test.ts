@@ -1,5 +1,6 @@
 // Vigila la publicación en staging (ADR-0018): solo después de las pruebas, sin los datos de
-// prueba locales, sin claves en el repositorio y con los límites normales de Supabase.
+// prueba locales, sin claves en el repositorio ni al alcance de código de terceros, y con los
+// límites normales de Supabase.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -35,6 +36,7 @@ const withoutComments = (text: string, marker: string) =>
 const config = read("supabase/config.toml");
 const workflow = withoutComments(read(".github/workflows/deploy-staging.yml"), "#");
 const demoData = withoutComments(read("supabase/staging/demo-data.sql"), "--");
+const [baseJob = "", appJob = ""] = workflow.split(/^ {2}app:$/m);
 
 describe("Staging: configuración de Supabase", () => {
   it("[remotes.staging] apunta a un proyecto y no carga el seed local", () => {
@@ -53,38 +55,77 @@ describe("Staging: configuración de Supabase", () => {
     expect(auth.site_url).toMatch(/^https:\/\//);
     expect(auth.additional_redirect_urls).not.toMatch(/http:\/\//);
   });
+
+  it("hereda el registro cerrado y sin ingresos anónimos", () => {
+    const auth = tomlSection(config, "auth");
+    expect(auth.enable_signup).toBe("false");
+    expect(auth.enable_anonymous_sign_ins).toBe("false");
+    const staging = tomlSection(config, "remotes.staging.auth");
+    expect(staging.enable_signup).toBeUndefined();
+    expect(staging.enable_anonymous_sign_ins).toBeUndefined();
+  });
 });
 
-describe("Staging: flujo de publicación", () => {
-  it("publica solo después de que 'Pruebas' termina en verde sobre main", () => {
+describe("Staging: cuándo se publica", () => {
+  it("solo después de que 'Pruebas' termina en verde por un push a main", () => {
     expect(read(".github/workflows/ci.yml")).toMatch(/^name: Pruebas$/m);
     expect(workflow).toMatch(/workflows: \[Pruebas\]/);
-    expect(workflow).toContain("github.event.workflow_run.conclusion == 'success'");
     expect(workflow).toContain("branches: [main]");
+    expect(baseJob).toContain("github.event.workflow_run.conclusion == 'success'");
+    expect(baseJob).toContain("github.event.workflow_run.event == 'push'");
   });
 
-  it("verifica que el destino sea el proyecto de [remotes.staging]", () => {
-    expect(workflow).toMatch(/\[remotes\\\.staging\\\]/);
+  it("a mano, solo desde main y con 'Pruebas' en verde para ese commit", () => {
+    expect(baseJob).toContain("github.ref == 'refs/heads/main'");
+    expect(baseJob).toMatch(
+      /actions\/workflows\/ci\.yml\/runs\?head_sha=\$SHA&event=push&status=success/,
+    );
   });
 
+  it("verifica que la base y la app de destino sean las de staging", () => {
+    expect(baseJob).toMatch(/\[remotes\\\.staging\\\]/);
+    expect(baseJob).toContain('"postgresql://postgres.$expected@"*)');
+    expect(appJob).toContain("NEXT_PUBLIC_SUPABASE_URL");
+    expect(appJob).toContain("vercel inspect grupo-lf-staging.vercel.app");
+  });
+
+  it("la app se publica recién después de la base, las funciones y la configuración", () => {
+    expect(appJob).toMatch(/^ {4}needs: base$/m);
+    for (const step of ["db push", "functions deploy", "config push"]) {
+      expect(baseJob).toContain(step);
+    }
+    expect(baseJob).not.toContain("vercel");
+  });
+});
+
+describe("Staging: claves y código de terceros", () => {
   it("nunca carga el seed local ni usa la clave service_role", () => {
     expect(workflow).not.toContain("--include-seed");
     expect(workflow).not.toContain("seed.sql");
-    expect(workflow).not.toMatch(/service_role/i);
+    expect(workflow).not.toMatch(/secrets\.\w*service_role/i);
   });
 
-  it("publica la app recién después de la base, las funciones y la configuración", () => {
-    const app = workflow.indexOf("vercel@");
-    for (const step of ["db push", "functions deploy", "config push"]) {
-      expect(workflow.indexOf(step)).toBeGreaterThan(-1);
-      expect(workflow.indexOf(step)).toBeLessThan(app);
+  it("los secretos de Supabase se declaran paso por paso, nunca para todo el job", () => {
+    for (const line of baseJob.split("\n").filter((l) => l.includes("secrets."))) {
+      expect(line).toMatch(/^ {10}\w+: \$\{\{ secrets\.\w+ \}\}$/);
     }
+    expect(baseJob).toContain("${{ secrets.SUPABASE_ACCESS_TOKEN }}");
   });
 
-  it("las claves salen de los secretos de GitHub", () => {
-    for (const name of ["SUPABASE_ACCESS_TOKEN", "SUPABASE_DB_PASSWORD", "VERCEL_TOKEN"]) {
-      expect(workflow).toContain(`\${{ secrets.${name} }}`);
-    }
+  it("la app no ve ninguna clave de Supabase", () => {
+    expect(appJob).not.toMatch(/SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|STAGING_DB_URL|DEMO_/);
+    expect(appJob).toContain("${{ secrets.VERCEL_TOKEN }}");
+  });
+
+  it("la CLI de Vercel sale del package-lock, con versión exacta", () => {
+    const pkg = JSON.parse(read("package.json")) as { devDependencies?: Record<string, string> };
+    expect(pkg.devDependencies?.vercel).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(workflow).not.toMatch(/vercel@/);
+    expect(workflow).not.toContain("--token");
+  });
+
+  it("ninguna contraseña viaja en la línea de comando de psql", () => {
+    expect(workflow).not.toMatch(/psql[^\n]*-v /);
   });
 });
 
@@ -96,11 +137,19 @@ describe("Staging: datos de prueba", () => {
     expect(demoData).not.toContain("e2e-");
   });
 
-  it("la contraseña llega por variable y se usa en una sola sentencia", () => {
-    const uses = demoData.match(/:'demo_password'/g) ?? [];
-    // Una para validar el largo y otra para calcular el hash.
-    expect(uses).toHaveLength(2);
-    expect(demoData).toMatch(/extensions\.crypt\(:'demo_password'/);
+  it("las contraseñas llegan por variables de entorno y se usan en una sola sentencia", () => {
+    expect(demoData).toContain("\\getenv demo_admin_password DEMO_ADMIN_PASSWORD");
+    expect(demoData).toContain("\\getenv demo_password DEMO_PASSWORD");
+    for (const name of ["demo_admin_password", "demo_password"]) {
+      expect(demoData.match(new RegExp(`:'${name}'`, "g")) ?? []).toHaveLength(1);
+      expect(demoData).toContain(`extensions.crypt(:'${name}', extensions.gen_salt('bf', 10))`);
+    }
+  });
+
+  it("los roles con doble verificación usan su propia contraseña", () => {
+    expect(demoData).toContain(
+      "case when r.requires_mfa then :'demo_admin_hash' else :'demo_hash' end",
+    );
   });
 
   it("aborta sobre una base con otros datos", () => {
