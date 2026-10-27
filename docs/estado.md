@@ -1,8 +1,32 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-27. La Fase 1 está en `main` (PR #10). El ambiente de prueba (staging) está listo para PR en la rama `chore/staging`, probado en local; falta que Joaco cargue las cuentas y secretos y que corra la primera publicación._
+_Última actualización: 2026-10-27. La Fase 1 está en `main` (PR #10). El flujo de staging está en `main` (PR #11 y su corrección, PR #12), pero **todavía no publicó nunca**: está bloqueado porque los secretos no le llegan (ver abajo)._
 
-## Al retomar (2026-10-27): staging listo para PR
+## Al retomar: staging bloqueado por el ambiente de GitHub
+
+- **Qué pasa:**
+  - "Publicar en staging" frena en el primer control: "STAGING_PROJECT_REF no coincide con [remotes.staging]". Pasó dos veces, la segunda después de que Joaco volvió a cargar el secreto.
+  - El código está bien: el mismo `awk`, corrido sobre `main`, da exactamente `tdbciscmemfdwjttgurj`. Entonces, el secreto le llega al flujo vacío o distinto.
+  - El control funcionó como se esperaba: no se tocó nada en Supabase ni en Vercel.
+- **Causa probable:**
+  - Joaco abre `https://github.com/GRUPO-LOPEZ/RESTAURANTE-100-DIGITAL/settings/environments` y le da "página no encontrada". Eso pasa por una de dos razones:
+    1. **Joaco no es Admin del repositorio** (sin la pestaña Settings, GitHub responde 404). Soy le da el rol Admin en **Settings → Collaborators and teams**, o carga él los secretos.
+    2. **El plan gratis de GitHub no tiene ambientes en repositorios privados** (hacen falta Pro, Team o Enterprise). Si es esto, decide Soy:
+       - **A (recomendada):** pasar la organización a GitHub Team. Producción va a necesitar ambientes con aprobación de todos modos.
+       - **B:** usar secretos del repositorio. Eso afloja la seguridad, porque cualquier rama las alcanza, y obliga a cambiar el flujo y el ADR-0018.
+  - **Falta que Joaco diga** si ve la pestaña Settings del repositorio, para saber cuál de las dos es.
+- **Cuando se destrabe:**
+  - crear el ambiente `staging` (con la regla de rama `main`) y sus 9 secretos (`docs/guias/staging.md`, sección 3);
+  - correr **Actions → Publicar en staging → Run workflow** con "Cargar las personas y datos de prueba";
+  - activar la doble verificación en las 7 cuentas con MFA.
+  - Si el error persiste con el ambiente bien armado, agregar al control un mensaje que diga si el secreto llega vacío o con otro largo, sin mostrar el valor.
+- **Ojo:**
+  - `https://restaurante-100-digital.vercel.app/ingresar` ya muestra la pantalla de ingreso, pero **no la publicó nuestro flujo**. Es casi seguro de cuando el proyecto de Vercel estuvo conectado al repositorio, antes de desconectarlo.
+  - No sirve como prueba de que staging funciona.
+- **PR #12** corrigió un espacio que faltaba en los 4 comandos de la CLI de Supabase del flujo (`supabaselink`). La prueba de Vitest ahora exige el comando completo.
+- **Sin instalar en esta compu:** GitHub CLI (`gh`). Por eso Claude Code no puede ver las corridas de Actions del repositorio privado. Para instalarlo: `winget install GitHub.cli` y `gh auth login`.
+
+## Antes (2026-10-27): staging listo para PR
 
 Plan aprobado: `C:\Users\julym\.claude\plans\silly-cuddling-ocean.md`. Decisión: ADR-0018. Guía para Joaco: `docs/guias/staging.md`.
 
@@ -44,7 +68,7 @@ Plan aprobado: `C:\Users\julym\.claude\plans\silly-cuddling-ocean.md`. Decisión
   - que `vercel build` funcione sin token;
   - el límite por IP del ingreso, mandando `x-client-ip` y `x-forwarded-for` falsos.
 - **Pendientes de Joaco:**
-  - abrir el PR de `chore/staging`;
+  - ~~abrir el PR de `chore/staging`~~ (fusionado, PR #11);
   - el PR `docs/estado-fase-1-en-main` sigue sin abrir (es solo documentación; se puede cerrar sin fusionar, porque este estado lo reemplaza);
   - seguir la guía: Vercel a nombre de Soy y los secretos en el ambiente `staging` de GitHub.
 
