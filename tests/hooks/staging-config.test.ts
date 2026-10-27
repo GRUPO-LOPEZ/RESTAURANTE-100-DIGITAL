@@ -84,9 +84,21 @@ describe("Staging: cuándo se publica", () => {
 
   it("verifica que la base y la app de destino sean las de staging", () => {
     expect(baseJob).toMatch(/\[remotes\\\.staging\\\]/);
-    expect(baseJob).toContain('"postgresql://postgres.$expected@"*)');
+    expect(baseJob).toContain('[[ "$STAGING_DB_URL" =~ $pooler ]]');
     expect(appJob).toContain("NEXT_PUBLIC_SUPABASE_URL");
     expect(appJob).toContain("vercel inspect grupo-lf-staging.vercel.app");
+  });
+
+  it("acepta solo la conexión del pooler de staging, sin contraseña ni parámetros", () => {
+    const ref = tomlSection(config, "remotes.staging").project_id ?? "";
+    const [, pattern = ""] = /pooler="(.+)"$/m.exec(baseJob) ?? [];
+    const pooler = new RegExp(pattern.replace("${expected}", ref));
+    const host = "aws-1-sa-east-1.pooler.supabase.com:5432/postgres";
+    expect(pooler.test(`postgresql://postgres.${ref}@${host}`)).toBe(true);
+    expect(pooler.test(`postgresql://postgres.${ref}:clave@${host}`)).toBe(false);
+    expect(pooler.test(`postgresql://postgres.${ref}@${host}?host=otro`)).toBe(false);
+    expect(pooler.test(`postgresql://postgres.otroproyectoxxxxxxx@${host}`)).toBe(false);
+    expect(pooler.test(`postgresql://postgres@db.${ref}.supabase.co:5432/postgres`)).toBe(false);
   });
 
   it("la app se publica recién después de la base, las funciones y la configuración", () => {
@@ -105,23 +117,38 @@ describe("Staging: claves y código de terceros", () => {
     expect(workflow).not.toMatch(/secrets\.\w*service_role/i);
   });
 
-  it("los secretos de Supabase se declaran paso por paso, nunca para todo el job", () => {
-    for (const line of baseJob.split("\n").filter((l) => l.includes("secrets."))) {
-      expect(line).toMatch(/^ {10}\w+: \$\{\{ secrets\.\w+ \}\}$/);
+  it("las claves se declaran paso por paso, nunca para todo el job", () => {
+    for (const line of workflow.split("\n").filter((l) => l.includes("secrets."))) {
+      const jobLevelId = /^ {6}VERCEL_(ORG|PROJECT)_ID: \$\{\{ secrets\.VERCEL_\1_ID \}\}$/;
+      if (!jobLevelId.test(line)) expect(line).toMatch(/^ {10}\w+: \$\{\{ secrets\.\w+ \}\}$/);
     }
     expect(baseJob).toContain("${{ secrets.SUPABASE_ACCESS_TOKEN }}");
+    expect(appJob).toContain("${{ secrets.VERCEL_TOKEN }}");
   });
 
   it("la app no ve ninguna clave de Supabase", () => {
     expect(appJob).not.toMatch(/SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|STAGING_DB_URL|DEMO_/);
-    expect(appJob).toContain("${{ secrets.VERCEL_TOKEN }}");
   });
 
-  it("la CLI de Vercel sale del package-lock, con versión exacta", () => {
+  it("instalar y armar la app no ven el token de Vercel", () => {
+    const step = (name: string) =>
+      appJob.slice(appJob.indexOf(`name: ${name}`)).split("- name:")[0];
+    expect(step("Instalar dependencias")).not.toContain("VERCEL_TOKEN");
+    expect(step("Armar la app")).not.toContain("VERCEL_TOKEN");
+  });
+
+  it("las CLI salen del package-lock: versión exacta y nunca se bajan en el momento", () => {
     const pkg = JSON.parse(read("package.json")) as { devDependencies?: Record<string, string> };
     expect(pkg.devDependencies?.vercel).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(pkg.devDependencies?.supabase).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(workflow).not.toMatch(/npx (?!--no-install )/);
     expect(workflow).not.toMatch(/vercel@/);
     expect(workflow).not.toContain("--token");
+  });
+
+  it("solo el job de la base puede leer las corridas de 'Pruebas'", () => {
+    expect(workflow.match(/actions: read/g) ?? []).toHaveLength(1);
+    expect(baseJob).toContain("actions: read");
   });
 
   it("ninguna contraseña viaja en la línea de comando de psql", () => {

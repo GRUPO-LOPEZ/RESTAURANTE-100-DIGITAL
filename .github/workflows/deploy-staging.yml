@@ -20,7 +20,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 # Una sola publicación a la vez, y nunca se corta una a la mitad.
 concurrency:
@@ -38,6 +37,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: staging
+    # Leer las corridas de "Pruebas" (verificación de la corrida manual).
+    permissions:
+      contents: read
+      actions: read
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
       project_ref: ${{ steps.target.outputs.project_ref }}
@@ -58,7 +61,7 @@ jobs:
           SHA: ${{ steps.commit.outputs.sha }}
         run: |
           passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&event=push&status=success" --jq '.total_count')
-          if [ "$passed" -lt 1 ]; then
+          if ! [ "${passed:-0}" -ge 1 ] 2>/dev/null; then
             echo "::error::\"Pruebas\" no terminó en verde para $SHA en main. No se publica."
             exit 1
           fi
@@ -76,14 +79,13 @@ jobs:
             echo "::error::STAGING_PROJECT_REF no coincide con [remotes.staging] de supabase/config.toml. No se publica."
             exit 1
           fi
-          # La conexión del pooler entra con el usuario postgres.<ref> y sin contraseña escrita.
-          case "$STAGING_DB_URL" in
-            "postgresql://postgres.$expected@"*) ;;
-            *)
-              echo "::error::STAGING_DB_URL no es la del pooler de staging (postgresql://postgres.$expected@...) o trae la contraseña. No se publica."
-              exit 1
-              ;;
-          esac
+          # La conexión es la del pooler de Supabase, con el usuario postgres.<ref>, sin contraseña
+          # escrita y sin parámetros que cambien el usuario o el servidor.
+          pooler="^postgresql://postgres\.${expected}@aws-[0-9]+-[a-z0-9-]+\.pooler\.supabase\.com:(5432|6543)/postgres$"
+          if ! [[ "$STAGING_DB_URL" =~ $pooler ]]; then
+            echo "::error::STAGING_DB_URL no es la del pooler de staging (postgresql://postgres.$expected@aws-…pooler.supabase.com:5432/postgres, sin contraseña). No se publica."
+            exit 1
+          fi
           echo "project_ref=$expected" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
@@ -101,23 +103,23 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: npx supabase link --project-ref "${{ steps.target.outputs.project_ref }}"
+        run: npx --no-install supabaselink --project-ref "${{ steps.target.outputs.project_ref }}"
 
       - name: Aplicar migraciones nuevas
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: npx supabase db push --yes
+        run: npx --no-install supabasedb push --yes
 
       - name: Publicar Edge Functions
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: npx supabase functions deploy auth-login invite-user
+        run: npx --no-install supabasefunctions deploy auth-login invite-user
 
       - name: Subir la configuración de Auth y la API
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: npx supabase config push --yes
+        run: npx --no-install supabaseconfig push --yes
 
       # Las contraseñas se validan acá, antes de llegar a la base, y psql las lee de variables
       # de entorno (\getenv), nunca de la línea de comando.
@@ -126,13 +128,14 @@ jobs:
         env:
           STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
           DEMO_ADMIN_PASSWORD: ${{ secrets.STAGING_DEMO_ADMIN_PASSWORD }}
           DEMO_PASSWORD: ${{ secrets.STAGING_DEMO_PASSWORD }}
         run: |
           for name in DEMO_ADMIN_PASSWORD DEMO_PASSWORD; do
             value="${!name}"
-            if [ ${#value} -lt 12 ] || ! [[ "$value" =~ [A-Za-z] ]] || ! [[ "$value" =~ [0-9] ]]; then
-              echo "::error::$name tiene que tener al menos 12 caracteres, con letras y números."
+            if [ ${#value} -lt 16 ] || ! [[ "$value" =~ [A-Za-z] ]] || ! [[ "$value" =~ [0-9] ]]; then
+              echo "::error::$name tiene que tener al menos 16 caracteres, con letras y números."
               exit 1
             fi
           done
@@ -150,8 +153,9 @@ jobs:
     environment:
       name: staging
       url: https://grupo-lf-staging.vercel.app
+    # Identificadores, no credenciales. El token se declara solo en los pasos que hablan con
+    # Vercel: la instalación y el armado de la app (que corre código de dependencias) no lo ven.
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
@@ -166,33 +170,37 @@ jobs:
 
       # La CLI de Vercel sale del package-lock (versión fija, con verificación de integridad).
       - name: Instalar dependencias
-        env:
-          VERCEL_TOKEN: ""
         run: npm ci
 
-      # La app se arma con las variables públicas del proyecto de Vercel. Se comprueba que
-      # apunten a la base de staging y que no haya ninguna clave de servidor.
+      # La app se arma con las variables del proyecto de Vercel. Se comprueba que apunten a la
+      # base de staging y que no haya nada más que las públicas de Supabase y las del sistema.
       - name: Traer la configuración del proyecto de Vercel
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           PROJECT_REF: ${{ needs.base.outputs.project_ref }}
         run: |
-          npx vercel pull --yes --environment=production
+          npx --no-install vercel pull --yes --environment=production
           vars=.vercel/.env.production.local
           if ! grep -Eq "^NEXT_PUBLIC_SUPABASE_URL=\"?https://$PROJECT_REF\.supabase\.co/?\"?$" "$vars"; then
             echo "::error::El proyecto de Vercel no apunta a la base de staging. No se publica."
             exit 1
           fi
-          if grep -Eiq "service_role|SECRET_KEY|sb_secret_" "$vars"; then
-            echo "::error::El proyecto de Vercel tiene una clave de servidor de Supabase. Sacala y volvé a correr."
+          extra=$(grep -Ev '^(#|$|NEXT_PUBLIC_SUPABASE_URL=|NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=|VERCEL_[A-Z0-9_]*=|TURBO_[A-Z0-9_]*=|NX_DAEMON=)' "$vars" | cut -d= -f1 || true)
+          if [ -n "$extra" ]; then
+            echo "::error::El proyecto de Vercel tiene variables de más (podrían ser claves de servidor): $extra. Sacalas y volvé a correr."
             exit 1
           fi
 
       - name: Armar la app
-        run: npx vercel build --prod
+        run: npx --no-install vercel build --prod
 
       - name: Publicar la app
-        run: npx vercel deploy --prebuilt --prod
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --no-install vercel deploy --prebuilt --prod
 
       # La dirección que usa Auth para los enlaces tiene que ser de este equipo de Vercel.
       - name: Verificar la dirección de staging
-        run: npx vercel inspect grupo-lf-staging.vercel.app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --no-install vercel inspect grupo-lf-staging.vercel.app

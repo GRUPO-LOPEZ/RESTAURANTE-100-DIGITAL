@@ -1,72 +1,52 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-26. La Fase 1 está en `main` (PR #10). En curso: el ambiente de prueba (staging), rama `chore/staging`, sin terminar._
+_Última actualización: 2026-10-27. La Fase 1 está en `main` (PR #10). El ambiente de prueba (staging) está listo para PR en la rama `chore/staging`, probado en local; falta que Joaco cargue las cuentas y secretos y que corra la primera publicación._
 
-## Al retomar (2026-10-26): staging en curso
+## Al retomar (2026-10-27): staging listo para PR
 
 Plan aprobado: `C:\Users\julym\.claude\plans\silly-cuddling-ocean.md`. Decisión: ADR-0018. Guía para Joaco: `docs/guias/staging.md`.
 
-- **Proyecto de Supabase:** `grupo-lf-staging`, Reference ID `tdbciscmemfdwjttgurj`.
-  - **Falta que Joaco confirme** que está en la organización de Soy.
+- **Proyecto de Supabase:** `grupo-lf-staging`, Reference ID `tdbciscmemfdwjttgurj`. **Falta que Joaco confirme** que está en la organización de Soy.
 - **Decisiones de Joaco:**
-  - personas de prueba con un script propio de staging;
-  - sin servicio de correo propio por ahora;
-  - la app la publica GitHub Actions en Vercel, después de las pruebas y de la base.
-- **Escrito (commit de trabajo en curso, no listo para PR):**
-  - bloque `[remotes.staging]` en `supabase/config.toml`;
-  - `supabase/staging/demo-data.sql`;
-  - `.github/workflows/deploy-staging.yml`;
-  - `tests/hooks/staging-config.test.ts`;
-  - ADR-0018 y la guía.
-- **Pasó:** formato, lint, tipos y Vitest (106 de 106).
-- **No probado todavía (necesita Docker prendido):**
-  - que la CLI acepte `[remotes.staging]` (`npx supabase start`);
-  - el script de datos en local: carga, no duplica y aborta con otros datos;
-  - `npm run test` completo.
-- **Pendiente:** el PR `docs/estado-fase-1-en-main` sigue sin abrir.
-
-### Revisión de `security-auditor` (2026-10-26): NO APTO, hay que corregir antes del PR
-
-- **G1 (grave):** los secretos de Supabase están en el `env:` de todo el job y los ven `npm ci` y la CLI de Vercel bajada con `npx`.
-  - Declararlos solo en los pasos `supabase`.
-  - `npm ci --ignore-scripts`, o un paso sin secretos.
-  - La CLI de Vercel como devDependency fija en el lockfile, o en un job aparte sin secretos de Supabase.
-  - El `SUPABASE_ACCESS_TOKEN` personal sirve para todas las organizaciones de esa cuenta: antes de producción, usar una cuenta técnica solo de staging. Documentarlo en la guía.
-- **M1:** verificar que `STAGING_DB_URL` contenga el ref de staging (usuario `postgres.<ref>`) y que `VERCEL_PROJECT_ID` sea el de staging (escrito en el repo y comparado).
-- **M2:** la contraseña en texto llega al SQL y puede quedar en los logs de Postgres.
-  - Calcular el hash bcrypt (costo ≥ 10) en el runner y pasar solo `demo_password_hash`.
-  - Validar largo y letras + dígitos en bash.
-  - Ajustar el comentario y la prueba.
-- **M3:** todas las cuentas comparten contraseña y la doble verificación la activa el primero que entra.
-  - Usar una contraseña aparte para niveles 1 a 4 y Controller, o no crear el superadmin.
-  - Documentar que esas credenciales no se comparten.
-- **M4:** la corrida manual no comprueba que "Pruebas" haya pasado sobre ese commit.
-  - Comprobarlo con `gh api`, o que la corrida manual solo cargue datos y no publique.
-- **M5:** `_shared/http.ts` toma el primer valor de `x-forwarded-for`, así que el límite por IP se puede esquivar. Probarlo en staging y usar el encabezado de la plataforma o el último valor.
-- **Menores:**
-  - m1: secretos en la línea de comando; usar `PGPASSWORD` y `VERCEL_TOKEN` por variable de entorno.
-  - m2: `gen_salt('bf', 10)`.
-  - m3: acciones de GitHub fijadas por SHA.
-  - m4: documentar cómo desbloquear una cuenta demo.
-  - m5: verificar el alias de Vercel después de publicar.
-  - m6: fijar en `[remotes.staging]` lo que se hereda (signup, anónimos, restricciones de red) y probarlo.
-  - m7: que la prueba vigile `event == 'push'`, `refs/heads/main` y que el paso de Vercel no tenga secretos de Supabase.
-
-### Revisión de `db-reviewer` (2026-10-26): sin graves, solo leyendo el código (sin Docker)
-
-- **Medio 1:** la contraseña aparece en dos sentencias, la del largo y la del hash, y puede ir a los logs de Postgres si falla. Coincide con M2 de seguridad.
-- **Medio 2:** en vez de `-v demo_password=...`, leerla con `\getenv demo_password STAGING_DEMO_PASSWORD` (psql 15 o más). Coincide con m1.
-- **Medio 3:** probarlo en local (carga, segunda corrida y otra base) y en staging:
-  - que el rol `postgres` pueda insertar en `auth.*`;
-  - que se pueda ingresar con correos `@ejemplo.test`, con y sin doble verificación.
-- **Menores:**
-  - costo `bf` 10;
-  - validar letras y dígitos;
-  - que el motivo de auditoría tenga el número de corrida de GitHub;
-  - que el comentario de uso sea igual al comando del flujo;
-  - documentar cómo se limpia un factor de doble verificación;
-  - `email_sent = 2` podría hacer fallar `config push`: si falla, sacar esa línea.
-- **Bien por lectura:** el mismo orden y los mismos triggers que el seed, una sola transacción, las guardas correctas y la auditoría con motivo y origen `seed`.
+  - **2026-10-26:**
+    - personas de prueba con un script propio de staging;
+    - sin servicio de correo propio por ahora;
+    - la app la publica GitHub Actions en Vercel.
+  - **2026-10-27:**
+    - CLI de Vercel como devDependency exacta (63.1.2);
+    - dos contraseñas de demo;
+    - el token personal de Supabase se acepta hasta antes de producción.
+- **Hecho y probado en local:**
+  - `[remotes.staging]` en `config.toml` (la CLI lo acepta);
+  - el flujo `deploy-staging.yml`, en dos jobs, con las claves paso por paso;
+  - `supabase/staging/demo-data.sql`: carga 12 personas, una segunda corrida no cambia nada, aborta con otros datos y sin contraseña no arranca. Con las contraseñas: el cocinero entra solo con la suya y Dirección con la de los roles con doble verificación. La auditoría guarda el número de corrida.
+- **Pruebas (2026-10-27):**
+  - formato, lint y tipos ✅;
+  - Vitest 115 de 115 ✅;
+  - pgTAP 785 de 785 ✅;
+  - Playwright 60 de 60 ✅.
+- **Revisiones:**
+  - **`security-auditor`:**
+    - primera revisión: NO APTO, con 1 grave y 5 medios;
+    - segunda revisión: **apto**, con un medio nuevo (N1, el token de Vercel durante el armado de la app);
+    - N1 y los menores fáciles están corregidos; lo que queda está aceptado con motivo en el ADR.
+  - **`db-reviewer`:** sin graves; sus medios están corregidos.
+- **`npm audit`:**
+  - sobre lo que se publica (`--omit=dev`): 0 vulnerabilidades;
+  - completo: unas 30 altas y 1 crítica, todas de la CLI de Vercel; aceptado en el ADR.
+- **Bloqueantes para producción (ADR-0018):**
+  - mover staging a una organización de Supabase y a un equipo de Vercel aparte, con tokens de cuentas técnicas;
+  - fijar las acciones de GitHub por SHA;
+  - revisar `npm ci --ignore-scripts`.
+- **A verificar en la primera corrida de staging:**
+  - que `db push` funcione sobre Supabase alojado;
+  - que `config push` acepte `email_sent = 2`;
+  - que `vercel build` funcione sin token;
+  - el límite por IP del ingreso, mandando `x-client-ip` y `x-forwarded-for` falsos.
+- **Pendientes de Joaco:**
+  - abrir el PR de `chore/staging`;
+  - el PR `docs/estado-fase-1-en-main` sigue sin abrir (es solo documentación; se puede cerrar sin fusionar, porque este estado lo reemplaza);
+  - seguir la guía: Vercel a nombre de Soy y los secretos en el ambiente `staging` de GitHub.
 
 ## Las 6 preguntas pendientes (terminadas en local, 2026-10-23)
 

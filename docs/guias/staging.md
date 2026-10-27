@@ -36,6 +36,7 @@ Para Joaco. Se hace una sola vez. Decisión técnica: ADR-0018.
 5. **Token:**
    - En **Account Settings → Tokens**, creá un token con alcance solo en el equipo de Soy.
    - Ponele de nombre `github-actions-staging`.
+   - **Antes de crear producción**, el proyecto de producción va en un equipo de Vercel distinto, para que este token no lo alcance (ADR-0018).
 6. **Los dos identificadores:**
    - **Team ID:** en **Team Settings → General**.
    - **Project ID:** en **Project Settings → General**.

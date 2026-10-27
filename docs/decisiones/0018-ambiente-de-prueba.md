@@ -38,7 +38,7 @@ Joaco creó el proyecto de Supabase `grupo-lf-staging` (`tdbciscmemfdwjttgurj`, 
   - **dos contraseñas** (Joaco, 2026-10-27):
     - `STAGING_DEMO_ADMIN_PASSWORD` para los roles con doble verificación. La tienen solo Joaco y Soy, que activan la doble verificación con su celular antes de repartir nada;
     - `STAGING_DEMO_PASSWORD` para el resto;
-  - psql las lee de variables de entorno (`\getenv`), nunca de la línea de comando. El flujo valida largo, letras, números y que sean distintas antes de llegar a la base;
+  - psql las lee de variables de entorno (`\getenv`), nunca de la línea de comando. Antes de llegar a la base, el flujo valida que tengan 16 caracteres o más, letras y números, y que sean distintas;
   - una sola sentencia las usa, y es una consulta, no DDL (que Postgres puede registrar en sus logs). Calcula los hash con costo 10, como Supabase Auth;
   - el motivo de auditoría lleva el número de corrida de GitHub Actions;
   - solo corre sobre una base sin grupos ni personas, y si el grupo de prueba ya está, no hace nada.
@@ -47,13 +47,18 @@ Joaco creó el proyecto de Supabase `grupo-lf-staging` (`tdbciscmemfdwjttgurj`, 
     - comprueba que "Pruebas" pasó para el commit (también en la corrida manual, con la API de GitHub);
     - verifica el destino:
       - `STAGING_PROJECT_REF` igual al `project_id` de `[remotes.staging]`;
-      - `STAGING_DB_URL` con el usuario `postgres.<ref>` y sin la contraseña adentro;
+      - `STAGING_DB_URL` igual a la dirección del pooler de Supabase con el usuario `postgres.<ref>`, sin contraseña ni parámetros. psql se conecta con SSL obligatorio;
     - corre `db push`, `functions deploy`, `config push` y, solo a mano y si se pide, los datos de prueba.
   - **`app`:** corre solo si `base` salió bien.
-    - Trae la configuración de Vercel y comprueba que apunte a la base de staging y que no tenga claves de servidor.
+    - Trae la configuración de Vercel y comprueba dos cosas: que apunte a la base de staging, y que no tenga nada más que las dos variables públicas de Supabase y las del sistema de Vercel.
     - Arma y publica la app.
-    - Comprueba que `grupo-lf-staging.vercel.app` sea de este equipo de Vercel.
-  - **Secretos:** viven en el ambiente `staging` de GitHub y se declaran **paso por paso**. La instalación de dependencias y la CLI de Vercel nunca ven las claves de Supabase. La contraseña de la base va en `PGPASSWORD`, no en la dirección.
+    - Comprueba que `grupo-lf-staging.vercel.app` sea de este equipo de Vercel. No comprueba que apunte a esta publicación: si se reasignara a otro proyecto del mismo equipo, el paso pasaría igual (riesgo menor aceptado).
+  - **Secretos:** viven en el ambiente `staging` de GitHub y se declaran **paso por paso**.
+    - Las claves de Supabase solo las ven los pasos de `supabase`.
+    - El token de Vercel solo lo ven `pull`, `deploy` e `inspect`; la instalación y el armado de la app, que corren código de dependencias, no lo ven.
+    - La contraseña de la base va en `PGPASSWORD`, no en la dirección.
+    - Las CLI se llaman con `npx --no-install`, así que nunca se bajan del registro en el momento.
+  - **Riesgo aceptado:** `npm ci` corre los scripts de instalación de las dependencias, y uno comprometido podría dejar modificado algo que un paso posterior ejecuta con una clave. Se acepta para staging, porque la CLI de Supabase necesita su script para bajar el programa. Se revisa antes de producción (`--ignore-scripts` con `npm rebuild supabase`).
 - **CLI de Vercel como dependencia de desarrollo con versión exacta** (Joaco, 2026-10-27): queda en el `package-lock` con verificación de integridad y la actualiza Dependabot. Se usa solo dentro de GitHub Actions. Es la forma documentada de publicar desde una CI propia: `pull`, `build --prod` y `deploy --prebuilt --prod`. No es una tecnología nueva para la app, porque Vercel ya estaba en el stack. Claude Code no la usa: el hook `guard.mjs` la bloquea.
   - **Versión 63.1.2** (9 de octubre de 2026), la más nueva con al menos dos semanas de publicada.
   - **`npm audit` sobre lo que se publica** (`--omit=dev`) da 0 vulnerabilidades.
@@ -79,7 +84,9 @@ Joaco creó el proyecto de Supabase `grupo-lf-staging` (`tdbciscmemfdwjttgurj`, 
 
   Decidido por Joaco el 2026-10-27, por la revisión de `security-auditor`.
 
+  Lo mismo vale para Vercel: el proyecto de producción va en un equipo distinto del de staging (o al revés), y el token de cada ambiente tiene alcance solo sobre su equipo.
+
 - **A verificar en staging:**
-  - el límite por IP de los ingresos que salen de la Edge Function (ADR-0014). `_shared/http.ts` toma el primer valor de `x-forwarded-for`: hay que probar con encabezados falsos qué IP queda registrada, y corregir la función si se puede esquivar;
+  - el límite por IP de los ingresos que salen de la Edge Function (ADR-0014). `_shared/http.ts` toma primero `x-client-ip` y después el primer valor de `x-forwarded-for`. Hay que mandar los **dos** encabezados con valores falsos, ver qué IP queda registrada y corregir la función si se puede esquivar;
   - que `config push` acepte `email_sent = 2`; si no, se saca esa línea.
 - **Acciones de GitHub por etiqueta (`@v4`)**, igual que en `ci.yml`. Son de GitHub y las actualiza Dependabot. Fijarlas por SHA queda para antes de producción.
