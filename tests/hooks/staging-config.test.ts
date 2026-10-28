@@ -103,6 +103,16 @@ describe("Staging: cuándo se publica", () => {
     expect(pooler.test(`postgresql://postgres@db.${ref}.supabase.co:5432/postgres`)).toBe(false);
   });
 
+  it("el job de la app saca el proyecto de config.toml, no de una salida de la base", () => {
+    // GitHub vacía las salidas de un job que coinciden con un secreto: el proyecto de staging
+    // es igual a STAGING_PROJECT_REF, así que nunca puede viajar como salida.
+    expect(workflow).not.toContain("needs.base.outputs.project_ref");
+    const [, outputs = ""] = /^ {4}outputs:\n((?: {6}.+\n)+)/m.exec(baseJob) ?? [];
+    expect(outputs.trim().split("\n")).toEqual(["sha: ${{ steps.commit.outputs.sha }}"]);
+    expect(appJob).toMatch(/\[remotes\\\.staging\\\]/);
+    expect(appJob).toContain("supabase/config.toml");
+  });
+
   it("la app se publica recién después de la base, las funciones y la configuración", () => {
     expect(appJob).toMatch(/^ {4}needs: base$/m);
     // El comando completo: "supabasedb push" (sin espacio) no es un comando de la CLI.

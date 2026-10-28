@@ -41,9 +41,10 @@ jobs:
     permissions:
       contents: read
       actions: read
+    # Solo el commit: GitHub vacía las salidas de un job que coinciden con un secreto, y el
+    # proyecto de staging es igual a STAGING_PROJECT_REF. El job de la app lo lee de config.toml.
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
-      project_ref: ${{ steps.target.outputs.project_ref }}
     steps:
       - name: Commit a publicar
         id: commit
@@ -177,12 +178,14 @@ jobs:
       - name: Traer la configuración del proyecto de Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          PROJECT_REF: ${{ needs.base.outputs.project_ref }}
         run: |
+          expected=$(awk '/^\[remotes\.staging\]$/ {f=1; next} /^\[/ {f=0} f && /^project_id *=/ {gsub(/[" ]/, "", $0); split($0, a, "="); print a[2]}' supabase/config.toml)
           npx --no-install vercel pull --yes --environment=production
           vars=.vercel/.env.production.local
-          if ! grep -Eq "^NEXT_PUBLIC_SUPABASE_URL=\"?https://$PROJECT_REF\.supabase\.co/?\"?$" "$vars"; then
-            echo "::error::El proyecto de Vercel no apunta a la base de staging. No se publica."
+          if [ -z "$expected" ] || ! grep -Eq "^NEXT_PUBLIC_SUPABASE_URL=\"?https://$expected\.supabase\.co/?\"?$" "$vars"; then
+            # La URL es pública (va al navegador): se muestra para poder corregirla.
+            found=$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' "$vars" | cut -d= -f2- || true)
+            echo "::error::El proyecto de Vercel no apunta a la base de staging (https://$expected.supabase.co). Tiene: ${found:-(vacía o sin cargar en Production)}. No se publica."
             exit 1
           fi
           extra=$(grep -Ev '^(#|$|NEXT_PUBLIC_SUPABASE_URL=|NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=|VERCEL_[A-Z0-9_]*=|TURBO_[A-Z0-9_]*=|NX_DAEMON=)' "$vars" | cut -d= -f1 || true)
