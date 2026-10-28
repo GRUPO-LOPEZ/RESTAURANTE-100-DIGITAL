@@ -92,7 +92,12 @@ Los correos `@ejemplo.test` no existen, así que "recuperar contraseña" no func
 
 ## Si algo sale mal
 
-- **"STAGING_PROJECT_REF no coincide":** el secreto no es `tdbciscmemfdwjttgurj`. Revisalo.
+- **"STAGING_PROJECT_REF no coincide":** el secreto llega vacío o no es `tdbciscmemfdwjttgurj`.
+  - Revisá que esté en **Environment secrets** del ambiente `staging`, no en variables ni en otro ambiente.
+  - Si **Settings → Environments** no existe o da "página no encontrada", hay dos causas posibles:
+    - no sos Admin del repositorio;
+    - la organización está en el plan gratis de GitHub, que no tiene ambientes en repositorios privados.
+  - En los dos casos lo resuelve Soy.
 - **"STAGING_DB_URL no es la del pooler de staging":** la dirección no empieza con `postgresql://postgres.tdbciscmemfdwjttgurj@` o todavía tiene la contraseña adentro (paso 1.3).
 - **"El proyecto de Vercel no apunta a la base de staging":** revisá `NEXT_PUBLIC_SUPABASE_URL` en Vercel (paso 2.4).
 - **Una cuenta de prueba quedó bloqueada** (5 intentos fallidos): se libera sola a los 10 minutos, o la libera antes un administrador desde la ficha de la persona.
