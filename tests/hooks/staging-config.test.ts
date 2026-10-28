@@ -113,6 +113,31 @@ describe("Staging: cuándo se publica", () => {
     expect(appJob).toContain("supabase/config.toml");
   });
 
+  it("de Vercel acepta solo las 2 variables públicas y las del sistema", () => {
+    const [, pattern = ""] = /grep -Ev '(.+?)' "\$vars"/.exec(appJob) ?? [];
+    const allowed = new RegExp(pattern);
+    // Lo que agrega Vercel por su cuenta (VERCEL="1" incluido) y nuestras dos variables.
+    for (const line of [
+      'VERCEL="1"',
+      'VERCEL_ENV="production"',
+      'VERCEL_TARGET_ENV="production"',
+      'TURBO_CACHE="remote:rw"',
+      'NX_DAEMON="false"',
+      'NEXT_PUBLIC_SUPABASE_URL="https://x.supabase.co"',
+      'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_x"',
+    ]) {
+      expect(allowed.test(line), line).toBe(true);
+    }
+    // Una clave de servidor nunca pasa, aunque empiece parecido.
+    for (const line of [
+      'SUPABASE_SERVICE_ROLE_KEY="x"',
+      'VERCELX="x"',
+      'NEXT_PUBLIC_SUPABASE_SECRET="x"',
+    ]) {
+      expect(allowed.test(line), line).toBe(false);
+    }
+  });
+
   it("la app se publica recién después de la base, las funciones y la configuración", () => {
     expect(appJob).toMatch(/^ {4}needs: base$/m);
     // El comando completo: "supabasedb push" (sin espacio) no es un comando de la CLI.

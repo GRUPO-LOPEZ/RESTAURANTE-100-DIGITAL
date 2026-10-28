@@ -188,7 +188,7 @@ jobs:
             echo "::error::El proyecto de Vercel no apunta a la base de staging (https://$expected.supabase.co). Tiene: ${found:-(vacía o sin cargar en Production)}. No se publica."
             exit 1
           fi
-          extra=$(grep -Ev '^(#|$|NEXT_PUBLIC_SUPABASE_URL=|NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=|VERCEL_[A-Z0-9_]*=|TURBO_[A-Z0-9_]*=|NX_DAEMON=)' "$vars" | cut -d= -f1 || true)
+          extra=$(grep -Ev '^(#|$|NEXT_PUBLIC_SUPABASE_URL=|NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=|VERCEL=|VERCEL_[A-Z0-9_]*=|TURBO_[A-Z0-9_]*=|NX_DAEMON=)' "$vars" | cut -d= -f1 || true)
           if [ -n "$extra" ]; then
             echo "::error::El proyecto de Vercel tiene variables de más (podrían ser claves de servidor): $extra. Sacalas y volvé a correr."
             exit 1
