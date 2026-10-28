@@ -203,7 +203,8 @@ jobs:
         run: npx --no-install vercel deploy --prebuilt --prod
 
       # La dirección que usa Auth para los enlaces tiene que ser de este equipo de Vercel.
+      # inspect no lee VERCEL_ORG_ID: sin --scope busca en la cuenta personal del dueño del token.
       - name: Verificar la dirección de staging
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npx --no-install vercel inspect restaurante-100-digital.vercel.app
+        run: npx --no-install vercel inspect restaurante-100-digital.vercel.app --scope "$VERCEL_ORG_ID"
