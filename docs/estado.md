@@ -1,6 +1,21 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-27. La Fase 1 está en `main` (PR #10). El flujo de staging está en `main` (PR #11 y su corrección, PR #12), pero **todavía no publicó nunca**: está bloqueado porque los secretos no le llegan (ver abajo)._
+_Última actualización: 2026-10-28. **Soy aprobó la Fase 1** en una demo local (ADR-0019): la Fase 2 queda habilitada. El plan de la Fase 2 espera la aprobación de Joaco. Staging sigue bloqueado por GitHub (ver abajo) y tiene que funcionar antes de cerrar la etapa 2.2._
+
+## Al retomar: Fase 2 (recetario)
+
+- **Documento de Soy:** [docs/fases/fase-2-recetario.md](fases/fase-2-recetario.md). Está completo; el diagrama de la sección 5 y la tabla de la sección 20 se pasaron desde capturas.
+- **Plan:** [docs/fases/fase-2-plan.md](fases/fase-2-plan.md). **Espera que Joaco lo apruebe**, junto con las preguntas técnicas N1 (permiso de costos y decimales) y N4 (esquemas nuevos) y la regla de que un precio cuenta recién cuando se aprueba.
+- **Decisiones de Soy:** las 8 de la sección 22, más N2, N3, N5, N6 y el "aumento grande". Joaco las ve con Soy más adelante.
+  - Sin la decisión 3 (IVA) y la N6 (qué producto de compra usa el motor), la etapa 2.1 puede construir el catálogo, pero no cerrar los precios.
+- **Plantilla de Excel v0 (borrador):** [docs/plantillas/plantilla-recetario-v0.xlsx](plantillas/plantilla-recetario-v0.xlsx). Se ajusta cuando llegue el Excel actual del recetario, que hay que pedirle a Soy.
+- **Ya confirmado (2026-10-28):**
+  - `grupo-lf-staging` está en la organización de Soy;
+  - Vercel tiene plan Pro;
+  - Supabase sigue en el plan gratis: alcanza para staging; para producción hace falta el plan Pro.
+- **Demo local:**
+  - para levantarla hace falta `.env.local`, copiado de `.env.example`;
+  - si el ingreso da "name resolution failed", falta el contenedor de Edge Functions: `npx supabase stop` y después `npx supabase start`.
 
 ## Al retomar: staging bloqueado por el ambiente de GitHub
 
