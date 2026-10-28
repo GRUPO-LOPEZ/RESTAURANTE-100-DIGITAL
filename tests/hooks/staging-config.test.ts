@@ -88,7 +88,8 @@ describe("Staging: cuándo se publica", () => {
     expect(appJob).toContain("NEXT_PUBLIC_SUPABASE_URL");
     // La dirección que se verifica es la misma que usa Auth para los enlaces.
     const siteHost = new URL(tomlSection(config, "remotes.staging.auth").site_url ?? "").host;
-    expect(appJob).toContain(`vercel inspect ${siteHost}`);
+    // En el equipo de staging, no en la cuenta personal del dueño del token.
+    expect(appJob).toContain(`vercel inspect ${siteHost} --scope "$VERCEL_ORG_ID"`);
   });
 
   it("acepta solo la conexión del pooler de staging, sin contraseña ni parámetros", () => {
