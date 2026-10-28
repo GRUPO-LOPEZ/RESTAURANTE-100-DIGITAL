@@ -394,6 +394,18 @@ Cada etapa sigue los 6 pasos del método:
 
 Una etapa puede llevar varios PR chicos.
 
+**Compuerta de cada etapa** (sección 20 del documento de Soy). No se pasa a la siguiente sin las pruebas de la etapa en verde **y** esta validación:
+
+| Etapa | Validación                                      | Quién              | Qué hace falta para hacerla                                                       |
+| ----- | ----------------------------------------------- | ------------------ | --------------------------------------------------------------------------------- |
+| 2.1   | Precios e impuestos correctos                   | Controller         | La política de IVA definida con el contador (decisión 3)                          |
+| 2.2   | Carga una receta completa sin ayuda             | Chef               | La app en un ambiente al que el chef pueda entrar: staging                        |
+| 2.3   | Los costos DEMO coinciden con el cálculo a mano | Joaco y Controller | La planilla con las cuentas a mano de las recetas DEMO, que se arma en esta etapa |
+| 2.4   | El recetario actual se importa sin duplicados   | Joaco y Chef       | **El Excel real del recetario actual**: hay que pedírselo a Soy con tiempo        |
+| 2.5   | El costo de 20 recetas reales está bien         | Controller         | La lista de las 20 recetas (decisión 8) y sus datos reales cargados               |
+
+Las validaciones 2.2, 2.4 y 2.5 usan datos o personas reales. Por eso **staging tiene que estar funcionando antes de cerrar la etapa 2.2**: en desarrollo local solo hay datos ficticios.
+
 | Etapa                             | Base                                                                                                                                                                                                                                                                                             | Pantallas                                                                | Pruebas                                                                      | Necesita antes                                                                           |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | **2.1 Materias primas y precios** | `site_type`, permisos nuevos y su reparto, exponer esquemas; `catalog` completo; `costing.price_records`, `tax_policies`, `price_selection_policies`; aprobaciones de precio y rendimiento; `resolve_price` e `ingredient_line_cost`; seed DEMO (50 ingredientes)                                | Lista y ficha de materia prima, cargar precio, configuración básica      | 1, 2, 16, 17, 20, 21, 25                                                     | Decisiones 2, 3, 4, 5, 7 y preguntas N1 a N6                                             |

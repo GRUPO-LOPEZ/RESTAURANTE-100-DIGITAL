@@ -6,7 +6,7 @@
 >
 > - Las tablas se rearmaron a partir del texto, sin cambiar su contenido.
 > - El diagrama de la sección 5 se pasó a Mermaid desde una captura del original (2026-10-29).
-> - Falta la tabla de etapas de la sección 20. Sus etapas igual están en la sección 24. Si Soy tiene el original, se completa.
+> - La tabla de etapas de la sección 20 se pasó desde una captura del original (2026-10-29).
 
 ## 1. Cómo encaja este documento
 
@@ -563,7 +563,15 @@ Ningún agente modifica recetas aprobadas, rendimientos estándar ni costos ofic
 
 La Fase 2 se construye en cinco etapas, en este orden. Las fundaciones (proyecto, GitHub, Vercel, Supabase, autenticación, permisos) ya quedaron hechas en las Fases 0 y 1.
 
-> _(La tabla de etapas no llegó al pegar el documento. Las etapas 2.1 a 2.5 y su contenido están en la sección 24.)_
+**Cinco etapas: el motor de costos va antes que los tableros.** Cada compuerta exige las pruebas de la etapa en verde y la validación indicada.
+
+| Etapa                           | Contenido                                                        | Compuerta                                       |
+| ------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------- |
+| 2.1 · Materias primas y precios | Catálogo, unidades, productos de compra, precios, rendimientos   | Controller valida precios e impuestos           |
+| 2.2 · Recetas                   | Versiones, subrecetas, pasos, fotos, alérgenos y vista de cocina | El chef carga una receta completa sin ayuda     |
+| 2.3 · Motor de costos           | Costo vigente, snapshots, propagación, escenarios y escalado     | Costos DEMO coinciden con el cálculo a mano     |
+| 2.4 · Excel                     | Plantilla, validación, conciliación, importación y exportación   | Recetario actual importado sin duplicados       |
+| 2.5 · Control y reportes        | Calidad de datos, dashboard, fichas y reportes en PDF y Excel    | Controller valida el costo de 20 recetas reales |
 
 La última compuerta es la misma de la hoja de ruta general: con ella se cierra la Fase 2 y se habilita la Fase 3 (operación).
 
