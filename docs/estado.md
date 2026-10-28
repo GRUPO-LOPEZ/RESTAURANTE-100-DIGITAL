@@ -1,6 +1,24 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-28. **Soy aprobó la Fase 1** en una demo local (ADR-0019): la Fase 2 queda habilitada. El plan de la Fase 2 espera la aprobación de Joaco. Staging sigue bloqueado por GitHub (ver abajo) y tiene que funcionar antes de cerrar la etapa 2.2._
+_Última actualización: 2026-10-28. **Soy aprobó la Fase 1** en una demo local (ADR-0019): la Fase 2 queda habilitada. El plan de la Fase 2 espera la aprobación de Joaco. Staging ya publica la base; falta la app (ver abajo). Tiene que funcionar antes de cerrar la etapa 2.2._
+
+## Al retomar: staging, a un paso de publicar la app
+
+- **Destrabado:**
+  - Joaco tiene permiso para crear Environments en GitHub;
+  - el ambiente `staging` está creado, con sus 9 secretos.
+- **La parte de la base funciona en el Supabase real.** `db push`, `functions deploy` y `config push` pasaron, así que las migraciones de la Fase 1 ya están en staging. Pendiente de verificar en la corrida: que `config push` haya aceptado `email_sent = 2`.
+- **Errores de la parte de la app, en orden:**
+  1. **Error del flujo (PR #15, fusionado).** La app recibía el proyecto como salida de la parte de la base, pero GitHub vacía las salidas que coinciden con un secreto (`STAGING_PROJECT_REF`). Ahora la app lo lee de `config.toml`, y el error muestra la URL encontrada.
+  2. **Error de Vercel (corregido por Joaco).** `NEXT_PUBLIC_SUPABASE_URL` tenía un salto de línea al final. Joaco lo reescribió a mano. **Falta confirmar** que la publishable key no tenga el mismo problema: el flujo no lo controla en esa variable.
+  3. **Error del flujo (rama `fix/staging-var-sistema`, PR por abrir).** La lista de variables permitidas no aceptaba `VERCEL` (con valor `"1"`), una variable que agrega Vercel. La prueba nueva fija qué variables pasan y cuáles no.
+- **Próximos pasos de Joaco:**
+  1. abrir y fusionar el PR de `fix/staging-var-sistema`, y esperar "Pruebas" en verde sobre `main`;
+  2. correr **Publicar en staging** con "Cargar las personas y datos de prueba";
+  3. si sale en verde, entrar a `https://restaurante-100-digital.vercel.app` y activar la doble verificación en las 7 cuentas con MFA (usan `STAGING_DEMO_ADMIN_PASSWORD`);
+  4. si algo falla, pasar el texto del error.
+- Los pasos que todavía no corrieron nunca: `vercel build` (sin token), `deploy`, `inspect`, y la carga de datos de prueba sobre el Supabase real.
+- **Para hacer en GitHub con el permiso nuevo:** proteger `main` (que nada entre sin PR ni con "Pruebas" en rojo). Está postergado desde la Fase 0 porque faltaba ese permiso.
 
 ## Al retomar: Fase 2 (recetario)
 
@@ -17,7 +35,9 @@ _Última actualización: 2026-10-28. **Soy aprobó la Fase 1** en una demo local
   - para levantarla hace falta `.env.local`, copiado de `.env.example`;
   - si el ingreso da "name resolution failed", falta el contenedor de Edge Functions: `npx supabase stop` y después `npx supabase start`.
 
-## Al retomar: staging bloqueado por el ambiente de GitHub
+## Historia: staging bloqueado por el ambiente de GitHub (resuelto el 2026-10-28)
+
+La causa era la primera de las dos: Joaco no tenía permiso de administrador.
 
 - **Qué pasa:**
   - "Publicar en staging" frena en el primer control: "STAGING_PROJECT_REF no coincide con [remotes.staging]". Pasó dos veces, la segunda después de que Joaco volvió a cargar el secreto.
