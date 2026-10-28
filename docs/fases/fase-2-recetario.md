@@ -2,12 +2,11 @@
 
 19 oct 2026 · Soy (Luciano Lopez Fuente)
 
-> **Nota de Claude Code (2026-10-28):** el documento llegó pegado como texto plano. Las tablas se rearmaron a partir del texto, sin cambiar su contenido. Dos partes no llegaron:
+> **Nota de Claude Code:** el documento llegó pegado como texto plano (2026-10-28).
 >
-> - el diagrama de la sección 5;
-> - la tabla de etapas de la sección 20. Sus etapas igual están en la sección 24.
->
-> Si Soy tiene el original, se reemplazan.
+> - Las tablas se rearmaron a partir del texto, sin cambiar su contenido.
+> - El diagrama de la sección 5 se pasó a Mermaid desde una captura del original (2026-10-29).
+> - Falta la tabla de etapas de la sección 20. Sus etapas igual están en la sección 24. Si Soy tiene el original, se completa.
 
 ## 1. Cómo encaja este documento
 
@@ -104,7 +103,35 @@ Lo que no entra igual queda previsto en el modelo (sección 19), para no reconst
 
 El costo de un plato se arma siempre por el mismo camino: lo que se compra, a qué ingrediente corresponde, cuánto rinde y en qué recetas se usa, calculado para cada local y fecha.
 
-> _(El diagrama original no llegó al pegar el documento.)_
+**Un ingrediente se carga una vez y su costo llega a cada plato por local.**
+
+```mermaid
+flowchart LR
+    subgraph compras [Compras]
+        proveedor["<b>Proveedor</b><br/>opcional en la v1"]
+        producto["<b>Producto de compra</b><br/>Mozzarella marca X, 4 kg"]
+        precio["<b>Registro de precio</b><br/>fecha, local y fuente"]
+    end
+    subgraph catalogo [Catálogo]
+        ingrediente["<b>Ingrediente</b><br/>Mozzarella"]
+        rendimiento["<b>Perfil de rendimiento</b><br/>por proceso, aprobado"]
+    end
+    subgraph recetas [Recetas y costos]
+        preparacion["<b>Preparación (versión)</b><br/>salsa, masa, fondo"]
+        plato["<b>Plato (versión)</b><br/>pizza, milanesa, pasta"]
+        costo["<b>Costo por local</b><br/>vigente e histórico"]
+    end
+
+    proveedor -->|vende| producto
+    producto -->|se asocia| ingrediente
+    producto --> precio
+    ingrediente -->|componente| preparacion
+    ingrediente -->|según proceso| rendimiento
+    preparacion -->|como subreceta| plato
+    plato -->|por local y fecha| costo
+    rendimiento -->|rendimiento aprobado| costo
+    precio -->|precio vigente del local| costo
+```
 
 Varios productos de compra pueden apuntar al mismo ingrediente, y una preparación puede entrar en muchos platos. Por eso un aumento de precio llega solo a todos los platos afectados, en todos los niveles.
 
