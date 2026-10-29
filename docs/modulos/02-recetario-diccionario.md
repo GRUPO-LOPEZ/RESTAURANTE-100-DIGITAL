@@ -99,6 +99,59 @@ Conversiones propias de un ingrediente, medidas y con fuente: densidad (g por ml
 | `deleted_at`    | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.         |
 | `deleted_by`    | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                |
 
+## `catalog.ingredient_yield_profiles`
+
+Rendimiento estándar de una materia prima según el proceso (sección 9). Es el que usa el motor de costos. Inmutable: corregirlo es proponer otro, que pasa por aprobación.
+
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                                                           |
+| --------------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no   | Identificador.                                                                                                                                       |
+| `group_id`            | `uuid`                     | no   | Grupo al que pertenece. El mismo que el del ingrediente.                                                                                             |
+| `ingredient_id`       | `uuid`                     | no   | Materia prima.                                                                                                                                       |
+| `process_id`          | `uuid`                     | no   | Proceso (pelado, hervido…).                                                                                                                          |
+| `cut`                 | `text`                     | sí   | Corte o presentación, si cambia el rendimiento (por ejemplo, "en cubos").                                                                            |
+| `supplier_id`         | `uuid`                     | sí   | Proveedor, solo si el rendimiento depende de él. Vacío = vale para todos.                                                                            |
+| `cleaning_yield`      | `numeric(7,4)`             | no   | Rendimiento de limpieza: peso comestible / peso bruto, entre 0 y 1 (4 decimales). 1 si el proceso no limpia.                                         |
+| `cooking_factor`      | `numeric(7,4)`             | no   | Factor de cocción: peso después / peso antes. Menor a 1 si pierde peso (merma de cocción); mayor a 1 si hidrata (pasta, arroz). 1 si no hay cocción. |
+| `method`              | `text`                     | sí   | Cómo se mide o se llegó al valor.                                                                                                                    |
+| `declared_no_loss`    | `boolean`                  | no   | Declarado "sin merma": obligatorio para usar 100 % de limpieza sin cambio en la cocción. La firma es la aprobación.                                  |
+| `status`              | `catalog.yield_status`     | no   | Propuesto, estándar vigente o reemplazado.                                                                                                           |
+| `approval_request_id` | `uuid`                     | sí   | Solicitud de aprobación con la que se propuso.                                                                                                       |
+| `approved_by`         | `uuid`                     | sí   | Quién lo aprobó (no puede ser quien lo propuso).                                                                                                     |
+| `approved_at`         | `timestamp with time zone` | sí   | Cuándo se aprobó.                                                                                                                                    |
+| `notes`               | `text`                     | sí   | Observaciones.                                                                                                                                       |
+| `created_at`          | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                    |
+| `created_by`          | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                                     |
+| `updated_at`          | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                   |
+| `updated_by`          | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                                    |
+| `deleted_at`          | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                                                             |
+| `deleted_by`          | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                    |
+
+## `catalog.ingredient_yield_tests`
+
+Ensayos de rendimiento: lo que se midió en una cocina. Solo inserción. Nunca cambian el estándar: la pantalla muestra la diferencia y el estándar se cambia con una propuesta aprobada.
+
+| Columna                 | Tipo                       | Nulo | Qué guarda                                                              |
+| ----------------------- | -------------------------- | ---- | ----------------------------------------------------------------------- |
+| `id`                    | `uuid`                     | no   | Identificador.                                                          |
+| `group_id`              | `uuid`                     | no   | Grupo al que pertenece. El mismo que el del ingrediente y el del local. |
+| `ingredient_id`         | `uuid`                     | no   | Materia prima.                                                          |
+| `process_id`            | `uuid`                     | no   | Proceso que se midió.                                                   |
+| `cut`                   | `text`                     | sí   | Corte o presentación, si corresponde.                                   |
+| `supplier_id`           | `uuid`                     | sí   | Proveedor de la mercadería medida, si se conoce.                        |
+| `restaurant_id`         | `uuid`                     | no   | Local donde se midió.                                                   |
+| `tested_on`             | `date`                     | no   | Fecha de la medición.                                                   |
+| `samples`               | `integer`                  | no   | Cuántas muestras o tandas se pesaron.                                   |
+| `gross_weight`          | `numeric(18,6)`            | sí   | Peso bruto, en gramos (antes de limpiar).                               |
+| `clean_weight`          | `numeric(18,6)`            | sí   | Peso limpio o comestible, en gramos.                                    |
+| `before_cooking_weight` | `numeric(18,6)`            | sí   | Peso antes de cocinar, en gramos.                                       |
+| `after_cooking_weight`  | `numeric(18,6)`            | sí   | Peso después de cocinar, en gramos.                                     |
+| `discard_weight`        | `numeric(18,6)`            | sí   | Descarte pesado aparte, en gramos (informativo).                        |
+| `responsible`           | `text`                     | sí   | Quién hizo la medición (puede no ser una persona del sistema).          |
+| `notes`                 | `text`                     | sí   | Observaciones.                                                          |
+| `created_at`            | `timestamp with time zone` | no   | Cuándo se registró (lo pone la base).                                   |
+| `created_by`            | `uuid`                     | sí   | Quién lo registró (lo pone la base).                                    |
+
 ## `catalog.ingredients`
 
 Ingredientes gastronómicos (la mozzarella, no la horma de una marca): se cargan una sola vez para todo el grupo. Nunca se borran: se desactivan.
@@ -205,6 +258,23 @@ Unidades de medida (referencia global). Todo cálculo se hace en las unidades ba
 | `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                           |
 | `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                  |
 
+## `catalog.yield_processes`
+
+Procesos que cambian el peso de una materia prima: pelado, desgrasado, deshuesado, hervido…
+
+| Columna      | Tipo                       | Nulo | Qué guarda                                                     |
+| ------------ | -------------------------- | ---- | -------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador.                                                 |
+| `group_id`   | `uuid`                     | no   | Grupo al que pertenece.                                        |
+| `code`       | `text`                     | no   | Código único dentro del grupo (en mayúsculas).                 |
+| `name`       | `text`                     | no   | Nombre del proceso. Único dentro del grupo entre los vigentes. |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                              |
+| `created_by` | `uuid`                     | sí   | Quién lo creó (lo pone la base).                               |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).             |
+| `updated_by` | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).              |
+| `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.       |
+| `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                              |
+
 ## Tipos
 
 | Tipo                      | Valores                                                                                 | Qué significa                                                                                                                                                                                          |
@@ -213,3 +283,4 @@ Unidades de medida (referencia global). Todo cálculo se hace en las unidades ba
 | `catalog.conversion_kind` | `density`, `unit_weight`                                                                | Conversión propia de un ingrediente: density (gramos por mililitro) o unit_weight (gramos por unidad: 1 huevo, 1 atado).                                                                               |
 | `catalog.data_source`     | `manual`, `excel_import`, `measured`, `supplier`, `calculated`, `estimated`, `verified` | Fuente de un dato (sección 6): manual, importado de Excel, medido en ensayo, informado por proveedor, calculado por el sistema, estimado o verificado por un responsable.                              |
 | `catalog.dimension`       | `mass`, `volume`, `count`, `package`                                                    | Dimensión de una unidad: mass (masa, base g), volume (volumen, base ml), count (conteo, base unidad) o package (envase sin contenido fijo: caja, bolsa, horma).                                        |
+| `catalog.yield_status`    | `draft`, `approved`, `superseded`                                                       | Estado de un perfil de rendimiento: draft (propuesto, esperando aprobación), approved (el estándar vigente) o superseded (reemplazado por otro aprobado).                                              |

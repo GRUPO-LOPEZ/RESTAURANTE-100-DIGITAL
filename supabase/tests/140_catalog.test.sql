@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(103);
+select plan(104);
 
 create function pg_temp.q(p_user uuid, p_sql text, p_aal text default 'aal2')
 returns text
@@ -90,8 +90,9 @@ select is(
   (select array_agg(c.relname::text order by c.relname::text) from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'catalog' and c.relkind = 'r'),
   array['allergens', 'ingredient_aliases', 'ingredient_allergens', 'ingredient_categories', 'ingredient_unit_conversions',
-        'ingredients', 'purchase_products', 'suppliers', 'unit_conversions', 'units'],
-  'el catálogo tiene sus 10 tablas');
+        'ingredient_yield_profiles', 'ingredient_yield_tests', 'ingredients', 'purchase_products', 'suppliers',
+        'unit_conversions', 'units', 'yield_processes'],
+  'el catálogo tiene sus 13 tablas (10 de 2.1 A y 3 de rendimientos, 2.1 B)');
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'catalog' and c.relkind = 'r' and not c.relrowsecurity),
@@ -109,8 +110,14 @@ select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'catalog' and c.relkind = 'r'
       and (select count(*) from pg_trigger t where t.tgrelid = c.oid
-            and t.tgname in ('set_control_columns', 'log_change', 'reject_truncate')) <> 3),
-  0, 'todas las tablas del catálogo tienen columnas de control, auditoría y rechazo de truncate');
+            and t.tgname in ('log_change', 'reject_truncate')) <> 2),
+  0, 'todas las tablas del catálogo tienen auditoría y rechazo de truncate');
+-- Columnas de control en todas, salvo los ensayos de rendimiento, que son solo inserción (150_yields).
+select is(
+  (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'catalog' and c.relkind = 'r' and c.relname <> 'ingredient_yield_tests'
+      and not exists (select 1 from pg_trigger t where t.tgrelid = c.oid and t.tgname = 'set_control_columns')),
+  0, 'todas las tablas modificables del catálogo tienen columnas de control');
 select is(
   (select count(*)::int from information_schema.role_table_grants
     where table_schema = 'catalog' and grantee in ('anon', 'authenticated', 'service_role')

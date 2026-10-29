@@ -70,6 +70,9 @@ insert into seed_people values
     '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
   ('00000000-0000-4000-8000-000000000405', 'chef@ejemplo.test',        'Carla',   'Chef',      'executive_chef',     'brand',
     '00000000-0000-4000-8000-000000000101', null),
+  -- Chef de todo el grupo: aprueba los rendimientos estándar, que valen para todas las marcas
+  -- (decisión de Joaco, 2026-10-29, ADR-0021).
+  ('00000000-0000-4000-8000-000000000413', 'chefgrupo@ejemplo.test',   'Gabriel', 'Chef Grupo', 'executive_chef',    'group', null, null),
   ('00000000-0000-4000-8000-000000000406', 'jefecocina@ejemplo.test',  'Julián',  'Cocina',    'head_chef',          'restaurant',
     '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201'),
   ('00000000-0000-4000-8000-000000000407', 'controller@ejemplo.test',  'Camila',  'Costos',    'controller',         'group', null, null),
@@ -329,6 +332,35 @@ select '00000000-0000-4000-8000-000000000001', format('00000000-0000-4000-8000-%
                (24, 2, 'contains'), (25, 2, 'contains'), (26, 3, 'contains'), (27, 1, 'contains'), (28, 1, 'contains'),
                (29, 1, 'contains'), (30, 1, 'contains'), (32, 1, 'contains'), (49, 4, 'contains'),
                (30, 3, 'may_contain'), (1, 1, 'free_verified')) as x (n, allergen, status);
+
+-- Rendimientos (etapa 2.1 B). Ids fijos de procesos: ...00096P. Los estándares usan los valores
+-- de prueba del documento de Soy (caso 2: tomate pelado 80 %; caso 18: pasta que se expande ×2,5)
+-- y los aprueba el Chef del grupo. Un ensayo del tomate da 77 %: la ficha muestra la diferencia.
+insert into catalog.yield_processes (id, group_id, code, name) values
+  ('00000000-0000-4000-8000-000000000961', '00000000-0000-4000-8000-000000000001', 'PELADO', 'Pelado'),
+  ('00000000-0000-4000-8000-000000000962', '00000000-0000-4000-8000-000000000001', 'LIMPIEZA', 'Limpieza'),
+  ('00000000-0000-4000-8000-000000000963', '00000000-0000-4000-8000-000000000001', 'DESGRASADO', 'Desgrasado'),
+  ('00000000-0000-4000-8000-000000000964', '00000000-0000-4000-8000-000000000001', 'DESHUESADO', 'Deshuesado'),
+  ('00000000-0000-4000-8000-000000000965', '00000000-0000-4000-8000-000000000001', 'HERVIDO', 'Hervido');
+
+insert into catalog.ingredient_yield_profiles (group_id, ingredient_id, process_id, cleaning_yield, cooking_factor, method,
+                                               status, approved_by, approved_at)
+values
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000801', '00000000-0000-4000-8000-000000000961',
+   0.80, 1, 'Dato de prueba (caso 2)', 'approved', '00000000-0000-4000-8000-000000000413', now()),
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000830', '00000000-0000-4000-8000-000000000965',
+   1, 2.5, 'Dato de prueba (caso 18)', 'approved', '00000000-0000-4000-8000-000000000413', now());
+
+insert into catalog.ingredient_yield_tests (group_id, ingredient_id, process_id, restaurant_id, tested_on, samples,
+                                            gross_weight, clean_weight, before_cooking_weight, after_cooking_weight,
+                                            responsible, created_by)
+values
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000801', '00000000-0000-4000-8000-000000000961',
+   '00000000-0000-4000-8000-000000000201', current_date - 2, 3, 10000, 7700, null, null, 'Julián (prueba)',
+   '00000000-0000-4000-8000-000000000406'),
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000830', '00000000-0000-4000-8000-000000000965',
+   '00000000-0000-4000-8000-000000000201', current_date - 1, 1, null, null, 1000, 2450, 'Julián (prueba)',
+   '00000000-0000-4000-8000-000000000406');
 
 -- Ingresos ficticios de los últimos 30 días, para el gráfico del tablero.
 set role audit_owner;

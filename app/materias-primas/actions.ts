@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { toActionState, type ActionState } from "@/lib/auth/results";
 import type { AllergenStatus, ConversionKind, DataSource } from "@/lib/catalog";
-import { fieldErrors, formValues, schemas } from "@/lib/forms/schemas";
+import { fieldErrors, formValues, isChecked, schemas } from "@/lib/forms/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del catálogo. Cada una llama a una función de la base que valida catalog.manage, pide
@@ -241,4 +241,78 @@ export async function createSupplierAction(
   });
   if (back.success) revalidatePath(`/materias-primas/${back.data}`);
   return done(error, "Proveedor creado. Ya lo podés elegir en el producto.");
+}
+
+// Rendimientos (etapa 2.1 B). Un ensayo nunca cambia el estándar: el estándar se propone y lo
+// aprueba un Chef de todo el grupo (ADR-0021).
+const grams = (value: string | undefined) => (value ? decimal(value) : undefined);
+
+export async function recordYieldTestAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.yieldTest.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = ingredientId(formData);
+  const processId = uuid.safeParse(fields.data.process_id);
+  const restaurantId = uuid.safeParse(fields.data.restaurant_id);
+  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
+  if (!processId.success)
+    return { status: "bad", fieldErrors: { process_id: "Elegí el proceso." } };
+  if (!restaurantId.success)
+    return { status: "bad", fieldErrors: { restaurant_id: "Elegí el local donde se midió." } };
+  const measures = {
+    gross_weight: grams(fields.data.gross_weight),
+    clean_weight: grams(fields.data.clean_weight),
+    before_cooking_weight: grams(fields.data.before_cooking_weight),
+    after_cooking_weight: grams(fields.data.after_cooking_weight),
+  };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("catalog").rpc("record_yield_test", {
+    p_ingredient_id: id.data,
+    p_process_id: processId.data,
+    p_restaurant_id: restaurantId.data,
+    p_tested_on: fields.data.tested_on,
+    p_measures: Object.fromEntries(Object.entries(measures).filter(([, v]) => v !== undefined)),
+    p_details: {
+      samples: Number(fields.data.samples),
+      ...(fields.data.cut ? { cut: fields.data.cut } : {}),
+      ...(fields.data.responsible ? { responsible: fields.data.responsible } : {}),
+    },
+    p_reason: fields.data.reason,
+  });
+  revalidatePath(`/materias-primas/${id.data}`);
+  return done(error, "Ensayo registrado. El estándar no cambia: si hace falta, proponé uno nuevo.");
+}
+
+export async function proposeYieldAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.yieldProposal.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = ingredientId(formData);
+  const processId = uuid.safeParse(fields.data.process_id);
+  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
+  if (!processId.success)
+    return { status: "bad", fieldErrors: { process_id: "Elegí el proceso." } };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("catalog").rpc("propose_yield_standard", {
+    p_ingredient_id: id.data,
+    p_process_id: processId.data,
+    p_cut: fields.data.cut ?? "",
+    // La limpieza se escribe en %; la base la guarda entre 0 y 1, con 4 decimales.
+    p_cleaning_yield: Math.round(decimal(fields.data.cleaning_percent) * 100) / 10000,
+    p_cooking_factor: decimal(fields.data.cooking_factor),
+    p_method: fields.data.method ?? "",
+    p_declared_no_loss: isChecked(fields.data.declared_no_loss),
+    p_reason: fields.data.reason,
+  });
+  revalidatePath(`/materias-primas/${id.data}`);
+  return error
+    ? toActionState(null, error)
+    : {
+        status: "info",
+        message: "Queda pendiente: lo tiene que aprobar un Chef de todo el grupo, distinto de vos.",
+      };
 }

@@ -6,7 +6,7 @@ import {
   MODULE_LABELS,
   TABLE_LABELS,
   formatDateTime,
-  formatValue,
+  formatField,
   type HistoryRow,
 } from "@/lib/data";
 
@@ -22,7 +22,9 @@ function Change({ row, field }: { row: HistoryRow; field: string }) {
     <div className="flex flex-col sm:flex-row sm:gap-2">
       <dt className="font-medium text-ink sm:w-48 sm:shrink-0">{FIELD_LABELS[field]}</dt>
       <dd className="break-words text-ink-muted">
-        {isChange ? `${formatValue(before)} → ${formatValue(after)}` : formatValue(after ?? before)}
+        {isChange
+          ? `${formatField(field, before)} → ${formatField(field, after)}`
+          : formatField(field, after ?? before)}
       </dd>
     </div>
   );

@@ -1,8 +1,26 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. **Etapa 2.1 A (catálogo de materias primas) terminada**, con PR abierto desde `feat/recetario-catalogo`._
+_Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Etapa 2.1 A fusionada (PR #19). **Etapa 2.1 B (rendimientos) terminada**, con PR desde `feat/recetario-rendimientos`._
 
-## Al retomar: etapa 2.1 A terminada (PR de `feat/recetario-catalogo`)
+## Al retomar: etapa 2.1 B terminada (PR de `feat/recetario-rendimientos`)
+
+- **Qué se hizo:**
+  - migración `20261030120000_catalog_yields.sql`: procesos, estándar de rendimiento con aprobación y ensayos (solo de inserción);
+  - sección "Rendimientos" en la ficha de la materia prima: registrar un ensayo y proponer un estándar;
+  - la aprobación usa la bandeja `/aprobaciones`, que ahora muestra "80,0 %" y "se expande ×2,5";
+  - seed: persona nueva `chefgrupo@ejemplo.test` (Chef Ejecutivo de todo el grupo), 5 procesos, 2 estándares y 2 ensayos DEMO.
+  - Detalle y decisiones de Joaco en ADR-0021.
+- **Pruebas (2026-10-29):**
+  - lint y tipos ✅;
+  - Vitest 137 de 137 ✅;
+  - pgTAP 951 de 951 ✅ (la nueva `150` tiene 61);
+  - Playwright 70 de 72 en la corrida completa; las 2 que fallaron eran de `rendimientos.spec` por un selector ambiguo de la prueba (no de la app). Se corrigió y esa prueba pasó 4 de 4. **Falta una corrida completa final**, que corre igual en GitHub Actions al abrir el PR.
+- **Revisiones:** `security-auditor`, `db-reviewer` y `ui-reviewer` sin graves; sus medios resueltos (ADR-0021).
+- **Aviso:** la prueba de rendimiento de la Fase 1 (`110`, A10) una vez dio 311 ms (límite 300) con la máquina cargada; repetida, pasó 3 de 3. No se tocó. Si se repite, revisar.
+- **Pendiente de Joaco:** abrir el PR y fusionarlo con "Pruebas" en verde. Staging publica solo la migración nueva.
+- **Próximas etapas:** 2.2 (recetas; necesita las decisiones 1 y 6 de Soy) y 2.1 C (precios; necesita las respuestas de Soy sobre precios).
+
+## Antes: etapa 2.1 A terminada (fusionada, PR #19)
 
 - **Qué se hizo:**
   - migraciones `20261028120000_recipes_permissions.sql`, `20261028120100_catalog.sql` y `20261029120000_catalog_review_fixes.sql`;

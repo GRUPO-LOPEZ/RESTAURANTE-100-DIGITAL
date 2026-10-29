@@ -54,9 +54,10 @@ select is(
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = any (pg_temp.business_schemas()) and has_function_privilege('authenticated', p.oid, 'execute')),
   array['catalog.convert_quantity', 'catalog.create_ingredient', 'catalog.create_purchase_product',
-        'catalog.create_supplier', 'catalog.search_components', 'catalog.set_aliases', 'catalog.set_allergen_status',
-        'catalog.set_ingredient_active', 'catalog.set_unit_conversion', 'catalog.to_base_quantity',
-        'catalog.update_ingredient', 'catalog.update_purchase_product', 'catalog.update_supplier',
+        'catalog.create_supplier', 'catalog.create_yield_process', 'catalog.propose_yield_standard',
+        'catalog.record_yield_test', 'catalog.search_components', 'catalog.set_aliases', 'catalog.set_allergen_status',
+        'catalog.set_ingredient_active', 'catalog.set_unit_conversion', 'catalog.standard_yield', 'catalog.to_base_quantity',
+        'catalog.update_ingredient', 'catalog.update_purchase_product', 'catalog.update_supplier', 'catalog.yield_summary',
         'core.add_member', 'core.assign_role', 'core.audit_export', 'core.audit_history', 'core.can_invite',
         'core.can_view_scope', 'core.can_view_user', 'core.create_test_document_draft', 'core.current_aal',
         'core.current_actor_id', 'core.current_actor_subject', 'core.current_session_ok', 'core.disable_user',
@@ -81,8 +82,9 @@ select is(
     where n.nspname = any (pg_temp.business_schemas()) and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege('authenticated', c.oid, 'select')),
   array['catalog.allergens', 'catalog.ingredient_aliases', 'catalog.ingredient_allergens',
-        'catalog.ingredient_categories', 'catalog.ingredient_unit_conversions', 'catalog.ingredients',
-        'catalog.purchase_products', 'catalog.suppliers', 'catalog.unit_conversions', 'catalog.units',
+        'catalog.ingredient_categories', 'catalog.ingredient_unit_conversions', 'catalog.ingredient_yield_profiles',
+        'catalog.ingredient_yield_tests', 'catalog.ingredients', 'catalog.purchase_products', 'catalog.suppliers',
+        'catalog.unit_conversions', 'catalog.units', 'catalog.yield_processes',
         'core.notifications', 'core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships',
         'core.user_role_assignments', 'core.v_test_documents', 'org.areas', 'org.brands',
         'org.groups', 'org.restaurants', 'org.time_zones', 'workflow.approval_decisions',
@@ -156,7 +158,7 @@ select is(pg_temp.call(pg_temp.u(411), 'org.update_restaurant(''00000000-0000-40
 
 -- Prueba 5: dirección ve lo consolidado según permisos.
 select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from org.restaurants'), '4', '5. dirección ve todos los locales del grupo');
-select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from core.user_profiles'), '20', '5. dirección ve a todas las personas (users.view de grupo)');
+select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from core.user_profiles'), '21', '5. dirección ve a todas las personas (users.view de grupo)');
 select is(
   pg_temp.q(pg_temp.u(402), 'select (core.has_permission(''approvals.decide'', ''00000000-0000-4000-8000-000000000203'')
                                      and not core.has_permission(''org.manage'', ''00000000-0000-4000-8000-000000000203''))::text'),

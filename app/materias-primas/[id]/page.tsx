@@ -6,6 +6,8 @@ import { ChevronDown } from "lucide-react";
 import {
   createProductAction,
   createSupplierAction,
+  proposeYieldAction,
+  recordYieldTestAction,
   setActiveAction,
   setAliasesAction,
   setAllergenAction,
@@ -16,7 +18,7 @@ import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
+import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import {
   ALLERGEN_STATUS_LABELS,
   SOURCE_LABELS,
@@ -24,11 +26,16 @@ import {
   getIngredient,
   getSuppliers,
   getUnits,
+  getYieldProcesses,
+  getYieldRestaurants,
+  getYieldSummary,
   type AllergenStatus,
   type IngredientDetail,
+  type YieldRow,
 } from "@/lib/catalog";
 import { UUID, formatDate } from "@/lib/data";
 import { getMenus, requireMenu } from "@/lib/auth/session";
+import { cleaningDifference, describeCooking, formatCleaning } from "@/lib/yields";
 
 export default function MateriaPrimaPage({ params }: PageProps<"/materias-primas/[id]">) {
   return (
@@ -108,9 +115,15 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
   const [ingredient, menus] = await Promise.all([getIngredient(id), getMenus()]);
   if (!ingredient) notFound();
   const canManage = menus.catalogManage;
+  const canRecordYields = menus.yieldsRecord;
   const [categories, units, suppliers] = canManage
     ? await Promise.all([getCategories(), getUnits(), getSuppliers()])
     : [[], [], []];
+  const [yieldRows, processes, yieldRestaurants] = await Promise.all([
+    getYieldSummary(ingredient.id),
+    canRecordYields ? getYieldProcesses() : Promise.resolve([]),
+    canRecordYields ? getYieldRestaurants() : Promise.resolve([]),
+  ]);
 
   return (
     <>
@@ -140,7 +153,7 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
           <Row label="Observaciones" value={ingredient.notes} />
         </dl>
         <p className="rounded-sm border border-line bg-info p-3 text-base text-info-ink">
-          Todavía no se cargan precios ni rendimientos.
+          Todavía no se cargan precios.
         </p>
         {canManage ? (
           <div className="flex flex-col gap-2">
@@ -218,6 +231,13 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
       </Card>
 
       <Products ingredient={ingredient} canManage={canManage} units={units} suppliers={suppliers} />
+      <Yields
+        ingredient={ingredient}
+        rows={yieldRows}
+        canRecord={canRecordYields}
+        processes={processes}
+        restaurants={yieldRestaurants}
+      />
       <Conversions ingredient={ingredient} canManage={canManage} />
       <Allergens ingredient={ingredient} canManage={canManage} />
     </>
@@ -557,6 +577,281 @@ function Allergens({
             <Reason id="mp-motivo-alergeno" />
           </ActionForm>
         </Action>
+      ) : null}
+    </Card>
+  );
+}
+
+// Rendimientos (etapa 2.1 B): el estándar que usa el costo, lo que dicen los ensayos y la
+// diferencia. Un ensayo nunca cambia el estándar: se propone uno nuevo y lo aprueba un Chef de
+// todo el grupo (ADR-0021).
+function YieldStandard({ row }: { row: YieldRow }) {
+  if (row.standardCleaning === null || row.standardCooking === null) {
+    return <Badge status="warn">Sin estándar aprobado</Badge>;
+  }
+  return (
+    <span className="text-base text-ink tabular-nums">
+      Limpieza {formatCleaning(row.standardCleaning)} · {describeCooking(row.standardCooking)}
+      {row.declaredNoLoss ? " · declarado sin merma" : ""}
+    </span>
+  );
+}
+
+function YieldTests({ row }: { row: YieldRow }) {
+  if (row.tests === 0) return <span className="text-sm text-ink-muted">Sin ensayos.</span>;
+  const parts = [row.tests === 1 ? "1 ensayo" : `${row.tests} ensayos`];
+  if (row.measuredCleaning !== null) {
+    parts.push(
+      `limpieza ${formatCleaning(row.measuredCleaning)}` +
+        (row.standardCleaning !== null
+          ? ` (${cleaningDifference(row.measuredCleaning, row.standardCleaning)})`
+          : ""),
+    );
+  }
+  if (row.measuredCooking !== null) parts.push(describeCooking(row.measuredCooking));
+  if (row.lastTestedOn) parts.push(`último el ${formatDate(row.lastTestedOn)}`);
+  return <span className="text-sm text-ink-muted tabular-nums">{parts.join(" · ")}</span>;
+}
+
+function Yields({
+  ingredient,
+  rows,
+  canRecord,
+  processes,
+  restaurants,
+}: {
+  ingredient: IngredientDetail;
+  rows: YieldRow[];
+  canRecord: boolean;
+  processes: { id: string; name: string }[];
+  restaurants: { id: string; name: string }[];
+}) {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).format(new Date());
+  return (
+    <Card className="flex flex-col gap-4">
+      <CardTitle>Rendimientos</CardTitle>
+      <CardDescription>
+        Cuánto rinde según el proceso. El costo usa siempre el estándar aprobado; los ensayos
+        muestran lo que se midió en las cocinas y no lo cambian.
+      </CardDescription>
+      {rows.length === 0 ? (
+        <p className="text-base text-ink-muted">
+          Todavía no tiene rendimientos cargados.
+          {canRecord ? " Registrá un ensayo o proponé un estándar." : ""}
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2" aria-label="Rendimientos por proceso">
+          {rows.map((r) => (
+            <li
+              key={`${r.processId}-${r.cut ?? ""}-${r.supplier ?? ""}`}
+              className="flex flex-col gap-1 rounded-sm border border-line p-3"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <span className="font-medium text-ink">
+                  {[r.process, r.cut, r.supplier ? `de ${r.supplier}` : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+                {r.pendingProposals > 0 ? (
+                  <Badge status="review">Propuesta en revisión</Badge>
+                ) : null}
+              </div>
+              <YieldStandard row={r} />
+              <YieldTests row={r} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {canRecord && processes.length === 0 ? (
+        <p className="text-base text-ink">
+          No hay procesos cargados (pelado, hervido…). Los crea un Chef de todo el grupo.
+        </p>
+      ) : null}
+      {canRecord && processes.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <Action summary="Registrar un ensayo">
+            {restaurants.length === 0 ? (
+              <p className="text-base text-ink">No tenés locales donde registrar ensayos.</p>
+            ) : (
+              <ActionForm
+                action={recordYieldTestAction}
+                schema="yieldTest"
+                submitLabel="Registrar ensayo"
+              >
+                <input type="hidden" name="ingredientId" value={ingredient.id} />
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <FormSelect
+                    id="mp-ren-proceso"
+                    label="Proceso"
+                    name="process_id"
+                    required
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Elegí el proceso
+                    </option>
+                    {processes.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </FormSelect>
+                  <FormSelect
+                    id="mp-ren-local"
+                    label="Local donde se midió"
+                    name="restaurant_id"
+                    required
+                    defaultValue={restaurants.length === 1 ? restaurants[0]?.id : ""}
+                  >
+                    <option value="" disabled>
+                      Elegí el local
+                    </option>
+                    {restaurants.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </FormSelect>
+                  <FormInput
+                    id="mp-ren-fecha"
+                    label="Fecha"
+                    name="tested_on"
+                    type="date"
+                    required
+                    max={today}
+                    defaultValue={today}
+                  />
+                </div>
+                <FormInput
+                  id="mp-ren-corte"
+                  label="Corte o presentación"
+                  hint="Solo si el estándar es de un corte. Por ejemplo, «en cubos»."
+                  name="cut"
+                  maxLength={80}
+                />
+                <p className="text-sm text-ink-muted">
+                  Pesos en gramos, sumando todas las muestras. Cargá el par que mediste: bruto y
+                  limpio, antes y después de cocinar, o los dos.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormInput
+                    id="mp-ren-bruto"
+                    label="Peso bruto (g)"
+                    name="gross_weight"
+                    inputMode="decimal"
+                  />
+                  <FormInput
+                    id="mp-ren-limpio"
+                    label="Peso limpio (g)"
+                    name="clean_weight"
+                    inputMode="decimal"
+                  />
+                  <FormInput
+                    id="mp-ren-antes"
+                    label="Antes de cocinar (g)"
+                    name="before_cooking_weight"
+                    inputMode="decimal"
+                  />
+                  <FormInput
+                    id="mp-ren-despues"
+                    label="Después de cocinar (g)"
+                    name="after_cooking_weight"
+                    inputMode="decimal"
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormInput
+                    id="mp-ren-muestras"
+                    label="Muestras"
+                    hint="Cuántas piezas o tandas pesaste en total."
+                    name="samples"
+                    inputMode="numeric"
+                    required
+                    defaultValue="1"
+                  />
+                  <FormInput
+                    id="mp-ren-responsable"
+                    label="Quién lo midió"
+                    name="responsible"
+                    maxLength={120}
+                  />
+                </div>
+                <Reason id="mp-motivo-ensayo" />
+              </ActionForm>
+            )}
+          </Action>
+          <Action summary="Proponer un estándar nuevo">
+            <p className="text-base text-ink">
+              No cambia nada hasta que lo apruebe un Chef de todo el grupo, distinto de vos.
+            </p>
+            <ActionForm
+              action={proposeYieldAction}
+              schema="yieldProposal"
+              submitLabel="Proponer estándar"
+            >
+              <input type="hidden" name="ingredientId" value={ingredient.id} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormSelect
+                  id="mp-est-proceso"
+                  label="Proceso"
+                  name="process_id"
+                  required
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    Elegí el proceso
+                  </option>
+                  {processes.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </FormSelect>
+                <FormInput
+                  id="mp-est-corte"
+                  label="Corte o presentación"
+                  hint="Solo si cambia el rendimiento. Por ejemplo, «en cubos»."
+                  name="cut"
+                  maxLength={80}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormInput
+                  id="mp-est-limpieza"
+                  label="Limpieza (%)"
+                  hint="Peso limpio sobre peso bruto. 100 si no hay limpieza."
+                  name="cleaning_percent"
+                  inputMode="decimal"
+                  required
+                />
+                <FormInput
+                  id="mp-est-coccion"
+                  label="Factor de cocción"
+                  hint="Peso después sobre peso antes: 0,85 si pierde, 2,5 si se hidrata, 1 si no se cocina."
+                  name="cooking_factor"
+                  inputMode="decimal"
+                  required
+                  defaultValue="1"
+                />
+              </div>
+              <FormTextarea
+                id="mp-est-metodo"
+                label="Cómo se midió"
+                name="method"
+                maxLength={500}
+              />
+              <FormCheckbox
+                id="mp-est-sin-merma"
+                name="declared_no_loss"
+                label="No tiene merma"
+                hint="Obligatorio si la limpieza es 100 % y el factor 1: sin esta marca, el sistema nunca supone que no hay merma."
+              />
+              <Reason id="mp-motivo-estandar" />
+            </ActionForm>
+          </Action>
+        </div>
       ) : null}
     </Card>
   );
