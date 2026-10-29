@@ -6,7 +6,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(49);
+select plan(50);
 
 create function pg_temp.q(p_user uuid, p_sql text, p_aal text default 'aal2')
 returns text
@@ -258,6 +258,14 @@ insert into audit.audit_events (table_schema, table_name, record_id, action, old
 values ('org', 'areas', '99999999-0000-4000-8000-0000000000c1', 'update', '{"cost": 10}', '{"cost": 12, "name": "Cocina"}',
         '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101');
 reset role;
+-- Desde la Fase 2 el Director de Marca ve los costos de su marca (recipes.view_costs, sección 17
+-- del documento de Soy y ADR-0020). Sin ese permiso, el historial los sigue ocultando.
+select is(pg_temp.q(pg_temp.u(403), $$select (new_values ->> 'cost') || '/' || (new_values ->> 'name')
+                                        from core.audit_history(5, p_record_id => '99999999-0000-4000-8000-0000000000c1')$$),
+  '12/Cocina', 'la directora ve los costos de su marca en el historial');
+update core.role_permissions set deleted_at = now()
+ where role_id = (select id from core.roles where code = 'brand_director')
+   and permission_id = (select id from core.permissions where code = 'recipes.view_costs');
 select is(pg_temp.q(pg_temp.u(403), $$select (new_values ->> 'cost') || '/' || (new_values ->> 'name')
                                         from core.audit_history(5, p_record_id => '99999999-0000-4000-8000-0000000000c1')$$),
   '[oculto]/Cocina', 'el historial sigue ocultando los costos a quien no los puede ver (y muestra el resto)');

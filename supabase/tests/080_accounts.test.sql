@@ -209,7 +209,7 @@ select ok(pg_temp.q(pg_temp.u(402), 'select count(*)::text from core.audit_histo
 select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from core.audit_history(50)', 'aal1'), '0', 'el cocinero no lee el historial');
 select is(core.hide_costs('{"name": "Ñoquis", "food_cost": 12.5, "lines": [{"unit_price": 3}]}'::jsonb),
   '{"name": "Ñoquis", "food_cost": "[oculto]", "lines": [{"unit_price": "[oculto]"}]}'::jsonb,
-  'sin costing.view_costs, el historial oculta costos y precios');
+  'sin recipes.view_costs, el historial oculta costos y precios');
 select is((select count(*)::int from cron.job where jobname = 'grupo-lf-sellar-auditoria' and schedule = '7 * * * *'), 1,
   'la auditoría y el registro de seguridad se sellan cada hora');
 

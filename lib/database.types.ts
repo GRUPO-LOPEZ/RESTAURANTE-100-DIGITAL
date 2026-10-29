@@ -1012,6 +1012,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      check_ingredient_products: {
+        Args: { p_action: string; p_ingredient_id: string };
+        Returns: undefined;
+      };
       convert_quantity: {
         Args: {
           p_from_unit_id: string;
@@ -1061,6 +1065,14 @@ export type Database = {
         Returns: string;
       };
       ingredient_group: { Args: { p_ingredient_id: string }; Returns: string };
+      missing_conversion: {
+        Args: { p_content_unit_id: string; p_ingredient_id: string };
+        Returns: string;
+      };
+      raise_friendly: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
       search_components: {
         Args: { p_limit?: number; p_query: string };
         Returns: {

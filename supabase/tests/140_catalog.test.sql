@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(89);
+select plan(103);
 
 create function pg_temp.q(p_user uuid, p_sql text, p_aal text default 'aal2')
 returns text
@@ -307,6 +307,57 @@ select is((select count(*)::int from catalog.ingredient_allergens where ingredie
 select is(pg_temp.q(pg_temp.u(408), $$select catalog.set_allergen_status(pg_temp.ing(1), pg_temp.u(951), 'contains', null, 'Prueba')::text$$),
   'ERROR 22023', 'un estado de alérgeno necesita su fuente');
 
+-- Los productos vigentes se tienen que poder seguir costeando (revisión de base, M2).
+select is(pg_temp.msg(pg_temp.u(408), $$select catalog.set_unit_conversion(pg_temp.ing(9), 'unit_weight', null, null, null, null, 'Prueba')$$),
+  'No se puede quitar esta conversión: el producto «Limón, por kg» se compra en otra unidad y necesita su peso por unidad.',
+  'no se quita el peso por unidad del limón mientras se compre por kg');
+select is(pg_temp.msg(pg_temp.u(408), $$select catalog.update_ingredient(pg_temp.ing(1), '{"recipe_unit": "ml"}', 'Prueba')$$),
+  'No se puede cambiar la unidad de uso: el producto «Tomate perita, cajón de 10 kg» se compra en otra unidad y necesita su densidad.',
+  'no se cambia el tomate a ml: sus productos están en g y no tiene densidad');
+select is(pg_temp.q(pg_temp.u(408), $$select catalog.update_purchase_product((select id from catalog.purchase_products where code = 'DEMO-PROD-009'),
+            '{"is_active": false}', 'Ya no se compra')::text$$),
+  '', 'desactivar un producto nunca se frena');
+select is(pg_temp.q(pg_temp.u(408), $$select catalog.set_unit_conversion(pg_temp.ing(9), 'unit_weight', null, null, null, null, 'Prueba')::text$$),
+  '', 'con el producto desactivado, el peso por unidad se puede quitar');
+select is(pg_temp.msg(pg_temp.u(408), $$select catalog.update_purchase_product((select id from catalog.purchase_products where code = 'DEMO-PROD-009'),
+            '{"is_active": true}', 'Se vuelve a comprar')$$),
+  'El ingrediente se usa en otra unidad: primero cargá su peso por unidad.',
+  'reactivar un producto que ya no se puede costear se frena');
+select is(pg_temp.q(pg_temp.u(408), $$select count(*)::text from catalog.search_components('%%%')$$), '0',
+  'el buscador toma % como letra, no como comodín');
+select is(pg_temp.q(pg_temp.u(408), $$select count(*)::text from catalog.search_components('a_a')$$), '0',
+  'y _ también');
+
+-- Nada nuevo apunta a algo borrado; los borrados no se ofrecen ni se convierten.
+do $$
+begin
+  perform core.set_change_context('Prueba: borrados', 'maintenance');
+  update catalog.ingredient_categories set deleted_at = now() where id = pg_temp.u(708);
+  update catalog.suppliers set deleted_at = now() where id = pg_temp.u(906);
+  update catalog.ingredients set deleted_at = now() where id = pg_temp.ing(48);
+  update catalog.ingredient_aliases set deleted_at = now() where alias = 'calabaza';
+end
+$$;
+select is(pg_temp.msg(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-910', 'Cúrcuma',
+            pg_temp.u(708), 'g', null, 'Prueba')$$),
+  'Esa categoría está borrada: elegí otra.', 'no se usa una categoría borrada');
+select is(pg_temp.msg(pg_temp.u(408), $$select catalog.create_purchase_product(pg_temp.ing(21), 'DEMO-PROD-910', 'Ricota, balde',
+            'pack', 1, 5000, 'g', format('{"supplier_id": "%s"}', pg_temp.u(906))::jsonb, 'Prueba')$$),
+  'Ese proveedor está borrado: elegí otro.', 'ni un proveedor borrado');
+select throws_ok($$insert into catalog.ingredient_categories (group_id, parent_id, name)
+                   values (pg_temp.u(1), pg_temp.u(708), 'Pimientas')$$,
+  '23514', 'La categoría madre está borrada: elegí otra.', 'ni una categoría madre borrada');
+select is(pg_temp.q(pg_temp.u(408), $$select catalog.update_purchase_product(
+            (select id from catalog.purchase_products where supplier_id = pg_temp.u(906) limit 1),
+            '{"notes": "Sigue en el depósito"}', 'Prueba')::text$$),
+  '', 'editar un producto cuyo proveedor se borró no se frena (no cambia el proveedor)');
+select is((select status from catalog.convert_quantity(pg_temp.ing(48), 1, pg_temp.unit('kg'), pg_temp.unit('g'))),
+  'unknown_ingredient', 'para el motor, un ingrediente borrado no existe (aunque no pase por RLS)');
+select is((select count(*)::int from catalog.search_components('aceitu') where code = 'DEMO-ING-048'), 0,
+  'el buscador no ofrece un ingrediente borrado (aunque no pase por RLS)');
+select is((select count(*)::int from catalog.search_components('calabaza')), 0,
+  'ni encuentra por un alias borrado');
+
 -- Una conversión universal entre dimensiones no existe.
 select throws_ok($$insert into catalog.unit_conversions (from_unit_id, to_unit_id, factor)
                    values (pg_temp.unit('l'), pg_temp.unit('g'), 1000)$$,
@@ -325,8 +376,8 @@ select is(pg_temp.q(pg_temp.u(408), $$select coalesce(quantity::text, 'vacío') 
             from catalog.convert_quantity(pg_temp.ing(34), 100, pg_temp.unit('ml'), pg_temp.unit('g'))$$),
   'vacío|missing_conversion', 'caso 17: sin densidad, conversión faltante y nunca 0');
 select is(pg_temp.q(pg_temp.u(408), $$select quantity::numeric(18,4)::text || '|' || status
-            from catalog.convert_quantity(pg_temp.ing(9), 3, pg_temp.unit('unit'), pg_temp.unit('kg'))$$),
-  '0.3600|ok', '3 limones de 120 g son 0,36 kg (peso por unidad)');
+            from catalog.convert_quantity(pg_temp.ing(18), 3, pg_temp.unit('unit'), pg_temp.unit('kg'))$$),
+  '0.3300|ok', '3 chorizos de 110 g son 0,33 kg (peso por unidad)');
 select is(pg_temp.q(pg_temp.u(408), $$select base_quantity::numeric(18,4)::text || '|' || base_unit || '|' || status
             from catalog.to_base_quantity(pg_temp.ing(26), 2, pg_temp.unit('dozen'))$$),
   '24.0000|unit|ok', '2 docenas de huevos son 24 unidades');
@@ -360,9 +411,9 @@ select is(pg_temp.internal(pg_temp.u(406), $$select core.can_see_costs(pg_temp.u
 select is(pg_temp.internal(pg_temp.u(404), $$select core.can_see_costs(pg_temp.u(1), pg_temp.u(101), pg_temp.u(201))::text$$), 'false',
   'el Gerente tampoco, hasta que Soy responda N2');
 -- El historial de verdad (no solo la función): el costo del documento de ensayo del seed.
-select is(pg_temp.q(pg_temp.u(410), $$select new_values ->> 'cost' from core.audit_history(p_limit => 200)
+select is(pg_temp.q(pg_temp.u(410), $$select new_values ->> 'cost' from core.audit_history(p_limit => 50, p_record_id => pg_temp.u(601))
             where table_name = 'test_documents' and record_id = pg_temp.u(601) and action = 'insert'$$),
-  '1520.50', 'el Auditor ve el costo en el historial (recipes.view_costs)');
+  '1520.5000', 'el Auditor ve el costo en el historial (recipes.view_costs)');
 do $$
 begin
   perform core.set_change_context('Prueba: sin permiso de costos', 'maintenance');
@@ -371,7 +422,7 @@ begin
      and permission_id = (select id from core.permissions where code = 'recipes.view_costs');
 end
 $$;
-select is(pg_temp.q(pg_temp.u(410), $$select new_values ->> 'cost' from core.audit_history(p_limit => 200)
+select is(pg_temp.q(pg_temp.u(410), $$select new_values ->> 'cost' from core.audit_history(p_limit => 50, p_record_id => pg_temp.u(601))
             where table_name = 'test_documents' and record_id = pg_temp.u(601) and action = 'insert'$$),
   '[oculto]', 'sin recipes.view_costs, el historial lo muestra oculto');
 

@@ -1,56 +1,40 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). **Staging funciona** (primera publicación completa en verde, PR #17). Etapa 2.1 A (catálogo) construida en la rama `feat/recetario-catalogo`, **sin terminar**: ver abajo._
+_Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. **Etapa 2.1 A (catálogo de materias primas) terminada**, con PR abierto desde `feat/recetario-catalogo`._
 
-## Al retomar: etapa 2.1 A (catálogo), rama `feat/recetario-catalogo`
+## Al retomar: etapa 2.1 A terminada (PR de `feat/recetario-catalogo`)
 
-Plan de la sesión aprobado: `C:\Users\julym\.claude\plans\silly-cuddling-ocean.md`. Decisiones: ADR-0020. Commit de trabajo en curso, **sin PR**.
-
-- **Hecho:**
-  - migraciones `20261028120000_recipes_permissions.sql` (19 permisos, `site_type`, `can_see_costs` y `audit_history` con `recipes.view_costs`, `visible_group_ids`) y `20261028120100_catalog.sql` (10 tablas, unidades, funciones);
-  - seed con 50 materias primas DEMO;
+- **Qué se hizo:**
+  - migraciones `20261028120000_recipes_permissions.sql`, `20261028120100_catalog.sql` y `20261029120000_catalog_review_fixes.sql`;
   - pantallas `/materias-primas`, `/nueva` y `/[id]`;
-  - pruebas: pgTAP 140, Vitest `catalog-schemas` y Playwright `materias-primas.spec.ts`;
+  - seed con 50 materias primas DEMO;
   - diccionario `docs/modulos/02-recetario-diccionario.md`.
-- **Decidido por Joaco hoy:** quien administra personas recibe los permisos del recetario de los roles que administra (como en la Fase 1).
-- **Por la revisión de seguridad:** el **Gerente quedó sin costos ni precios** hasta que Soy responda N2 (denegar por defecto).
-- **Pruebas en la última corrida:**
-  - **pgTAP: 2 en rojo**, de 874:
-    - la 45 de un archivo de la Fase 1 que prueba que el historial oculta costos. Hay que ver si el caso pasó a ser correcto con `recipes.view_costs`, o si es un problema real; **nunca debilitarla**;
-    - la 85 de `140_catalog`, "el Auditor ve el costo en el historial".
-  - Vitest: 126 en verde.
-  - Playwright `materias-primas`: 8 en verde antes de las últimas correcciones de diseño. Falta volver a correrlo.
+  - Detalle en ADR-0020.
+- **Pruebas (2026-10-29, `npm run test` completo):**
+  - lint y tipos ✅;
+  - Vitest 126 de 126 ✅;
+  - pgTAP 889 de 889 ✅;
+  - Playwright 68 de 68 ✅.
 - **Revisiones:**
-  - **`ui-reviewer`: sin graves.** Ya corregidos:
-    - ids repetidos entre páginas ocultas, con una prueba que lo controla;
-    - tope de proveedores;
-    - página fuera de rango;
-    - flechita en las acciones plegables;
-    - textos.
-
-    Quedan: el `h1` de la ficha (dice "Materia prima", no el nombre), la acción principal al alcance del pulgar y una pantalla de Proveedores.
-
-  - **`security-auditor`: apto, sin graves.** Hechos: el historial con `recipes.view_costs` y el Gerente sin costos. Quedan menores:
-    - registrar los rechazos del catálogo (`core.deny`);
-    - el menú "editar" con alcance de grupo (`permitted_group_ids`);
-    - `hide_costs` con una lista de columnas, en 2.1 C;
-    - no dejar sin conversión productos que la necesitan.
-  - **`db-reviewer`: 2 graves, ya resueltos.** La migración no aplicaba por un error mío al editar; ya aplica. Ojo: revisó a mitad de cambios, así que **hay que volver a pedirle la revisión**. Quedan medios:
-    - **M2:** proteger productos al quitar una conversión o al cambiar la unidad de uso (trigger y pruebas);
-    - **M3:** anotar en el plan que en 2.1 C los cambios de contenido o conversión pasan por aprobación o quedan en el snapshot.
-
-    Y menores:
-    - índices simples en `group_id` y `from_unit_id`;
-    - escapar `%` y `_` en el buscador, y filtrar `deleted_at`;
-    - categoría o proveedor borrados en altas;
-    - más errores en español (23502, 22P02, alias largo);
-    - documentar en el ADR lo que falta (funciones de categorías y alérgenos, la fuente del contenido) y que el Gerente tampoco da Compras.
-- **Próximos pasos:**
-  1. resolver las 2 pgTAP en rojo y los medios de `db-reviewer`;
-  2. correr `npm run test` completo;
-  3. volver a pasar las 3 revisiones;
-  4. abrir el PR.
-- **Ojo con Supabase local:** después de cambiar `api.schemas`, reiniciarlo (`npx supabase stop` y después `start`).
+  - `security-auditor`: apto, sin graves;
+  - `db-reviewer`, segunda revisión: sin graves, con sus dos medios resueltos;
+  - `ui-reviewer`: sin graves, con sus medios resueltos.
+  - Lo que queda para más adelante está en ADR-0020 (sección Revisiones) y en el plan.
+- **Arreglo que toca la Fase 1:** el selector de local usaba un id fijo. Como Next guarda ocultas las pantallas anteriores, quedaba repetido; ahora usa `useId`. La prueba de Playwright de Materias primas controla que no haya ids repetidos.
+- **Pendiente de Joaco:** abrir el PR y fusionarlo con "Pruebas" en verde. Staging publica solo la migración nueva.
+- **Próxima etapa:** 2.1 B (rendimientos). No depende de Soy.
+- **Pendiente de Soy** (la lista detallada se le pasó a Joaco el 2026-10-29):
+  - precios: orden por local, IVA, quién aprueba y aumento grande, plazo, producto preferido;
+  - rendimiento aprobado;
+  - qué ve el Gerente (N2) y los permisos del Superadministrador;
+  - Compras por marca;
+  - subrecetas y Pariggi;
+  - quién valida los alérgenos;
+  - quiénes validan cada etapa;
+  - el Excel del recetario actual y las 20 recetas reales;
+  - la lista de marcas y locales;
+  - el plan Pro de Supabase para producción.
+- **Supabase local:** después de cambiar `api.schemas`, hay que reiniciarlo (`npx supabase stop` y `start`).
 
 ## Antes: staging (2026-10-28)
 

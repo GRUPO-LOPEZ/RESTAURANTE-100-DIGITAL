@@ -421,6 +421,9 @@ Las validaciones 2.2, 2.4 y 2.5 usan datos o personas reales. Por eso **staging 
 
 - **El motor recursivo y el rendimiento.** Una receta de 10 niveles, recalculada en 4 locales, son muchas llamadas. Se mide con `explain analyze` en 2.3, con datos realistas (cientos de recetas). Si no alcanza, se calcula la subreceta una vez por local y se reutiliza, sin cambiar el resultado.
 - **La propagación dentro de la transacción de aprobación** puede tardar con muchas recetas afectadas. Se mide; el plan B es procesar la cola con `pg_cron` cada minuto.
+- **Datos del catálogo que mueven costos** (revisión de base de 2.1 A, M3): el contenido de un producto, una conversión y la unidad de uso hoy se editan en el lugar.
+  - **En 2.1 C**, cuando haya precios, esos cambios pasan por aprobación.
+  - **En 2.3**, el snapshot de costo guarda el contenido, la conversión y el rendimiento usados, para que una foto vieja nunca cambie.
 - **Fotos:** comprimir y hacer miniaturas.
   - Las transformaciones de imagen de Supabase son de planes pagos.
   - Plan A: comprimir en el navegador antes de subir, sin dependencia nueva, con `canvas`.
