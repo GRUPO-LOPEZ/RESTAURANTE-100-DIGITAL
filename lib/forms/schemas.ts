@@ -31,6 +31,29 @@ const code = z
   .trim()
   .regex(/^[0-9]{6}$/, "El código tiene 6 números.");
 
+// Catálogo (Fase 2): los mismos formatos que exige la base.
+const catalogCode = z
+  .string({ message: "Escribí el código." })
+  .trim()
+  .toUpperCase()
+  .regex(
+    /^[A-Z0-9][A-Z0-9-]{1,29}$/,
+    "Mayúsculas, números y guiones, de 2 a 30 caracteres (por ejemplo, ING-0001).",
+  );
+const catalogName = z
+  .string({ message: "Escribí el nombre." })
+  .trim()
+  .min(1, "Escribí el nombre.")
+  .max(120, "Hasta 120 caracteres.");
+const notesField = z.string().trim().max(1000, "Hasta 1.000 caracteres.").optional();
+// Número positivo, con coma o punto decimal (como se escribe en la Argentina).
+export const positiveNumber = z
+  .string({ message: "Escribí un número, por ejemplo 0,92." })
+  .trim()
+  .regex(/^[0-9]{1,12}([.,][0-9]{1,6})?$/, "Escribí un número, por ejemplo 0,92.")
+  .refine((v) => Number(v.replace(",", ".")) > 0, "Tiene que ser mayor que cero.");
+const choice = (message: string) => z.string({ message }).min(1, message).max(60, message);
+
 const repeatMatches = (v: { password: string; repeat: string }) => v.password === v.repeat;
 const repeatError = { message: "Las dos contraseñas no coinciden.", path: ["repeat"] };
 
@@ -101,6 +124,71 @@ export const schemas = {
   // Corregir un documento publicado: el lugar y el título viajan ocultos.
   testCorrection: z.object({
     content: z.string().trim().max(4000, "Hasta 4.000 caracteres.").optional(),
+    reason: reasonField,
+  }),
+  ingredient: z.object({
+    code: catalogCode,
+    name: catalogName,
+    category_id: choice("Elegí la categoría."),
+    recipe_unit: z.enum(["g", "ml", "unit"], { message: "Elegí en qué se usa: g, ml o unidad." }),
+    reason: reasonField,
+  }),
+  // El código no cambia nunca: no se edita.
+  ingredientEdit: z.object({
+    name: catalogName,
+    category_id: choice("Elegí la categoría."),
+    notes: notesField,
+    reason: reasonField,
+  }),
+  aliases: z.object({
+    aliases: z.string().trim().max(1000, "Hasta 1.000 caracteres.").optional(),
+    reason: reasonField,
+  }),
+  conversion: z.object({
+    kind: z.enum(["density", "unit_weight"], { message: "Elegí qué conversión es." }),
+    factor: positiveNumber,
+    source: choice("Elegí de dónde sale el dato."),
+    measured_on: z
+      .string({ message: "Elegí la fecha de la medición." })
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Elegí la fecha de la medición."),
+    measured_by: z.string().trim().max(120, "Hasta 120 caracteres.").optional(),
+    reason: reasonField,
+  }),
+  allergen: z.object({
+    allergen_id: choice("Elegí el alérgeno."),
+    status: z.enum(["", "contains", "may_contain", "free_verified"], {
+      message: "Elegí el estado.",
+    }),
+    source: z.string().max(60).optional(),
+    reason: reasonField,
+  }),
+  product: z.object({
+    code: catalogCode,
+    description: z
+      .string({ message: "Escribí la descripción." })
+      .trim()
+      .min(1, "Escribí la descripción.")
+      .max(200, "Hasta 200 caracteres."),
+    brand_name: z.string().trim().max(80, "Hasta 80 caracteres.").optional(),
+    supplier_id: z.string().max(60).optional(),
+    package_unit: choice("Elegí cómo viene."),
+    units_per_package: z
+      .string({ message: "Escribí cuántas unidades trae, por ejemplo 12." })
+      .trim()
+      .regex(/^[0-9]{1,5}$/, "Escribí cuántas unidades trae, por ejemplo 12.")
+      .refine((v) => Number(v) >= 1 && Number(v) <= 10000, "De 1 a 10.000."),
+    content_per_unit: positiveNumber,
+    content_unit: choice("Elegí la unidad del contenido."),
+    reason: reasonField,
+  }),
+  supplier: z.object({
+    code: catalogCode,
+    name: catalogName,
+    tax_id: z
+      .string()
+      .trim()
+      .regex(/^$|^[0-9-]{8,15}$/, "El CUIT va solo con números y guiones.")
+      .optional(),
     reason: reasonField,
   }),
 } as const;

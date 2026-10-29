@@ -53,7 +53,11 @@ select is(
   (select array_agg(n.nspname || '.' || p.proname order by n.nspname || '.' || p.proname collate "C")
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = any (pg_temp.business_schemas()) and has_function_privilege('authenticated', p.oid, 'execute')),
-  array['core.add_member', 'core.assign_role', 'core.audit_export', 'core.audit_history', 'core.can_invite',
+  array['catalog.convert_quantity', 'catalog.create_ingredient', 'catalog.create_purchase_product',
+        'catalog.create_supplier', 'catalog.search_components', 'catalog.set_aliases', 'catalog.set_allergen_status',
+        'catalog.set_ingredient_active', 'catalog.set_unit_conversion', 'catalog.to_base_quantity',
+        'catalog.update_ingredient', 'catalog.update_purchase_product', 'catalog.update_supplier',
+        'core.add_member', 'core.assign_role', 'core.audit_export', 'core.audit_history', 'core.can_invite',
         'core.can_view_scope', 'core.can_view_user', 'core.create_test_document_draft', 'core.current_aal',
         'core.current_actor_id', 'core.current_actor_subject', 'core.current_session_ok', 'core.disable_user',
         'core.has_permission', 'core.has_permission_anywhere', 'core.has_permission_for_scope',
@@ -64,7 +68,8 @@ select is(
         'core.request_role_permission_change', 'core.request_test_document_review', 'core.revoke_role',
         'core.set_active_restaurant', 'core.suspend_user', 'core.unlock_user', 'core.update_my_profile',
         'core.user_detail', 'core.users_control_panel', 'core.users_dashboard', 'core.users_overview',
-        'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_user_ids', 'org.create_area',
+        'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_group_ids', 'core.visible_user_ids',
+        'org.create_area',
         'org.create_brand', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted', 'org.update_area',
         'org.update_brand', 'org.update_group', 'org.update_restaurant', 'workflow.cancel_request',
         'workflow.decide_approval', 'workflow.inbox'],
@@ -75,7 +80,10 @@ select is(
      from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = any (pg_temp.business_schemas()) and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege('authenticated', c.oid, 'select')),
-  array['core.notifications', 'core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships',
+  array['catalog.allergens', 'catalog.ingredient_aliases', 'catalog.ingredient_allergens',
+        'catalog.ingredient_categories', 'catalog.ingredient_unit_conversions', 'catalog.ingredients',
+        'catalog.purchase_products', 'catalog.suppliers', 'catalog.unit_conversions', 'catalog.units',
+        'core.notifications', 'core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships',
         'core.user_role_assignments', 'core.v_test_documents', 'org.areas', 'org.brands',
         'org.groups', 'org.restaurants', 'org.time_zones', 'workflow.approval_decisions',
         'workflow.approval_workflows'],

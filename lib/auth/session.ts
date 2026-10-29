@@ -58,7 +58,25 @@ export const getMenus = cache(async () => {
       .rpc("has_permission_anywhere", { p_permission: permission });
     return data === true;
   };
-  const [users, invite, approvals, audit, auditExport, roles, testDocuments] = await Promise.all([
+  // El catálogo es de todo el grupo: la base pide catalog.manage para el grupo entero, así que el
+  // menú usa la misma regla (no basta tenerlo en una marca o un local).
+  const groupWide = async (permission: string) => {
+    const { data } = await supabase
+      .schema("core")
+      .rpc("permitted_group_ids", { p_permission: permission });
+    return Array.isArray(data) && data.length > 0;
+  };
+  const [
+    users,
+    invite,
+    approvals,
+    audit,
+    auditExport,
+    roles,
+    testDocuments,
+    catalog,
+    catalogManage,
+  ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
     check("approvals.view"),
@@ -66,8 +84,20 @@ export const getMenus = cache(async () => {
     check("audit.export"),
     check("permissions.manage"),
     check("test_documents.view"),
+    check("catalog.view"),
+    groupWide("catalog.manage"),
   ]);
-  return { users, invite, approvals, audit, auditExport, roles, testDocuments };
+  return {
+    users,
+    invite,
+    approvals,
+    audit,
+    auditExport,
+    roles,
+    testDocuments,
+    catalog,
+    catalogManage,
+  };
 });
 
 export type Menus = Awaited<ReturnType<typeof getMenus>>;

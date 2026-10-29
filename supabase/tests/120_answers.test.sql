@@ -79,9 +79,11 @@ select is(pg_temp.r(pg_temp.u(403), $$core.assign_role('88888888-8888-8888-8888-
             '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000203',
             p_reason => 'Otra marca')$$),
   'denied', '9. un rol en otra marca: sin permiso ahí, ni se mira la membresía');
-select is(pg_temp.e(pg_temp.u(403), $$select core.assign_role('88888888-8888-8888-8888-888888888881', 'purchasing', 'brand',
+-- Con un rol que la directora sí puede dar (Compras tiene permisos del catálogo que ella no
+-- tiene, y eso se frena antes, por otra regla).
+select is(pg_temp.e(pg_temp.u(403), $$select core.assign_role('88888888-8888-8888-8888-888888888881', 'head_chef', 'brand',
             '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101',
-            p_reason => 'Compras de la marca')$$),
+            p_reason => 'Jefe de cocina de la marca')$$),
   'La persona no trabaja en ese lugar: primero sumale una membresía de ese local, de su marca o de todo el grupo.', '9. con membresías de locales, no se le da un rol de toda la marca');
 select is(pg_temp.e(pg_temp.u(401), $$select core.assign_role('88888888-8888-8888-8888-888888888881', 'auditor', 'group',
             '00000000-0000-4000-8000-000000000001', p_reason => 'Auditoría')$$),

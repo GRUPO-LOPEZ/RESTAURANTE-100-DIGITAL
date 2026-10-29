@@ -56,6 +56,15 @@ describe("Staging: configuración de Supabase", () => {
     expect(auth.additional_redirect_urls).not.toMatch(/http:\/\//);
   });
 
+  it("la API expone los esquemas de negocio decididos, nunca audit, y staging los hereda", () => {
+    const schemas = tomlSection(config, "api").schemas ?? "";
+    for (const schema of ["core", "org", "workflow", "catalog"]) {
+      expect(schemas).toContain(`"${schema}"`);
+    }
+    expect(schemas).not.toContain('"audit"');
+    expect(tomlSection(config, "remotes.staging.api").schemas).toBeUndefined();
+  });
+
   it("hereda el registro cerrado y sin ingresos anónimos", () => {
     const auth = tomlSection(config, "auth");
     expect(auth.enable_signup).toBe("false");

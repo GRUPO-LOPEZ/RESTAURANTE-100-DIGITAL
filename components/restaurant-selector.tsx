@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useId } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { setActiveRestaurantAction } from "@/app/shell-actions";
@@ -16,6 +16,8 @@ export function RestaurantSelector({
   options: { id: string; label: string }[];
   value: string | null;
 }) {
+  // Id propio por copia: Next guarda ocultas las pantallas anteriores, cada una con su selector.
+  const selectId = useId();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -37,11 +39,11 @@ export function RestaurantSelector({
       action={formAction}
       className="order-last flex w-full flex-wrap items-center gap-2 sm:order-none sm:w-auto"
     >
-      <label htmlFor="local-activo" className="text-sm font-medium text-ink">
+      <label htmlFor={selectId} className="text-sm font-medium text-ink">
         Local
       </label>
       <select
-        id="local-activo"
+        id={selectId}
         name="restaurant"
         aria-label="Local activo"
         defaultValue={value ?? ""}

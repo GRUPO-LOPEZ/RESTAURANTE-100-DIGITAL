@@ -1,8 +1,42 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-28. **Soy aprobó la Fase 1** en una demo local (ADR-0019): la Fase 2 queda habilitada. El plan de la Fase 2 espera la aprobación de Joaco. **Staging funciona:** la primera publicación completa salió en verde._
+_Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. **Etapa 2.1 A (catálogo de materias primas) terminada**, con PR abierto desde `feat/recetario-catalogo`._
 
-## Al retomar: staging funcionando
+## Al retomar: etapa 2.1 A terminada (PR de `feat/recetario-catalogo`)
+
+- **Qué se hizo:**
+  - migraciones `20261028120000_recipes_permissions.sql`, `20261028120100_catalog.sql` y `20261029120000_catalog_review_fixes.sql`;
+  - pantallas `/materias-primas`, `/nueva` y `/[id]`;
+  - seed con 50 materias primas DEMO;
+  - diccionario `docs/modulos/02-recetario-diccionario.md`.
+  - Detalle en ADR-0020.
+- **Pruebas (2026-10-29, `npm run test` completo):**
+  - lint y tipos ✅;
+  - Vitest 126 de 126 ✅;
+  - pgTAP 889 de 889 ✅;
+  - Playwright 68 de 68 ✅.
+- **Revisiones:**
+  - `security-auditor`: apto, sin graves;
+  - `db-reviewer`, segunda revisión: sin graves, con sus dos medios resueltos;
+  - `ui-reviewer`: sin graves, con sus medios resueltos.
+  - Lo que queda para más adelante está en ADR-0020 (sección Revisiones) y en el plan.
+- **Arreglo que toca la Fase 1:** el selector de local usaba un id fijo. Como Next guarda ocultas las pantallas anteriores, quedaba repetido; ahora usa `useId`. La prueba de Playwright de Materias primas controla que no haya ids repetidos.
+- **Pendiente de Joaco:** abrir el PR y fusionarlo con "Pruebas" en verde. Staging publica solo la migración nueva.
+- **Próxima etapa:** 2.1 B (rendimientos). No depende de Soy.
+- **Pendiente de Soy** (la lista detallada se le pasó a Joaco el 2026-10-29):
+  - precios: orden por local, IVA, quién aprueba y aumento grande, plazo, producto preferido;
+  - rendimiento aprobado;
+  - qué ve el Gerente (N2) y los permisos del Superadministrador;
+  - Compras por marca;
+  - subrecetas y Pariggi;
+  - quién valida los alérgenos;
+  - quiénes validan cada etapa;
+  - el Excel del recetario actual y las 20 recetas reales;
+  - la lista de marcas y locales;
+  - el plan Pro de Supabase para producción.
+- **Supabase local:** después de cambiar `api.schemas`, hay que reiniciarlo (`npx supabase stop` y `start`).
+
+## Staging (funciona desde el 2026-10-28)
 
 - **La primera publicación completa salió en verde** el 2026-10-28, después del PR #17:
   - base, funciones y configuración en el Supabase de staging;
@@ -26,7 +60,7 @@ _Última actualización: 2026-10-28. **Soy aprobó la Fase 1** en una demo local
 ## Al retomar: Fase 2 (recetario)
 
 - **Documento de Soy:** [docs/fases/fase-2-recetario.md](fases/fase-2-recetario.md). Está completo; el diagrama de la sección 5 y la tabla de la sección 20 se pasaron desde capturas.
-- **Plan:** [docs/fases/fase-2-plan.md](fases/fase-2-plan.md). **Espera que Joaco lo apruebe**, junto con las preguntas técnicas N1 (permiso de costos y decimales) y N4 (esquemas nuevos) y la regla de que un precio cuenta recién cuando se aprueba.
+- **Plan:** [docs/fases/fase-2-plan.md](fases/fase-2-plan.md). Aprobado por Joaco el 2026-10-28, con N1, N4 y la regla de que un precio cuenta recién cuando se aprueba (ADR-0020).
 - **Decisiones de Soy:** las 8 de la sección 22, más N2, N3, N5, N6 y el "aumento grande". Joaco las ve con Soy más adelante.
   - Sin la decisión 3 (IVA) y la N6 (qué producto de compra usa el motor), la etapa 2.1 puede construir el catálogo, pero no cerrar los precios.
 - **Plantilla de Excel v0 (borrador):** [docs/plantillas/plantilla-recetario-v0.xlsx](plantillas/plantilla-recetario-v0.xlsx). Se ajusta cuando llegue el Excel actual del recetario, que hay que pedirle a Soy.

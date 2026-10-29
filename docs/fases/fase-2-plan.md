@@ -1,7 +1,10 @@
 # Plan de la Fase 2 — Recetario Digital Profesional
 
 - **Fecha:** 2026-10-28
-- **Estado:** propuesta para que la apruebe Joaco. **No se construye nada** hasta que Soy apruebe la demo de la Fase 1 (compuerta de [fase-1.md](fase-1.md), sección 12), que espera el ambiente de prueba.
+- **Estado:**
+  - Aprobado por Joaco el 2026-10-28, con N1, N4 y "el precio cuenta al aprobarse" (ADR-0020).
+  - Soy aprobó la Fase 1 ese mismo día (ADR-0019).
+  - La etapa 2.1 se parte en A (catálogo, construida), B (rendimientos) y C (precios). Las decisiones de Soy siguen pendientes.
 - **Fuentes:**
   - el documento de Soy, [fase-2-recetario.md](fase-2-recetario.md), que **manda sobre este plan**;
   - el prompt maestro;
@@ -418,6 +421,9 @@ Las validaciones 2.2, 2.4 y 2.5 usan datos o personas reales. Por eso **staging 
 
 - **El motor recursivo y el rendimiento.** Una receta de 10 niveles, recalculada en 4 locales, son muchas llamadas. Se mide con `explain analyze` en 2.3, con datos realistas (cientos de recetas). Si no alcanza, se calcula la subreceta una vez por local y se reutiliza, sin cambiar el resultado.
 - **La propagación dentro de la transacción de aprobación** puede tardar con muchas recetas afectadas. Se mide; el plan B es procesar la cola con `pg_cron` cada minuto.
+- **Datos del catálogo que mueven costos** (revisión de base de 2.1 A, M3): el contenido de un producto, una conversión y la unidad de uso hoy se editan en el lugar.
+  - **En 2.1 C**, cuando haya precios, esos cambios pasan por aprobación.
+  - **En 2.3**, el snapshot de costo guarda el contenido, la conversión y el rendimiento usados, para que una foto vieja nunca cambie.
 - **Fotos:** comprimir y hacer miniaturas.
   - Las transformaciones de imagen de Supabase son de planes pagos.
   - Plan A: comprimir en el navegador antes de subir, sin dependencia nueva, con `canvas`.

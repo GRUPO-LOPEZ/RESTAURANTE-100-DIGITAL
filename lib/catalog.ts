@@ -1,0 +1,312 @@
+import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/database.types";
+
+// Lecturas del catálogo de materias primas (Fase 2, etapa 2.1 A). Como en lib/data.ts: todo pasa
+// por la base con la sesión de la persona (RLS con catalog.view) y, si una lectura falla, se corta
+// con un error en lugar de mostrar "no hay datos".
+
+type Catalog = Database["catalog"];
+export type AllergenStatus = Catalog["Enums"]["allergen_status"];
+export type DataSource = Catalog["Enums"]["data_source"];
+export type ConversionKind = Catalog["Enums"]["conversion_kind"];
+
+function failed(what: string): never {
+  throw new Error(`No pudimos cargar ${what}.`);
+}
+
+export const INGREDIENTS_PAGE = 25;
+
+export const ALLERGEN_STATUS_LABELS: Record<AllergenStatus, string> = {
+  contains: "Contiene",
+  may_contain: "Puede contener (trazas)",
+  free_verified: "No contiene (verificado)",
+};
+
+export const SOURCE_LABELS: Record<DataSource, string> = {
+  manual: "Carga manual",
+  excel_import: "Importado de Excel",
+  measured: "Medido en ensayo",
+  supplier: "Informado por el proveedor",
+  calculated: "Calculado por el sistema",
+  estimated: "Estimado",
+  verified: "Verificado por un responsable",
+};
+
+export type Unit = { id: string; code: string; name: string; dimension: string; isBase: boolean };
+export type Category = { id: string; groupId: string; name: string; label: string };
+export type Supplier = { id: string; code: string; name: string; isInternal: boolean };
+
+export async function getUnits(): Promise<Unit[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .from("units")
+    .select("id, code, name, dimension, is_base")
+    .order("dimension")
+    .order("is_base", { ascending: false })
+    .order("name");
+  if (error) failed("las unidades");
+  return data.map((u) => ({
+    id: u.id,
+    code: u.code,
+    name: u.name,
+    dimension: u.dimension,
+    isBase: u.is_base,
+  }));
+}
+
+// Categorías con su madre: "Lácteos" o "Lácteos › Quesos".
+export async function getCategories(): Promise<Category[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .from("ingredient_categories")
+    .select("id, group_id, parent_id, name")
+    .order("name");
+  if (error) failed("las categorías");
+  const byId = new Map(data.map((c) => [c.id, c]));
+  return data
+    .map((c) => {
+      const parent = c.parent_id ? byId.get(c.parent_id) : undefined;
+      return {
+        id: c.id,
+        groupId: c.group_id,
+        name: c.name,
+        label: parent ? `${parent.name} › ${c.name}` : c.name,
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, "es"));
+}
+
+export async function getSuppliers(): Promise<Supplier[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .from("suppliers")
+    .select("id, code, name, is_internal")
+    .eq("is_active", true)
+    .order("name")
+    // Tope para el desplegable. Antes de cargar proveedores reales, pasa a búsqueda en el servidor.
+    .limit(200);
+  if (error) failed("los proveedores");
+  return data.map((s) => ({ id: s.id, code: s.code, name: s.name, isInternal: s.is_internal }));
+}
+
+export type IngredientsFilter = {
+  search?: string;
+  categoryId?: string;
+  status?: "active" | "inactive";
+  page: number;
+};
+
+export type IngredientRow = {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  unit: string;
+  isActive: boolean;
+};
+
+// Solo letras, números, espacios y guiones: la búsqueda arma un filtro de PostgREST y no puede
+// llevar comas ni paréntesis.
+export function cleanSearch(value: string | undefined): string | undefined {
+  const cleaned = value
+    ?.replace(/[^\p{L}\p{N} -]/gu, "")
+    .trim()
+    .slice(0, 60);
+  return cleaned ? cleaned : undefined;
+}
+
+export async function getIngredients(
+  filter: IngredientsFilter,
+): Promise<{ rows: IngredientRow[]; total: number }> {
+  const supabase = await createClient();
+  const [units, categories] = await Promise.all([getUnits(), getCategories()]);
+  let query = supabase
+    .schema("catalog")
+    .from("ingredients")
+    .select("id, code, name, category_id, recipe_unit_id, is_active", { count: "exact" })
+    .order("name")
+    .range(filter.page * INGREDIENTS_PAGE, (filter.page + 1) * INGREDIENTS_PAGE - 1);
+  if (filter.categoryId) query = query.eq("category_id", filter.categoryId);
+  if (filter.status) query = query.eq("is_active", filter.status === "active");
+  if (filter.search) {
+    // Por nombre, código o alias.
+    const { data: aliases, error } = await supabase
+      .schema("catalog")
+      .from("ingredient_aliases")
+      .select("ingredient_id")
+      .ilike("alias", `%${filter.search.toLowerCase()}%`)
+      .limit(200);
+    if (error) failed("las materias primas");
+    const ids = [...new Set(aliases.map((a) => a.ingredient_id))];
+    const conditions = [`name.ilike.%${filter.search}%`, `code.ilike.%${filter.search}%`];
+    if (ids.length > 0) conditions.push(`id.in.(${ids.join(",")})`);
+    query = query.or(conditions.join(","));
+  }
+  const { data, error, count } = await query;
+  if (error) failed("las materias primas");
+  const unitName = new Map(units.map((u) => [u.id, u.name]));
+  const categoryLabel = new Map(categories.map((c) => [c.id, c.label]));
+  return {
+    total: count ?? 0,
+    rows: data.map((i) => ({
+      id: i.id,
+      code: i.code,
+      name: i.name,
+      category: categoryLabel.get(i.category_id) ?? "",
+      unit: unitName.get(i.recipe_unit_id) ?? "",
+      isActive: i.is_active,
+    })),
+  };
+}
+
+export type IngredientDetail = {
+  id: string;
+  groupId: string;
+  code: string;
+  name: string;
+  categoryId: string;
+  category: string;
+  unit: string;
+  unitCode: string;
+  purchaseUnit: string | null;
+  notes: string | null;
+  isActive: boolean;
+  aliases: string[];
+  conversions: {
+    kind: ConversionKind;
+    factor: number;
+    source: DataSource;
+    measuredOn: string;
+    measuredBy: string | null;
+  }[];
+  products: {
+    id: string;
+    code: string;
+    description: string;
+    brandName: string | null;
+    supplier: string | null;
+    contents: string;
+    isActive: boolean;
+  }[];
+  allergens: {
+    id: string;
+    name: string;
+    validated: boolean;
+    status: AllergenStatus | null;
+    source: DataSource | null;
+  }[];
+};
+
+const quantity = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 3 });
+
+// "caja de 12 × 500 ml" o "bolsa de 25.000 g".
+function describeContents(
+  packageName: string,
+  units: number,
+  content: number,
+  contentUnit: string,
+): string {
+  const each = `${quantity.format(content)} ${contentUnit}`;
+  return units > 1 ? `${packageName} de ${units} × ${each}` : `${packageName} de ${each}`;
+}
+
+export async function getIngredient(id: string): Promise<IngredientDetail | null> {
+  const supabase = await createClient();
+  const catalog = supabase.schema("catalog");
+  const [units, categories, ingredient, aliases, conversions, products, allergens, statuses] =
+    await Promise.all([
+      getUnits(),
+      getCategories(),
+      catalog
+        .from("ingredients")
+        .select(
+          "id, group_id, code, name, category_id, recipe_unit_id, purchase_unit_id, notes, is_active",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+      catalog.from("ingredient_aliases").select("alias").eq("ingredient_id", id).order("alias"),
+      catalog
+        .from("ingredient_unit_conversions")
+        .select("kind, factor, source, measured_on, measured_by")
+        .eq("ingredient_id", id),
+      catalog
+        .from("purchase_products")
+        .select(
+          "id, code, description, brand_name, supplier_id, package_unit_id, units_per_package, content_per_unit, content_unit_id, is_active",
+        )
+        .eq("ingredient_id", id)
+        .order("is_active", { ascending: false })
+        .order("description"),
+      catalog.from("allergens").select("id, name, validated_at").order("name"),
+      catalog
+        .from("ingredient_allergens")
+        .select("allergen_id, status, source")
+        .eq("ingredient_id", id),
+    ]);
+  for (const result of [ingredient, aliases, conversions, products, allergens, statuses]) {
+    if (result.error) failed("la materia prima");
+  }
+  const i = ingredient.data;
+  if (!i) return null;
+
+  const unit = new Map(units.map((u) => [u.id, u]));
+  const supplierIds = [
+    ...new Set((products.data ?? []).map((p) => p.supplier_id).filter((s): s is string => !!s)),
+  ];
+  const supplierNames = new Map<string, string>();
+  if (supplierIds.length > 0) {
+    const { data, error } = await catalog
+      .from("suppliers")
+      .select("id, name")
+      .in("id", supplierIds);
+    if (error) failed("los proveedores");
+    for (const s of data) supplierNames.set(s.id, s.name);
+  }
+  const statusOf = new Map((statuses.data ?? []).map((s) => [s.allergen_id, s]));
+
+  return {
+    id: i.id,
+    groupId: i.group_id,
+    code: i.code,
+    name: i.name,
+    categoryId: i.category_id,
+    category: categories.find((c) => c.id === i.category_id)?.label ?? "",
+    unit: unit.get(i.recipe_unit_id)?.name ?? "",
+    unitCode: unit.get(i.recipe_unit_id)?.code ?? "",
+    purchaseUnit: i.purchase_unit_id ? (unit.get(i.purchase_unit_id)?.name ?? null) : null,
+    notes: i.notes,
+    isActive: i.is_active,
+    aliases: (aliases.data ?? []).map((a) => a.alias),
+    conversions: (conversions.data ?? []).map((c) => ({
+      kind: c.kind,
+      factor: c.factor,
+      source: c.source,
+      measuredOn: c.measured_on,
+      measuredBy: c.measured_by,
+    })),
+    products: (products.data ?? []).map((p) => ({
+      id: p.id,
+      code: p.code,
+      description: p.description,
+      brandName: p.brand_name,
+      supplier: p.supplier_id ? (supplierNames.get(p.supplier_id) ?? null) : null,
+      contents: describeContents(
+        unit.get(p.package_unit_id)?.name ?? "",
+        p.units_per_package,
+        p.content_per_unit,
+        unit.get(p.content_unit_id)?.name ?? "",
+      ),
+      isActive: p.is_active,
+    })),
+    allergens: (allergens.data ?? []).map((a) => ({
+      id: a.id,
+      name: a.name,
+      validated: a.validated_at !== null,
+      status: statusOf.get(a.id)?.status ?? null,
+      source: statusOf.get(a.id)?.source ?? null,
+    })),
+  };
+}

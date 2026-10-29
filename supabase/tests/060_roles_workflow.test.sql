@@ -313,15 +313,15 @@ do $$
 begin
   perform core.set_change_context('Permisos de prueba de recetas', 'maintenance');
   insert into core.permissions (code, module, description) values
-    ('recipes.view', 'recipes', 'Prueba: ver recetas vigentes.'),
-    ('recipes.edit', 'recipes', 'Prueba: crear borradores y pedir revisión.'),
-    ('recipes.publish', 'recipes', 'Prueba: aprobar y publicar recetas.'),
-    ('costing.view_costs', 'costing', 'Prueba: ver costos.');
+    ('test_recipes.view', 'test_recipes', 'Prueba: ver recetas vigentes.'),
+    ('test_recipes.edit', 'test_recipes', 'Prueba: crear borradores y pedir revisión.'),
+    ('test_recipes.publish', 'test_recipes', 'Prueba: aprobar y publicar recetas.'),
+    ('test_recipes.view_costs', 'test_recipes', 'Prueba: ver costos.');
   insert into core.role_permissions (role_id, permission_id)
   select r.id, p.id from (values
-      ('cook', 'recipes.view'), ('head_chef', 'recipes.view'), ('head_chef', 'recipes.edit'),
-      ('executive_chef', 'recipes.view'), ('executive_chef', 'recipes.edit'), ('executive_chef', 'recipes.publish'),
-      ('executive_chef', 'costing.view_costs')) as m (rc, pc)
+      ('cook', 'test_recipes.view'), ('head_chef', 'test_recipes.view'), ('head_chef', 'test_recipes.edit'),
+      ('executive_chef', 'test_recipes.view'), ('executive_chef', 'test_recipes.edit'), ('executive_chef', 'test_recipes.publish'),
+      ('executive_chef', 'test_recipes.view_costs')) as m (rc, pc)
     join core.roles r on r.code = m.rc join core.permissions p on p.code = m.pc;
 end
 $$;
@@ -344,13 +344,13 @@ create trigger log_change after insert or update or delete on public.test_recipe
 alter table public.test_recipes enable row level security;
 grant select, insert, update on public.test_recipes to authenticated;
 create policy test_recipes_select on public.test_recipes for select to authenticated
-  using (restaurant_id in (select core.permitted_restaurant_ids('recipes.view'))
-         and (status = 'published' or restaurant_id in (select core.permitted_restaurant_ids('recipes.edit'))));
+  using (restaurant_id in (select core.permitted_restaurant_ids('test_recipes.view'))
+         and (status = 'published' or restaurant_id in (select core.permitted_restaurant_ids('test_recipes.edit'))));
 create policy test_recipes_insert on public.test_recipes for insert to authenticated
-  with check (status = 'draft' and restaurant_id in (select core.permitted_restaurant_ids('recipes.edit')));
+  with check (status = 'draft' and restaurant_id in (select core.permitted_restaurant_ids('test_recipes.edit')));
 create policy test_recipes_update on public.test_recipes for update to authenticated
-  using (restaurant_id in (select core.permitted_restaurant_ids('recipes.edit')))
-  with check (status in ('draft', 'in_review') or restaurant_id in (select core.permitted_restaurant_ids('recipes.publish')));
+  using (restaurant_id in (select core.permitted_restaurant_ids('test_recipes.edit')))
+  with check (status in ('draft', 'in_review') or restaurant_id in (select core.permitted_restaurant_ids('test_recipes.publish')));
 
 create table public.test_recipe_costs (
   recipe_id uuid not null, restaurant_id uuid not null, food_cost numeric(14, 4) not null, currency text not null default 'ARS'
@@ -358,7 +358,7 @@ create table public.test_recipe_costs (
 alter table public.test_recipe_costs enable row level security;
 grant select on public.test_recipe_costs to authenticated;
 create policy test_recipe_costs_select on public.test_recipe_costs for select to authenticated
-  using (restaurant_id in (select core.permitted_restaurant_ids('costing.view_costs')));
+  using (restaurant_id in (select core.permitted_restaurant_ids('test_recipes.view_costs')));
 
 -- 3: el jefe de cocina crea un borrador, pide revisión, pero no publica
 select is(pg_temp.q(pg_temp.u(406), format($$insert into public.test_recipes (id, group_id, restaurant_id, name) values ('aaaaaaaa-0000-4000-8000-000000000001', %L, %L, 'Ñoquis') returning 'ok'$$, pg_temp.u(1), pg_temp.u(201))),

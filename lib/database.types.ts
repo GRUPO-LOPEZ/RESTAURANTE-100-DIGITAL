@@ -387,6 +387,773 @@ export type Database = {
       [_ in never]: never;
     };
   };
+  catalog: {
+    Tables: {
+      allergens: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          legal_reference: string | null;
+          name: string;
+          updated_at: string;
+          updated_by: string | null;
+          validated_at: string | null;
+          validated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          legal_reference?: string | null;
+          name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          validated_at?: string | null;
+          validated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          legal_reference?: string | null;
+          name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          validated_at?: string | null;
+          validated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      ingredient_aliases: {
+        Row: {
+          alias: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          alias: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          alias?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_aliases_ingredient_fkey";
+            columns: ["ingredient_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredients";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      ingredient_allergens: {
+        Row: {
+          allergen_id: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          notes: string | null;
+          source: Database["catalog"]["Enums"]["data_source"];
+          status: Database["catalog"]["Enums"]["allergen_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          allergen_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          notes?: string | null;
+          source: Database["catalog"]["Enums"]["data_source"];
+          status: Database["catalog"]["Enums"]["allergen_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          allergen_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          notes?: string | null;
+          source?: Database["catalog"]["Enums"]["data_source"];
+          status?: Database["catalog"]["Enums"]["allergen_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_allergens_allergen_fkey";
+            columns: ["allergen_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "allergens";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "ingredient_allergens_ingredient_fkey";
+            columns: ["ingredient_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredients";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      ingredient_categories: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          parent_id: string | null;
+          stale_price_days: number | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          name: string;
+          parent_id?: string | null;
+          stale_price_days?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          name?: string;
+          parent_id?: string | null;
+          stale_price_days?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_categories_parent_fkey";
+            columns: ["parent_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredient_categories";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      ingredient_unit_conversions: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          factor: number;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          kind: Database["catalog"]["Enums"]["conversion_kind"];
+          measured_by: string | null;
+          measured_on: string;
+          notes: string | null;
+          source: Database["catalog"]["Enums"]["data_source"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          factor: number;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          kind: Database["catalog"]["Enums"]["conversion_kind"];
+          measured_by?: string | null;
+          measured_on: string;
+          notes?: string | null;
+          source: Database["catalog"]["Enums"]["data_source"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          factor?: number;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          kind?: Database["catalog"]["Enums"]["conversion_kind"];
+          measured_by?: string | null;
+          measured_on?: string;
+          notes?: string | null;
+          source?: Database["catalog"]["Enums"]["data_source"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_unit_conversions_ingredient_fkey";
+            columns: ["ingredient_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredients";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      ingredients: {
+        Row: {
+          category_id: string;
+          code: string;
+          costing_unit_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          notes: string | null;
+          purchase_unit_id: string | null;
+          recipe_unit_id: string;
+          storage_unit_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          category_id: string;
+          code: string;
+          costing_unit_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          notes?: string | null;
+          purchase_unit_id?: string | null;
+          recipe_unit_id: string;
+          storage_unit_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          category_id?: string;
+          code?: string;
+          costing_unit_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          notes?: string | null;
+          purchase_unit_id?: string | null;
+          recipe_unit_id?: string;
+          storage_unit_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ingredients_category_fkey";
+            columns: ["category_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredient_categories";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "ingredients_costing_unit_id_fkey";
+            columns: ["costing_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ingredients_purchase_unit_id_fkey";
+            columns: ["purchase_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ingredients_recipe_unit_id_fkey";
+            columns: ["recipe_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ingredients_storage_unit_id_fkey";
+            columns: ["storage_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      purchase_products: {
+        Row: {
+          brand_name: string | null;
+          code: string;
+          content_per_unit: number;
+          content_unit_id: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          is_active: boolean;
+          notes: string | null;
+          package_unit_id: string;
+          supplier_id: string | null;
+          units_per_package: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_name?: string | null;
+          code: string;
+          content_per_unit: number;
+          content_unit_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description: string;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          is_active?: boolean;
+          notes?: string | null;
+          package_unit_id: string;
+          supplier_id?: string | null;
+          units_per_package?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          brand_name?: string | null;
+          code?: string;
+          content_per_unit?: number;
+          content_unit_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          is_active?: boolean;
+          notes?: string | null;
+          package_unit_id?: string;
+          supplier_id?: string | null;
+          units_per_package?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "purchase_products_content_unit_id_fkey";
+            columns: ["content_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "purchase_products_ingredient_fkey";
+            columns: ["ingredient_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredients";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "purchase_products_package_unit_id_fkey";
+            columns: ["package_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "purchase_products_supplier_fkey";
+            columns: ["supplier_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "suppliers";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      suppliers: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          is_active: boolean;
+          is_internal: boolean;
+          name: string;
+          notes: string | null;
+          tax_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          is_active?: boolean;
+          is_internal?: boolean;
+          name: string;
+          notes?: string | null;
+          tax_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          is_active?: boolean;
+          is_internal?: boolean;
+          name?: string;
+          notes?: string | null;
+          tax_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      unit_conversions: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          factor: number;
+          from_unit_id: string;
+          id: string;
+          to_unit_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          factor: number;
+          from_unit_id: string;
+          id?: string;
+          to_unit_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          factor?: number;
+          from_unit_id?: string;
+          id?: string;
+          to_unit_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "unit_conversions_from_unit_id_fkey";
+            columns: ["from_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "unit_conversions_to_unit_id_fkey";
+            columns: ["to_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      units: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          dimension: Database["catalog"]["Enums"]["dimension"];
+          id: string;
+          is_base: boolean;
+          name: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          dimension: Database["catalog"]["Enums"]["dimension"];
+          id?: string;
+          is_base?: boolean;
+          name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          dimension?: Database["catalog"]["Enums"]["dimension"];
+          id?: string;
+          is_base?: boolean;
+          name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      check_ingredient_products: {
+        Args: { p_action: string; p_ingredient_id: string };
+        Returns: undefined;
+      };
+      convert_quantity: {
+        Args: {
+          p_from_unit_id: string;
+          p_ingredient_id: string;
+          p_quantity: number;
+          p_to_unit_id: string;
+        };
+        Returns: {
+          quantity: number;
+          status: string;
+        }[];
+      };
+      create_ingredient: {
+        Args: {
+          p_category_id: string;
+          p_code: string;
+          p_details: Json;
+          p_group_id: string;
+          p_name: string;
+          p_reason: string;
+          p_recipe_unit: string;
+        };
+        Returns: string;
+      };
+      create_purchase_product: {
+        Args: {
+          p_code: string;
+          p_content_per_unit: number;
+          p_content_unit: string;
+          p_description: string;
+          p_details: Json;
+          p_ingredient_id: string;
+          p_package_unit: string;
+          p_reason: string;
+          p_units_per_package: number;
+        };
+        Returns: string;
+      };
+      create_supplier: {
+        Args: {
+          p_code: string;
+          p_details: Json;
+          p_group_id: string;
+          p_name: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
+      ingredient_group: { Args: { p_ingredient_id: string }; Returns: string };
+      missing_conversion: {
+        Args: { p_content_unit_id: string; p_ingredient_id: string };
+        Returns: string;
+      };
+      raise_friendly: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
+      search_components: {
+        Args: { p_limit?: number; p_query: string };
+        Returns: {
+          code: string;
+          id: string;
+          kind: string;
+          matched: string;
+          name: string;
+          score: number;
+          unit: string;
+        }[];
+      };
+      set_aliases: {
+        Args: { p_aliases: string[]; p_ingredient_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      set_allergen_status: {
+        Args: {
+          p_allergen_id: string;
+          p_ingredient_id: string;
+          p_reason: string;
+          p_source: Database["catalog"]["Enums"]["data_source"];
+          p_status: Database["catalog"]["Enums"]["allergen_status"];
+        };
+        Returns: undefined;
+      };
+      set_ingredient_active: {
+        Args: { p_active: boolean; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      set_unit_conversion: {
+        Args: {
+          p_factor: number;
+          p_ingredient_id: string;
+          p_kind: Database["catalog"]["Enums"]["conversion_kind"];
+          p_measured_by: string;
+          p_measured_on: string;
+          p_reason: string;
+          p_source: Database["catalog"]["Enums"]["data_source"];
+        };
+        Returns: undefined;
+      };
+      to_base_quantity: {
+        Args: { p_ingredient_id: string; p_quantity: number; p_unit_id: string };
+        Returns: {
+          base_quantity: number;
+          base_unit: string;
+          status: string;
+        }[];
+      };
+      unit_id: { Args: { p_code: string }; Returns: string };
+      update_ingredient: {
+        Args: { p_changes: Json; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      update_purchase_product: {
+        Args: { p_changes: Json; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      update_supplier: {
+        Args: { p_changes: Json; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
+    };
+    Enums: {
+      allergen_status: "contains" | "may_contain" | "free_verified";
+      conversion_kind: "density" | "unit_weight";
+      data_source:
+        | "manual"
+        | "excel_import"
+        | "measured"
+        | "supplier"
+        | "calculated"
+        | "estimated"
+        | "verified";
+      dimension: "mass" | "volume" | "count" | "package";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   core: {
     Tables: {
       actors: {
@@ -1690,6 +2457,7 @@ export type Database = {
       users_overview: { Args: { p_brand_id?: string; p_restaurant_id?: string }; Returns: Json };
       visible_assignment_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
       visible_brand_ids: { Args: { p_permission: string }; Returns: string[] };
+      visible_group_ids: { Args: { p_permission: string }; Returns: string[] };
       visible_user_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
     };
     Enums: {
@@ -1871,6 +2639,7 @@ export type Database = {
           opened_on: string | null;
           phone: string | null;
           predecessor_id: string | null;
+          site_type: Database["org"]["Enums"]["site_type"];
           status: Database["org"]["Enums"]["unit_status"];
           tax_id: string | null;
           time_zone: string;
@@ -1894,6 +2663,7 @@ export type Database = {
           opened_on?: string | null;
           phone?: string | null;
           predecessor_id?: string | null;
+          site_type?: Database["org"]["Enums"]["site_type"];
           status?: Database["org"]["Enums"]["unit_status"];
           tax_id?: string | null;
           time_zone?: string;
@@ -1916,6 +2686,7 @@ export type Database = {
           opened_on?: string | null;
           phone?: string | null;
           predecessor_id?: string | null;
+          site_type?: Database["org"]["Enums"]["site_type"];
           status?: Database["org"]["Enums"]["unit_status"];
           tax_id?: string | null;
           time_zone?: string;
@@ -2017,6 +2788,7 @@ export type Database = {
       };
     };
     Enums: {
+      site_type: "restaurant" | "central_kitchen" | "production_unit";
       unit_status: "active" | "inactive";
     };
     CompositeTypes: {
@@ -2481,6 +3253,22 @@ export const Constants = {
       ],
     },
   },
+  catalog: {
+    Enums: {
+      allergen_status: ["contains", "may_contain", "free_verified"],
+      conversion_kind: ["density", "unit_weight"],
+      data_source: [
+        "manual",
+        "excel_import",
+        "measured",
+        "supplier",
+        "calculated",
+        "estimated",
+        "verified",
+      ],
+      dimension: ["mass", "volume", "count", "package"],
+    },
+  },
   core: {
     Enums: {
       account_status: ["active", "suspended", "deactivated"],
@@ -2492,6 +3280,7 @@ export const Constants = {
   },
   org: {
     Enums: {
+      site_type: ["restaurant", "central_kitchen", "production_unit"],
       unit_status: ["active", "inactive"],
     },
   },
