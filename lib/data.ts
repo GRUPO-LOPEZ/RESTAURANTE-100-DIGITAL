@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
+import { describeCooking, formatCleaning } from "@/lib/yields";
 
 // Lecturas para las pantallas. Todo pasa por la base con la sesión de la persona: lo que
 // devuelve ya está filtrado por sus permisos (RLS y funciones de la Fase 1).
@@ -611,6 +612,19 @@ export const TABLE_LABELS: Record<string, string> = {
   "workflow.approval_requests": "Solicitud de aprobación",
   "workflow.approval_decisions": "Decisión de aprobación",
   "workflow.approval_workflows": "Tipo de aprobación",
+  "catalog.units": "Unidad de medida",
+  "catalog.unit_conversions": "Conversión de unidades",
+  "catalog.ingredient_categories": "Categoría de materias primas",
+  "catalog.ingredients": "Materia prima",
+  "catalog.ingredient_aliases": "Otro nombre de una materia prima",
+  "catalog.ingredient_unit_conversions": "Conversión de una materia prima",
+  "catalog.suppliers": "Proveedor",
+  "catalog.purchase_products": "Producto de compra",
+  "catalog.allergens": "Alérgeno",
+  "catalog.ingredient_allergens": "Alérgeno de una materia prima",
+  "catalog.yield_processes": "Proceso de rendimiento",
+  "catalog.ingredient_yield_profiles": "Rendimiento estándar",
+  "catalog.ingredient_yield_tests": "Ensayo de rendimiento",
 };
 
 // Módulos del historial (audit.module_for), con su nombre en español.
@@ -621,6 +635,7 @@ export const MODULE_LABELS: Record<string, string> = {
   approvals: "Aprobaciones",
   notifications: "Avisos",
   test_documents: "Documentos de ensayo",
+  catalog: "Materias primas",
 };
 
 // Campos que se muestran en el historial y en el "antes y después", con su nombre en español.
@@ -668,6 +683,33 @@ export const FIELD_LABELS: Record<string, string> = {
   grant: "Lo tiene",
   new_name: "Nombre nuevo",
   deleted: "Quitado",
+  // Catálogo y rendimientos (Fase 2).
+  alias: "Otro nombre",
+  brand_name: "Marca comercial",
+  units_per_package: "Unidades por envase",
+  content_per_unit: "Contenido por unidad",
+  is_active: "Activo",
+  is_internal: "Proveedor interno",
+  notes: "Observaciones",
+  kind: "Tipo",
+  factor: "Valor",
+  source: "Fuente",
+  measured_on: "Medido el",
+  measured_by: "Medido por",
+  ingredient: "Materia prima",
+  process: "Proceso",
+  cut: "Corte",
+  cleaning_yield: "Rendimiento de limpieza",
+  cooking_factor: "Factor de cocción",
+  declared_no_loss: "Declarado sin merma",
+  method: "Método",
+  tested_on: "Fecha del ensayo",
+  samples: "Muestras",
+  gross_weight: "Peso bruto (g)",
+  clean_weight: "Peso limpio (g)",
+  before_cooking_weight: "Antes de cocinar (g)",
+  after_cooking_weight: "Después de cocinar (g)",
+  responsible: "Responsable",
 };
 
 const VALUE_LABELS: Record<string, string> = {
@@ -686,9 +728,40 @@ const VALUE_LABELS: Record<string, string> = {
   in_review: "En revisión",
   published: "Publicada",
   archived: "Archivada",
+  superseded: "Reemplazado",
+  density: "Densidad (g por ml)",
+  unit_weight: "Peso por unidad (g)",
+  contains: "Contiene",
+  may_contain: "Puede contener",
+  free_verified: "No contiene (verificado)",
+  measured: "Medido en ensayo",
+  estimated: "Estimado",
+  supplier: "Informado por el proveedor",
+  verified: "Verificado por un responsable",
+  excel_import: "Importado de Excel",
+  calculated: "Calculado por el sistema",
+  manual: "Carga manual",
 };
 
 // Un valor del historial en lenguaje simple: fechas formateadas, estados traducidos, sin JSON.
+// Campos que se leen mejor con su propio formato (rendimientos: "78,5 %", "se expande ×2,5").
+const FIELD_FORMATS: Record<string, (value: number) => string> = {
+  cleaning_yield: formatCleaning,
+  cooking_factor: describeCooking,
+};
+
+// Un valor de un campo con nombre: con su formato propio si lo tiene; si no, como formatValue.
+export function formatField(
+  field: string,
+  value: unknown,
+  roleNames?: Record<string, string>,
+): string {
+  const format = FIELD_FORMATS[field];
+  const number = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
+  if (format && typeof number === "number" && Number.isFinite(number)) return format(number);
+  return formatValue(value, roleNames);
+}
+
 export function formatValue(value: unknown, roleNames?: Record<string, string>): string {
   if (value === null || value === undefined || value === "") return "—";
   if (typeof value === "boolean") return value ? "Sí" : "No";

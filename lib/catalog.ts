@@ -310,3 +310,76 @@ export async function getIngredient(id: string): Promise<IngredientDetail | null
     })),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Rendimientos (etapa 2.1 B)
+// ---------------------------------------------------------------------------
+export type YieldRow = {
+  processId: string;
+  process: string;
+  cut: string | null;
+  supplier: string | null;
+  standardCleaning: number | null;
+  standardCooking: number | null;
+  declaredNoLoss: boolean;
+  approvedAt: string | null;
+  tests: number;
+  measuredCleaning: number | null;
+  measuredCooking: number | null;
+  lastTestedOn: string | null;
+  pendingProposals: number;
+};
+
+export async function getYieldSummary(ingredientId: string): Promise<YieldRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .rpc("yield_summary", { p_ingredient_id: ingredientId });
+  if (error) failed("los rendimientos");
+  return (data ?? []).map((r) => ({
+    processId: r.process_id,
+    process: r.process_name,
+    cut: r.cut,
+    supplier: r.supplier_name,
+    standardCleaning: r.standard_cleaning,
+    standardCooking: r.standard_cooking,
+    declaredNoLoss: r.declared_no_loss ?? false,
+    approvedAt: r.approved_at,
+    tests: r.tests,
+    measuredCleaning: r.measured_cleaning,
+    measuredCooking: r.measured_cooking,
+    lastTestedOn: r.last_tested_on,
+    pendingProposals: r.pending_proposals,
+  }));
+}
+
+export async function getYieldProcesses(): Promise<{ id: string; name: string }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .from("yield_processes")
+    .select("id, name")
+    .order("name");
+  if (error) failed("los procesos");
+  return data;
+}
+
+// Locales donde la sesión puede registrar ensayos (solo para el desplegable: la base vuelve a
+// controlar el permiso al guardar).
+export async function getYieldRestaurants(): Promise<{ id: string; name: string }[]> {
+  const supabase = await createClient();
+  const { data: ids, error } = await supabase
+    .schema("core")
+    .rpc("permitted_restaurant_ids", { p_permission: "yields.record" });
+  if (error) failed("los locales");
+  const list = Array.isArray(ids) ? ids.filter((x): x is string => typeof x === "string") : [];
+  if (list.length === 0) return [];
+  const { data, error: namesError } = await supabase
+    .schema("org")
+    .from("restaurants")
+    .select("id, name")
+    .in("id", list)
+    .order("name");
+  if (namesError) failed("los locales");
+  return data;
+}

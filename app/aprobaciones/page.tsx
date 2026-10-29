@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/ui/kpi";
 import {
   FIELD_LABELS,
   formatDateTime,
-  formatValue,
+  formatField,
   getInbox,
   getRoles,
   getUnreadCount,
@@ -108,15 +108,15 @@ function BeforeAfter({ row, roleNames }: { row: InboxRow; roleNames: Record<stri
         <div key={f} className="flex flex-col sm:flex-row sm:gap-2">
           <dt className="font-medium text-ink sm:w-40 sm:shrink-0">{FIELD_LABELS[f]}</dt>
           <dd className="break-words text-ink-muted">
-            Antes: {formatValue(before[f], roleNames)} → Después:{" "}
-            {f in after ? formatValue(after[f], roleNames) : "sin cambios"}
+            Antes: {formatField(f, before[f], roleNames)} → Después:{" "}
+            {f in after ? formatField(f, after[f], roleNames) : "sin cambios"}
           </dd>
         </div>
       ))}
       {added.map((f) => (
         <div key={f} className="flex flex-col sm:flex-row sm:gap-2">
           <dt className="font-medium text-ink sm:w-40 sm:shrink-0">{FIELD_LABELS[f]}</dt>
-          <dd className="break-words text-ink-muted">{formatValue(after[f], roleNames)}</dd>
+          <dd className="break-words text-ink-muted">{formatField(f, after[f], roleNames)}</dd>
         </div>
       ))}
     </dl>

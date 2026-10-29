@@ -664,6 +664,187 @@ export type Database = {
           },
         ];
       };
+      ingredient_yield_profiles: {
+        Row: {
+          approval_request_id: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
+          cleaning_yield: number;
+          cooking_factor: number;
+          created_at: string;
+          created_by: string | null;
+          cut: string | null;
+          declared_no_loss: boolean;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          method: string | null;
+          notes: string | null;
+          process_id: string;
+          status: Database["catalog"]["Enums"]["yield_status"];
+          supplier_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          approval_request_id?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          cleaning_yield: number;
+          cooking_factor: number;
+          created_at?: string;
+          created_by?: string | null;
+          cut?: string | null;
+          declared_no_loss?: boolean;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          method?: string | null;
+          notes?: string | null;
+          process_id: string;
+          status?: Database["catalog"]["Enums"]["yield_status"];
+          supplier_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          approval_request_id?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          cleaning_yield?: number;
+          cooking_factor?: number;
+          created_at?: string;
+          created_by?: string | null;
+          cut?: string | null;
+          declared_no_loss?: boolean;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          method?: string | null;
+          notes?: string | null;
+          process_id?: string;
+          status?: Database["catalog"]["Enums"]["yield_status"];
+          supplier_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_yield_profiles_ingredient_fkey";
+            columns: ["ingredient_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredients";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "ingredient_yield_profiles_process_fkey";
+            columns: ["process_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "yield_processes";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "ingredient_yield_profiles_supplier_fkey";
+            columns: ["supplier_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "suppliers";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      ingredient_yield_tests: {
+        Row: {
+          after_cooking_weight: number | null;
+          before_cooking_weight: number | null;
+          clean_weight: number | null;
+          created_at: string;
+          created_by: string | null;
+          cut: string | null;
+          discard_weight: number | null;
+          gross_weight: number | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          notes: string | null;
+          process_id: string;
+          responsible: string | null;
+          restaurant_id: string;
+          samples: number;
+          supplier_id: string | null;
+          tested_on: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          after_cooking_weight?: number | null;
+          before_cooking_weight?: number | null;
+          clean_weight?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          cut?: string | null;
+          discard_weight?: number | null;
+          gross_weight?: number | null;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          notes?: string | null;
+          process_id: string;
+          responsible?: string | null;
+          restaurant_id: string;
+          samples?: number;
+          supplier_id?: string | null;
+          tested_on: string;
+        };
+        Update: {
+          after_cooking_weight?: number | null;
+          before_cooking_weight?: number | null;
+          clean_weight?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          cut?: string | null;
+          discard_weight?: number | null;
+          gross_weight?: number | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          notes?: string | null;
+          process_id?: string;
+          responsible?: string | null;
+          restaurant_id?: string;
+          samples?: number;
+          supplier_id?: string | null;
+          tested_on?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_yield_tests_ingredient_fkey";
+            columns: ["ingredient_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredients";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "ingredient_yield_tests_process_fkey";
+            columns: ["process_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "yield_processes";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "ingredient_yield_tests_supplier_fkey";
+            columns: ["supplier_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "suppliers";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
       ingredients: {
         Row: {
           category_id: string;
@@ -1007,11 +1188,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      yield_processes: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      apply_yield_profile: { Args: { p_request_id: string }; Returns: undefined };
+      approved_yield: {
+        Args: {
+          p_cut: string;
+          p_ingredient_id: string;
+          p_process_id: string;
+          p_supplier_id: string;
+        };
+        Returns: {
+          cleaning_yield: number;
+          cooking_factor: number;
+          declared_no_loss: boolean;
+          profile_id: string;
+        }[];
+      };
       check_ingredient_products: {
         Args: { p_action: string; p_ingredient_id: string };
         Returns: undefined;
@@ -1064,14 +1300,44 @@ export type Database = {
         };
         Returns: string;
       };
+      create_yield_process: {
+        Args: { p_code: string; p_group_id: string; p_name: string; p_reason: string };
+        Returns: string;
+      };
       ingredient_group: { Args: { p_ingredient_id: string }; Returns: string };
       missing_conversion: {
         Args: { p_content_unit_id: string; p_ingredient_id: string };
         Returns: string;
       };
+      propose_yield_standard: {
+        Args: {
+          p_cleaning_yield: number;
+          p_cooking_factor: number;
+          p_cut: string;
+          p_declared_no_loss: boolean;
+          p_ingredient_id: string;
+          p_method: string;
+          p_process_id: string;
+          p_reason: string;
+          p_supplier_id?: string;
+        };
+        Returns: string;
+      };
       raise_friendly: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
+      };
+      record_yield_test: {
+        Args: {
+          p_details: Json;
+          p_ingredient_id: string;
+          p_measures: Json;
+          p_process_id: string;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_tested_on: string;
+        };
+        Returns: string;
       };
       search_components: {
         Args: { p_limit?: number; p_query: string };
@@ -1115,6 +1381,21 @@ export type Database = {
         };
         Returns: undefined;
       };
+      standard_yield: {
+        Args: {
+          p_cut?: string;
+          p_ingredient_id: string;
+          p_process_id: string;
+          p_supplier_id?: string;
+        };
+        Returns: {
+          cleaning_yield: number;
+          cooking_factor: number;
+          declared_no_loss: boolean;
+          profile_id: string;
+          status: string;
+        }[];
+      };
       to_base_quantity: {
         Args: { p_ingredient_id: string; p_quantity: number; p_unit_id: string };
         Returns: {
@@ -1136,6 +1417,25 @@ export type Database = {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
       };
+      yield_summary: {
+        Args: { p_ingredient_id: string };
+        Returns: {
+          approved_at: string;
+          cut: string;
+          declared_no_loss: boolean;
+          last_tested_on: string;
+          measured_cleaning: number;
+          measured_cooking: number;
+          pending_proposals: number;
+          process_id: string;
+          process_name: string;
+          standard_cleaning: number;
+          standard_cooking: number;
+          supplier_id: string;
+          supplier_name: string;
+          tests: number;
+        }[];
+      };
     };
     Enums: {
       allergen_status: "contains" | "may_contain" | "free_verified";
@@ -1149,6 +1449,7 @@ export type Database = {
         | "estimated"
         | "verified";
       dimension: "mass" | "volume" | "count" | "package";
+      yield_status: "draft" | "approved" | "superseded";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -2290,6 +2591,10 @@ export type Database = {
         Args: { p_group_id: string; p_permission: string };
         Returns: boolean;
       };
+      has_permission_in_group_any_scope: {
+        Args: { p_group_id: string; p_permission: string };
+        Returns: boolean;
+      };
       has_role_for_scope: {
         Args: {
           p_brand_id?: string;
@@ -3267,6 +3572,7 @@ export const Constants = {
         "verified",
       ],
       dimension: ["mass", "volume", "count", "package"],
+      yield_status: ["draft", "approved", "superseded"],
     },
   },
   core: {

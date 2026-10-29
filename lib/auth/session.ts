@@ -76,6 +76,7 @@ export const getMenus = cache(async () => {
     testDocuments,
     catalog,
     catalogManage,
+    yieldsRecord,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -86,6 +87,8 @@ export const getMenus = cache(async () => {
     check("test_documents.view"),
     check("catalog.view"),
     groupWide("catalog.manage"),
+    // Ensayos y propuestas de rendimiento: en su local o su marca (la base controla dónde).
+    check("yields.record"),
   ]);
   return {
     users,
@@ -97,6 +100,7 @@ export const getMenus = cache(async () => {
     testDocuments,
     catalog,
     catalogManage,
+    yieldsRecord,
   };
 });
 

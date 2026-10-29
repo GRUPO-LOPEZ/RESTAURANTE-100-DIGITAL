@@ -52,6 +52,23 @@ export const positiveNumber = z
   .trim()
   .regex(/^[0-9]{1,12}([.,][0-9]{1,6})?$/, "Escribí un número, por ejemplo 0,92.")
   .refine((v) => Number(v.replace(",", ".")) > 0, "Tiene que ser mayor que cero.");
+// Una casilla marcada: true en el navegador, "on" en el formulario enviado.
+export function isChecked(value: boolean | string | undefined): boolean {
+  return value === true || value === "on";
+}
+// Hoy en la Argentina (AAAA-MM-DD), igual en el navegador y en el servidor.
+export function todayInArgentina(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(
+    new Date(),
+  );
+}
+// Peso opcional en gramos: vacío o un número positivo.
+const optionalGrams = z
+  .string()
+  .trim()
+  .regex(/^$|^[0-9]{1,9}([.,][0-9]{1,3})?$/, "Escribí el peso en gramos, por ejemplo 7700.")
+  .refine((v) => v === "" || Number(v.replace(",", ".")) > 0, "Tiene que ser mayor que cero.")
+  .optional();
 const choice = (message: string) => z.string({ message }).min(1, message).max(60, message);
 
 const repeatMatches = (v: { password: string; repeat: string }) => v.password === v.repeat;
@@ -191,6 +208,79 @@ export const schemas = {
       .optional(),
     reason: reasonField,
   }),
+  // Ensayo de rendimiento: pesos en gramos, al menos un par completo (bruto y limpio, o antes y
+  // después de cocinar), y el limpio no pesa más que el bruto. Lo mismo exige la base.
+  yieldTest: z
+    .object({
+      process_id: choice("Elegí el proceso."),
+      restaurant_id: choice("Elegí el local donde se midió."),
+      cut: z.string().trim().max(80, "Hasta 80 caracteres.").optional(),
+      tested_on: z
+        .string({ message: "Elegí la fecha del ensayo." })
+        .regex(/^\d{4}-\d{2}-\d{2}$/, "Elegí la fecha del ensayo.")
+        .refine((v) => v <= todayInArgentina(), "La fecha del ensayo no puede ser futura."),
+      samples: z
+        .string({ message: "Escribí cuántas muestras." })
+        .trim()
+        .regex(/^[0-9]{1,4}$/, "Escribí cuántas muestras, por ejemplo 3.")
+        .refine((v) => Number(v) >= 1, "Al menos 1."),
+      gross_weight: optionalGrams,
+      clean_weight: optionalGrams,
+      before_cooking_weight: optionalGrams,
+      after_cooking_weight: optionalGrams,
+      responsible: z.string().trim().max(120, "Hasta 120 caracteres.").optional(),
+      reason: reasonField,
+    })
+    .refine((v) => Boolean(v.gross_weight) === Boolean(v.clean_weight), {
+      message: "Para la limpieza hacen falta los dos pesos: bruto y limpio.",
+      path: ["clean_weight"],
+    })
+    .refine((v) => Boolean(v.before_cooking_weight) === Boolean(v.after_cooking_weight), {
+      message: "Para la cocción hacen falta los dos pesos: antes y después.",
+      path: ["after_cooking_weight"],
+    })
+    .refine((v) => Boolean(v.gross_weight) || Boolean(v.before_cooking_weight), {
+      message: "Cargá al menos un par de pesos.",
+      path: ["gross_weight"],
+    })
+    .refine(
+      (v) =>
+        !v.gross_weight ||
+        !v.clean_weight ||
+        Number(v.clean_weight.replace(",", ".")) <= Number(v.gross_weight.replace(",", ".")),
+      { message: "El peso limpio no puede ser mayor que el bruto.", path: ["clean_weight"] },
+    ),
+  // Propuesta de estándar: la limpieza se escribe en % (78,5) y la cocción como factor (2,5).
+  // 100 % de limpieza con factor 1 solo si se marca "sin merma": lo exige la base (sección 9).
+  yieldProposal: z
+    .object({
+      process_id: choice("Elegí el proceso."),
+      cut: z.string().trim().max(80, "Hasta 80 caracteres.").optional(),
+      cleaning_percent: positiveNumber.refine(
+        (v) => Number(v.replace(",", ".")) <= 100,
+        "La limpieza va de 0 a 100 %.",
+      ),
+      cooking_factor: positiveNumber.refine(
+        (v) => Number(v.replace(",", ".")) <= 10,
+        "El factor de cocción va hasta 10.",
+      ),
+      method: z.string().trim().max(500, "Hasta 500 caracteres.").optional(),
+      // React Hook Form la entrega como true o false; el formulario enviado, como "on".
+      declared_no_loss: z.union([z.boolean(), z.literal("on"), z.literal("")]).optional(),
+      reason: reasonField,
+    })
+    .refine(
+      (v) =>
+        isChecked(v.declared_no_loss) ||
+        !(
+          Number(v.cleaning_percent.replace(",", ".")) === 100 &&
+          Number(v.cooking_factor.replace(",", ".")) === 1
+        ),
+      {
+        message: "Con 100 % de limpieza y factor 1, marcá que no tiene merma.",
+        path: ["declared_no_loss"],
+      },
+    ),
 } as const;
 
 export type FormSchemaName = keyof typeof schemas;

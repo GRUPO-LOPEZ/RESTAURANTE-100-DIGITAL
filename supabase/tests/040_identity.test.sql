@@ -362,7 +362,7 @@ select throws_ok(
 -- ---------------------------------------------------------------------------
 select is(
   (select count(*)::int from core.user_profiles where email like '%@ejemplo.test' and id::text like '00000000-0000-4000-8000-0000000004%'),
-  12, 'el seed tiene 12 personas de prueba'
+  13, 'el seed tiene 13 personas de prueba (con el Chef del grupo, ADR-0021)'
 );
 select is(
   (select count(distinct r.code)::int from core.user_role_assignments a join core.roles r on r.id = a.role_id

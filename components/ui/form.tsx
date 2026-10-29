@@ -4,7 +4,9 @@ import * as React from "react";
 import { useActionState, useEffect, useRef, useTransition } from "react";
 import { FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { cn } from "@/lib/utils";
 import type { ActionState } from "@/lib/auth/results";
 import { schemas, type FormSchemaName } from "@/lib/forms/schemas";
 import { zodResolver } from "@/lib/forms/resolver";
@@ -182,5 +184,42 @@ export function FormTextarea({
     <Field id={id} label={label} hint={hint} error={error} className={className}>
       <Textarea {...props} {...registered} />
     </Field>
+  );
+}
+
+// Casilla registrada en el formulario: se valida con el esquema como los demás campos y muestra
+// su error debajo. React Hook Form la entrega como true o false; enviada, llega como "on".
+export function FormCheckbox({
+  name,
+  id,
+  label,
+  hint,
+  className,
+  ...props
+}: FieldProps & Omit<React.ComponentProps<"input">, "name" | "id" | "type">) {
+  const { props: registered, error } = useRegistered(name);
+  const hintId = hint ? `${id}-ayuda` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
+  return (
+    <div data-slot="field" className={cn("flex flex-col gap-1", className)}>
+      <Checkbox
+        id={id}
+        label={label}
+        aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
+        aria-invalid={error ? true : undefined}
+        {...props}
+        {...registered}
+      />
+      {hint ? (
+        <p id={hintId} className="text-sm text-ink-muted">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} className="text-sm text-bad-ink">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
