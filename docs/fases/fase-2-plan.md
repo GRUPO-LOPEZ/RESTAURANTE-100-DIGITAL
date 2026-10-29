@@ -1,7 +1,10 @@
 # Plan de la Fase 2 — Recetario Digital Profesional
 
 - **Fecha:** 2026-10-28
-- **Estado:** propuesta para que la apruebe Joaco. **No se construye nada** hasta que Soy apruebe la demo de la Fase 1 (compuerta de [fase-1.md](fase-1.md), sección 12), que espera el ambiente de prueba.
+- **Estado:**
+  - Aprobado por Joaco el 2026-10-28, con N1, N4 y "el precio cuenta al aprobarse" (ADR-0020).
+  - Soy aprobó la Fase 1 ese mismo día (ADR-0019).
+  - La etapa 2.1 se parte en A (catálogo, construida), B (rendimientos) y C (precios). Las decisiones de Soy siguen pendientes.
 - **Fuentes:**
   - el documento de Soy, [fase-2-recetario.md](fase-2-recetario.md), que **manda sobre este plan**;
   - el prompt maestro;

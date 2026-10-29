@@ -1,6 +1,6 @@
 # Diccionario de datos — core, org, audit, workflow, ai
 
-> Generado desde los `comment on` de la base local el 2026-10-23 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-10-29 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
 ## `ai.integration_permissions`
 
@@ -436,28 +436,29 @@ Grupo gastronómico: el nivel más alto de la organización (por ejemplo, Grupo 
 
 Restaurante (local) de una marca (por ejemplo, RAGU Parque Leloir). Es donde pasa la operación diaria.
 
-| Columna          | Tipo                       | Nulo | Qué guarda                                                                                                         |
-| ---------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------ |
-| `id`             | `uuid`                     | no   | Identificador del restaurante.                                                                                     |
-| `group_id`       | `uuid`                     | no   | Grupo al que pertenece. Tiene que coincidir con el de su marca.                                                    |
-| `brand_id`       | `uuid`                     | no   | Marca del restaurante.                                                                                             |
-| `name`           | `text`                     | no   | Nombre del restaurante. Único dentro de la marca entre los vigentes, sin importar mayúsculas.                      |
-| `status`         | `org.unit_status`          | no   | Si el restaurante está operando o cerrado.                                                                         |
-| `created_at`     | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                  |
-| `created_by`     | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                   |
-| `updated_at`     | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                 |
-| `updated_by`     | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                  |
-| `deleted_at`     | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                           |
-| `deleted_by`     | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                  |
-| `code`           | `text`                     | sí   | Código corto del local (por ejemplo, RAGU-PL), en mayúsculas. Opcional. Único dentro del grupo entre los vigentes. |
-| `address`        | `text`                     | sí   | Dirección del local. Opcional.                                                                                     |
-| `locality`       | `text`                     | sí   | Barrio o localidad. Opcional.                                                                                      |
-| `legal_name`     | `text`                     | sí   | Razón social del local. Opcional.                                                                                  |
-| `tax_id`         | `text`                     | sí   | CUIT del local: 11 dígitos, sin guiones. Opcional.                                                                 |
-| `phone`          | `text`                     | sí   | Teléfono de contacto. Opcional.                                                                                    |
-| `opened_on`      | `date`                     | sí   | Fecha de apertura. Opcional.                                                                                       |
-| `time_zone`      | `text`                     | no   | Zona horaria del local, para horarios de cocina y cierres del día. Por defecto, Buenos Aires.                      |
-| `predecessor_id` | `uuid`                     | sí   | Local anterior, si este local nació de un traspaso de marca (ADR-0007). Vacío si no.                               |
+| Columna          | Tipo                       | Nulo | Qué guarda                                                                                                                    |
+| ---------------- | -------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | `uuid`                     | no   | Identificador del restaurante.                                                                                                |
+| `group_id`       | `uuid`                     | no   | Grupo al que pertenece. Tiene que coincidir con el de su marca.                                                               |
+| `brand_id`       | `uuid`                     | no   | Marca del restaurante.                                                                                                        |
+| `name`           | `text`                     | no   | Nombre del restaurante. Único dentro de la marca entre los vigentes, sin importar mayúsculas.                                 |
+| `status`         | `org.unit_status`          | no   | Si el restaurante está operando o cerrado.                                                                                    |
+| `created_at`     | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                             |
+| `created_by`     | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                              |
+| `updated_at`     | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                            |
+| `updated_by`     | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                             |
+| `deleted_at`     | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                                      |
+| `deleted_by`     | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                             |
+| `code`           | `text`                     | sí   | Código corto del local (por ejemplo, RAGU-PL), en mayúsculas. Opcional. Único dentro del grupo entre los vigentes.            |
+| `address`        | `text`                     | sí   | Dirección del local. Opcional.                                                                                                |
+| `locality`       | `text`                     | sí   | Barrio o localidad. Opcional.                                                                                                 |
+| `legal_name`     | `text`                     | sí   | Razón social del local. Opcional.                                                                                             |
+| `tax_id`         | `text`                     | sí   | CUIT del local: 11 dígitos, sin guiones. Opcional.                                                                            |
+| `phone`          | `text`                     | sí   | Teléfono de contacto. Opcional.                                                                                               |
+| `opened_on`      | `date`                     | sí   | Fecha de apertura. Opcional.                                                                                                  |
+| `time_zone`      | `text`                     | no   | Zona horaria del local, para horarios de cocina y cierres del día. Por defecto, Buenos Aires.                                 |
+| `predecessor_id` | `uuid`                     | sí   | Local anterior, si este local nació de un traspaso de marca (ADR-0007). Vacío si no.                                          |
+| `site_type`      | `org.site_type`            | no   | Tipo de establecimiento: restaurante, cocina central o unidad productiva. Todos usan los mismos permisos, costos y auditoría. |
 
 ## `org.time_zones`
 
@@ -552,6 +553,7 @@ Qué tipos de cambio necesitan aprobación y quién la da (ADR-0008). Se ajusta 
 | `core.notification_kind`    | `approval_requested`                                                                                                                                                                                                                     | Tipo de aviso: approval_requested (una solicitud que la persona puede decidir).                                                                                                                                                                                                                            |
 | `core.scope_type`           | `group`, `brand`, `restaurant`                                                                                                                                                                                                           | Alcance de una asignación de rol: group (todo el grupo), brand (una marca y sus locales) o restaurant (un local).                                                                                                                                                                                          |
 | `core.version_status`       | `draft`, `in_review`, `approved`, `published`, `archived`                                                                                                                                                                                | Estado de una versión: draft (borrador), in_review (en revisión), approved (aprobada), published (publicada) o archived (archivada). Desde approved el contenido no cambia: corregir es crear una versión nueva.                                                                                           |
+| `org.site_type`             | `restaurant`, `central_kitchen`, `production_unit`                                                                                                                                                                                       | Tipo de establecimiento: restaurant (restaurante), central_kitchen (cocina central) o production_unit (unidad productiva, como Pariggi).                                                                                                                                                                   |
 | `org.unit_status`           | `active`, `inactive`                                                                                                                                                                                                                     | Estado de un grupo, marca o restaurante: active (operando) o inactive (cerrado, pero visible en la historia). Borrar un registro es otra cosa: corrige un error de carga.                                                                                                                                  |
 | `workflow.decision`         | `approved`, `rejected`                                                                                                                                                                                                                   | Decisión de una persona sobre una solicitud: approved (aprueba) o rejected (rechaza).                                                                                                                                                                                                                      |
 | `workflow.request_status`   | `pending`, `approved`, `rejected`, `cancelled`                                                                                                                                                                                           | Estado de una solicitud de aprobación: pending (esperando), approved (aprobada y aplicada), rejected (rechazada) o cancelled (retirada por quien la pidió).                                                                                                                                                |

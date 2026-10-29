@@ -58,7 +58,17 @@ export const getMenus = cache(async () => {
       .rpc("has_permission_anywhere", { p_permission: permission });
     return data === true;
   };
-  const [users, invite, approvals, audit, auditExport, roles, testDocuments] = await Promise.all([
+  const [
+    users,
+    invite,
+    approvals,
+    audit,
+    auditExport,
+    roles,
+    testDocuments,
+    catalog,
+    catalogManage,
+  ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
     check("approvals.view"),
@@ -66,8 +76,20 @@ export const getMenus = cache(async () => {
     check("audit.export"),
     check("permissions.manage"),
     check("test_documents.view"),
+    check("catalog.view"),
+    check("catalog.manage"),
   ]);
-  return { users, invite, approvals, audit, auditExport, roles, testDocuments };
+  return {
+    users,
+    invite,
+    approvals,
+    audit,
+    auditExport,
+    roles,
+    testDocuments,
+    catalog,
+    catalogManage,
+  };
 });
 
 export type Menus = Awaited<ReturnType<typeof getMenus>>;

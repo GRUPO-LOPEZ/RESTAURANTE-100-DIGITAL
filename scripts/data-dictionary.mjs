@@ -1,10 +1,13 @@
 // Genera docs/modulos/diccionario-datos.md desde los `comment on` de la base LOCAL
 // (database.md: "un diccionario de datos generado desde la base").
 // Uso: npm run db:dictionary (con `npm run db:start` corriendo). Solo lee: no cambia la base.
+// Con argumentos, otros esquemas y otro archivo:
+//   node scripts/data-dictionary.mjs catalog docs/modulos/02-recetario-diccionario.md
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 
-const SCHEMAS = ["core", "org", "audit", "workflow", "ai"];
+const SCHEMAS = process.argv[2]?.split(",") ?? ["core", "org", "audit", "workflow", "ai"];
+const OUT = process.argv[3] ?? "docs/modulos/diccionario-datos.md";
 // Contenedor de la base local de Supabase (project_id de supabase/config.toml).
 const CONTAINER = "supabase_db_grupo-lf";
 
@@ -100,7 +103,7 @@ out.push(
   ),
   "",
 );
-writeFileSync("docs/modulos/diccionario-datos.md", out.join("\n"));
+writeFileSync(OUT, out.join("\n"));
 console.log(
   `Diccionario: ${data.relations.length} tablas y vistas, ${(data.types ?? []).length} tipos.`,
 );

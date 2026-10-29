@@ -1,6 +1,58 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-28. **Soy aprobó la Fase 1** en una demo local (ADR-0019): la Fase 2 queda habilitada. El plan de la Fase 2 espera la aprobación de Joaco. Staging ya publica la base; falta la app (ver abajo). Tiene que funcionar antes de cerrar la etapa 2.2._
+_Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). **Staging funciona** (primera publicación completa en verde, PR #17). Etapa 2.1 A (catálogo) construida en la rama `feat/recetario-catalogo`, **sin terminar**: ver abajo._
+
+## Al retomar: etapa 2.1 A (catálogo), rama `feat/recetario-catalogo`
+
+Plan de la sesión aprobado: `C:\Users\julym\.claude\plans\silly-cuddling-ocean.md`. Decisiones: ADR-0020. Commit de trabajo en curso, **sin PR**.
+
+- **Hecho:**
+  - migraciones `20261028120000_recipes_permissions.sql` (19 permisos, `site_type`, `can_see_costs` y `audit_history` con `recipes.view_costs`, `visible_group_ids`) y `20261028120100_catalog.sql` (10 tablas, unidades, funciones);
+  - seed con 50 materias primas DEMO;
+  - pantallas `/materias-primas`, `/nueva` y `/[id]`;
+  - pruebas: pgTAP 140, Vitest `catalog-schemas` y Playwright `materias-primas.spec.ts`;
+  - diccionario `docs/modulos/02-recetario-diccionario.md`.
+- **Decidido por Joaco hoy:** quien administra personas recibe los permisos del recetario de los roles que administra (como en la Fase 1).
+- **Por la revisión de seguridad:** el **Gerente quedó sin costos ni precios** hasta que Soy responda N2 (denegar por defecto).
+- **Pruebas en la última corrida:**
+  - **pgTAP: 2 en rojo**, de 874:
+    - la 45 de un archivo de la Fase 1 que prueba que el historial oculta costos. Hay que ver si el caso pasó a ser correcto con `recipes.view_costs`, o si es un problema real; **nunca debilitarla**;
+    - la 85 de `140_catalog`, "el Auditor ve el costo en el historial".
+  - Vitest: 126 en verde.
+  - Playwright `materias-primas`: 8 en verde antes de las últimas correcciones de diseño. Falta volver a correrlo.
+- **Revisiones:**
+  - **`ui-reviewer`: sin graves.** Ya corregidos:
+    - ids repetidos entre páginas ocultas, con una prueba que lo controla;
+    - tope de proveedores;
+    - página fuera de rango;
+    - flechita en las acciones plegables;
+    - textos.
+
+    Quedan: el `h1` de la ficha (dice "Materia prima", no el nombre), la acción principal al alcance del pulgar y una pantalla de Proveedores.
+
+  - **`security-auditor`: apto, sin graves.** Hechos: el historial con `recipes.view_costs` y el Gerente sin costos. Quedan menores:
+    - registrar los rechazos del catálogo (`core.deny`);
+    - el menú "editar" con alcance de grupo (`permitted_group_ids`);
+    - `hide_costs` con una lista de columnas, en 2.1 C;
+    - no dejar sin conversión productos que la necesitan.
+  - **`db-reviewer`: 2 graves, ya resueltos.** La migración no aplicaba por un error mío al editar; ya aplica. Ojo: revisó a mitad de cambios, así que **hay que volver a pedirle la revisión**. Quedan medios:
+    - **M2:** proteger productos al quitar una conversión o al cambiar la unidad de uso (trigger y pruebas);
+    - **M3:** anotar en el plan que en 2.1 C los cambios de contenido o conversión pasan por aprobación o quedan en el snapshot.
+
+    Y menores:
+    - índices simples en `group_id` y `from_unit_id`;
+    - escapar `%` y `_` en el buscador, y filtrar `deleted_at`;
+    - categoría o proveedor borrados en altas;
+    - más errores en español (23502, 22P02, alias largo);
+    - documentar en el ADR lo que falta (funciones de categorías y alérgenos, la fuente del contenido) y que el Gerente tampoco da Compras.
+- **Próximos pasos:**
+  1. resolver las 2 pgTAP en rojo y los medios de `db-reviewer`;
+  2. correr `npm run test` completo;
+  3. volver a pasar las 3 revisiones;
+  4. abrir el PR.
+- **Ojo con Supabase local:** después de cambiar `api.schemas`, reiniciarlo (`npx supabase stop` y después `start`).
+
+## Antes: staging (2026-10-28)
 
 ## Al retomar: staging, a un paso de publicar la app
 

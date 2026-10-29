@@ -57,6 +57,7 @@ async function SessionMenu() {
   ]);
   const all: (NavLink & { show: boolean })[] = [
     { href: "/", label: "Inicio", show: true },
+    { href: "/materias-primas", label: "Materias primas", show: menus.catalog },
     { href: "/usuarios", label: "Usuarios", show: menus.users },
     { href: "/aprobaciones", label: "Aprobaciones", count: unread, show: menus.approvals },
     { href: "/historial", label: "Historial", show: menus.audit },
