@@ -36,7 +36,6 @@ _Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - el plan Pro de Supabase para producción.
 - **Supabase local:** después de cambiar `api.schemas`, hay que reiniciarlo (`npx supabase stop` y `start`).
 
-
 ## Staging (funciona desde el 2026-10-28)
 
 - **La primera publicación completa salió en verde** el 2026-10-28, después del PR #17:
