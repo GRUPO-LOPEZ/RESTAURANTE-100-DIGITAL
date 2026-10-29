@@ -36,36 +36,32 @@ _Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - el plan Pro de Supabase para producción.
 - **Supabase local:** después de cambiar `api.schemas`, hay que reiniciarlo (`npx supabase stop` y `start`).
 
-## Antes: staging (2026-10-28)
 
-## Al retomar: staging, a un paso de publicar la app
+## Staging (funciona desde el 2026-10-28)
 
-- **Destrabado:**
-  - Joaco tiene permiso para crear Environments en GitHub;
-  - el ambiente `staging` está creado, con sus 9 secretos.
-- **La parte de la base funciona en el Supabase real.** `db push`, `functions deploy` y `config push` pasaron, así que las migraciones de la Fase 1 ya están en staging. Pendiente de verificar en la corrida: que `config push` haya aceptado `email_sent = 2`.
-- **Errores de la parte de la app, en orden:**
+- **La primera publicación completa salió en verde** el 2026-10-28, después del PR #17:
+  - base, funciones y configuración en el Supabase de staging;
+  - la app en `https://restaurante-100-digital.vercel.app`.
+- **De ahora en más se publica sola:** con cada push a `main` y "Pruebas" en verde. Las personas de prueba se cargan solo a mano, una vez, con la casilla.
+- **Pendiente de Joaco:**
+  - confirmar que las personas de prueba se cargaron y que se puede entrar;
+  - activar la doble verificación en las 7 cuentas con MFA (`superadmin`, `direccion`, `direccion2`, `director`, `gerente`, `gerente2` y `controller`), con `STAGING_DEMO_ADMIN_PASSWORD`;
+  - si el ingreso falla, revisar que `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no tenga un salto de línea al final en Vercel;
+  - proteger `main` en GitHub, ahora que tiene el permiso: que nada entre sin PR ni con "Pruebas" en rojo. Está postergado desde la Fase 0.
+- **A verificar en staging** (ADR-0018 y ADR-0014):
+  - que `config push` haya aceptado `email_sent = 2`;
+  - el límite por IP del ingreso, mandando `x-client-ip` y `x-forwarded-for` falsos.
+- **Supabase está en el plan gratis:** pausa el proyecto tras unos 7 días sin uso. Se reactiva con "Restore project", sin perder datos.
+- **Errores corregidos en la primera publicación, en orden** (además del PR #12, el espacio faltante en los comandos de Supabase):
   1. **Error del flujo (PR #15, fusionado).** La app recibía el proyecto como salida de la parte de la base, pero GitHub vacía las salidas que coinciden con un secreto (`STAGING_PROJECT_REF`). Ahora la app lo lee de `config.toml`, y el error muestra la URL encontrada.
   2. **Error de Vercel (corregido por Joaco).** `NEXT_PUBLIC_SUPABASE_URL` tenía un salto de línea al final. Joaco lo reescribió a mano. **Falta confirmar** que la publishable key no tenga el mismo problema: el flujo no lo controla en esa variable.
   3. **Error del flujo (PR #16, fusionado).** La lista de variables permitidas no aceptaba `VERCEL` (con valor `"1"`), una variable que agrega Vercel. La prueba nueva fija qué variables pasan y cuáles no.
-  4. **Error del flujo (rama `fix/staging-inspect-equipo`, PR por abrir).** `build` y `deploy` **ya pasaron**: la app se publicó. Falló el control final:
-     - `vercel inspect` no lee `VERCEL_ORG_ID`; sin `--scope`, busca en la cuenta personal del dueño del token (`joacovaldez74-6204`), y el token solo alcanza al equipo de Soy;
-     - ahora lleva `--scope "$VERCEL_ORG_ID"`.
-- **Próximos pasos de Joaco:**
-  1. abrir y fusionar el PR de `fix/staging-inspect-equipo`, y esperar "Pruebas" en verde sobre `main`;
-  2. correr **Publicar en staging** con "Cargar las personas y datos de prueba";
-  3. si sale en verde, entrar a `https://restaurante-100-digital.vercel.app` y activar la doble verificación en las 7 cuentas con MFA (usan `STAGING_DEMO_ADMIN_PASSWORD`);
-  4. si algo falla, pasar el texto del error.
-- **Ya corrieron bien en staging:** `vercel build` (sin token) y `deploy`.
-- **Sin confirmar todavía:**
-  - `inspect` con el equipo;
-  - la carga de datos de prueba sobre el Supabase real: si se tildó la casilla, corrió en la parte de la base, que salió bien.
-- **Para hacer en GitHub con el permiso nuevo:** proteger `main` (que nada entre sin PR ni con "Pruebas" en rojo). Está postergado desde la Fase 0 porque faltaba ese permiso.
+  4. **Error del flujo (PR #17, fusionado).** `vercel inspect` no lee `VERCEL_ORG_ID`. Sin `--scope`, busca en la cuenta personal del dueño del token, y el token solo alcanza al equipo de Soy. Ahora lleva `--scope "$VERCEL_ORG_ID"`.
 
 ## Al retomar: Fase 2 (recetario)
 
 - **Documento de Soy:** [docs/fases/fase-2-recetario.md](fases/fase-2-recetario.md). Está completo; el diagrama de la sección 5 y la tabla de la sección 20 se pasaron desde capturas.
-- **Plan:** [docs/fases/fase-2-plan.md](fases/fase-2-plan.md). **Espera que Joaco lo apruebe**, junto con las preguntas técnicas N1 (permiso de costos y decimales) y N4 (esquemas nuevos) y la regla de que un precio cuenta recién cuando se aprueba.
+- **Plan:** [docs/fases/fase-2-plan.md](fases/fase-2-plan.md). Aprobado por Joaco el 2026-10-28, con N1, N4 y la regla de que un precio cuenta recién cuando se aprueba (ADR-0020).
 - **Decisiones de Soy:** las 8 de la sección 22, más N2, N3, N5, N6 y el "aumento grande". Joaco las ve con Soy más adelante.
   - Sin la decisión 3 (IVA) y la N6 (qué producto de compra usa el motor), la etapa 2.1 puede construir el catálogo, pero no cerrar los precios.
 - **Plantilla de Excel v0 (borrador):** [docs/plantillas/plantilla-recetario-v0.xlsx](plantillas/plantilla-recetario-v0.xlsx). Se ajusta cuando llegue el Excel actual del recetario, que hay que pedirle a Soy.
