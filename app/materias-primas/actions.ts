@@ -316,3 +316,118 @@ export async function proposeYieldAction(
         message: "Queda pendiente: lo tiene que aprobar un Chef de todo el grupo, distinto de vos.",
       };
 }
+
+// Configuración del catálogo (ADR-0022). Categorías: catalog.manage para todo el grupo. Procesos:
+// yields.approve para todo el grupo. La base controla el permiso y que no se dé de baja algo en uso.
+function settingsDone(error: { message?: string; code?: string } | null, message: string) {
+  revalidatePath("/materias-primas", "layout");
+  return done(error, message);
+}
+
+export async function createCategoryAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.category.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const groupId = uuid.safeParse(formData.get("groupId"));
+  if (!groupId.success) return { status: "bad", message: "Falta el grupo." };
+  const parent = fields.data.parent_id ? uuid.safeParse(fields.data.parent_id) : null;
+  if (parent && !parent.success)
+    return { status: "bad", fieldErrors: { parent_id: "Elegí la categoría madre." } };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("catalog").rpc("create_category", {
+    p_group_id: groupId.data,
+    p_name: fields.data.name,
+    p_reason: fields.data.reason,
+    ...(parent ? { p_parent_id: parent.data } : {}),
+  });
+  return settingsDone(error, "Categoría creada. Ya la podés elegir en las materias primas.");
+}
+
+export async function renameCategoryAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.rename.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = uuid.safeParse(formData.get("categoryId"));
+  if (!id.success) return { status: "bad", message: "Falta la categoría." };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("catalog").rpc("rename_category", {
+    p_id: id.data,
+    p_name: fields.data.name,
+    p_reason: fields.data.reason,
+  });
+  return settingsDone(error, "Nombre cambiado.");
+}
+
+export async function archiveCategoryAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.reason.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = uuid.safeParse(formData.get("categoryId"));
+  if (!id.success) return { status: "bad", message: "Falta la categoría." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .schema("catalog")
+    .rpc("archive_category", { p_id: id.data, p_reason: fields.data.reason });
+  if (error) return toActionState(null, error);
+  // La categoría deja de aparecer, y con ella su formulario: el aviso va arriba de la pantalla.
+  revalidatePath("/materias-primas", "layout");
+  redirect("/materias-primas/configuracion?baja=categoria");
+}
+
+export async function createProcessAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.yieldProcess.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const groupId = uuid.safeParse(formData.get("groupId"));
+  if (!groupId.success) return { status: "bad", message: "Falta el grupo." };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("catalog").rpc("create_yield_process", {
+    p_group_id: groupId.data,
+    p_code: fields.data.code,
+    p_name: fields.data.name,
+    p_reason: fields.data.reason,
+  });
+  return settingsDone(error, "Proceso creado. Ya se puede usar en los rendimientos.");
+}
+
+export async function renameProcessAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.rename.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = uuid.safeParse(formData.get("processId"));
+  if (!id.success) return { status: "bad", message: "Falta el proceso." };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("catalog").rpc("rename_yield_process", {
+    p_id: id.data,
+    p_name: fields.data.name,
+    p_reason: fields.data.reason,
+  });
+  return settingsDone(error, "Nombre cambiado.");
+}
+
+export async function archiveProcessAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.reason.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = uuid.safeParse(formData.get("processId"));
+  if (!id.success) return { status: "bad", message: "Falta el proceso." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .schema("catalog")
+    .rpc("archive_yield_process", { p_id: id.data, p_reason: fields.data.reason });
+  if (error) return toActionState(null, error);
+  revalidatePath("/materias-primas", "layout");
+  redirect("/materias-primas/configuracion?baja=proceso");
+}

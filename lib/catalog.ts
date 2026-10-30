@@ -383,3 +383,70 @@ export async function getYieldRestaurants(): Promise<{ id: string; name: string 
   if (namesError) failed("los locales");
   return data;
 }
+
+// Configuración del catálogo (ADR-0022): categorías con sus subcategorías y procesos de un grupo, con
+// cuánto se usan, para saber qué se puede dar de baja (la base lo vuelve a controlar al guardar).
+export type SettingsCategory = {
+  id: string;
+  name: string;
+  ingredients: number;
+  children: { id: string; name: string; ingredients: number }[];
+};
+export type SettingsProcess = { id: string; code: string; name: string; standards: number };
+
+// Grupos donde la sesión tiene el permiso para todo el grupo (el catálogo es de todo el grupo).
+export async function getSettingsGroups(permission: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("core")
+    .rpc("permitted_group_ids", { p_permission: permission });
+  if (error) failed("los grupos");
+  return Array.isArray(data) ? data.filter((x): x is string => typeof x === "string") : [];
+}
+
+export async function getSettingsCategories(groupId: string): Promise<SettingsCategory[]> {
+  const supabase = await createClient();
+  const [categories, usage] = await Promise.all([
+    supabase
+      .schema("catalog")
+      .from("ingredient_categories")
+      .select("id, parent_id, name")
+      .eq("group_id", groupId)
+      .order("name"),
+    // Se cuenta en la base: la API devuelve hasta 1.000 filas.
+    supabase.schema("catalog").rpc("category_usage"),
+  ]);
+  if (categories.error) failed("las categorías");
+  if (usage.error) failed("las materias primas");
+  const used = new Map(usage.data.map((u) => [u.category_id, u.ingredients]));
+  const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "es");
+  return categories.data
+    .filter((c) => !c.parent_id)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      ingredients: used.get(c.id) ?? 0,
+      children: categories.data
+        .filter((s) => s.parent_id === c.id)
+        .map((s) => ({ id: s.id, name: s.name, ingredients: used.get(s.id) ?? 0 }))
+        .sort(byName),
+    }))
+    .sort(byName);
+}
+
+export async function getSettingsProcesses(groupId: string): Promise<SettingsProcess[]> {
+  const supabase = await createClient();
+  const [processes, usage] = await Promise.all([
+    supabase
+      .schema("catalog")
+      .from("yield_processes")
+      .select("id, code, name")
+      .eq("group_id", groupId)
+      .order("name"),
+    supabase.schema("catalog").rpc("process_usage"),
+  ]);
+  if (processes.error) failed("los procesos");
+  if (usage.error) failed("los rendimientos");
+  const used = new Map(usage.data.map((u) => [u.process_id, u.standards]));
+  return processes.data.map((p) => ({ ...p, standards: used.get(p.id) ?? 0 }));
+}

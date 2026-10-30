@@ -72,7 +72,11 @@ create function pg_temp.ing(p_n int) returns uuid language sql as $$ select pg_t
 create function pg_temp.proc(p_code text) returns uuid language sql as $$
   select id from catalog.yield_processes where code = p_code
 $$;
-grant execute on function pg_temp.u(int), pg_temp.ing(int), pg_temp.proc(text) to authenticated;
+-- Hoy en la Argentina, como controla la base: después de las 21 h, en UTC ya es mañana.
+create function pg_temp.today_ar() returns date language sql as $$
+  select (now() at time zone 'America/Argentina/Buenos_Aires')::date
+$$;
+grant execute on function pg_temp.u(int), pg_temp.ing(int), pg_temp.proc(text), pg_temp.today_ar() to authenticated;
 
 -- Propone, como una persona, y devuelve el id de la solicitud (o el error).
 create function pg_temp.propose(p_user uuid, p_ingredient int, p_process text, p_cleaning numeric, p_cooking numeric,
@@ -139,7 +143,7 @@ select is(pg_temp.q(pg_temp.u(409), $$select count(*)::text from catalog.yield_s
 -- Ensayos: los registra quien tiene yields.record en ese local
 -- ---------------------------------------------------------------------------
 select ok(pg_temp.q(pg_temp.u(406), $$select catalog.record_yield_test(pg_temp.ing(1), pg_temp.proc('PELADO'), pg_temp.u(201),
-            current_date, '{"gross_weight": 5000, "clean_weight": 3700}', '{"samples": 2}', 'Ensayo de la semana')::text$$)
+            pg_temp.today_ar(), '{"gross_weight": 5000, "clean_weight": 3700}', '{"samples": 2}', 'Ensayo de la semana')::text$$)
           ~ '^[0-9a-f-]{36}$', 'el Jefe de Cocina registra un ensayo en su local');
 select is(pg_temp.std(1, 'PELADO'), '0.8000/1.0000/approved', 'prueba 25: un ensayo distinto (74 %) no cambia el estándar');
 select is(pg_temp.q(pg_temp.u(406), $$select tests::text from catalog.yield_summary(pg_temp.ing(1))$$), '2',
@@ -149,19 +153,19 @@ select is(pg_temp.q(pg_temp.u(406), $$select tests::text from catalog.yield_summ
 select is(pg_temp.q(pg_temp.u(406), $$select round(measured_cleaning, 4)::text from catalog.yield_summary(pg_temp.ing(1))$$),
   '0.7580', 'el promedio de los ensayos pesa más los que tienen más muestras');
 select is(pg_temp.q(pg_temp.u(406), $$select catalog.record_yield_test(pg_temp.ing(1), pg_temp.proc('PELADO'), pg_temp.u(203),
-            current_date, '{"gross_weight": 5000, "clean_weight": 3700}', null, 'Prueba')::text$$),
+            pg_temp.today_ar(), '{"gross_weight": 5000, "clean_weight": 3700}', null, 'Prueba')::text$$),
   'ERROR 42501', 'no registra en otro local');
 select is(pg_temp.q(pg_temp.u(409), $$select catalog.record_yield_test(pg_temp.ing(1), pg_temp.proc('PELADO'), pg_temp.u(201),
-            current_date, '{"gross_weight": 5000, "clean_weight": 3700}', null, 'Prueba')::text$$),
+            pg_temp.today_ar(), '{"gross_weight": 5000, "clean_weight": 3700}', null, 'Prueba')::text$$),
   'ERROR 42501', 'el Cocinero no registra ensayos');
 select is(pg_temp.q(pg_temp.u(408), $$select catalog.record_yield_test(pg_temp.ing(1), pg_temp.proc('PELADO'), pg_temp.u(201),
-            current_date, '{"gross_weight": 5000, "clean_weight": 3700}', null, 'Prueba')::text$$),
+            pg_temp.today_ar(), '{"gross_weight": 5000, "clean_weight": 3700}', null, 'Prueba')::text$$),
   'ERROR 42501', 'Compras tampoco');
 select is(pg_temp.q(pg_temp.u(406), $$select catalog.record_yield_test(pg_temp.ing(1), pg_temp.proc('PELADO'), pg_temp.u(201),
-            current_date, '{"gross_weight": 5000, "clean_weight": 6000}', null, 'Prueba')::text$$),
+            pg_temp.today_ar(), '{"gross_weight": 5000, "clean_weight": 6000}', null, 'Prueba')::text$$),
   'ERROR 23514', 'el peso limpio no puede ser mayor que el bruto');
 select is(pg_temp.q(pg_temp.u(406), $$select catalog.record_yield_test(pg_temp.ing(1), pg_temp.proc('PELADO'), pg_temp.u(201),
-            current_date, '{"gross_weight": 5000}', null, 'Prueba')::text$$),
+            pg_temp.today_ar(), '{"gross_weight": 5000}', null, 'Prueba')::text$$),
   'ERROR 23514', 'hace falta un par completo de pesos');
 select throws_ok($$update catalog.ingredient_yield_tests set clean_weight = 4000$$, '42501', null,
   'un ensayo no se cambia (ni siquiera con permisos de dueño)');
@@ -276,7 +280,7 @@ select ok(exists (select 1 from audit.audit_events where table_schema = 'catalog
 select is(pg_temp.q(pg_temp.u(405), $$select catalog.create_yield_process(pg_temp.u(1), 'BRASEADO', 'Braseado', 'Prueba')::text$$),
   'ERROR 42501', 'la Chef de marca no crea procesos (es de todo el grupo)');
 select is(pg_temp.q(pg_temp.u(406), $$select catalog.record_yield_test(pg_temp.ing(1), pg_temp.proc('PELADO'), pg_temp.u(201),
-            current_date + 10, '{"gross_weight": 5000, "clean_weight": 3700}', null, 'Prueba')::text$$),
+            pg_temp.today_ar() + 10, '{"gross_weight": 5000, "clean_weight": 3700}', null, 'Prueba')::text$$),
   'ERROR 22023', 'un ensayo no tiene fecha futura');
 select ok(not exists (select 1 from pg_policies where (coalesce(qual, '') || coalesce(with_check, '')) like '%has_permission_in_group_any_scope%'),
   'ninguna política usa has_permission_in_group_any_scope (solo sirve para proponer)');
