@@ -642,6 +642,10 @@ export const MODULE_LABELS: Record<string, string> = {
 // Los que no están acá (ids, datos técnicos) no se muestran: el historial completo queda en la base.
 export const FIELD_LABELS: Record<string, string> = {
   name: "Nombre",
+  recipe: "Receta",
+  lines: "Componentes",
+  steps: "Pasos",
+  line_changes: "Cambios en los componentes",
   status: "Estado",
   first_name: "Nombre",
   last_name: "Apellido",
@@ -759,7 +763,21 @@ export function formatField(
   const format = FIELD_FORMATS[field];
   const number = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
   if (format && typeof number === "number" && Number.isFinite(number)) return format(number);
+  if (field === "line_changes" && value && typeof value === "object" && !Array.isArray(value))
+    return lineChanges(value as Record<string, unknown>);
   return formatValue(value, roleNames);
+}
+
+function lineChanges(value: Record<string, unknown>): string {
+  const n = (k: string) => Number(value[k] ?? 0);
+  const parts = [
+    n("added") ? `${n("added")} ${n("added") === 1 ? "se agrega" : "se agregan"}` : null,
+    n("removed") ? `${n("removed")} ${n("removed") === 1 ? "se quita" : "se quitan"}` : null,
+    n("changed")
+      ? `${n("changed")} ${n("changed") === 1 ? "cambia de cantidad" : "cambian de cantidad"}`
+      : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(", ") : "Sin cambios en los componentes";
 }
 
 export function formatValue(value: unknown, roleNames?: Record<string, string>): string {

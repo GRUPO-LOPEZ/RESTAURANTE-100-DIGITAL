@@ -384,13 +384,41 @@ export async function getYieldRestaurants(): Promise<{ id: string; name: string 
   return data;
 }
 
+// Dónde se usa una materia prima: recetas vigentes o en preparación que la tienen (catalog.ingredient_usage,
+// con la sesión de la persona: solo las recetas que ve).
+export type IngredientUsage = {
+  recipeId: string;
+  code: string;
+  name: string;
+  versionNumber: number;
+  status: string;
+};
+
+export async function getIngredientUsage(ingredientId: string): Promise<IngredientUsage[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .rpc("ingredient_usage", { p_ingredient_id: ingredientId });
+  if (error) failed("dónde se usa");
+  return data
+    .map((r) => ({
+      recipeId: r.recipe_id,
+      code: r.code,
+      name: r.name,
+      versionNumber: r.version_number,
+      status: r.status,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+
 // Configuración del catálogo (ADR-0022): categorías con sus subcategorías y procesos de un grupo, con
 // cuánto se usan, para saber qué se puede dar de baja (la base lo vuelve a controlar al guardar).
 export type SettingsCategory = {
   id: string;
   name: string;
-  ingredients: number;
-  children: { id: string; name: string; ingredients: number }[];
+  // Cuánto se usa: materias primas (o recetas, en las categorías de recetas).
+  uses: number;
+  children: { id: string; name: string; uses: number }[];
 };
 export type SettingsProcess = { id: string; code: string; name: string; standards: number };
 
@@ -425,10 +453,10 @@ export async function getSettingsCategories(groupId: string): Promise<SettingsCa
     .map((c) => ({
       id: c.id,
       name: c.name,
-      ingredients: used.get(c.id) ?? 0,
+      uses: used.get(c.id) ?? 0,
       children: categories.data
         .filter((s) => s.parent_id === c.id)
-        .map((s) => ({ id: s.id, name: s.name, ingredients: used.get(s.id) ?? 0 }))
+        .map((s) => ({ id: s.id, name: s.name, uses: used.get(s.id) ?? 0 }))
         .sort(byName),
     }))
     .sort(byName);

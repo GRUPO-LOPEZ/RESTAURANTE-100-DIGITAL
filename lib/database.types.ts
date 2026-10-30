@@ -3677,6 +3677,13 @@ export type Database = {
       can_see_version: { Args: { p_version_id: string }; Returns: boolean };
       can_view_recipe: { Args: { p_recipe_id: string }; Returns: boolean };
       can_work_recipe: { Args: { p_recipe_id: string }; Returns: boolean };
+      category_usage: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          category_id: string;
+          recipes: number;
+        }[];
+      };
       create_category: {
         Args: { p_group_id: string; p_name: string; p_parent_id?: string; p_reason: string };
         Returns: string;

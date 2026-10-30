@@ -75,7 +75,7 @@ select is(
         'org.create_area',
         'org.create_brand', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted', 'org.update_area',
         'org.update_brand', 'org.update_group', 'org.update_restaurant',
-        'recipes.archive_category', 'recipes.archive_recipe',
+        'recipes.archive_category', 'recipes.archive_recipe', 'recipes.category_usage',
         'recipes.create_category', 'recipes.create_recipe', 'recipes.critical_path', 'recipes.kitchen_card', 'recipes.new_version',
         'recipes.rename_category', 'recipes.request_review', 'recipes.save_draft', 'recipes.set_assignment',
         'recipes.set_components', 'recipes.set_steps', 'recipes.update_recipe', 'recipes.version_allergens',
