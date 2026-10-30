@@ -2809,7 +2809,7 @@ export type Database = {
     Enums: {
       account_status: "active" | "suspended" | "deactivated";
       actor_type: "user" | "service_account";
-      notification_kind: "approval_requested";
+      notification_kind: "approval_requested" | "recipe_changed";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -3271,7 +3271,7 @@ export type Database = {
           deleted_by: string | null;
           group_id: string;
           id: string;
-          ingredient_id: string;
+          ingredient_id: string | null;
           line_order: number;
           no_scale: boolean;
           notes: string | null;
@@ -3279,6 +3279,7 @@ export type Database = {
           quantity_basis: Database["recipes"]["Enums"]["quantity_basis"];
           recipe_version_id: string;
           restaurant_id: string | null;
+          sub_recipe_id: string | null;
           unit_id: string;
           updated_at: string;
           updated_by: string | null;
@@ -3293,7 +3294,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id: string;
           id?: string;
-          ingredient_id: string;
+          ingredient_id?: string | null;
           line_order: number;
           no_scale?: boolean;
           notes?: string | null;
@@ -3301,6 +3302,7 @@ export type Database = {
           quantity_basis?: Database["recipes"]["Enums"]["quantity_basis"];
           recipe_version_id: string;
           restaurant_id?: string | null;
+          sub_recipe_id?: string | null;
           unit_id: string;
           updated_at?: string;
           updated_by?: string | null;
@@ -3314,7 +3316,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
-          ingredient_id?: string;
+          ingredient_id?: string | null;
           line_order?: number;
           no_scale?: boolean;
           notes?: string | null;
@@ -3322,12 +3324,20 @@ export type Database = {
           quantity_basis?: Database["recipes"]["Enums"]["quantity_basis"];
           recipe_version_id?: string;
           restaurant_id?: string | null;
+          sub_recipe_id?: string | null;
           unit_id?: string;
           updated_at?: string;
           updated_by?: string | null;
           yield_profile_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "recipe_components_sub_recipe_fkey";
+            columns: ["sub_recipe_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id", "group_id"];
+          },
           {
             foreignKeyName: "recipe_components_version_fkey";
             columns: ["recipe_version_id", "group_id"];
@@ -3671,6 +3681,7 @@ export type Database = {
           technical_owner_id: string | null;
           updated_at: string;
           updated_by: string | null;
+          variant_of_recipe_id: string | null;
         };
         ComputedFields: never;
         Insert: {
@@ -3694,6 +3705,7 @@ export type Database = {
           technical_owner_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
+          variant_of_recipe_id?: string | null;
         };
         Update: {
           brand_id?: string | null;
@@ -3716,6 +3728,7 @@ export type Database = {
           technical_owner_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
+          variant_of_recipe_id?: string | null;
         };
         Relationships: [
           {
@@ -3723,6 +3736,13 @@ export type Database = {
             columns: ["category_id", "group_id"];
             isOneToOne: false;
             referencedRelation: "recipe_categories";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "recipes_variant_fkey";
+            columns: ["variant_of_recipe_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
             referencedColumns: ["id", "group_id"];
           },
         ];
@@ -3765,6 +3785,18 @@ export type Database = {
           recipes: number;
         }[];
       };
+      compare_versions: {
+        Args: { p_new: string; p_old: string };
+        Returns: {
+          basis: Database["recipes"]["Enums"]["quantity_basis"];
+          change: string;
+          ingredient: string;
+          new_quantity: number;
+          old_quantity: number;
+          unit: string;
+        }[];
+      };
+      copy_version_content: { Args: { p_from: string; p_to: string }; Returns: undefined };
       create_category: {
         Args: { p_group_id: string; p_name: string; p_parent_id?: string; p_reason: string };
         Returns: string;
@@ -3782,6 +3814,16 @@ export type Database = {
         };
         Returns: Json;
       };
+      create_variant: {
+        Args: {
+          p_code: string;
+          p_master_id: string;
+          p_name: string;
+          p_reason: string;
+          p_restaurant_id: string;
+        };
+        Returns: Json;
+      };
       critical_path: {
         Args: { p_version_id: string };
         Returns: {
@@ -3789,9 +3831,22 @@ export type Database = {
           total_minutes: number;
         }[];
       };
+      first_invalid_line: {
+        Args: { p_version_id: string };
+        Returns: {
+          item: string;
+          line_order: number;
+          why: string;
+        }[];
+      };
       kitchen_card: { Args: { p_recipe_id: string }; Returns: Json };
+      lock_sub_graph: { Args: { p_group_id: string }; Returns: undefined };
       media_recipe_id: { Args: { p_name: string }; Returns: string };
       new_version: { Args: { p_reason: string; p_recipe_id: string }; Returns: Json };
+      notify_recipe_changed: {
+        Args: { p_approver: string; p_version_id: string };
+        Returns: undefined;
+      };
       open_draft: {
         Args: { p_expected_updated_at: string; p_version_id: string };
         Returns: {
@@ -3833,6 +3888,20 @@ export type Database = {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
       };
+      reaches: {
+        Args: { p_from: string; p_only_published: boolean; p_target: string };
+        Returns: boolean;
+      };
+      recipe_usage: {
+        Args: { p_recipe_id: string };
+        Returns: {
+          code: string;
+          name: string;
+          recipe_id: string;
+          status: Database["core"]["Enums"]["version_status"];
+          version_number: number;
+        }[];
+      };
       remove_media: { Args: { p_media_id: string; p_reason: string }; Returns: Json };
       rename_category: {
         Args: { p_id: string; p_name: string; p_reason: string };
@@ -3848,6 +3917,15 @@ export type Database = {
           p_version_id: string;
         };
         Returns: Json;
+      };
+      search_subrecipes: {
+        Args: { p_limit?: number; p_query: string; p_recipe_id: string };
+        Returns: {
+          code: string;
+          id: string;
+          name: string;
+          unit: string;
+        }[];
       };
       set_assignment: {
         Args: {
@@ -3876,8 +3954,23 @@ export type Database = {
         };
         Returns: Json;
       };
+      sub_depth: { Args: { p_recipe_id: string }; Returns: number };
+      sub_height: { Args: { p_recipe_id: string }; Returns: number };
+      sub_in_scope: { Args: { p_parent: string; p_sub: string }; Returns: boolean };
       today: { Args: Record<PropertyKey, never>; Returns: string };
+      unit_to_base: { Args: { p_unit_id: string }; Returns: number };
       update_recipe: { Args: { p_changes: Json; p_id: string; p_reason: string }; Returns: Json };
+      variant_diff: {
+        Args: { p_variant_id: string };
+        Returns: {
+          basis: Database["recipes"]["Enums"]["quantity_basis"];
+          change: string;
+          ingredient: string;
+          new_quantity: number;
+          old_quantity: number;
+          unit: string;
+        }[];
+      };
       version_allergens: {
         Args: { p_version_id: string };
         Returns: {
@@ -3913,7 +4006,7 @@ export type Database = {
         | "critical_point"
         | "correct_example"
         | "incorrect_example";
-      quantity_basis: "purchase" | "clean" | "cooked";
+      quantity_basis: "purchase" | "clean" | "cooked" | "finished";
       recipe_scope: "group" | "brand" | "restaurant";
       recipe_type: "preparation" | "dish" | "unit_component";
       step_kind:
@@ -4392,7 +4485,7 @@ export const Constants = {
     Enums: {
       account_status: ["active", "suspended", "deactivated"],
       actor_type: ["user", "service_account"],
-      notification_kind: ["approval_requested"],
+      notification_kind: ["approval_requested", "recipe_changed"],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
     },
@@ -4417,7 +4510,7 @@ export const Constants = {
         "correct_example",
         "incorrect_example",
       ],
-      quantity_basis: ["purchase", "clean", "cooked"],
+      quantity_basis: ["purchase", "clean", "cooked", "finished"],
       recipe_scope: ["group", "brand", "restaurant"],
       recipe_type: ["preparation", "dish", "unit_component"],
       step_kind: [

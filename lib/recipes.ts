@@ -250,7 +250,9 @@ export async function getRecipes(
 // Ficha (editor)
 // ---------------------------------------------------------------------------
 export type RecipeLine = {
-  ingredientId: string;
+  ingredientId: string | null;
+  // Una preparación (subreceta) en lugar de una materia prima; usa siempre su versión vigente.
+  subRecipeId: string | null;
   ingredient: string;
   quantity: number;
   unit: string;
@@ -434,7 +436,7 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
   };
 }
 
-// Líneas y pasos de una versión, con los nombres de las materias primas.
+// Líneas y pasos de una versión, con los nombres de las materias primas y de las preparaciones.
 export async function getVersionContent(
   versionId: string,
 ): Promise<{ lines: RecipeLine[]; steps: RecipeStep[] }> {
@@ -443,7 +445,9 @@ export async function getVersionContent(
     supabase
       .schema("recipes")
       .from("recipe_components")
-      .select("ingredient_id, quantity, unit_id, quantity_basis, no_scale, notes, line_order")
+      .select(
+        "ingredient_id, sub_recipe_id, quantity, unit_id, quantity_basis, no_scale, notes, line_order",
+      )
       .eq("recipe_version_id", versionId)
       .order("line_order"),
     supabase
@@ -457,11 +461,19 @@ export async function getVersionContent(
   ]);
   if (lines.error) failed("los componentes");
   if (steps.error) failed("los pasos");
-  const ingredientIds = [...new Set(lines.data.map((l) => l.ingredient_id))];
+  const ingredientIds = [
+    ...new Set(lines.data.flatMap((l) => (l.ingredient_id ? [l.ingredient_id] : []))),
+  ];
+  const subIds = [
+    ...new Set(lines.data.flatMap((l) => (l.sub_recipe_id ? [l.sub_recipe_id] : []))),
+  ];
   const stepIds = steps.data.map((s) => s.id);
-  const [ingredients, units, deps] = await Promise.all([
+  const [ingredients, subs, units, deps] = await Promise.all([
     ingredientIds.length
       ? supabase.schema("catalog").from("ingredients").select("id, name").in("id", ingredientIds)
+      : Promise.resolve({ data: [], error: null }),
+    subIds.length
+      ? supabase.schema("recipes").from("recipes").select("id, name").in("id", subIds)
       : Promise.resolve({ data: [], error: null }),
     supabase.schema("catalog").from("units").select("id, code"),
     stepIds.length
@@ -472,14 +484,19 @@ export async function getVersionContent(
           .in("step_id", stepIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
-  if (ingredients.error || units.error || deps.error) failed("los componentes");
-  const name = new Map((ingredients.data ?? []).map((i) => [i.id, i.name]));
+  if (ingredients.error || subs.error || units.error || deps.error) failed("los componentes");
+  const name = new Map(
+    [...(ingredients.data ?? []), ...(subs.data ?? [])].map((i) => [i.id, i.name]),
+  );
   const unit = new Map((units.data ?? []).map((u) => [u.id, u.code]));
   const number = new Map(steps.data.map((s) => [s.id, s.step_number]));
   return {
     lines: lines.data.map((l) => ({
       ingredientId: l.ingredient_id,
-      ingredient: name.get(l.ingredient_id) ?? "Materia prima",
+      subRecipeId: l.sub_recipe_id,
+      ingredient:
+        name.get(l.ingredient_id ?? l.sub_recipe_id ?? "") ??
+        (l.sub_recipe_id ? "Preparación" : "Materia prima"),
       quantity: l.quantity,
       unit: unit.get(l.unit_id) ?? "g",
       basis: l.quantity_basis,

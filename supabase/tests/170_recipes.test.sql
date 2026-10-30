@@ -113,8 +113,8 @@ select is(pg_temp.q(pg_temp.u(405), $$select count(*)::text from recipes.recipe_
   '1', 'la Chef de la marca ve el borrador de una receta de la marca');
 select is(pg_temp.q(pg_temp.u(406), $$select count(*)::text from recipes.recipe_versions where recipe_id = pg_temp.rec('DEMO-PAS-06')$$),
   '0', 'el Jefe de Cocina de un local no ve los borradores de las recetas de marca');
-select is(pg_temp.q(pg_temp.u(407), 'select count(*)::text from recipes.recipes'), '19',
-  'el Controller ve las 19 recetas vigentes (el risotto solo tiene un borrador)');
+select is(pg_temp.q(pg_temp.u(407), 'select count(*)::text from recipes.recipes'), '20',
+  'el Controller ve las 20 recetas vigentes (el risotto solo tiene un borrador; suma la variante de Norte)');
 select is(pg_temp.q(pg_temp.u(405), $$select count(*)::text from recipes.recipes where code = 'DEMO-SAL-01'$$),
   '1', 'la Chef de marca ve las maestras del grupo (para asignarlas)');
 
@@ -304,9 +304,9 @@ select is(pg_temp.status(pg_temp.ver('DEMO-PAS-02', 2)), 'draft', 'queda en borr
 -- ---------------------------------------------------------------------------
 select is(pg_temp.res(pg_temp.u(405), $$recipes.set_assignment(pg_temp.rec('DEMO-PAS-01'), pg_temp.u(203), true, 'Prueba')$$),
   'denied', 'la Chef de Pastas no asigna en un local de Parrilla (no tiene permiso ahí)');
-select is(pg_temp.res(pg_temp.u(405), $$recipes.set_assignment(pg_temp.rec('DEMO-SAL-03'), pg_temp.u(201), false, 'Ya no se usa')$$),
+select is(pg_temp.res(pg_temp.u(405), $$recipes.set_assignment(pg_temp.rec('DEMO-GUA-02'), pg_temp.u(201), false, 'Ya no se usa')$$),
   'applied', 'deja de asignar una maestra a su local');
-select is(pg_temp.q(pg_temp.u(409), $$select coalesce(recipes.kitchen_card(pg_temp.rec('DEMO-SAL-03'))::text, 'nada')$$), 'nada',
+select is(pg_temp.q(pg_temp.u(409), $$select coalesce(recipes.kitchen_card(pg_temp.rec('DEMO-GUA-02'))::text, 'nada')$$), 'nada',
   'y la cocina de ese local deja de verla');
 select is(pg_temp.res(pg_temp.u(405), $$recipes.archive_recipe(pg_temp.rec('DEMO-PAS-03'), 'Sale de la carta')$$), 'applied',
   'la Chef archiva una receta');

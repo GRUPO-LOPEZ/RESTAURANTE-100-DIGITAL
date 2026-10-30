@@ -2,7 +2,25 @@
 
 _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: etapa 2.2 A, recetas (PR 3 de 3, fotos, rama `feat/recetario-fotos`)
+## Al retomar: etapa 2.2 B, subrecetas y variantes (PR 1 de 2, base, rama `feat/recetario-subrecetas`)
+
+- **Qué se hizo (PR 1, base):** migración `20261104120000_recipes_subrecipes.sql`. Detalle en ADR-0025.
+  - una línea de receta puede ser una preparación (subreceta), que usa siempre su versión vigente ("cambian solos", respuesta 10 de Soy);
+  - sin círculos (caso 10), hasta 10 niveles, al alcance del plato y con una unidad como la de su rendimiento;
+  - los alérgenos bajan por las preparaciones (caso 23);
+  - al publicarse una preparación que otros usan, se avisa a Compras, Dirección y quienes publican esos platos (caso 26, provisorio hasta la pregunta 5);
+  - variantes locales: las crea el Chef Ejecutivo; al publicarse, el local deja de usar la maestra;
+  - el editor de componentes ya guarda bien las líneas de preparación (las pantallas nuevas van en el PR 2).
+- **Revisiones:**
+  - `security-auditor`: apto, con 3 medios resueltos;
+  - `db-reviewer`: 1 grave (el límite de niveles solo miraba hacia abajo, y un plato con harina en el nivel 17 decía "sin gluten verificado") y 4 medios, todos resueltos. Detalle en ADR-0025.
+- **Pruebas (2026-10-30, después de las revisiones):** lint y tipos ✅ · Vitest 145 de 145 ✅ · pgTAP 1.208 de 1.208 ✅ (la nueva `190` tiene 78 y la `195` mide el volumen) · Playwright 88 de 88 ✅.
+- **Para que decida Joaco (ADR-0025):**
+  - ¿un plato se puede usar como preparación de otro (por ejemplo, un combo)?
+  - ¿las diferencias de una variante las ve también el Jefe de Cocina del local, aunque ya no vea la maestra?
+- **Próximo:** PR 2 (pantallas: buscador de preparaciones, "Dónde se usa", crear variante y sus diferencias, avisos en `/aprobaciones`).
+
+## Antes: etapa 2.2 A, recetas (PR 3 de 3, fotos; fusionado, PR #24)
 
 - **La rama sale de `feat/recetario-pantallas`:** fusionar en orden `docs/respuestas-soy`, `feat/recetario-pantallas` y este.
 - **Qué se hizo:** fotos de las recetas en Supabase Storage (bucket privado `recipe-media`). Son parte de la versión: se agregan en un borrador, pasan por la revisión y la cocina ve las de la vigente. Detalle en ADR-0023 (PR 3).

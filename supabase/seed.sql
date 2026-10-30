@@ -433,8 +433,7 @@ insert into seed_recipe_lines (n, ingredient, qty, unit) values
   (7, 30, 120, 'g'), (7, 35, 150, 'g'), (7, 33, 10, 'ml'), (7, 20, 15, 'g'), (7, 7, 2, 'g'),
   (8, 27, 100, 'g'), (8, 26, 1, 'unit'), (8, 21, 120, 'g'), (8, 20, 20, 'g'), (8, 44, 0.5, 'g'),
   (9, 5, 1000, 'g'), (9, 27, 250, 'g'), (9, 26, 1, 'unit'), (9, 37, 8, 'g'),
-  (10, 11, 800, 'g'), (10, 35, 800, 'g'), (10, 19, 500, 'g'), (10, 27, 500, 'g'), (10, 26, 4, 'unit'), (10, 23, 1000, 'ml'),
-  (10, 24, 60, 'g'),
+  (10, 19, 500, 'g'), (10, 27, 500, 'g'), (10, 26, 4, 'unit'),
   (11, 31, 320, 'g'), (11, 50, 300, 'g'), (11, 2, 100, 'g'), (11, 24, 60, 'g'), (11, 20, 60, 'g'), (11, 33, 20, 'ml'),
   (12, 8, 50, 'g'), (12, 3, 20, 'g'), (12, 42, 10, 'g'), (12, 43, 5, 'g'), (12, 38, 100, 'ml'), (12, 34, 300, 'ml'),
   (12, 37, 8, 'g'),
@@ -468,6 +467,13 @@ select '00000000-0000-4000-8000-000000000001', format('00000000-0000-4000-8000-%
        row_number() over (partition by l.n order by l.ord), format('00000000-0000-4000-8000-%s', lpad((800 + l.ingredient)::text, 12, '0'))::uuid,
        l.qty, u.id
   from seed_recipe_lines l join catalog.units u on u.code = l.unit;
+
+-- Subrecetas (etapa 2.2 B): la Lasaña usa la Salsa bolognesa y la Salsa blanca; los Ravioles, la bolognesa.
+insert into recipes.recipe_components (group_id, recipe_version_id, line_order, sub_recipe_id, quantity, unit_id, quantity_basis)
+select '00000000-0000-4000-8000-000000000001', format('00000000-0000-4000-8000-%s', lpad((1200 + x.n)::text, 12, '0'))::uuid,
+       x.line, format('00000000-0000-4000-8000-%s', lpad((1100 + x.sub)::text, 12, '0'))::uuid, x.qty, u.id, 'finished'
+  from (values (10, 4, 2, 1.6, 'kg'), (10, 5, 3, 1, 'l'), (8, 6, 2, 150, 'g')) as x (n, line, sub, qty, unit)
+  join catalog.units u on u.code = x.unit;
 
 -- Pasos: preparar, el paso propio de cada receta y terminar (uno espera al otro). La bolognesa, en paralelo.
 insert into recipes.recipe_steps (group_id, recipe_version_id, step_number, kind, instructions, active_minutes, passive_minutes)
@@ -525,6 +531,44 @@ select '00000000-0000-4000-8000-000000000001', format('00000000-0000-4000-8000-%
             when r.brand is not null
               then rest.brand_id = ('00000000-0000-4000-8000-' || lpad((100 + r.brand)::text, 12, '0'))::uuid
             else rest.brand_id in ('00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000102') end;
+
+-- Una variante local (etapa 2.2 B): los Ñoquis de Demo Pastas Norte llevan menos harina y queso arriba.
+-- Publicada, así que ese local dejó de usar la maestra.
+insert into recipes.recipes (id, group_id, brand_id, restaurant_id, scope_type, code, name, recipe_type, category_id,
+                             variant_of_recipe_id)
+values ('00000000-0000-4000-8000-000000001121', '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000202', 'restaurant', 'DEMO-LOC-02',
+        'Ñoquis de papa (Norte)', 'dish', '00000000-0000-4000-8000-000000001062', '00000000-0000-4000-8000-000000001109');
+insert into recipes.recipe_versions (id, group_id, recipe_id, version_number, yield_quantity, yield_unit_id, portions,
+                                     portion_grams, description, change_summary)
+select '00000000-0000-4000-8000-000000001221', group_id, '00000000-0000-4000-8000-000000001121', 1, yield_quantity,
+       yield_unit_id, portions, portion_grams, description, 'Variante de «Ñoquis de papa» (v1) para Demo Pastas Norte.'
+  from recipes.recipe_versions where id = '00000000-0000-4000-8000-000000001209';
+insert into recipes.recipe_components (group_id, recipe_version_id, line_order, ingredient_id, quantity, unit_id)
+select group_id, '00000000-0000-4000-8000-000000001221', line_order, ingredient_id,
+       case when ingredient_id = '00000000-0000-4000-8000-000000000827' then 200 else quantity end, unit_id
+  from recipes.recipe_components where recipe_version_id = '00000000-0000-4000-8000-000000001209';
+insert into recipes.recipe_components (group_id, recipe_version_id, line_order, ingredient_id, quantity, unit_id)
+select '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001221', 5,
+       '00000000-0000-4000-8000-000000000820', 80, id
+  from catalog.units where code = 'g';
+insert into recipes.recipe_steps (group_id, recipe_version_id, step_number, kind, instructions, active_minutes, passive_minutes)
+select group_id, '00000000-0000-4000-8000-000000001221', step_number, kind, instructions, active_minutes, passive_minutes
+  from recipes.recipe_steps where recipe_version_id = '00000000-0000-4000-8000-000000001209';
+insert into recipes.recipe_step_dependencies (group_id, step_id, depends_on_step_id)
+select '00000000-0000-4000-8000-000000000001', s.id, d.id
+  from (values (2, 1), (3, 2)) as x (step, dep)
+  join recipes.recipe_steps s on s.recipe_version_id = '00000000-0000-4000-8000-000000001221' and s.step_number = x.step
+  join recipes.recipe_steps d on d.recipe_version_id = s.recipe_version_id and d.step_number = x.dep;
+update recipes.recipe_versions set status = 'in_review' where id = '00000000-0000-4000-8000-000000001221';
+update recipes.recipe_versions set status = 'approved', approved_by = '00000000-0000-4000-8000-000000000405'
+ where id = '00000000-0000-4000-8000-000000001221';
+update recipes.recipe_versions set status = 'published', published_at = now() where id = '00000000-0000-4000-8000-000000001221';
+insert into recipes.recipe_assignments (group_id, recipe_id, restaurant_id, valid_from)
+values ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001121',
+        '00000000-0000-4000-8000-000000000202', current_date - 7);
+update recipes.recipe_assignments set valid_to = current_date - 7
+ where recipe_id = '00000000-0000-4000-8000-000000001109' and restaurant_id = '00000000-0000-4000-8000-000000000202';
 
 -- Ingresos ficticios de los últimos 30 días, para el gráfico del tablero.
 set role audit_owner;

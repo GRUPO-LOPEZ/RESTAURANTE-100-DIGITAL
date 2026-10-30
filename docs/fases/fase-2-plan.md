@@ -331,7 +331,7 @@ La función es `recipes.critical_path_minutes(version)`, una consulta recursiva 
 | 7   | Multiestablecimiento          | Carne a $ 10.000 (RAGU) y $ 11.000 (Padella)              | Dos costos, una receta                                                           | 2.3   | pgTAP              |
 | 8   | Importación repetida          | Misma huella SHA-256                                      | 0 duplicados                                                                     | 2.4   | pgTAP + Vitest     |
 | 9   | Falta precio                  | Sin `price_records` vigente                               | Incompleto, nunca $ 0                                                            | 2.3   | pgTAP              |
-| 10  | Ciclo                         | C → A, con A → B → C                                      | Rechazado con mensaje claro                                                      | 2.2   | pgTAP              |
+| 10  | Ciclo                         | C → A, con A → B → C                                      | Rechazado con mensaje claro (al guardar y al pedir la revisión; ADR-0025)        | 2.2 B | pgTAP `190`        |
 | 11  | Permisos                      | Local 1 edita receta del local 2                          | Rechazado por la base y registrado (`audit` de operaciones rechazadas, ADR-0009) | 2.2   | pgTAP + Playwright |
 | 12  | Persistencia                  | Crear, salir, volver                                      | Receta idéntica                                                                  | 2.2   | Playwright         |
 | 13  | Importación con errores       | Unidades ambiguas, duplicados, referencias que no existen | Errores por fila; nada válido alterado                                           | 2.4   | pgTAP + Vitest     |
@@ -344,10 +344,10 @@ La función es `recipes.critical_path_minutes(version)`, una consulta recursiva 
 | 20  | Impuestos                     | 12.100 / 1,21                                             | $ 10.000,00 por kg neto                                                          | 2.1   | pgTAP              |
 | 21  | Precio heredado               | Local sin precio, marca con precio                        | Usa el de marca; "con estimaciones"                                              | 2.1   | pgTAP              |
 | 22  | Camino crítico                | 20 + máx(60, 30) + 10                                     | 90 min                                                                           | 2.2   | pgTAP              |
-| 23  | Alérgenos                     | Un ingrediente sin dato en la subreceta                   | Plato "no verificado"                                                            | 2.2   | pgTAP              |
+| 23  | Alérgenos                     | Un ingrediente sin dato en la subreceta                   | Plato "no verificado" (ADR-0025)                                                 | 2.2 B | pgTAP `190`        |
 | 24  | Vista de cocina               | Cocinero pide la receta                                   | Ningún valor económico, ni en la respuesta de la API                             | 2.2   | pgTAP + Playwright |
 | 25  | Rendimiento                   | Ensayo distinto al estándar                               | Estándar igual sin aprobación                                                    | 2.1   | pgTAP              |
-| 26  | Subreceta nueva               | Publicar v2 de la salsa                                   | Platos siguen en v1 y reciben propuesta                                          | 2.2   | pgTAP              |
+| 26  | Subreceta nueva               | Publicar v2 de la salsa                                   | Reescrito por la respuesta 10 de Soy: los platos ya usan la v2 y se avisa        | 2.2 B | pgTAP `190`        |
 | 27  | Rendimiento 0                 | División por 0                                            | Costo unitario incompleto                                                        | 2.3   | pgTAP              |
 
 Más las pruebas 2, 3 y 7 de la Fase 1, repetidas sobre las recetas reales (2.2), y "quien manda a revisión no publica" (2.2).
@@ -437,16 +437,16 @@ Las validaciones 2.2, 2.4 y 2.5 usan datos o personas reales. Por eso **staging 
 
 ### Las 8 de Soy (sección 22): ninguna está confirmada todavía
 
-| #   | Decisión                               | Propuesta del documento                                                                   | Etapa |
-| --- | -------------------------------------- | ----------------------------------------------------------------------------------------- | ----- |
-| 1   | Subrecetas nuevas en platos publicados | Atar versión y aprobar actualizaciones en lote                                            | 2.2   |
-| 2   | Orden de precios por local             | Local → marca → grupo, marcando lo heredado                                               | 2.1   |
-| 3   | IVA y otros impuestos                  | Neto de lo recuperable por sociedad; Soy lo confirma con su contador                      | 2.1   |
-| 4   | Quién aprueba precios                  | Compras propone, Controller aprueba; aumentos grandes con Dirección                       | 2.1   |
-| 5   | Rendimiento que usa el motor           | Siempre el estándar aprobado                                                              | 2.1   |
-| 6   | Pariggi como proveedor interno         | Producto de compra con precio de transferencia, o receta de cocina central con costo real | 2.2   |
-| 7   | Plazo de precio desactualizado         | 30 días, ajustable por categoría                                                          | 2.1   |
-| 8   | Primeras 20 recetas reales             | Lista que valida el Controller                                                            | 2.5   |
+| #   | Decisión                               | Propuesta del documento                                                                                                       | Etapa |
+| --- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----- |
+| 1   | Subrecetas nuevas en platos publicados | Atar versión y aprobar actualizaciones en lote                                                                                | 2.2   |
+| 2   | Orden de precios por local             | Local → marca → grupo, marcando lo heredado                                                                                   | 2.1   |
+| 3   | IVA y otros impuestos                  | Neto de lo recuperable por sociedad; Soy lo confirma con su contador                                                          | 2.1   |
+| 4   | Quién aprueba precios                  | Compras propone, Controller aprueba; aumentos grandes con Dirección                                                           | 2.1   |
+| 5   | Rendimiento que usa el motor           | Siempre el estándar aprobado                                                                                                  | 2.1   |
+| 6   | Pariggi como proveedor interno         | Respondida (10 y 11 de Soy, ADR-0024): Pariggi es un proveedor externo; el alcance "cocina central" queda sin usar (ADR-0025) | 2.2   |
+| 7   | Plazo de precio desactualizado         | 30 días, ajustable por categoría                                                                                              | 2.1   |
+| 8   | Primeras 20 recetas reales             | Lista que valida el Controller                                                                                                | 2.5   |
 
 ### Preguntas nuevas que salen de comparar el documento con lo construido
 
