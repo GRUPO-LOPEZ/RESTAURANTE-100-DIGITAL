@@ -15,7 +15,7 @@
 ## Decisiones de Joaco (2026-10-30)
 
 1. **Las variantes entran ahora, junto con las subrecetas.** Al publicarse una variante, su local deja de usar la maestra y usa la variante.
-2. **Avisos (provisorio hasta la pregunta 5 de Soy):** Compras y Dirección General de todo el grupo, más quienes pueden publicar cada plato afectado (chefs y directores de marca). Nunca a quien aprobó el cambio.
+2. **Avisos (provisorio hasta la pregunta 5 de Soy):** Compras y Dirección General de todo el grupo, más quienes pueden publicar cada plato afectado (chefs y directores de marca). Nunca a quien aprobó el cambio. **Reemplazado por la respuesta 5 de Soy (ADR-0026):** Chef de cada plato afectado y Compras, Dirección General y Gerencia de los locales que usan esos platos (migración `20261105120000_recipe_change_notices.sql`).
 
 ## Cómo quedó (PR 1, base)
 
@@ -37,7 +37,7 @@
 - **Avisos** (`notify_recipe_changed`, tipo `recipe_changed`):
   - al publicarse una versión de una receta que otros platos usan en su vigente, se crea un aviso por persona;
   - por ejemplo: "Cambió «Salsa bolognesa» (v3): la usan 4 recetas";
-  - los destinatarios se calculan con `core.user_has_role_for_scope` y `core.user_has_permission_for_scope`, las mismas funciones que los avisos de aprobación. La regla vive en una sola función, fácil de cambiar cuando Soy responda la pregunta 5.
+  - los destinatarios se calculan con `core.user_has_role_for_scope` y `core.user_has_permission_for_scope`, las mismas funciones que los avisos de aprobación. La regla vive en una sola función; ya se cambió con la respuesta 5 de Soy (ADR-0026).
 - **Variantes:**
   - `recipes.variant_of_recipe_id` guarda la maestra. Una variante es siempre de un local, de la marca de la maestra o de una maestra del grupo;
   - `create_variant` pide `recipes.approve` en ese local (Chef Ejecutivo, Director de Marca o Dirección). Copia la vigente de la maestra (líneas, pasos, dependencias y fotos) en una v1 en borrador y la asigna al local;
@@ -60,7 +60,7 @@
 
 ## Pruebas
 
-- `190_subrecipes.test.sql` (78): estructura, ciclos, alcance, unidades, profundidad, casos 23 y 26, avisos, archivo y variantes.
+- `190_subrecipes.test.sql` (79): estructura, ciclos, alcance, unidades, profundidad, casos 23 y 26, avisos, archivo y variantes.
 - `195_subrecipes_performance.test.sql`: con 2.000 platos y 200 preparaciones en cadenas de 10 niveles, cada lectura responde en menos de 300 ms.
 - **Se actualizaron a propósito:**
   - `050`: las cuatro funciones nuevas;
@@ -106,4 +106,4 @@
 
 - **"Cambian solos"** significa que un cambio en una preparación llega a todos los platos sin aprobar cada uno. Es lo que pidió Soy; quedan el aviso y la historia.
 - **Si se archiva una variante,** la maestra no vuelve sola a su local: hay que asignarla de nuevo.
-- **Los avisos son provisorios** hasta la pregunta 5.
+- **Avisos:** la regla es la de la respuesta 5 de Soy (ADR-0026). Un local que usa el plato sin asignación vigente (por ejemplo, porque se la sacaron) no recibe el aviso.
