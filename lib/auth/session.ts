@@ -78,6 +78,9 @@ export const getMenus = cache(async () => {
     catalogManage,
     yieldsRecord,
     yieldsApprove,
+    recipes,
+    recipesDraft,
+    recipesSettings,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -92,6 +95,10 @@ export const getMenus = cache(async () => {
     check("yields.record"),
     // Procesos de rendimiento: los administra quien aprueba estándares para todo el grupo.
     groupWide("yields.approve"),
+    // Recetas: en cualquier alcance (la base controla qué receta ve y dónde escribe).
+    check("recipes.view"),
+    check("recipes.draft"),
+    groupWide("recipes.draft"),
   ]);
   return {
     users,
@@ -105,8 +112,12 @@ export const getMenus = cache(async () => {
     catalogManage,
     yieldsRecord,
     yieldsApprove,
-    // Configuración del catálogo: categorías (catalog.manage) o procesos (yields.approve).
-    catalogSettings: catalogManage || yieldsApprove,
+    // Configuración del catálogo: categorías (catalog.manage), procesos (yields.approve) o
+    // categorías de recetas (recipes.draft para todo el grupo).
+    catalogSettings: catalogManage || yieldsApprove || recipesSettings,
+    recipes,
+    recipesDraft,
+    recipesSettings,
   };
 });
 

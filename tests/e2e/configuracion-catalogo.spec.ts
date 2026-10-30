@@ -21,17 +21,17 @@ test("Compras crea una categoría, la usa en el alta y da de baja otra vacía", 
   await page.goto("/materias-primas");
   await page.getByRole("link", { name: "Configuración" }).click();
   await expect(page.getByRole("heading", { name: "Configuración del catálogo" })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Categorías" })).toContainText("Carnes");
+  await expect(page.getByRole("list", { name: "Categorías", exact: true })).toContainText("Carnes");
   // Compras no administra procesos (eso es del Chef del grupo).
   await expect(page.getByRole("heading", { name: "Procesos de rendimiento" })).toHaveCount(0);
   await axe(page);
 
   await openAction(page, "Nueva categoría");
-  await page.locator("#cfg-cat-nombre").fill(name);
-  await page.locator("#cfg-cat-motivo").fill("Categoría de prueba automática");
+  await page.locator("#cfg-mp-cat-nombre").fill(name);
+  await page.locator("#cfg-mp-cat-motivo").fill("Categoría de prueba automática");
   await page.getByRole("button", { name: "Crear categoría" }).click();
   await expect(notice(page)).toContainText("Categoría creada");
-  await expect(page.getByRole("list", { name: "Categorías" })).toContainText(name);
+  await expect(page.getByRole("list", { name: "Categorías", exact: true })).toContainText(name);
 
   await page.goto("/materias-primas/nueva");
   await expect(page.locator("#mp-alta-categoria").getByRole("option", { name })).toHaveCount(1);
@@ -47,7 +47,7 @@ test("Compras crea una categoría, la usa en el alta y da de baja otra vacía", 
   const archived = notice(page).filter({ hasText: "Categoría dada de baja" });
   await expect(archived).toBeFocused();
   await expect(page).toHaveURL(/\/materias-primas\/configuracion$/);
-  await expect(page.getByRole("list", { name: "Categorías" })).not.toContainText(name);
+  await expect(page.getByRole("list", { name: "Categorías", exact: true })).not.toContainText(name);
   await axe(page);
 });
 
@@ -59,11 +59,13 @@ test("una categoría con materias primas no ofrece darla de baja", async ({ page
   await expect(item.locator("summary", { hasText: "Dar de baja" })).toHaveCount(0);
 });
 
-test("el Chef del grupo ve los procesos, no las categorías", async ({ page }) => {
+test("el Chef del grupo ve los procesos, no las categorías de materias primas", async ({
+  page,
+}) => {
   await login(page, "chefgrupo@ejemplo.test");
   await page.goto("/materias-primas/configuracion");
   await expect(page.getByRole("list", { name: "Procesos de rendimiento" })).toContainText("Pelado");
-  await expect(page.getByRole("heading", { name: "Categorías" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Categorías", exact: true })).toHaveCount(0);
   await axe(page);
 });
 

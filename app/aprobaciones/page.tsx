@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { decideAction } from "@/app/usuarios/actions";
@@ -10,6 +11,7 @@ import { Card, CardDescription } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/kpi";
 import {
   FIELD_LABELS,
+  UUID,
   formatDateTime,
   formatField,
   getInbox,
@@ -123,6 +125,25 @@ function BeforeAfter({ row, roleNames }: { row: InboxRow; roleNames: Record<stri
   );
 }
 
+// Una versión de receta se revisa en la receta: la solicitud lleva solo un resumen (ADR-0023).
+function RecipeLink({ row }: { row: InboxRow }) {
+  const recipeId = (row.proposed_changes as Record<string, unknown> | null)?.recipe_id;
+  if (
+    row.workflow_code !== "recipes.publish_version" ||
+    typeof recipeId !== "string" ||
+    !UUID.test(recipeId)
+  )
+    return null;
+  return (
+    <Link
+      href={`/recetas/${recipeId}`}
+      className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+    >
+      Ver la receta y sus cambios
+    </Link>
+  );
+}
+
 function RequestList({ rows, roleNames }: { rows: InboxRow[]; roleNames: Record<string, string> }) {
   return (
     <ul className="flex flex-col gap-4">
@@ -139,6 +160,7 @@ function RequestList({ rows, roleNames }: { rows: InboxRow[]; roleNames: Record<
             </CardDescription>
             <p className="text-base text-ink">Motivo: {r.reason}</p>
             <BeforeAfter row={r} roleNames={roleNames} />
+            <RecipeLink row={r} />
             {r.resolved_at ? (
               <p className="text-sm text-ink-muted">
                 Resolvió {r.resolved_by_name ?? "alguien"} el {formatDateTime(r.resolved_at)}

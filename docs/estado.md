@@ -2,7 +2,17 @@
 
 _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: respuestas de Soy (ADR-0024)
+## Al retomar: etapa 2.2 A, recetas (PR 2 de 3, pantallas, rama `feat/recetario-pantallas`)
+
+- **La rama sale de `docs/respuestas-soy`:** fusionar primero ese PR y después este.
+- **Qué se hizo:** lista, alta, ficha por bloques con editores de componentes y pasos, vista de cocina, la bandeja con el resumen de la versión, "Dónde se usa" en materias primas y categorías de recetas en la configuración. Detalle en ADR-0023 (PR 2).
+- **Revisiones:** `security-auditor` apto; `ui-reviewer` con 2 graves y 8 medios, todos resueltos.
+- **Pruebas (2026-10-30, `npm run test` completo):** lint y tipos ✅ · Vitest 141 de 141 ✅ · pgTAP 1.097 de 1.097 ✅ · Playwright 86 de 86 ✅ (la nueva `recetas.spec` recorre alta, edición, "salir y volver", revisión, aprobación y vista de cocina).
+- **Pantallas:** miradas en capturas de celular y computadora.
+- **Para el Chef en staging (compuerta de la 2.2):** primero, categorías y materias primas cargadas en staging.
+- **Próximo:** PR 3 (fotos y retiro del documento de ensayo de la Fase 1).
+
+## Antes: respuestas de Soy (ADR-0024)
 
 - **Respondidas:** orden de precios (con aviso de dónde se hereda), IVA (costo sin IVA recuperable, mostrar con y sin IVA, precio "ingresado" sin factura, razón social por local, fletes aparte), quién aprueba precios (Dirección con un porcentaje configurable), plazo de precio viejo, rendimiento aprobado con alertas de desvío, el Gerente ve costos de su local, Superadmin con permisos del recetario, Compras de grupo, subrecetas que cambian solas con avisos, Pariggi como proveedor externo, alérgenos firmados por un externo, quiénes validan.
 - **Sin respuesta:** con qué producto se costea si hay varios (4) y el Excel del recetario actual (14). Las 20 recetas reales (15) y la lista de marcas y locales (16), las pasa después.

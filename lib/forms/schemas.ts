@@ -290,9 +290,102 @@ export const schemas = {
         path: ["declared_no_loss"],
       },
     ),
+  // Recetas (etapa 2.2 A, ADR-0023). El alcance viaja como "group:<id>", "brand:<id>" o "restaurant:<id>".
+  recipe: z.object({
+    scope: choice("Elegí dónde se usa la receta.").regex(
+      /^(group|brand|restaurant):[0-9a-f-]{36}$/,
+      "Elegí dónde se usa la receta.",
+    ),
+    code: catalogCode,
+    name: catalogName,
+    type: z.enum(["preparation", "dish", "unit_component"], {
+      message: "Elegí el tipo de receta.",
+    }),
+    category_id: z.string().max(60).optional(),
+    reason: reasonField,
+  }),
+  // El código y el alcance no cambian: no se editan.
+  recipeEdit: z.object({
+    name: catalogName,
+    short_name: z.string().trim().max(40, "Hasta 40 caracteres.").optional(),
+    category_id: z.string().max(60).optional(),
+    sector: z.string().trim().max(60, "Hasta 60 caracteres.").optional(),
+    station: z.string().trim().max(60, "Hasta 60 caracteres.").optional(),
+    reason: reasonField,
+  }),
+  recipeDraft: z.object({
+    yield_quantity: positiveNumber,
+    yield_unit: z.enum(["g", "kg", "ml", "l", "unit", "dozen"], { message: "Elegí la unidad." }),
+    portions: z
+      .string()
+      .trim()
+      .regex(/^$|^[0-9]{1,5}$/, "Escribí cuántas porciones, por ejemplo 4.")
+      .optional(),
+    portion_grams: z
+      .string()
+      .trim()
+      .regex(/^$|^[0-9]{1,6}([.,][0-9]{1,2})?$/, "Escribí el peso en gramos, por ejemplo 350.")
+      .optional(),
+    description: z.string().trim().max(2000, "Hasta 2.000 caracteres.").optional(),
+    storage_notes: z.string().trim().max(2000, "Hasta 2.000 caracteres.").optional(),
+    presentation_notes: z.string().trim().max(2000, "Hasta 2.000 caracteres.").optional(),
+    change_summary: z.string().trim().max(1000, "Hasta 1.000 caracteres.").optional(),
+    reason: reasonField,
+  }),
+  assignment: z.object({
+    restaurant_id: choice("Elegí el local."),
+    reason: reasonField,
+  }),
 } as const;
 
 export type FormSchemaName = keyof typeof schemas;
+
+// Las listas del editor de recetas (líneas y pasos): no son un formulario plano, así que se validan
+// con estos esquemas en el navegador y otra vez en la acción de servidor (ADR-0016).
+export const recipeLinesSchema = z
+  .array(
+    z.object({
+      ingredient_id: z.string().uuid("Elegí la materia prima."),
+      ingredient: z.string().max(200),
+      quantity: positiveNumber,
+      unit: z.enum(["g", "kg", "ml", "l", "unit", "dozen"], { message: "Elegí la unidad." }),
+      basis: z.enum(["purchase", "clean", "cooked"]),
+      no_scale: z.boolean(),
+      notes: z.string().trim().max(500, "Hasta 500 caracteres."),
+    }),
+  )
+  .max(200, "Hasta 200 componentes.");
+
+export const recipeStepsSchema = z
+  .array(
+    z.object({
+      kind: z.enum([
+        "preparation",
+        "cooking",
+        "resting",
+        "fermentation",
+        "cooling",
+        "regeneration",
+        "plating",
+        "other",
+      ]),
+      instructions: z
+        .string()
+        .trim()
+        .min(1, "Escribí qué se hace en el paso.")
+        .max(2000, "Hasta 2.000 caracteres."),
+      active_minutes: z
+        .string()
+        .trim()
+        .regex(/^[0-9]{1,5}$/, "Minutos: un número entero, por ejemplo 15."),
+      passive_minutes: z
+        .string()
+        .trim()
+        .regex(/^[0-9]{1,5}$/, "Minutos: un número entero, por ejemplo 15."),
+      depends_on: z.array(z.number().int().min(1).max(100)).max(99),
+    }),
+  )
+  .max(100, "Hasta 100 pasos.");
 
 // Los errores de un esquema, uno por campo (el primero), para mostrarlos debajo de cada campo.
 export function fieldErrors(error: z.ZodError): Record<string, string> {

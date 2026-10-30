@@ -28,9 +28,11 @@ import {
   getUnits,
   getYieldProcesses,
   getYieldRestaurants,
+  getIngredientUsage,
   getYieldSummary,
   type AllergenStatus,
   type IngredientDetail,
+  type IngredientUsage,
   type YieldRow,
 } from "@/lib/catalog";
 import { UUID, formatDate } from "@/lib/data";
@@ -103,10 +105,11 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
   const [categories, units, suppliers] = canManage
     ? await Promise.all([getCategories(), getUnits(), getSuppliers()])
     : [[], [], []];
-  const [yieldRows, processes, yieldRestaurants] = await Promise.all([
+  const [yieldRows, processes, yieldRestaurants, usage] = await Promise.all([
     getYieldSummary(ingredient.id),
     canRecordYields ? getYieldProcesses() : Promise.resolve([]),
     canRecordYields ? getYieldRestaurants() : Promise.resolve([]),
+    getIngredientUsage(ingredient.id),
   ]);
 
   return (
@@ -225,7 +228,41 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
       />
       <Conversions ingredient={ingredient} canManage={canManage} />
       <Allergens ingredient={ingredient} canManage={canManage} />
+      <Usage rows={usage} canOpen={menus.recipes} />
     </>
+  );
+}
+
+// Dónde se usa (sección 18): las recetas vigentes o en preparación que la tienen, entre las que se ven.
+function Usage({ rows, canOpen }: { rows: IngredientUsage[]; canOpen: boolean }) {
+  return (
+    <Card className="flex flex-col gap-4">
+      <CardTitle>Dónde se usa</CardTitle>
+      {rows.length === 0 ? (
+        <p className="text-base text-ink-muted">Todavía no está en ninguna receta.</p>
+      ) : (
+        <ul className="flex flex-col gap-2" aria-label="Recetas que la usan">
+          {rows.map((r) => (
+            <li key={r.recipeId} className="flex flex-wrap items-center justify-between gap-2">
+              {canOpen ? (
+                <Link
+                  href={`/recetas/${r.recipeId}`}
+                  className="inline-flex min-h-touch items-center text-base text-primary underline-offset-4 hover:underline"
+                >
+                  {r.name}
+                </Link>
+              ) : (
+                <span className="text-base text-ink">{r.name}</span>
+              )}
+              <span className="text-sm text-ink-muted tabular-nums">
+                {r.code} · v{r.versionNumber}{" "}
+                {r.status === "published" ? "vigente" : "en preparación"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 

@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(97);
+select plan(100);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -371,6 +371,17 @@ select is(pg_temp.res(pg_temp.u(406), format($$recipes.update_recipe(%L, '{"tech
 select throws_ok($$insert into workflow.approval_workflows (code, name, required_permission, min_approvers, apply_function)
                    values ('recipes.prueba', 'Prueba', 'recipes.publish', 1, 'recipes.kitchen_card(uuid)'::regprocedure)$$,
   '42501', null, 'una función de recipes que no es apply_* no puede aplicar aprobaciones');
+
+-- ---------------------------------------------------------------------------
+-- Conteo por categoría (pantalla de configuración): solo cuenta lo que la sesión ve
+-- ---------------------------------------------------------------------------
+select is(pg_temp.q(pg_temp.u(413), $$select recipes::text from recipes.category_usage()
+                                       where category_id = '00000000-0000-4000-8000-000000001063'$$), '5',
+  'el Chef del grupo cuenta las 5 recetas de Carnes');
+select is(pg_temp.q(pg_temp.u(409), $$select count(*)::text from recipes.category_usage()
+                                       where category_id = '00000000-0000-4000-8000-000000001063'$$), '0',
+  'la Cocinera de Pastas no cuenta las recetas de Carnes, que son de otra marca y no ve');
+select ok(not has_function_privilege('anon', 'recipes.category_usage()', 'execute'), 'anon no puede contar');
 
 select * from finish();
 rollback;

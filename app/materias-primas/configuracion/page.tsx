@@ -9,6 +9,11 @@ import {
   renameCategoryAction,
   renameProcessAction,
 } from "@/app/materias-primas/actions";
+import {
+  archiveRecipeCategoryAction,
+  createRecipeCategoryAction,
+  renameRecipeCategoryAction,
+} from "@/app/recetas/actions";
 import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Disclosure } from "@/components/disclosure";
@@ -23,6 +28,7 @@ import {
   type SettingsCategory,
   type SettingsProcess,
 } from "@/lib/catalog";
+import { getRecipeSettingsCategories } from "@/lib/recipes";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 
 // Configuración del catálogo (ADR-0022): las listas que se eligen al cargar materias primas. Las
@@ -66,6 +72,8 @@ function archivedMessage(baja: string | string[] | undefined) {
       return "Categoría dada de baja. Queda en el historial.";
     case "proceso":
       return "Proceso dado de baja. Queda en el historial.";
+    case "categoria-receta":
+      return "Categoría de recetas dada de baja. Queda en el historial.";
     default:
       return null;
   }
@@ -79,16 +87,19 @@ async function Settings({
   await requireMenu("catalogSettings");
   const archived = archivedMessage((await searchParams).baja);
   const menus = await getMenus();
-  const [categoryGroups, processGroups] = await Promise.all([
+  const [categoryGroups, processGroups, recipeGroups] = await Promise.all([
     menus.catalogManage ? getSettingsGroups("catalog.manage") : [],
     menus.yieldsApprove ? getSettingsGroups("yields.approve") : [],
+    menus.recipesSettings ? getSettingsGroups("recipes.draft") : [],
   ]);
   // Hoy hay un solo grupo. Si se suman otros, cada sección va a tener que elegir el grupo.
   const categoryGroup = categoryGroups[0];
   const processGroup = processGroups[0];
-  const [categories, processes] = await Promise.all([
+  const recipeGroup = recipeGroups[0];
+  const [categories, processes, recipeCategories] = await Promise.all([
     categoryGroup ? getSettingsCategories(categoryGroup) : [],
     processGroup ? getSettingsProcesses(processGroup) : [],
+    recipeGroup ? getRecipeSettingsCategories(recipeGroup) : [],
   ]);
   return (
     <>
@@ -99,39 +110,89 @@ async function Settings({
         Volver a materias primas
       </Link>
       {archived ? <FlashNotice>{archived}</FlashNotice> : null}
-      {categoryGroup ? <Categories groupId={categoryGroup} categories={categories} /> : null}
+      {categoryGroup ? (
+        <Categories kind={INGREDIENT_CATEGORIES} groupId={categoryGroup} categories={categories} />
+      ) : null}
+      {recipeGroup ? (
+        <Categories kind={RECIPE_CATEGORIES} groupId={recipeGroup} categories={recipeCategories} />
+      ) : null}
       {processGroup ? <Processes groupId={processGroup} processes={processes} /> : null}
-      {!categoryGroup && !processGroup ? (
+      {!categoryGroup && !processGroup && !recipeGroup ? (
         <EmptyState title="No tenés listas para configurar.">
-          Las categorías las configura Compras y los procesos, un Chef de todo el grupo.
+          Las categorías de materias primas las configura Compras; los procesos y las categorías de
+          recetas, un Chef de todo el grupo.
         </EmptyState>
       ) : null}
     </>
   );
 }
 
-function Categories({ groupId, categories }: { groupId: string; categories: SettingsCategory[] }) {
+// Las dos listas de categorías (materias primas y recetas) se manejan igual; cambian los textos y
+// las acciones. Cada una la administra quien tiene el permiso de su tema para todo el grupo.
+type CategoryKind = {
+  key: "mp" | "rec";
+  title: string;
+  description: string;
+  empty: string;
+  usedOne: string;
+  usedMany: string;
+  create: typeof createCategoryAction;
+  rename: typeof renameCategoryAction;
+  archive: typeof archiveCategoryAction;
+};
+
+const INGREDIENT_CATEGORIES: CategoryKind = {
+  key: "mp",
+  title: "Categorías",
+  description:
+    "Cada materia prima va en una categoría, y si querés, en una subcategoría (por ejemplo, Lácteos › Quesos).",
+  empty:
+    "Todavía no hay categorías. Creá la primera, por ejemplo «Verduras y frutas», «Carnes» o «Lácteos».",
+  usedOne: "materia prima",
+  usedMany: "materias primas",
+  create: createCategoryAction,
+  rename: renameCategoryAction,
+  archive: archiveCategoryAction,
+};
+
+const RECIPE_CATEGORIES: CategoryKind = {
+  key: "rec",
+  title: "Categorías de recetas",
+  description: "Para ordenar el recetario: por ejemplo, Salsas, Pastas › Rellenas o Postres.",
+  empty: "Todavía no hay categorías de recetas. Creá la primera, por ejemplo «Salsas» o «Postres».",
+  usedOne: "receta",
+  usedMany: "recetas",
+  create: createRecipeCategoryAction,
+  rename: renameRecipeCategoryAction,
+  archive: archiveRecipeCategoryAction,
+};
+
+function Categories({
+  kind,
+  groupId,
+  categories,
+}: {
+  kind: CategoryKind;
+  groupId: string;
+  categories: SettingsCategory[];
+}) {
+  const prefix = `cfg-${kind.key}-cat`;
   return (
     <Card className="flex flex-col gap-4">
-      <CardTitle>Categorías</CardTitle>
-      <CardDescription>
-        Cada materia prima va en una categoría, y si querés, en una subcategoría (por ejemplo,
-        Lácteos › Quesos).
-      </CardDescription>
+      <CardTitle>{kind.title}</CardTitle>
+      <CardDescription>{kind.description}</CardDescription>
       {categories.length === 0 ? (
-        <p className="text-base text-ink">
-          Todavía no hay categorías. Creá la primera, por ejemplo «Verduras y frutas», «Carnes» o
-          «Lácteos».
-        </p>
+        <p className="text-base text-ink">{kind.empty}</p>
       ) : (
-        <ul className="flex flex-col gap-2" aria-label="Categorías">
+        <ul className="flex flex-col gap-2" aria-label={kind.title}>
           {categories.map((c) => (
             <li key={c.id} className="flex flex-col gap-2 rounded-sm border border-line p-3">
               <CategoryItem
+                kind={kind}
                 id={c.id}
                 name={c.name}
-                ingredients={c.ingredients}
-                total={c.children.reduce((sum, s) => sum + s.ingredients, c.ingredients)}
+                uses={c.uses}
+                total={c.children.reduce((sum, s) => sum + s.uses, c.uses)}
                 subcategories={c.children.length}
               />
               {c.children.length > 0 ? (
@@ -142,10 +203,11 @@ function Categories({ groupId, categories }: { groupId: string; categories: Sett
                   {c.children.map((s) => (
                     <li key={s.id} className="flex flex-col gap-2">
                       <CategoryItem
+                        kind={kind}
                         id={s.id}
                         name={s.name}
-                        ingredients={s.ingredients}
-                        total={s.ingredients}
+                        uses={s.uses}
+                        total={s.uses}
                         subcategories={0}
                       />
                     </li>
@@ -156,18 +218,18 @@ function Categories({ groupId, categories }: { groupId: string; categories: Sett
           ))}
         </ul>
       )}
-      <Disclosure summary="Nueva categoría">
+      <Disclosure summary={kind.key === "mp" ? "Nueva categoría" : "Nueva categoría de recetas"}>
         <ActionForm
-          action={createCategoryAction}
+          action={kind.create}
           schema="category"
           submitLabel="Crear categoría"
           pendingLabel="Creando…"
         >
           <input type="hidden" name="groupId" value={groupId} />
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormInput id="cfg-cat-nombre" label="Nombre" name="name" required maxLength={80} />
+            <FormInput id={`${prefix}-nombre`} label="Nombre" name="name" required maxLength={80} />
             <FormSelect
-              id="cfg-cat-madre"
+              id={`${prefix}-madre`}
               label="Va dentro de"
               hint="Dejalo en «Ninguna» para una categoría principal."
               name="parent_id"
@@ -181,7 +243,7 @@ function Categories({ groupId, categories }: { groupId: string; categories: Sett
               ))}
             </FormSelect>
           </div>
-          <Reason id="cfg-cat-motivo" label="Motivo" />
+          <Reason id={`${prefix}-motivo`} label="Motivo" />
         </ActionForm>
       </Disclosure>
     </Card>
@@ -191,48 +253,51 @@ function Categories({ groupId, categories }: { groupId: string; categories: Sett
 const ARCHIVE_NOTE =
   "Deja de aparecer en las listas y no se puede volver a activar desde acá: si hace falta, se crea de nuevo. La historia se conserva.";
 
-// ingredients: las materias primas de esta categoría; total: con las de sus subcategorías.
+// uses: lo que tiene esta categoría (materias primas o recetas); total: con lo de sus subcategorías.
 function CategoryItem({
+  kind,
   id,
   name,
-  ingredients,
+  uses,
   total,
   subcategories,
 }: {
+  kind: CategoryKind;
   id: string;
   name: string;
-  ingredients: number;
+  uses: number;
   total: number;
   subcategories: number;
 }) {
-  const inUse = ingredients > 0 || subcategories > 0;
+  const prefix = `cfg-${kind.key}-cat`;
+  const inUse = uses > 0 || subcategories > 0;
   return (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-medium text-ink">{name}</span>
         <span className="text-sm text-ink-muted tabular-nums">
-          {count(total, "materia prima", "materias primas")}
+          {count(total, kind.usedOne, kind.usedMany)}
           {subcategories > 0 ? " con sus subcategorías" : ""}
         </span>
       </div>
       <Disclosure summary={`Cambiar el nombre de «${name}»`}>
-        <ActionForm action={renameCategoryAction} schema="rename" submitLabel="Cambiar nombre">
+        <ActionForm action={kind.rename} schema="rename" submitLabel="Cambiar nombre">
           <input type="hidden" name="categoryId" value={id} />
           <FormInput
-            id={`cfg-cat-renombrar-${id}`}
+            id={`${prefix}-renombrar-${id}`}
             label="Nombre nuevo"
             name="name"
             required
             maxLength={80}
             defaultValue={name}
           />
-          <Reason id={`cfg-cat-renombrar-motivo-${id}`} label="Motivo del cambio de nombre" />
+          <Reason id={`${prefix}-renombrar-motivo-${id}`} label="Motivo del cambio de nombre" />
         </ActionForm>
       </Disclosure>
       {inUse ? (
         <p className="text-sm text-ink-muted">
           No se puede dar de baja: tiene{" "}
-          {[ingredients > 0 ? "materias primas" : null, subcategories > 0 ? "subcategorías" : null]
+          {[uses > 0 ? kind.usedMany : null, subcategories > 0 ? "subcategorías" : null]
             .filter(Boolean)
             .join(" y ")}
           .
@@ -241,13 +306,13 @@ function CategoryItem({
         <Disclosure summary={`Dar de baja «${name}»`}>
           <p className="text-base text-ink">{ARCHIVE_NOTE}</p>
           <ActionForm
-            action={archiveCategoryAction}
+            action={kind.archive}
             schema="reason"
             submitLabel="Dar de baja"
             variant="destructive"
           >
             <input type="hidden" name="categoryId" value={id} />
-            <Reason id={`cfg-cat-baja-motivo-${id}`} label="Motivo de la baja" />
+            <Reason id={`${prefix}-baja-motivo-${id}`} label="Motivo de la baja" />
           </ActionForm>
         </Disclosure>
       )}

@@ -78,9 +78,40 @@
 
 **Para más adelante:** la fecha de "hoy" usa siempre el huso de Buenos Aires, aunque `org.restaurants` tiene `time_zone` (se revisa si se abre un local en otro huso). La descripción del permiso `recipes.review` dice que pedir revisión es parte de `recipes.draft`; hoy todos los roles tienen los dos, y se alinea cuando se toquen los permisos.
 
+## Cómo quedó (PR 2, pantallas)
+
+- **`/recetas`:** lista paginada con búsqueda y filtros por tipo, alcance y categoría. Cada receta muestra si tiene vigente, borrador o revisión.
+- **`/recetas/nueva`:** solo ofrece los alcances donde la persona puede crear recetas.
+- **`/recetas/[id]`:** la ficha por bloques: datos, versión (con un resumen de cuántos componentes y pasos tiene), componentes, procedimiento, alérgenos, cambios contra la versión anterior, revisión y versiones, y locales que la usan.
+  - Quien solo ve la receta va directo a la vista de cocina.
+  - Componentes y pasos se editan en listas del lado del navegador (`components/recipe-lines-editor.tsx` y `recipe-steps-editor.tsx`). Se validan con el mismo esquema en el navegador y en el servidor, y avisan si hay cambios sin guardar.
+  - Cada paso solo puede esperar a pasos anteriores.
+- **`/recetas/[id]/cocina`:** la versión vigente con letra de 20 px, sin valores económicos. Arriba van los alérgenos que contiene; los no verificados, en una línea.
+- **`/aprobaciones`:** muestra "Versión de receta" con el resumen ("2 se agregan…") y un enlace a la receta. El detalle lo lee quien trabaja la receta.
+- **Materias primas:** la ficha suma "Dónde se usa" (`catalog.ingredient_usage`), y la configuración suma las categorías de recetas (`recipes.category_usage`, migración `20261102120000`).
+- **`lib/recipe-format.ts`** tiene los tipos, etiquetas y formatos sin acceso a la base, para que los editores del navegador no arrastren el cliente de servidor.
+
+**Revisiones del PR 2 (2026-10-30):**
+
+- **`security-auditor`: apto.** Sus 3 menores, resueltos: cada acción valida todo lo que recibe con un solo esquema, las listas del editor tienen topes y hay prueba de que el conteo por categoría respeta lo que cada persona ve.
+- **`ui-reviewer`: 2 graves, resueltos:**
+  - la vista de cocina usaba `text-lg`, que no existe en el tema, así que no tenía letra grande;
+  - había un id repetido entre la lista y la ficha. Ahora los ids de la ficha llevan el de la receta, y la prueba de pantalla controla ids repetidos y desborde horizontal.
+- **Medios, resueltos:**
+  - el editor en el celular: cantidad y unidad en una fila, y la base y las observaciones plegadas;
+  - aviso de cambios sin guardar, también al cerrar o recargar la pestaña;
+  - el foco va a la línea nueva al agregar y al buscador al quitar;
+  - el buscador dice "Buscando…" o "No pudimos buscar", ignora respuestas viejas y lo anuncia;
+  - los resultados no desbordan;
+  - los errores se marcan en cada campo;
+  - solo se espera a pasos anteriores;
+  - los alérgenos en la cocina, con lo que contiene primero.
+- **Menores, resueltos:** "Sin vigente" en neutro, "Alcance" en todas las pantallas, categoría en el celular, peso por porción y descripción en la cocina, "volver a la ficha", aviso fijo sin anunciarse de golpe, textos de configuración, acceso a las categorías desde Recetas, y "Dónde se usa" sin enlace para quien no ve recetas.
+- **Queda para más adelante:** un único guardado por borrador (hoy hay tres: datos, componentes y pasos, cada uno con su motivo). Se evalúa con el uso real del Chef en staging.
+
 ## Lo que queda para después
 
-- **2.2 B:** subrecetas (con la regla de ciclos de hasta 10 niveles), variantes, cocina central y Pariggi.
+- **2.2 B:** subrecetas (con la regla de ciclos de hasta 10 niveles) y variantes. Según las respuestas de Soy (ADR-0024), un plato sigue siempre la versión vigente de su preparación, con avisos, y Pariggi es un proveedor externo como cualquier otro.
 - **Una versión en revisión en el seed**, para ver la bandeja apenas se abre la demo: el seed no puede pedir aprobaciones como una persona. La crean las pruebas de pantalla.
 - **Comentarios, etiquetas y ensayos de rendimiento de una receta** (`recipe_comments`, `recipe_tags`, `recipe_yield_tests`): llegan con la pantalla que los usa.
 
