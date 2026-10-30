@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(78);
+select plan(79);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -296,6 +296,8 @@ select is(pg_temp.allergens(pg_temp.u(405), pg_temp.id('plato_v1')), 'DEMO-GLUTE
 select is(pg_temp.q(pg_temp.u(405), $$select string_agg(code, ', ') from recipes.recipe_usage(pg_temp.rec('PRB-SALSA'))$$),
   'PRB-PLATO', 'la salsa sabe dónde se usa');
 
+select is(pg_temp.res(pg_temp.u(405), format($$recipes.set_assignment(%L, pg_temp.u(201), true, 'Se sirve en Centro')$$, pg_temp.id('plato'))),
+  'applied', 'el plato se usa en Demo Pastas Centro');
 select is(pg_temp.res(pg_temp.u(413), $$recipes.new_version(pg_temp.rec('PRB-SALSA'), 'Con cebolla y leche')$$), 'applied',
   'versión 2 de la salsa');
 select is(pg_temp.res(pg_temp.u(413), format($$recipes.set_components(%L, '[
@@ -309,8 +311,9 @@ select is(pg_temp.allergens(pg_temp.u(405), pg_temp.id('plato_v1')), 'DEMO-GLUTE
   'casos 23 y 26: el plato ya usa la v2: contiene leche, y la cebolla sin dato lo deja "no verificado"');
 select is((select string_agg(recipient_user_id::text, ', ' order by recipient_user_id) from core.notifications
             where kind = 'recipe_changed' and link = '/recetas/' || pg_temp.rec('PRB-SALSA')),
-  array_to_string(array[pg_temp.u(403), pg_temp.u(405), pg_temp.u(408), pg_temp.u(412), pg_temp.u(413)]::text[], ', '),
-  'caso 26: avisa a Compras, a Dirección y a quienes publican el plato (Chef y Directora de marca, Chef del grupo); no a quien aprobó');
+  array_to_string(array[pg_temp.u(403), pg_temp.u(404), pg_temp.u(405), pg_temp.u(408), pg_temp.u(411), pg_temp.u(412),
+                        pg_temp.u(413)]::text[], ', '),
+  'caso 26 (respuesta 5 de Soy): avisa a quienes publican el plato y a Compras, Dirección y Gerencia de Centro, que lo usa; no a quien aprobó');
 select is((select title || ' / ' || body from core.notifications
             where kind = 'recipe_changed' and recipient_user_id = pg_temp.u(408) and link = '/recetas/' || pg_temp.rec('PRB-SALSA')),
   'Cambió «Salsa simple de prueba» (v2) / Las recetas que la usan ya usan la versión nueva. Revisá si hace falta ajustar algo.',

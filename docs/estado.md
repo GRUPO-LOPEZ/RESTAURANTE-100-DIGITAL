@@ -2,19 +2,31 @@
 
 _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: etapa 2.2 B, subrecetas y variantes (PR 1 de 2, base, rama `feat/recetario-subrecetas`)
+## Al retomar: segundas respuestas de Soy (ADR-0026)
+
+- **Registradas en ADR-0026.** Lo que cambia el plan:
+  - **precios (2.1 C):** vienen de un sistema futuro de lectura de facturas; mientras tanto, valores simbólicos. La 2.1 C se achica a guardar precios con historia y aprobación;
+  - **avisos de recetas:** a los locales que usan el plato. Ya aplicado en la rama de subrecetas;
+  - **aprobación de recetas en varios pasos** (Chef, Compras y Salón, configurable): cambia el motor de aprobaciones y necesita su propio plan;
+  - **alérgenos:** un rol nuevo, "Auditor externo de alérgenos", con su usuario;
+  - **traspaso de local:** las recetas propias pasan al local nuevo;
+  - **compuerta de la Fase 2:** todas las recetas las aprueban el Chef y la administración, no 20;
+  - **Excel del recetario de Nonnos:** se importa. **El archivo no llegó al chat**: hay que dejarlo en la carpeta del proyecto.
+- **Abierto con Soy:** precio mientras no haya facturas, umbral de rendimiento, "Salón" y pasos de aprobación, quién es la "administración maestra", otros negocios.
+
+## Antes: etapa 2.2 B, subrecetas y variantes (PR 1 de 2, base, rama `feat/recetario-subrecetas`)
 
 - **Qué se hizo (PR 1, base):** migración `20261104120000_recipes_subrecipes.sql`. Detalle en ADR-0025.
   - una línea de receta puede ser una preparación (subreceta), que usa siempre su versión vigente ("cambian solos", respuesta 10 de Soy);
   - sin círculos (caso 10), hasta 10 niveles, al alcance del plato y con una unidad como la de su rendimiento;
   - los alérgenos bajan por las preparaciones (caso 23);
-  - al publicarse una preparación que otros usan, se avisa a Compras, Dirección y quienes publican esos platos (caso 26, provisorio hasta la pregunta 5);
+  - al publicarse una preparación que otros usan, se avisa al Chef de cada plato y a Compras, Dirección y Gerencia de los locales que lo usan (caso 26, respuesta 5 de Soy, ADR-0026);
   - variantes locales: las crea el Chef Ejecutivo; al publicarse, el local deja de usar la maestra;
   - el editor de componentes ya guarda bien las líneas de preparación (las pantallas nuevas van en el PR 2).
 - **Revisiones:**
   - `security-auditor`: apto, con 3 medios resueltos;
   - `db-reviewer`: 1 grave (el límite de niveles solo miraba hacia abajo, y un plato con harina en el nivel 17 decía "sin gluten verificado") y 4 medios, todos resueltos. Detalle en ADR-0025.
-- **Pruebas (2026-10-30, después de las revisiones):** lint y tipos ✅ · Vitest 145 de 145 ✅ · pgTAP 1.208 de 1.208 ✅ (la nueva `190` tiene 78 y la `195` mide el volumen) · Playwright 88 de 88 ✅.
+- **Pruebas (2026-10-30, después de las revisiones):** lint y tipos ✅ · Vitest 145 de 145 ✅ · pgTAP 1.209 de 1.209 ✅ (la nueva `190` tiene 79 y la `195` mide el volumen) · Playwright 88 de 88 ✅.
 - **Para que decida Joaco (ADR-0025):**
   - ¿un plato se puede usar como preparación de otro (por ejemplo, un combo)?
   - ¿las diferencias de una variante las ve también el Jefe de Cocina del local, aunque ya no vea la maestra?
