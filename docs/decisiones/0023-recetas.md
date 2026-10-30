@@ -109,6 +109,34 @@
 - **Menores, resueltos:** "Sin vigente" en neutro, "Alcance" en todas las pantallas, categoría en el celular, peso por porción y descripción en la cocina, "volver a la ficha", aviso fijo sin anunciarse de golpe, textos de configuración, acceso a las categorías desde Recetas, y "Dónde se usa" sin enlace para quien no ve recetas.
 - **Queda para más adelante:** un único guardado por borrador (hoy hay tres: datos, componentes y pasos, cada uno con su motivo). Se evalúa con el uso real del Chef en staging.
 
+## Cómo quedó (PR 3, fotos)
+
+- **Bucket privado `recipe-media`** en Supabase Storage (migración `20261103120000_recipe_media.sql`): hasta 3 MB, solo JPG, PNG y WebP, en carpetas `<grupo>/<receta>/<archivo>`. Es el primer uso de Storage en el proyecto.
+- **Los mismos permisos que la receta:**
+  - las políticas de `storage.objects` usan los conjuntos de recetas: ve las fotos quien ve la receta, y sube quien la escribe (`recipes.draft`), en su carpeta y con un nombre `<uuid>.jpg|png|webp`;
+  - no hay políticas de cambio ni de borrado: un archivo subido queda.
+- **`recipes.recipe_media`** registra qué muestra cada foto (producto final, emplatado, materia prima, paso, punto crítico, ejemplo correcto o incorrecto), de qué versión es y quién la subió. Una foto se da de baja (borrado lógico) y el archivo queda como historia.
+- **La subida:** el navegador achica la foto (hasta 1.600 px, JPEG, sin dependencias nuevas). Una acción de servidor vuelve a controlar el tipo y el tamaño, arma el nombre del archivo, la sube con la sesión de la persona y la registra con `recipes.add_media`. El límite de las acciones de Next subió a 4 MB por eso.
+- **Las fotos son parte de la versión**, como los componentes y los pasos. Lo dice el documento de Soy (sección 14: "presentación o fotos: revisión del chef"), y lo marcó la revisión de seguridad (M2):
+  - se agregan o se quitan solo en un borrador;
+  - viajan con la revisión;
+  - una versión nueva copia las fotos de la anterior;
+  - la cocina ve solo las de la versión vigente.
+- **Quién lee un archivo:** quien trabaja la receta, o quien ve una versión que lo tiene registrado y vigente. Una foto dada de baja, o subida y nunca registrada, no la ve la cocina, ni siquiera por la API de Storage (revisión de seguridad, M1).
+- **Las fotos se muestran** con enlaces firmados que vencen en 10 minutos (revisión de seguridad, M3). Si la página queda abierta y el enlace vence, la foto muestra "No pudimos cargar la foto. Recargá la página.". Si las fotos fallan, la receta se ve igual.
+- **El servidor controla el contenido real del archivo** (los primeros bytes de JPG, PNG o WebP), no solo el tipo que declara el navegador.
+- **Pruebas:**
+  - la `180`, con 31 pruebas: bucket, quién sube y quién lee, nombres raros, receta archivada, fotos de borrador invisibles para la cocina, publicación, copia a la versión nueva, baja y auditoría;
+  - un recorrido de pantalla: el Jefe de Cocina abre una versión, sube una foto y pide la revisión. En revisión, la Cocinera no la ve; cuando la Chef la aprueba, la ve cargada en la cocina.
+- **Revisiones del PR 3:**
+  - `security-auditor`: apto, con 3 medios (M1 a M3, arriba) y menores resueltos;
+  - `ui-reviewer`: sin graves, con 4 medios resueltos: errores anunciados y con foco, foto vencida con aviso, fotos que no tiran abajo la ficha, "Subir una foto" arriba de la grilla.
+- **Tarea de mantenimiento (Superadministrador, cada mes):** listar los archivos de `recipe-media` que no tienen fila en `recipes.recipe_media` y tienen más de 30 días. Por ejemplo, porque falló el registro después de subirlos. Nadie más que quien trabaja la receta los ve, y no se borran sin una tarea documentada.
+- **El límite de 4 MB de las acciones de Next es para todas las acciones**, no solo las fotos. Queda debajo del límite de Vercel (4,5 MB). A futuro, la subida puede ir directo del navegador a Storage con un enlace de subida firmado.
+- **Miniaturas:** la transformación de imágenes de Supabase no está en el plan gratis. Por ahora la foto achicada sirve para todo; se revisa con el plan Pro.
+
+**El retiro de `core.test_documents` pasa a la 2.3.** El plan lo ponía en este PR, con la condición de que las pruebas 2, 3 y 7 de la Fase 1 ya pasaran sobre recetas reales. La prueba 2 ("el cocinero no ve costos") todavía no se puede pasar: las recetas no tienen costos hasta la 2.3. Si se retirara ahora, la Fase 1 perdería la prueba de que el cocinero no ve costos. Se retira cuando exista el costo de las recetas, con la prueba 2 reescrita sobre él.
+
 ## Lo que queda para después
 
 - **2.2 B:** subrecetas (con la regla de ciclos de hasta 10 niveles) y variantes. Según las respuestas de Soy (ADR-0024), un plato sigue siempre la versión vigente de su preparación, con avisos, y Pariggi es un proveedor externo como cualquier otro.

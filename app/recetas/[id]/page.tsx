@@ -16,6 +16,8 @@ import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Disclosure } from "@/components/disclosure";
 import { RecipeLinesEditor } from "@/components/recipe-lines-editor";
+import { RecipePhotoUpload } from "@/components/recipe-photo-upload";
+import { RecipePhotos } from "@/components/recipe-photos";
 import { RecipeStepsEditor } from "@/components/recipe-steps-editor";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +41,7 @@ import {
   getVersionContent,
   getVersionDiff,
   getVersionSummary,
+  getVersionPhotos,
   type RecipeDetail,
   type RecipeVersion,
   type VersionStatus,
@@ -119,7 +122,7 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
   const returned =
     version?.status === "in_review" &&
     (version.requestStatus === "rejected" || version.requestStatus === "cancelled");
-  const [content, summary, diff, assignments, categories] = await Promise.all([
+  const [content, summary, diff, assignments, categories, photos] = await Promise.all([
     version ? getVersionContent(version.id) : Promise.resolve({ lines: [], steps: [] }),
     version
       ? getVersionSummary(version.id)
@@ -128,6 +131,7 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
     recipe.open && recipe.open.number > 1 ? getVersionDiff(recipe.open.id) : Promise.resolve([]),
     getAssignments(recipe),
     recipe.can.draft ? getRecipeCategories() : Promise.resolve([]),
+    version ? getVersionPhotos(version.id) : Promise.resolve({ photos: [], failed: false }),
   ]);
   const unitLabel = (code: string | null) =>
     LINE_UNITS.find((u) => u.code === code)?.label ?? code ?? "";
@@ -475,6 +479,24 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
           ) : null}
         </>
       ) : null}
+
+      <Card className="flex flex-col gap-4">
+        <CardTitle>Fotos</CardTitle>
+        <CardDescription>
+          Producto final, emplatado y puntos críticos. Las fotos van con la versión: la cocina ve
+          las de la vigente, y las del borrador cuando se publique.
+        </CardDescription>
+        {editable ? (
+          <Disclosure summary="Subir una foto">
+            <RecipePhotoUpload recipeId={recipe.id} />
+          </Disclosure>
+        ) : recipe.can.draft && recipe.isActive && !recipe.open ? (
+          <p className="text-base text-ink-muted">
+            Para agregar o quitar fotos, creá una versión nueva (en «Revisión y versiones»).
+          </p>
+        ) : null}
+        <RecipePhotos recipeId={recipe.id} set={photos} canRemove={editable} />
+      </Card>
 
       {/* Lo que se puede hacer con la receta */}
       <Card className="flex flex-col gap-4">
