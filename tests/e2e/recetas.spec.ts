@@ -188,9 +188,17 @@ test("las fotos van con la versión: la Cocinera las ve cuando se publica", asyn
     page.getByRole("heading", { name: "Sorrentinos de zapallo", exact: true }),
   ).toBeVisible();
   const url = page.url();
-  await openAction(page, "Crear una versión nueva");
-  await page.locator('[id$="-motivo-version"]').fill("Fotos del emplatado");
-  await page.getByRole("button", { name: "Crear versión nueva" }).click();
+  // La receta puede venir con una versión abierta (otro proyecto o un reintento): se sigue con esa.
+  if ((await page.locator("summary", { hasText: "Retirar de revisión" }).count()) > 0) {
+    await openAction(page, "Retirar de revisión");
+    await page.locator('[id$="-motivo-retiro"]').fill("Reintento de la prueba");
+    await page.getByRole("button", { name: "Retirar" }).click();
+  }
+  if ((await page.locator("summary", { hasText: "Crear una versión nueva" }).count()) > 0) {
+    await openAction(page, "Crear una versión nueva");
+    await page.locator('[id$="-motivo-version"]').fill("Fotos del emplatado");
+    await page.getByRole("button", { name: "Crear versión nueva" }).click();
+  }
   await expect(page.getByText("Versión en preparación", { exact: false })).toBeVisible();
   await openAction(page, "Subir una foto");
   await page
