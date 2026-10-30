@@ -166,3 +166,82 @@ test("el Chef del grupo administra las categorías de recetas", async ({ page })
   await expect(page.getByRole("list", { name: "Categorías de recetas" })).toContainText("Salsas");
   await axe(page);
 });
+
+// Una foto chica (PNG de 1 × 1): el navegador la pasa a JPEG antes de subirla.
+const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+test("las fotos van con la versión: la Cocinera las ve cuando se publica", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(150_000);
+  const description = `Emplatado ${testInfo.project.name} ${Date.now() % 1_000_000}`;
+  const alt = `Foto: Emplatado – ${description}`;
+
+  // El Jefe de Cocina abre una versión nueva de una receta de su local y le agrega la foto.
+  await login(page, "jefecocina@ejemplo.test");
+  await page.goto("/recetas?q=Sorrentinos");
+  await page.getByRole("link", { name: "Sorrentinos de zapallo" }).first().click();
+  await expect(
+    page.getByRole("heading", { name: "Sorrentinos de zapallo", exact: true }),
+  ).toBeVisible();
+  const url = page.url();
+  await openAction(page, "Crear una versión nueva");
+  await page.locator('[id$="-motivo-version"]').fill("Fotos del emplatado");
+  await page.getByRole("button", { name: "Crear versión nueva" }).click();
+  await expect(page.getByText("Versión en preparación", { exact: false })).toBeVisible();
+  await openAction(page, "Subir una foto");
+  await page
+    .getByLabel("Foto", { exact: true })
+    .setInputFiles({ name: "plato.png", mimeType: "image/png", buffer: PNG });
+  await page.getByLabel("Qué muestra").selectOption("plating");
+  await page.getByLabel("Descripción (opcional)").fill(description);
+  await page.getByLabel("Motivo de la foto").fill("Foto de prueba automática");
+  await page.getByRole("button", { name: "Subir foto" }).click();
+  await expect(notice(page).filter({ hasText: "Foto agregada al borrador" })).toBeVisible();
+  await expect(page.getByRole("img", { name: alt })).toBeVisible();
+  await axe(page);
+  await openAction(page, "Pedir la revisión");
+  await page.locator('[id$="-motivo-revision"]').fill("Con la foto del emplatado");
+  await page.getByRole("button", { name: "Pedir la revisión" }).click();
+  await expect(notice(page).filter({ hasText: "Está en revisión" })).toBeVisible();
+  await logout(page);
+
+  // En revisión, la cocina todavía no la ve.
+  await login(page, "cocinero@ejemplo.test");
+  await page.goto(url);
+  await expect(page).toHaveURL(/\/cocina$/);
+  await expect(page.getByRole("img", { name: alt })).toHaveCount(0);
+  await logout(page);
+
+  // La Chef de la marca la aprueba.
+  await login(page, "chef@ejemplo.test");
+  await page.goto("/aprobaciones");
+  const request = page
+    .getByRole("listitem")
+    .filter({ hasText: "Sorrentinos de zapallo" })
+    .filter({ hasText: "Pendiente" })
+    .first();
+  await request.getByRole("button", { name: "Aprobar" }).click();
+  await expect(
+    page
+      .getByRole("listitem")
+      .filter({ hasText: "Sorrentinos de zapallo" })
+      .first()
+      .getByText("Aprobada", { exact: true }),
+  ).toBeVisible();
+  await logout(page);
+
+  // Publicada, la Cocinera ve la foto cargada de verdad (el enlace firmado funciona con su sesión).
+  await login(page, "cocinero@ejemplo.test");
+  await page.goto(url);
+  const seen = page.getByRole("img", { name: alt });
+  await expect(seen).toBeVisible();
+  await expect
+    .poll(() => seen.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  await expect(page.getByText(/Quitar la foto/)).toHaveCount(0);
+  await axe(page);
+});

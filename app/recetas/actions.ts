@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -12,6 +13,7 @@ import {
   recipeStepsSchema,
   schemas,
 } from "@/lib/forms/schemas";
+import { PHOTO_MAX_BYTES, PHOTO_TYPES } from "@/lib/recipe-format";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del recetario (ADR-0023). Cada una llama a una función de la base, que controla el
@@ -350,4 +352,88 @@ export async function archiveRecipeCategoryAction(
   // La categoría desaparece con su formulario: el aviso va arriba de la pantalla.
   revalidatePath("/recetas", "layout");
   redirect("/materias-primas/configuracion?baja=categoria-receta");
+}
+
+// Fotos (PR 3). La foto llega achicada desde el navegador; acá se controla de nuevo tipo y tamaño,
+// se sube al bucket con la sesión de la persona (Storage aplica los permisos de la receta) y se
+// registra en la base. El nombre del archivo lo arma el servidor, nunca la pantalla.
+const PHOTO_EXTENSIONS: Record<(typeof PHOTO_TYPES)[number], string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+// Los primeros bytes de cada formato: JPEG FF D8 FF; PNG 89 50 4E 47; WebP "RIFF" .... "WEBP".
+function matchesType(head: Uint8Array, type: (typeof PHOTO_TYPES)[number]): boolean {
+  const ascii = (from: number, to: number) => String.fromCharCode(...head.slice(from, to));
+  if (type === "image/jpeg") return head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff;
+  if (type === "image/png") return head[0] === 0x89 && ascii(1, 4) === "PNG";
+  return ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP";
+}
+
+export async function uploadPhotoAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.recipePhoto.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const { recipe } = ids(formData);
+  if (!recipe.success) return { status: "bad", message: "Falta la receta." };
+  const photo = formData.get("photo");
+  if (!(photo instanceof File) || photo.size === 0)
+    return { status: "bad", fieldErrors: { photo: "Elegí una foto." } };
+  const type = photo.type as (typeof PHOTO_TYPES)[number];
+  if (!PHOTO_TYPES.includes(type))
+    return { status: "bad", fieldErrors: { photo: "La foto tiene que ser JPG, PNG o WebP." } };
+  if (photo.size > PHOTO_MAX_BYTES)
+    return { status: "bad", fieldErrors: { photo: "La foto pesa más de 3 MB." } };
+  // El contenido real tiene que ser la imagen que dice ser (no solo el tipo que declara el navegador).
+  if (!matchesType(new Uint8Array(await photo.slice(0, 12).arrayBuffer()), type))
+    return {
+      status: "bad",
+      fieldErrors: { photo: "El archivo no es una imagen JPG, PNG o WebP." },
+    };
+  const supabase = await createClient();
+  const { data: row, error: readError } = await supabase
+    .schema("recipes")
+    .from("recipes")
+    .select("id, group_id")
+    .eq("id", recipe.data)
+    .maybeSingle();
+  if (readError || !row) return { status: "bad", message: "No encontramos la receta." };
+  const path = `${row.group_id}/${row.id}/${randomUUID()}.${PHOTO_EXTENSIONS[type]}`;
+  const { error: uploadError } = await supabase.storage
+    .from("recipe-media")
+    .upload(path, photo, { contentType: type, upsert: false });
+  if (uploadError)
+    return {
+      status: "bad",
+      message: "No pudimos subir la foto. Revisá que tengas permiso y probá de nuevo.",
+    };
+  const { data, error } = await supabase.schema("recipes").rpc("add_media", {
+    p_recipe_id: row.id,
+    p_storage_path: path,
+    p_kind: fields.data.kind,
+    p_description: fields.data.description ?? "",
+    p_reason: fields.data.reason,
+  });
+  refresh(row.id);
+  return toActionState(data, error);
+}
+
+export async function removePhotoAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.reason.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const { recipe } = ids(formData);
+  const media = uuid.safeParse(formData.get("mediaId"));
+  if (!recipe.success || !media.success) return { status: "bad", message: "Falta la foto." };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("recipes")
+    .rpc("remove_media", { p_media_id: media.data, p_reason: fields.data.reason });
+  refresh(recipe.data);
+  return toActionState(data, error);
 }

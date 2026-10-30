@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { SettingsCategory } from "@/lib/catalog";
 import type {
+  MediaKind,
   QuantityBasis,
   RecipeScope,
   RecipeType,
@@ -583,6 +584,68 @@ export async function getAssignments(
       .filter((x) => assignable.includes(x.id) && !current.some((c) => c.restaurantId === x.id))
       .map((x) => ({ restaurantId: x.id, restaurant: x.name })),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Fotos (bucket privado recipe-media): son parte de la versión. Los enlaces firmados vencen en 10
+// minutos: alcanza para abrir la página, y no sobreviven mucho a la baja de una cuenta (revisión de
+// seguridad, M3). Si las fotos fallan, la receta se muestra igual (lo principal son los pasos).
+// ---------------------------------------------------------------------------
+export type RecipePhoto = {
+  id: string;
+  kind: MediaKind;
+  description: string | null;
+  url: string | null;
+  createdAt: string;
+};
+export type PhotoSet = { photos: RecipePhoto[]; failed: boolean };
+
+const PHOTO_LINK_SECONDS = 600;
+
+// Las fotos de una versión (la del borrador o la vigente, según quién mira).
+export async function getVersionPhotos(versionId: string): Promise<PhotoSet> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("recipes")
+    .from("recipe_media")
+    .select("id, kind, description, storage_path, created_at")
+    .eq("recipe_version_id", versionId)
+    .order("created_at")
+    .limit(60);
+  if (error) return { photos: [], failed: true };
+  if (data.length === 0) return { photos: [], failed: false };
+  // Storage vuelve a controlar que la sesión pueda ver cada archivo (mismas reglas).
+  const { data: signed, error: signError } = await supabase.storage
+    .from("recipe-media")
+    .createSignedUrls(
+      data.map((m) => m.storage_path),
+      PHOTO_LINK_SECONDS,
+    );
+  const url = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+  return {
+    failed: Boolean(signError),
+    photos: data.map((m) => ({
+      id: m.id,
+      kind: m.kind,
+      description: m.description,
+      url: url.get(m.storage_path) ?? null,
+      createdAt: m.created_at,
+    })),
+  };
+}
+
+// Las fotos de la versión vigente (la vista de cocina).
+export async function getPublishedPhotos(recipeId: string): Promise<PhotoSet> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("recipes")
+    .from("recipe_versions")
+    .select("id")
+    .eq("recipe_id", recipeId)
+    .eq("status", "published")
+    .maybeSingle();
+  if (error) return { photos: [], failed: true };
+  return data ? getVersionPhotos(data.id) : { photos: [], failed: false };
 }
 
 // ---------------------------------------------------------------------------

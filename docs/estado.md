@@ -2,7 +2,16 @@
 
 _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: etapa 2.2 A, recetas (PR 2 de 3, pantallas, rama `feat/recetario-pantallas`)
+## Al retomar: etapa 2.2 A, recetas (PR 3 de 3, fotos, rama `feat/recetario-fotos`)
+
+- **La rama sale de `feat/recetario-pantallas`:** fusionar en orden `docs/respuestas-soy`, `feat/recetario-pantallas` y este.
+- **Qué se hizo:** fotos de las recetas en Supabase Storage (bucket privado `recipe-media`). Son parte de la versión: se agregan en un borrador, pasan por la revisión y la cocina ve las de la vigente. Detalle en ADR-0023 (PR 3).
+- **Revisiones:** `security-auditor` apto (3 medios resueltos); `ui-reviewer` sin graves (4 medios resueltos).
+- **Pruebas (2026-10-30, `npm run test` completo):** lint y tipos ✅ · Vitest 141 de 141 ✅ · pgTAP 1.128 de 1.128 ✅ (la nueva `180` tiene 31) · Playwright 88 de 88 ✅.
+- **Cambio de plan:** el retiro del documento de ensayo de la Fase 1 pasa a la 2.3 (ADR-0023).
+- **Con esto termina la 2.2 A.** Para la compuerta de la 2.2 falta que un Chef cargue una receta completa sin ayuda en staging (antes: categorías y materias primas cargadas allá).
+
+## Antes: etapa 2.2 A, recetas (PR 2 de 3, pantallas, rama `feat/recetario-pantallas`)
 
 - **La rama sale de `docs/respuestas-soy`:** fusionar primero ese PR y después este.
 - **Qué se hizo:** lista, alta, ficha por bloques con editores de componentes y pasos, vista de cocina, la bandeja con el resumen de la versión, "Dónde se usa" en materias primas y categorías de recetas en la configuración. Detalle en ADR-0023 (PR 2).

@@ -75,3 +75,19 @@ export function formatMinutes(minutes: number): string {
   const m = minutes % 60;
   return h === 0 ? `${m} min` : m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
+
+export type MediaKind = Recipes["Enums"]["media_kind"];
+
+export const MEDIA_KIND_LABELS: Record<MediaKind, string> = {
+  final_product: "Producto final",
+  plating: "Emplatado",
+  raw_material: "Materia prima",
+  step: "Paso",
+  critical_point: "Punto crítico",
+  correct_example: "Ejemplo correcto",
+  incorrect_example: "Ejemplo incorrecto",
+};
+
+// Tipos de imagen que acepta el bucket (lo mismo controla la base).
+export const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const PHOTO_MAX_BYTES = 3 * 1024 * 1024;

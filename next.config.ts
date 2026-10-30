@@ -13,6 +13,11 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Las fotos de las recetas viajan por una acción de servidor: llegan achicadas desde el navegador
+  // (hasta 1.600 px, JPEG) y el bucket acepta hasta 3 MB; el resto es margen del formulario.
+  experimental: {
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

@@ -6,6 +6,7 @@ import { AppShell, Loading } from "@/components/app-shell";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/kpi";
+import { RecipePhotos } from "@/components/recipe-photos";
 import { UUID, formatDateTime } from "@/lib/data";
 import {
   ALLERGEN_LABELS,
@@ -14,6 +15,7 @@ import {
   formatMinutes,
   formatQuantity,
   getKitchenCard,
+  getPublishedPhotos,
 } from "@/lib/recipes";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 
@@ -47,7 +49,11 @@ async function Kitchen({ params }: { params: PageProps<"/recetas/[id]/cocina">["
   await requireMenu("recipes");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [card, menus] = await Promise.all([getKitchenCard(id), getMenus()]);
+  const [card, menus, photos] = await Promise.all([
+    getKitchenCard(id),
+    getMenus(),
+    getPublishedPhotos(id),
+  ]);
   const back = (
     <div className="flex flex-wrap gap-x-4">
       <Link href="/recetas" className={linkClass}>
@@ -196,6 +202,13 @@ async function Kitchen({ params }: { params: PageProps<"/recetas/[id]/cocina">["
           ))}
         </ol>
       </Card>
+
+      {photos.photos.length > 0 || photos.failed ? (
+        <Card className="flex flex-col gap-4">
+          <CardTitle>Fotos</CardTitle>
+          <RecipePhotos recipeId={id} set={photos} canRemove={false} />
+        </Card>
+      ) : null}
 
       {card.storageNotes || card.presentationNotes ? (
         <Card className="flex flex-col gap-4">

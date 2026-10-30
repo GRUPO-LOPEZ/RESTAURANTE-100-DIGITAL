@@ -3337,6 +3337,76 @@ export type Database = {
           },
         ];
       };
+      recipe_media: {
+        Row: {
+          brand_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string | null;
+          group_id: string;
+          id: string;
+          kind: Database["recipes"]["Enums"]["media_kind"];
+          recipe_id: string;
+          recipe_version_id: string;
+          restaurant_id: string | null;
+          storage_path: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          group_id: string;
+          id?: string;
+          kind: Database["recipes"]["Enums"]["media_kind"];
+          recipe_id: string;
+          recipe_version_id: string;
+          restaurant_id?: string | null;
+          storage_path: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          group_id?: string;
+          id?: string;
+          kind?: Database["recipes"]["Enums"]["media_kind"];
+          recipe_id?: string;
+          recipe_version_id?: string;
+          restaurant_id?: string | null;
+          storage_path?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_media_recipe_fkey";
+            columns: ["recipe_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "recipe_media_version_fkey";
+            columns: ["recipe_version_id", "recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_versions";
+            referencedColumns: ["id", "recipe_id"];
+          },
+        ];
+      };
       recipe_step_dependencies: {
         Row: {
           brand_id: string | null;
@@ -3662,6 +3732,16 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      add_media: {
+        Args: {
+          p_description: string;
+          p_kind: Database["recipes"]["Enums"]["media_kind"];
+          p_reason: string;
+          p_recipe_id: string;
+          p_storage_path: string;
+        };
+        Returns: Json;
+      };
       allowed: {
         Args: {
           p_brand_id: string;
@@ -3675,6 +3755,7 @@ export type Database = {
       archive_category: { Args: { p_id: string; p_reason: string }; Returns: undefined };
       archive_recipe: { Args: { p_reason: string; p_recipe_id: string }; Returns: Json };
       can_see_version: { Args: { p_version_id: string }; Returns: boolean };
+      can_upload_media: { Args: { p_name: string }; Returns: boolean };
       can_view_recipe: { Args: { p_recipe_id: string }; Returns: boolean };
       can_work_recipe: { Args: { p_recipe_id: string }; Returns: boolean };
       category_usage: {
@@ -3709,6 +3790,7 @@ export type Database = {
         }[];
       };
       kitchen_card: { Args: { p_recipe_id: string }; Returns: Json };
+      media_recipe_id: { Args: { p_name: string }; Returns: string };
       new_version: { Args: { p_reason: string; p_recipe_id: string }; Returns: Json };
       open_draft: {
         Args: { p_expected_updated_at: string; p_version_id: string };
@@ -3751,6 +3833,7 @@ export type Database = {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
       };
+      remove_media: { Args: { p_media_id: string; p_reason: string }; Returns: Json };
       rename_category: {
         Args: { p_id: string; p_name: string; p_reason: string };
         Returns: undefined;
@@ -3816,11 +3899,20 @@ export type Database = {
         }[];
       };
       viewable_recipe_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      visible_media_paths: { Args: Record<PropertyKey, never>; Returns: string[] };
       visible_version_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
       withdraw_review: { Args: { p_reason: string; p_version_id: string }; Returns: Json };
       workable_recipe_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
     };
     Enums: {
+      media_kind:
+        | "final_product"
+        | "plating"
+        | "raw_material"
+        | "step"
+        | "critical_point"
+        | "correct_example"
+        | "incorrect_example";
       quantity_basis: "purchase" | "clean" | "cooked";
       recipe_scope: "group" | "brand" | "restaurant";
       recipe_type: "preparation" | "dish" | "unit_component";
@@ -4316,6 +4408,15 @@ export const Constants = {
   },
   recipes: {
     Enums: {
+      media_kind: [
+        "final_product",
+        "plating",
+        "raw_material",
+        "step",
+        "critical_point",
+        "correct_example",
+        "incorrect_example",
+      ],
       quantity_basis: ["purchase", "clean", "cooked"],
       recipe_scope: ["group", "brand", "restaurant"],
       recipe_type: ["preparation", "dish", "unit_component"],

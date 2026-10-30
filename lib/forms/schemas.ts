@@ -336,6 +336,23 @@ export const schemas = {
     restaurant_id: choice("Elegí el local."),
     reason: reasonField,
   }),
+  // El archivo lo controla la acción (tipo y tamaño) y otra vez el bucket.
+  recipePhoto: z.object({
+    kind: z.enum(
+      [
+        "final_product",
+        "plating",
+        "raw_material",
+        "step",
+        "critical_point",
+        "correct_example",
+        "incorrect_example",
+      ],
+      { message: "Elegí qué muestra la foto." },
+    ),
+    description: z.string().trim().max(300, "Hasta 300 caracteres.").optional(),
+    reason: reasonField,
+  }),
 } as const;
 
 export type FormSchemaName = keyof typeof schemas;
