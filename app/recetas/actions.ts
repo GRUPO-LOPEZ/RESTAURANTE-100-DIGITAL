@@ -145,6 +145,7 @@ export async function saveLinesAction(payload: z.input<typeof linesPayload>): Pr
     p_version_id: parsed.data.versionId,
     p_lines: parsed.data.lines.map((l) => ({
       ingredient_id: l.ingredient_id,
+      sub_recipe_id: l.sub_recipe_id,
       quantity: decimal(l.quantity),
       unit: l.unit,
       basis: l.basis,

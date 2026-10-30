@@ -361,15 +361,26 @@ export type FormSchemaName = keyof typeof schemas;
 // con estos esquemas en el navegador y otra vez en la acción de servidor (ADR-0016).
 export const recipeLinesSchema = z
   .array(
-    z.object({
-      ingredient_id: z.string().uuid("Elegí la materia prima."),
-      ingredient: z.string().max(200),
-      quantity: positiveNumber,
-      unit: z.enum(["g", "kg", "ml", "l", "unit", "dozen"], { message: "Elegí la unidad." }),
-      basis: z.enum(["purchase", "clean", "cooked"]),
-      no_scale: z.boolean(),
-      notes: z.string().trim().max(500, "Hasta 500 caracteres."),
-    }),
+    z
+      .object({
+        // Una materia prima o una preparación (subreceta), nunca las dos (ADR-0025).
+        ingredient_id: z.string().uuid("Elegí la materia prima.").nullable(),
+        sub_recipe_id: z.string().uuid("Elegí la preparación.").nullable(),
+        ingredient: z.string().max(200),
+        quantity: positiveNumber,
+        unit: z.enum(["g", "kg", "ml", "l", "unit", "dozen"], { message: "Elegí la unidad." }),
+        basis: z.enum(["purchase", "clean", "cooked", "finished"]),
+        no_scale: z.boolean(),
+        notes: z.string().trim().max(500, "Hasta 500 caracteres."),
+      })
+      .refine((l) => (l.ingredient_id === null) !== (l.sub_recipe_id === null), {
+        message: "Elegí una materia prima o una preparación.",
+        path: ["ingredient_id"],
+      })
+      .refine((l) => (l.sub_recipe_id !== null) === (l.basis === "finished"), {
+        message: "Una preparación va en cantidad terminada; una materia prima, no.",
+        path: ["basis"],
+      }),
   )
   .max(200, "Hasta 200 componentes.");
 

@@ -34,6 +34,7 @@ export const BASIS_LABELS: Record<QuantityBasis, string> = {
   purchase: "Peso de compra",
   clean: "Limpio",
   cooked: "Cocido",
+  finished: "Terminado",
 };
 
 export const STEP_KIND_LABELS: Record<StepKind, string> = {

@@ -16,7 +16,8 @@ import type { RecipeLine } from "@/lib/recipes";
 
 type Line = {
   key: number;
-  ingredient_id: string;
+  ingredient_id: string | null;
+  sub_recipe_id: string | null;
   ingredient: string;
   quantity: string;
   unit: (typeof LINE_UNITS)[number]["code"];
@@ -30,6 +31,7 @@ type Search = { status: "idle" | "searching" | "error" | "done"; results: Found[
 const toLine = (l: RecipeLine, key: number): Line => ({
   key,
   ingredient_id: l.ingredientId,
+  sub_recipe_id: l.subRecipeId,
   ingredient: l.ingredient,
   quantity: String(l.quantity).replace(".", ","),
   unit: (LINE_UNITS.find((u) => u.code === l.unit)?.code ?? "g") as Line["unit"],
@@ -41,7 +43,15 @@ const toLine = (l: RecipeLine, key: number): Line => ({
 // Lo que se guarda (sin la clave interna): sirve para saber si hay cambios sin guardar.
 const snapshot = (lines: Line[]) =>
   JSON.stringify(
-    lines.map((l) => [l.ingredient_id, l.quantity, l.unit, l.basis, l.no_scale, l.notes]),
+    lines.map((l) => [
+      l.ingredient_id,
+      l.sub_recipe_id,
+      l.quantity,
+      l.unit,
+      l.basis,
+      l.no_scale,
+      l.notes,
+    ]),
   );
 
 // La unidad sugerida para una materia prima nueva: la que usa en las recetas.
@@ -116,6 +126,7 @@ export function RecipeLinesEditor({
       {
         key: nextKey,
         ingredient_id: r.id,
+        sub_recipe_id: null,
         ingredient: r.name,
         quantity: "",
         unit: suggestedUnit(r.unit),
@@ -229,23 +240,36 @@ export function RecipeLinesEditor({
                   </Select>
                 </Field>
               </div>
-              <details open={line.basis !== "purchase" || line.notes !== "" || undefined}>
+              <details
+                open={
+                  (line.basis !== "purchase" && line.basis !== "finished") ||
+                  line.notes !== "" ||
+                  undefined
+                }
+              >
                 <summary className="flex min-h-touch cursor-pointer items-center text-base text-primary underline-offset-4 hover:underline">
                   Base de la cantidad y observaciones
                 </summary>
                 <div className="flex flex-col gap-3 pt-2">
-                  <Field id={id(line.key, "basis")} label="La cantidad es">
-                    <Select
-                      value={line.basis}
-                      onChange={(e) => update(line.key, { basis: e.target.value as QuantityBasis })}
-                    >
-                      {(Object.keys(BASIS_LABELS) as QuantityBasis[]).map((b) => (
-                        <option key={b} value={b}>
-                          {BASIS_LABELS[b]}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
+                  {/* Una preparación va siempre en cantidad terminada. */}
+                  {line.sub_recipe_id ? null : (
+                    <Field id={id(line.key, "basis")} label="La cantidad es">
+                      <Select
+                        value={line.basis}
+                        onChange={(e) =>
+                          update(line.key, { basis: e.target.value as QuantityBasis })
+                        }
+                      >
+                        {(Object.keys(BASIS_LABELS) as QuantityBasis[])
+                          .filter((b) => b !== "finished")
+                          .map((b) => (
+                            <option key={b} value={b}>
+                              {BASIS_LABELS[b]}
+                            </option>
+                          ))}
+                      </Select>
+                    </Field>
+                  )}
                   <Field
                     id={id(line.key, "notes")}
                     label="Observaciones (opcional)"
