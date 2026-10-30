@@ -1319,6 +1319,16 @@ export type Database = {
         Returns: string;
       };
       ingredient_group: { Args: { p_ingredient_id: string }; Returns: string };
+      ingredient_usage: {
+        Args: { p_ingredient_id: string };
+        Returns: {
+          code: string;
+          name: string;
+          recipe_id: string;
+          status: Database["core"]["Enums"]["version_status"];
+          version_number: number;
+        }[];
+      };
       missing_conversion: {
         Args: { p_content_unit_id: string; p_ingredient_id: string };
         Returns: string;
@@ -3148,6 +3158,679 @@ export type Database = {
       [_ in never]: never;
     };
   };
+  recipes: {
+    Tables: {
+      recipe_assignments: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          recipe_id: string;
+          restaurant_id: string;
+          updated_at: string;
+          updated_by: string | null;
+          valid_from: string;
+          valid_to: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          recipe_id: string;
+          restaurant_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          valid_from: string;
+          valid_to?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          recipe_id?: string;
+          restaurant_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          valid_from?: string;
+          valid_to?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_assignments_recipe_fkey";
+            columns: ["recipe_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      recipe_categories: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          parent_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          name: string;
+          parent_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          name?: string;
+          parent_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_categories_parent_fkey";
+            columns: ["parent_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_categories";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      recipe_components: {
+        Row: {
+          brand_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          line_order: number;
+          no_scale: boolean;
+          notes: string | null;
+          quantity: number;
+          quantity_basis: Database["recipes"]["Enums"]["quantity_basis"];
+          recipe_version_id: string;
+          restaurant_id: string | null;
+          unit_id: string;
+          updated_at: string;
+          updated_by: string | null;
+          yield_profile_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          line_order: number;
+          no_scale?: boolean;
+          notes?: string | null;
+          quantity: number;
+          quantity_basis?: Database["recipes"]["Enums"]["quantity_basis"];
+          recipe_version_id: string;
+          restaurant_id?: string | null;
+          unit_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          yield_profile_id?: string | null;
+        };
+        Update: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          line_order?: number;
+          no_scale?: boolean;
+          notes?: string | null;
+          quantity?: number;
+          quantity_basis?: Database["recipes"]["Enums"]["quantity_basis"];
+          recipe_version_id?: string;
+          restaurant_id?: string | null;
+          unit_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          yield_profile_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_components_version_fkey";
+            columns: ["recipe_version_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_versions";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      recipe_step_dependencies: {
+        Row: {
+          brand_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          depends_on_step_id: string;
+          group_id: string;
+          id: string;
+          restaurant_id: string | null;
+          step_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          depends_on_step_id: string;
+          group_id: string;
+          id?: string;
+          restaurant_id?: string | null;
+          step_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          depends_on_step_id?: string;
+          group_id?: string;
+          id?: string;
+          restaurant_id?: string | null;
+          step_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_step_dependencies_depends_fkey";
+            columns: ["depends_on_step_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_steps";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "recipe_step_dependencies_step_fkey";
+            columns: ["step_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_steps";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      recipe_steps: {
+        Row: {
+          active_minutes: number;
+          brand_id: string | null;
+          control_point: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          equipment: string | null;
+          group_id: string;
+          id: string;
+          instructions: string;
+          kind: Database["recipes"]["Enums"]["step_kind"];
+          passive_minutes: number;
+          recipe_version_id: string;
+          restaurant_id: string | null;
+          sector: string | null;
+          step_number: number;
+          updated_at: string;
+          updated_by: string | null;
+          workers: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          active_minutes?: number;
+          brand_id?: string | null;
+          control_point?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          equipment?: string | null;
+          group_id: string;
+          id?: string;
+          instructions: string;
+          kind?: Database["recipes"]["Enums"]["step_kind"];
+          passive_minutes?: number;
+          recipe_version_id: string;
+          restaurant_id?: string | null;
+          sector?: string | null;
+          step_number: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          workers?: number | null;
+        };
+        Update: {
+          active_minutes?: number;
+          brand_id?: string | null;
+          control_point?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          equipment?: string | null;
+          group_id?: string;
+          id?: string;
+          instructions?: string;
+          kind?: Database["recipes"]["Enums"]["step_kind"];
+          passive_minutes?: number;
+          recipe_version_id?: string;
+          restaurant_id?: string | null;
+          sector?: string | null;
+          step_number?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          workers?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_steps_version_fkey";
+            columns: ["recipe_version_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_versions";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      recipe_versions: {
+        Row: {
+          approval_request_id: string | null;
+          approved_by: string | null;
+          brand_id: string | null;
+          change_summary: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string | null;
+          group_id: string;
+          id: string;
+          portion_grams: number | null;
+          portions: number | null;
+          presentation_notes: string | null;
+          previous_version_id: string | null;
+          published_at: string | null;
+          recipe_id: string;
+          restaurant_id: string | null;
+          review_requested_by: string | null;
+          status: Database["core"]["Enums"]["version_status"];
+          storage_notes: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          version_number: number;
+          yield_quantity: number | null;
+          yield_unit_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          approval_request_id?: string | null;
+          approved_by?: string | null;
+          brand_id?: string | null;
+          change_summary?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          group_id: string;
+          id?: string;
+          portion_grams?: number | null;
+          portions?: number | null;
+          presentation_notes?: string | null;
+          previous_version_id?: string | null;
+          published_at?: string | null;
+          recipe_id: string;
+          restaurant_id?: string | null;
+          review_requested_by?: string | null;
+          status?: Database["core"]["Enums"]["version_status"];
+          storage_notes?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          version_number: number;
+          yield_quantity?: number | null;
+          yield_unit_id?: string | null;
+        };
+        Update: {
+          approval_request_id?: string | null;
+          approved_by?: string | null;
+          brand_id?: string | null;
+          change_summary?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          group_id?: string;
+          id?: string;
+          portion_grams?: number | null;
+          portions?: number | null;
+          presentation_notes?: string | null;
+          previous_version_id?: string | null;
+          published_at?: string | null;
+          recipe_id?: string;
+          restaurant_id?: string | null;
+          review_requested_by?: string | null;
+          status?: Database["core"]["Enums"]["version_status"];
+          storage_notes?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          version_number?: number;
+          yield_quantity?: number | null;
+          yield_unit_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_versions_previous_fkey";
+            columns: ["previous_version_id", "recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_versions";
+            referencedColumns: ["id", "recipe_id"];
+          },
+          {
+            foreignKeyName: "recipe_versions_recipe_fkey";
+            columns: ["recipe_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      recipes: {
+        Row: {
+          brand_id: string | null;
+          category_id: string | null;
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          recipe_type: Database["recipes"]["Enums"]["recipe_type"];
+          restaurant_id: string | null;
+          scope_type: Database["recipes"]["Enums"]["recipe_scope"];
+          sector: string | null;
+          short_name: string | null;
+          station: string | null;
+          technical_owner_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id?: string | null;
+          category_id?: string | null;
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          recipe_type: Database["recipes"]["Enums"]["recipe_type"];
+          restaurant_id?: string | null;
+          scope_type: Database["recipes"]["Enums"]["recipe_scope"];
+          sector?: string | null;
+          short_name?: string | null;
+          station?: string | null;
+          technical_owner_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          brand_id?: string | null;
+          category_id?: string | null;
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          recipe_type?: Database["recipes"]["Enums"]["recipe_type"];
+          restaurant_id?: string | null;
+          scope_type?: Database["recipes"]["Enums"]["recipe_scope"];
+          sector?: string | null;
+          short_name?: string | null;
+          station?: string | null;
+          technical_owner_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipes_category_fkey";
+            columns: ["category_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_categories";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      allowed: {
+        Args: {
+          p_brand_id: string;
+          p_group_id: string;
+          p_permission: string;
+          p_restaurant_id: string;
+        };
+        Returns: boolean;
+      };
+      apply_publish_version: { Args: { p_request_id: string }; Returns: undefined };
+      archive_category: { Args: { p_id: string; p_reason: string }; Returns: undefined };
+      archive_recipe: { Args: { p_reason: string; p_recipe_id: string }; Returns: Json };
+      can_see_version: { Args: { p_version_id: string }; Returns: boolean };
+      can_view_recipe: { Args: { p_recipe_id: string }; Returns: boolean };
+      can_work_recipe: { Args: { p_recipe_id: string }; Returns: boolean };
+      create_category: {
+        Args: { p_group_id: string; p_name: string; p_parent_id?: string; p_reason: string };
+        Returns: string;
+      };
+      create_recipe: {
+        Args: {
+          p_brand_id: string;
+          p_category_id: string;
+          p_code: string;
+          p_group_id: string;
+          p_name: string;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_type: Database["recipes"]["Enums"]["recipe_type"];
+        };
+        Returns: Json;
+      };
+      critical_path: {
+        Args: { p_version_id: string };
+        Returns: {
+          active_minutes: number;
+          total_minutes: number;
+        }[];
+      };
+      kitchen_card: { Args: { p_recipe_id: string }; Returns: Json };
+      new_version: { Args: { p_reason: string; p_recipe_id: string }; Returns: Json };
+      open_draft: {
+        Args: { p_expected_updated_at: string; p_version_id: string };
+        Returns: {
+          approval_request_id: string | null;
+          approved_by: string | null;
+          brand_id: string | null;
+          change_summary: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string | null;
+          group_id: string;
+          id: string;
+          portion_grams: number | null;
+          portions: number | null;
+          presentation_notes: string | null;
+          previous_version_id: string | null;
+          published_at: string | null;
+          recipe_id: string;
+          restaurant_id: string | null;
+          review_requested_by: string | null;
+          status: Database["core"]["Enums"]["version_status"];
+          storage_notes: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          version_number: number;
+          yield_quantity: number | null;
+          yield_unit_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "recipe_versions";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      raise_friendly: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
+      rename_category: {
+        Args: { p_id: string; p_name: string; p_reason: string };
+        Returns: undefined;
+      };
+      reopen_returned: { Args: { p_version_id: string }; Returns: undefined };
+      request_review: { Args: { p_reason: string; p_version_id: string }; Returns: Json };
+      save_draft: {
+        Args: {
+          p_data: Json;
+          p_expected_updated_at?: string;
+          p_reason: string;
+          p_version_id: string;
+        };
+        Returns: Json;
+      };
+      set_assignment: {
+        Args: {
+          p_assigned: boolean;
+          p_reason: string;
+          p_recipe_id: string;
+          p_restaurant_id: string;
+        };
+        Returns: Json;
+      };
+      set_components: {
+        Args: {
+          p_expected_updated_at?: string;
+          p_lines: Json;
+          p_reason: string;
+          p_version_id: string;
+        };
+        Returns: Json;
+      };
+      set_steps: {
+        Args: {
+          p_expected_updated_at?: string;
+          p_reason: string;
+          p_steps: Json;
+          p_version_id: string;
+        };
+        Returns: Json;
+      };
+      today: { Args: Record<PropertyKey, never>; Returns: string };
+      update_recipe: { Args: { p_changes: Json; p_id: string; p_reason: string }; Returns: Json };
+      version_allergens: {
+        Args: { p_version_id: string };
+        Returns: {
+          allergen_id: string;
+          code: string;
+          name: string;
+          status: string;
+        }[];
+      };
+      version_diff: {
+        Args: { p_version_id: string };
+        Returns: {
+          basis: Database["recipes"]["Enums"]["quantity_basis"];
+          change: string;
+          ingredient: string;
+          new_quantity: number;
+          old_quantity: number;
+          unit: string;
+        }[];
+      };
+      viewable_recipe_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      visible_version_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      withdraw_review: { Args: { p_reason: string; p_version_id: string }; Returns: Json };
+      workable_recipe_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+    };
+    Enums: {
+      quantity_basis: "purchase" | "clean" | "cooked";
+      recipe_scope: "group" | "brand" | "restaurant";
+      recipe_type: "preparation" | "dish" | "unit_component";
+      step_kind:
+        | "preparation"
+        | "cooking"
+        | "resting"
+        | "fermentation"
+        | "cooling"
+        | "regeneration"
+        | "plating"
+        | "other";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   workflow: {
     Tables: {
       approval_decisions: {
@@ -3623,6 +4306,23 @@ export const Constants = {
   },
   public: {
     Enums: {},
+  },
+  recipes: {
+    Enums: {
+      quantity_basis: ["purchase", "clean", "cooked"],
+      recipe_scope: ["group", "brand", "restaurant"],
+      recipe_type: ["preparation", "dish", "unit_component"],
+      step_kind: [
+        "preparation",
+        "cooking",
+        "resting",
+        "fermentation",
+        "cooling",
+        "regeneration",
+        "plating",
+        "other",
+      ],
+    },
   },
   workflow: {
     Enums: {

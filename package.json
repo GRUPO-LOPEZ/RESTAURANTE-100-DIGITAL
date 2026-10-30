@@ -20,8 +20,8 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local --schema public,core,org,audit,workflow,catalog > lib/database.types.ts && prettier --write lib/database.types.ts",
-    "db:dictionary": "node scripts/data-dictionary.mjs && node scripts/data-dictionary.mjs catalog docs/modulos/02-recetario-diccionario.md && prettier --write docs/modulos/diccionario-datos.md docs/modulos/02-recetario-diccionario.md"
+    "db:types": "supabase gen types typescript --local --schema public,core,org,audit,workflow,catalog,recipes > lib/database.types.ts && prettier --write lib/database.types.ts",
+    "db:dictionary": "node scripts/data-dictionary.mjs && node scripts/data-dictionary.mjs catalog,recipes docs/modulos/02-recetario-diccionario.md && prettier --write docs/modulos/diccionario-datos.md docs/modulos/02-recetario-diccionario.md"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

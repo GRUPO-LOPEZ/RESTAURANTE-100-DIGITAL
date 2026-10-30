@@ -55,7 +55,7 @@ select is(
     where n.nspname = any (pg_temp.business_schemas()) and has_function_privilege('authenticated', p.oid, 'execute')),
   array['catalog.archive_category', 'catalog.archive_yield_process', 'catalog.category_usage',
         'catalog.convert_quantity', 'catalog.create_category', 'catalog.create_ingredient', 'catalog.create_purchase_product',
-        'catalog.create_supplier', 'catalog.create_yield_process', 'catalog.process_usage',
+        'catalog.create_supplier', 'catalog.create_yield_process', 'catalog.ingredient_usage', 'catalog.process_usage',
         'catalog.propose_yield_standard', 'catalog.record_yield_test', 'catalog.rename_category', 'catalog.rename_yield_process',
         'catalog.search_components', 'catalog.set_aliases', 'catalog.set_allergen_status',
         'catalog.set_ingredient_active', 'catalog.set_unit_conversion', 'catalog.standard_yield', 'catalog.to_base_quantity',
@@ -74,7 +74,13 @@ select is(
         'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_group_ids', 'core.visible_user_ids',
         'org.create_area',
         'org.create_brand', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted', 'org.update_area',
-        'org.update_brand', 'org.update_group', 'org.update_restaurant', 'workflow.cancel_request',
+        'org.update_brand', 'org.update_group', 'org.update_restaurant',
+        'recipes.archive_category', 'recipes.archive_recipe',
+        'recipes.create_category', 'recipes.create_recipe', 'recipes.critical_path', 'recipes.kitchen_card', 'recipes.new_version',
+        'recipes.rename_category', 'recipes.request_review', 'recipes.save_draft', 'recipes.set_assignment',
+        'recipes.set_components', 'recipes.set_steps', 'recipes.update_recipe', 'recipes.version_allergens',
+        'recipes.version_diff', 'recipes.viewable_recipe_ids', 'recipes.visible_version_ids',
+        'recipes.withdraw_review', 'recipes.workable_recipe_ids', 'workflow.cancel_request',
         'workflow.decide_approval', 'workflow.inbox'],
   'authenticated solo puede llamar a estas funciones (en los 12 esquemas de negocio)'
 );
@@ -89,7 +95,9 @@ select is(
         'catalog.unit_conversions', 'catalog.units', 'catalog.yield_processes',
         'core.notifications', 'core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships',
         'core.user_role_assignments', 'core.v_test_documents', 'org.areas', 'org.brands',
-        'org.groups', 'org.restaurants', 'org.time_zones', 'workflow.approval_decisions',
+        'org.groups', 'org.restaurants', 'org.time_zones', 'recipes.recipe_assignments', 'recipes.recipe_categories',
+        'recipes.recipe_components', 'recipes.recipe_step_dependencies', 'recipes.recipe_steps', 'recipes.recipe_versions',
+        'recipes.recipes', 'workflow.approval_decisions',
         'workflow.approval_workflows'],
   'authenticated solo puede leer estas tablas enteras (y nada de audit ni de cuentas técnicas)'
 );

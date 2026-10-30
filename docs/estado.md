@@ -2,7 +2,25 @@
 
 _Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Etapas 2.1 A y 2.1 B fusionadas (PR #19 y #20). **Configuración del catálogo terminada**, con PR desde `feat/catalogo-configuracion`._
 
-## Al retomar: configuración del catálogo (PR de `feat/catalogo-configuracion`)
+## Al retomar: etapa 2.2 A, recetas (PR 1 de 3, base, rama `feat/recetario-recetas`)
+
+- **La rama sale de `feat/catalogo-configuracion`:** fusionar primero ese PR y después este.
+- **Qué se hizo (PR 1, solo base):**
+  - migración `20261101120000_recipes.sql`: siete tablas en `recipes` (categorías, recetas, versiones, líneas, pasos, dependencias y asignaciones);
+  - versiones con aprobación: aprobar = publicar, y quien pidió la revisión no aprueba;
+  - ficha de cocina sin valores económicos, camino crítico, alérgenos propagados y diferencias entre versiones;
+  - seed con 20 recetas DEMO; el esquema `recipes` se expone por la API y entra en los tipos y el diccionario.
+  - Detalle, revisiones y decisiones en ADR-0023.
+- **Revisiones:**
+  - `security-auditor`: apto, con sus 3 medios resueltos;
+  - `db-reviewer`: 2 graves (rendimiento de las políticas y del camino crítico) y 6 medios, todos resueltos. Las políticas pasaron de 2,7 segundos a menos de 35 ms con 2.000 recetas (prueba `175`).
+- **Pruebas (2026-10-29, `npm run test` completo):** lint y tipos ✅ · Vitest 141 de 141 ✅ · pgTAP 1.094 de 1.094 ✅ (la `170` tiene 97 y la `175` mide el volumen) · Playwright 80 de 80 ✅.
+- **Pendiente de Joaco (ADR-0023):**
+  - ¿quien redactó el borrador puede aprobarlo si la revisión la pidió otra persona?
+  - en un traspaso de local, ¿pasan sus recetas y asignaciones?
+- **Próximo:** PR 2 (pantallas: lista, editor, vista de cocina, bandeja) y PR 3 (fotos y retiro del documento de ensayo de la Fase 1).
+
+## Antes: configuración del catálogo (PR de `feat/catalogo-configuracion`)
 
 - **Por qué:** en staging no se podía cargar ninguna materia prima. Cada una necesita una categoría, las categorías solo las cargaba el seed (que no corre en staging) y no había cómo crearlas. Lo detectó Joaco.
 - **Qué se hizo:**

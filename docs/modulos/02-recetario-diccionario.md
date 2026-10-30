@@ -1,4 +1,4 @@
-# Diccionario de datos — catalog
+# Diccionario de datos — catalog, recipes
 
 > Generado desde los `comment on` de la base local el 2026-10-30 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
@@ -275,12 +275,184 @@ Procesos que cambian el peso de una materia prima: pelado, desgrasado, deshuesad
 | `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.       |
 | `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                              |
 
+## `recipes.recipe_assignments`
+
+Qué receta usa cada local y desde cuándo, sin copiarla. Una receta de local queda asignada a su local sola.
+
+| Columna         | Tipo                       | Nulo | Qué guarda                                             |
+| --------------- | -------------------------- | ---- | ------------------------------------------------------ |
+| `id`            | `uuid`                     | no   | Identificador de la asignación.                        |
+| `group_id`      | `uuid`                     | no   | Grupo de la receta.                                    |
+| `recipe_id`     | `uuid`                     | no   | Receta asignada.                                       |
+| `restaurant_id` | `uuid`                     | no   | Local que la usa.                                      |
+| `valid_from`    | `date`                     | no   | Desde qué día la usa (fecha de la Argentina).          |
+| `valid_to`      | `date`                     | sí   | Hasta qué día (sin incluirlo). Vacío si sigue vigente. |
+| `created_at`    | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                      |
+| `created_by`    | `uuid`                     | sí   | Quién la creó (lo pone la base).                       |
+| `updated_at`    | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).     |
+| `updated_by`    | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).      |
+| `deleted_at`    | `timestamp with time zone` | sí   | Borrado lógico.                                        |
+| `deleted_by`    | `uuid`                     | sí   | Quién la borró (lo pone la base).                      |
+
+## `recipes.recipe_categories`
+
+Categorías y subcategorías de recetas (dos niveles), por grupo.
+
+| Columna      | Tipo                       | Nulo | Qué guarda                                                                              |
+| ------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador de la categoría.                                                          |
+| `group_id`   | `uuid`                     | no   | Grupo al que pertenece.                                                                 |
+| `parent_id`  | `uuid`                     | sí   | Categoría madre, si es una subcategoría. Solo dos niveles.                              |
+| `name`       | `text`                     | no   | Nombre. Único dentro de su categoría madre entre las vigentes, sin importar mayúsculas. |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                       |
+| `created_by` | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                        |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                      |
+| `updated_by` | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                       |
+| `deleted_at` | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                  |
+| `deleted_by` | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                       |
+
+## `recipes.recipe_components`
+
+Líneas de la fórmula de una versión: qué materia prima, cuánto y en qué base. Solo cambian mientras la versión es borrador. Las subrecetas llegan en la 2.2 B.
+
+| Columna             | Tipo                       | Nulo | Qué guarda                                                                            |
+| ------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no   | Identificador de la línea.                                                            |
+| `group_id`          | `uuid`                     | no   | Grupo de la receta.                                                                   |
+| `brand_id`          | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.           |
+| `restaurant_id`     | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                             |
+| `recipe_version_id` | `uuid`                     | no   | Versión a la que pertenece.                                                           |
+| `line_order`        | `integer`                  | no   | Orden de la línea en la receta.                                                       |
+| `ingredient_id`     | `uuid`                     | no   | Materia prima.                                                                        |
+| `quantity`          | `numeric(18,6)`            | no   | Cantidad, en unit_id.                                                                 |
+| `unit_id`           | `uuid`                     | no   | Unidad de la cantidad. Tiene que poder pasarse a la unidad de la materia prima.       |
+| `quantity_basis`    | `recipes.quantity_basis`   | no   | Qué representa la cantidad: peso de compra, limpio o cocido.                          |
+| `yield_profile_id`  | `uuid`                     | sí   | Rendimiento estándar a aplicar (de esta materia prima), si corresponde.               |
+| `no_scale`          | `boolean`                  | no   | Si la línea no se escala (terminaciones, redondeos): se ajusta a mano.                |
+| `notes`             | `text`                     | sí   | Observaciones de la línea.                                                            |
+| `created_at`        | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                     |
+| `created_by`        | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                      |
+| `updated_at`        | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                    |
+| `updated_by`        | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                     |
+| `deleted_at`        | `timestamp with time zone` | sí   | Borrado lógico: al guardar las líneas de un borrador, las anteriores quedan borradas. |
+| `deleted_by`        | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                     |
+
+## `recipes.recipe_step_dependencies`
+
+Qué paso espera a cuál, para calcular el camino crítico. Misma versión y sin ciclos (trigger).
+
+| Columna              | Tipo                       | Nulo | Qué guarda                                                                  |
+| -------------------- | -------------------------- | ---- | --------------------------------------------------------------------------- |
+| `id`                 | `uuid`                     | no   | Identificador de la dependencia.                                            |
+| `group_id`           | `uuid`                     | no   | Grupo de la receta.                                                         |
+| `brand_id`           | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance. |
+| `restaurant_id`      | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                   |
+| `step_id`            | `uuid`                     | no   | El paso que espera.                                                         |
+| `depends_on_step_id` | `uuid`                     | no   | El paso que tiene que terminar antes.                                       |
+| `created_at`         | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                           |
+| `created_by`         | `uuid`                     | sí   | Quién la creó (lo pone la base).                                            |
+| `updated_at`         | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                          |
+| `updated_by`         | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                           |
+| `deleted_at`         | `timestamp with time zone` | sí   | Borrado lógico, junto con su paso.                                          |
+| `deleted_by`         | `uuid`                     | sí   | Quién la borró (lo pone la base).                                           |
+
+## `recipes.recipe_steps`
+
+Procedimiento de una versión: pasos con sus tiempos. Solo cambian mientras la versión es borrador.
+
+| Columna             | Tipo                       | Nulo | Qué guarda                                                                                              |
+| ------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no   | Identificador del paso.                                                                                 |
+| `group_id`          | `uuid`                     | no   | Grupo de la receta.                                                                                     |
+| `brand_id`          | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.                             |
+| `restaurant_id`     | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                                               |
+| `recipe_version_id` | `uuid`                     | no   | Versión a la que pertenece.                                                                             |
+| `step_number`       | `integer`                  | no   | Número del paso (1, 2, 3…).                                                                             |
+| `kind`              | `recipes.step_kind`        | no   | Tipo de paso: preparación, cocción, reposo, fermentación, enfriamiento, regeneración, emplatado u otro. |
+| `instructions`      | `text`                     | no   | Qué se hace en el paso.                                                                                 |
+| `active_minutes`    | `integer`                  | no   | Minutos con una persona trabajando.                                                                     |
+| `passive_minutes`   | `integer`                  | no   | Minutos de espera (cocción, reposo, fermentación) sin una persona encima.                               |
+| `workers`           | `smallint`                 | sí   | Cuántas personas hacen falta.                                                                           |
+| `sector`            | `text`                     | sí   | Sector de la cocina.                                                                                    |
+| `equipment`         | `text`                     | sí   | Equipo que se usa.                                                                                      |
+| `control_point`     | `text`                     | sí   | Punto de control o criterio de calidad del paso.                                                        |
+| `created_at`        | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                       |
+| `created_by`        | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                        |
+| `updated_at`        | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                      |
+| `updated_by`        | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                       |
+| `deleted_at`        | `timestamp with time zone` | sí   | Borrado lógico: al guardar los pasos de un borrador, los anteriores quedan borrados.                    |
+| `deleted_by`        | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                       |
+
+## `recipes.recipe_versions`
+
+Cada versión de la fórmula de una receta. Nace en borrador; desde aprobada no cambia. Una sola publicada (vigente) por receta.
+
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                                           |
+| --------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                  | `uuid`                     | no   | Identificador de la versión.                                                                                                         |
+| `group_id`            | `uuid`                     | no   | Grupo de la receta.                                                                                                                  |
+| `brand_id`            | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.                                                          |
+| `restaurant_id`       | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                                                                            |
+| `recipe_id`           | `uuid`                     | no   | Receta a la que pertenece.                                                                                                           |
+| `version_number`      | `integer`                  | no   | Número de versión (1, 2, 3…).                                                                                                        |
+| `status`              | `core.version_status`      | no   | Estado: borrador, en revisión, aprobada, publicada (vigente) o archivada. Desde aprobada no cambia.                                  |
+| `previous_version_id` | `uuid`                     | sí   | Versión de la que salió esta, de la misma receta (para ver las diferencias).                                                         |
+| `yield_quantity`      | `numeric(18,6)`            | sí   | Cuánto rinde la receta, en yield_unit_id.                                                                                            |
+| `yield_unit_id`       | `uuid`                     | sí   | Unidad del rendimiento (kg, l, unidad…).                                                                                             |
+| `portions`            | `integer`                  | sí   | Porciones que salen, si es un plato o se porciona.                                                                                   |
+| `portion_grams`       | `numeric(18,6)`            | sí   | Peso de una porción, en gramos.                                                                                                      |
+| `description`         | `text`                     | sí   | Descripción gastronómica.                                                                                                            |
+| `storage_notes`       | `text`                     | sí   | Conservación (método, temperatura, vida útil), solo desde procedimientos validados y con su referencia. El sistema nunca la propone. |
+| `presentation_notes`  | `text`                     | sí   | Presentación: montaje, vajilla, guarnición, terminación.                                                                             |
+| `change_summary`      | `text`                     | sí   | Qué cambió respecto de la versión anterior y por qué.                                                                                |
+| `review_requested_by` | `uuid`                     | sí   | Quién pidió la revisión. Nunca es quien la aprueba.                                                                                  |
+| `approval_request_id` | `uuid`                     | sí   | Solicitud de aprobación (recipes.publish_version) de esta versión.                                                                   |
+| `approved_by`         | `uuid`                     | sí   | Quién la aprobó y publicó.                                                                                                           |
+| `published_at`        | `timestamp with time zone` | sí   | Cuándo quedó vigente.                                                                                                                |
+| `created_at`          | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                    |
+| `created_by`          | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                     |
+| `updated_at`          | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                   |
+| `updated_by`          | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                    |
+| `deleted_at`          | `timestamp with time zone` | sí   | Borrado lógico. Una versión no se borra (trigger): siempre vacío.                                                                    |
+| `deleted_by`          | `uuid`                     | sí   | Quién la borró. Siempre vacío.                                                                                                       |
+
+## `recipes.recipes`
+
+Recetas: la identidad (código, nombre, alcance, tipo). La fórmula vive en recipe_versions. Sin valores económicos: los costos van en costing.
+
+| Columna              | Tipo                       | Nulo | Qué guarda                                                                                  |
+| -------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`                     | no   | Identificador de la receta.                                                                 |
+| `group_id`           | `uuid`                     | no   | Grupo de la receta.                                                                         |
+| `brand_id`           | `uuid`                     | sí   | Marca, si la receta es de marca o de local. Vacío en una maestra del grupo.                 |
+| `restaurant_id`      | `uuid`                     | sí   | Local, si la receta es de un local. Vacío si es de marca o del grupo.                       |
+| `scope_type`         | `recipes.recipe_scope`     | no   | Alcance: maestra del grupo, de marca o de local.                                            |
+| `code`               | `text`                     | no   | Código de la receta. Único en el grupo y no cambia nunca: sirve para importar sin duplicar. |
+| `name`               | `text`                     | no   | Nombre de la receta.                                                                        |
+| `short_name`         | `text`                     | sí   | Nombre corto para la cocina y las comandas.                                                 |
+| `recipe_type`        | `recipes.recipe_type`      | no   | Tipo: preparación, plato terminado o componente unitario.                                   |
+| `category_id`        | `uuid`                     | sí   | Categoría o subcategoría de la receta.                                                      |
+| `sector`             | `text`                     | sí   | Sector de la cocina donde se prepara (por ejemplo, caliente o pastelería).                  |
+| `station`            | `text`                     | sí   | Partida o estación (por ejemplo, plancha o pastas).                                         |
+| `technical_owner_id` | `uuid`                     | sí   | Responsable técnico de la receta.                                                           |
+| `is_active`          | `boolean`                  | no   | Si la receta se usa. Una receta archivada conserva toda su historia.                        |
+| `created_at`         | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                           |
+| `created_by`         | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                            |
+| `updated_at`         | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                          |
+| `updated_by`         | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                           |
+| `deleted_at`         | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                      |
+| `deleted_by`         | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                           |
+
 ## Tipos
 
-| Tipo                      | Valores                                                                                 | Qué significa                                                                                                                                                                                          |
-| ------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `catalog.allergen_status` | `contains`, `may_contain`, `free_verified`                                              | Estado de un alérgeno en un ingrediente: contains (contiene), may_contain (puede contener, trazas) o free_verified (no contiene, verificado). Sin fila = sin dato: nunca se toma como "sin alérgenos". |
-| `catalog.conversion_kind` | `density`, `unit_weight`                                                                | Conversión propia de un ingrediente: density (gramos por mililitro) o unit_weight (gramos por unidad: 1 huevo, 1 atado).                                                                               |
-| `catalog.data_source`     | `manual`, `excel_import`, `measured`, `supplier`, `calculated`, `estimated`, `verified` | Fuente de un dato (sección 6): manual, importado de Excel, medido en ensayo, informado por proveedor, calculado por el sistema, estimado o verificado por un responsable.                              |
-| `catalog.dimension`       | `mass`, `volume`, `count`, `package`                                                    | Dimensión de una unidad: mass (masa, base g), volume (volumen, base ml), count (conteo, base unidad) o package (envase sin contenido fijo: caja, bolsa, horma).                                        |
-| `catalog.yield_status`    | `draft`, `approved`, `superseded`                                                       | Estado de un perfil de rendimiento: draft (propuesto, esperando aprobación), approved (el estándar vigente) o superseded (reemplazado por otro aprobado).                                              |
+| Tipo                      | Valores                                                                                            | Qué significa                                                                                                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `catalog.allergen_status` | `contains`, `may_contain`, `free_verified`                                                         | Estado de un alérgeno en un ingrediente: contains (contiene), may_contain (puede contener, trazas) o free_verified (no contiene, verificado). Sin fila = sin dato: nunca se toma como "sin alérgenos". |
+| `catalog.conversion_kind` | `density`, `unit_weight`                                                                           | Conversión propia de un ingrediente: density (gramos por mililitro) o unit_weight (gramos por unidad: 1 huevo, 1 atado).                                                                               |
+| `catalog.data_source`     | `manual`, `excel_import`, `measured`, `supplier`, `calculated`, `estimated`, `verified`            | Fuente de un dato (sección 6): manual, importado de Excel, medido en ensayo, informado por proveedor, calculado por el sistema, estimado o verificado por un responsable.                              |
+| `catalog.dimension`       | `mass`, `volume`, `count`, `package`                                                               | Dimensión de una unidad: mass (masa, base g), volume (volumen, base ml), count (conteo, base unidad) o package (envase sin contenido fijo: caja, bolsa, horma).                                        |
+| `catalog.yield_status`    | `draft`, `approved`, `superseded`                                                                  | Estado de un perfil de rendimiento: draft (propuesto, esperando aprobación), approved (el estándar vigente) o superseded (reemplazado por otro aprobado).                                              |
+| `recipes.quantity_basis`  | `purchase`, `clean`, `cooked`                                                                      | Qué representa la cantidad de una línea: peso de compra (purchase), limpio (clean) o cocido (cooked).                                                                                                  |
+| `recipes.recipe_scope`    | `group`, `brand`, `restaurant`                                                                     | Alcance: group (maestra del grupo), brand (de marca) o restaurant (de local). Variante y cocina central llegan en la 2.2 B.                                                                            |
+| `recipes.recipe_type`     | `preparation`, `dish`, `unit_component`                                                            | Tipo de receta: preparation (salsa, masa, caldo), dish (plato terminado, por porción) o unit_component (medallón, bollo, empanada armada).                                                             |
+| `recipes.step_kind`       | `preparation`, `cooking`, `resting`, `fermentation`, `cooling`, `regeneration`, `plating`, `other` | Tipo de paso: preparación, cocción, reposo, fermentación, enfriamiento, regeneración, emplatado u otro.                                                                                                |
