@@ -2,7 +2,30 @@
 
 _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: segundas respuestas de Soy (ADR-0026)
+## Al retomar: etapa 2.2 B, subrecetas y variantes (PR 2 de 2, pantallas, rama `feat/recetario-subrecetas-pantallas`)
+
+- **Ya fusionados:** el PR 1 (base, #25) y los avisos de la respuesta 5 de Soy (#26).
+- **Qué se hizo:** sin migraciones nuevas (solo un aviso DEMO en el seed). Detalle en ADR-0025 (PR 2).
+  - el buscador del editor trae materias primas y preparaciones;
+  - en la ficha: "Recetas que la usan como preparación", variantes de local con el formulario para crear una, y las diferencias con la maestra;
+  - la vista de cocina enlaza cada preparación con su ficha;
+  - la lista tiene el filtro "Variantes de local";
+  - "Aprobaciones" tiene la sección "Avisos de recetas".
+- **Revisiones:**
+  - `ui-reviewer`: sin graves; 5 medios resueltos;
+  - `security-auditor`: apto, sin graves ni medios.
+- **Pantallas:** miradas en capturas de celular y computadora.
+- **Pruebas (2026-10-30):**
+  - **antes de las correcciones de las revisiones, `npm run test` completo:** lint y tipos ✅ · Vitest 147 de 147 ✅ · pgTAP 1.209 de 1.209 ✅ · Playwright 98 de 98 ✅;
+  - **después de las correcciones:** lint, tipos y Vitest de líneas ✅, y Playwright de recetas y subrecetas 18 de 18 ✅;
+  - **la corrida completa final quedó en curso al cerrar la sesión.** Al retomar: `npm run db:reset` y `npm run test`, y recién ahí abrir el PR.
+- **Excel de Nonnos:** está en `C:\Users\julym\Downloads\proyecto Lucho\recetarios\`, fuera del repositorio. Análisis hecho: 294 insumos, 65 pre-elaborados y 66 platos.
+- **Próximo:**
+  - abrir el PR 2 (rama ya subida);
+  - plan de la importación del Excel de Nonnos. Faltan 4 respuestas: qué hacer con los precios del Excel, qué es el rubro "Plato finalizado", si se conservan los códigos y si los otros recetarios tienen el mismo formato;
+  - aprobación de recetas en varios pasos (faltan respuestas de Soy).
+
+## Antes: segundas respuestas de Soy (ADR-0026)
 
 - **Registradas en ADR-0026.** Lo que cambia el plan:
   - **precios (2.1 C):** vienen de un sistema futuro de lectura de facturas; mientras tanto, valores simbólicos. La 2.1 C se achica a guardar precios con historia y aprobación;

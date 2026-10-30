@@ -51,14 +51,14 @@ test("el Jefe de Cocina carga una receta y, aprobada, la cocina la ve sin costos
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 
   // Componentes: buscar desde 3 letras y agregar.
-  await page.getByLabel("Agregar materia prima").fill("Harina 000");
+  await page.getByLabel("Agregar materia prima o preparación").fill("Harina 000");
   await page
     .getByRole("button", { name: /Harina 000/ })
     .first()
     .click();
   const lines = page.getByRole("list", { name: "Componentes del borrador" });
   await lines.getByLabel("Cantidad", { exact: true }).first().fill("250");
-  await page.getByLabel("Agregar materia prima").fill("Aceite de oliva");
+  await page.getByLabel("Agregar materia prima o preparación").fill("Aceite de oliva");
   await page
     .getByRole("button", { name: /Aceite de oliva/ })
     .first()

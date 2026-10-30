@@ -336,6 +336,13 @@ export const schemas = {
     restaurant_id: choice("Elegí el local."),
     reason: reasonField,
   }),
+  // Variante local de una maestra (ADR-0025): el local, su código y su nombre.
+  variant: z.object({
+    restaurant_id: choice("Elegí el local."),
+    code: catalogCode,
+    name: catalogName,
+    reason: reasonField,
+  }),
   // El archivo lo controla la acción (tipo y tamaño) y otra vez el bucket.
   recipePhoto: z.object({
     kind: z.enum(

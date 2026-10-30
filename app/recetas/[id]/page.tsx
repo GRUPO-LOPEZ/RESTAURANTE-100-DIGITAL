@@ -6,6 +6,7 @@ import { ChefHat } from "lucide-react";
 import {
   archiveRecipeAction,
   assignAction,
+  createVariantAction,
   newVersionAction,
   requestReviewAction,
   saveDraftAction,
@@ -38,10 +39,14 @@ import {
   getAssignments,
   getRecipe,
   getRecipeCategories,
+  getRecipeUsage,
+  getVariantDiff,
+  getVariants,
   getVersionContent,
   getVersionDiff,
   getVersionSummary,
   getVersionPhotos,
+  type DiffRow,
   type RecipeDetail,
   type RecipeVersion,
   type VersionStatus,
@@ -97,6 +102,23 @@ function Reason({ id, label = "Motivo" }: { id: string; label?: string }) {
   );
 }
 
+// Una línea de diferencias, en palabras ("Se agrega…", "de 120 a 160 g").
+function DiffList({ rows, label }: { rows: DiffRow[]; label: string }) {
+  return (
+    <ul className="flex flex-col gap-2" aria-label={label}>
+      {rows.map((d) => (
+        <li key={`${d.change}-${d.ingredient}-${d.unit}`} className="text-ink">
+          {d.change === "added"
+            ? `Se agrega ${d.ingredient}: ${formatQuantity(d.newQuantity)} ${d.unit}`
+            : d.change === "removed"
+              ? `Se quita ${d.ingredient} (${formatQuantity(d.oldQuantity)} ${d.unit})`
+              : `${d.ingredient}: de ${formatQuantity(d.oldQuantity)} a ${formatQuantity(d.newQuantity)} ${d.unit}`}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function Ids({ recipe, version }: { recipe: RecipeDetail; version?: RecipeVersion | null }) {
   return (
     <>
@@ -122,17 +144,27 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
   const returned =
     version?.status === "in_review" &&
     (version.requestStatus === "rejected" || version.requestStatus === "cancelled");
-  const [content, summary, diff, assignments, categories, photos] = await Promise.all([
-    version ? getVersionContent(version.id) : Promise.resolve({ lines: [], steps: [] }),
-    version
-      ? getVersionSummary(version.id)
-      : Promise.resolve({ totalMinutes: 0, activeMinutes: 0, allergens: [] }),
-    // Solo hay diferencias si existe una versión anterior (en la v1 todo sería "se agrega").
-    recipe.open && recipe.open.number > 1 ? getVersionDiff(recipe.open.id) : Promise.resolve([]),
-    getAssignments(recipe),
-    recipe.can.draft ? getRecipeCategories() : Promise.resolve([]),
-    version ? getVersionPhotos(version.id) : Promise.resolve({ photos: [], failed: false }),
-  ]);
+  // Las diferencias con la maestra solo si la sesión la ve (la base también lo controla).
+  const showMasterDiff = Boolean(recipe.variantOf?.name);
+  const [content, summary, diff, assignments, categories, photos, usage, variants, masterDiff] =
+    await Promise.all([
+      version ? getVersionContent(version.id) : Promise.resolve({ lines: [], steps: [] }),
+      version
+        ? getVersionSummary(version.id)
+        : Promise.resolve({ totalMinutes: 0, activeMinutes: 0, allergens: [] }),
+      // Solo hay diferencias si existe una versión anterior (en la v1 todo sería "se agrega").
+      recipe.open && recipe.open.number > 1 ? getVersionDiff(recipe.open.id) : Promise.resolve([]),
+      getAssignments(recipe),
+      recipe.can.draft ? getRecipeCategories() : Promise.resolve([]),
+      version ? getVersionPhotos(version.id) : Promise.resolve({ photos: [], failed: false }),
+      getRecipeUsage(recipe.id),
+      recipe.scope !== "restaurant" ? getVariants(recipe.id) : Promise.resolve([]),
+      showMasterDiff ? getVariantDiff(recipe.id) : Promise.resolve([]),
+    ]);
+  // Un local con una variante activa no ofrece crear otra (la base tampoco la deja).
+  const variantPlaces = recipe.can.variantPlaces.filter(
+    (p) => !variants.some((v) => v.restaurantId === p.restaurantId),
+  );
   const unitLabel = (code: string | null) =>
     LINE_UNITS.find((u) => u.code === code)?.label ?? code ?? "";
 
@@ -154,6 +186,7 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
           </div>
           <span className="flex flex-wrap gap-1">
             {!recipe.isActive ? <Badge>Archivada</Badge> : null}
+            {recipe.variantOf ? <Badge status="info">Variante</Badge> : null}
             {recipe.current ? <Badge status="ok">Vigente v{recipe.current.number}</Badge> : null}
             {recipe.open ? (
               <Badge status={STATUS_BADGE[recipe.open.status]}>
@@ -165,6 +198,23 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
         <dl className="flex flex-col gap-2">
           <Row label="Tipo" value={RECIPE_TYPE_LABELS[recipe.type]} />
           <Row label="Alcance" value={`${SCOPE_LABELS[recipe.scope]} · ${recipe.place}`} />
+          {recipe.variantOf ? (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+              <dt className="text-sm font-medium text-ink sm:w-40 sm:shrink-0">Variante de</dt>
+              <dd className="text-sm break-words text-ink-muted">
+                {recipe.variantOf.name ? (
+                  <Link
+                    href={`/recetas/${recipe.variantOf.id}`}
+                    className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
+                  >
+                    {recipe.variantOf.name}
+                  </Link>
+                ) : (
+                  "una receta maestra"
+                )}
+              </dd>
+            </div>
+          ) : null}
           <Row label="Nombre corto" value={recipe.shortName} />
           <Row label="Sector" value={recipe.sector} />
           <Row label="Partida" value={recipe.station} />
@@ -391,7 +441,19 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
                     key={`${l.ingredientId}-${i}`}
                     className="flex flex-wrap justify-between gap-2 border-b border-line pb-2 last:border-0"
                   >
-                    <span className="text-ink">{l.ingredient}</span>
+                    {l.subRecipeId ? (
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/recetas/${l.subRecipeId}`}
+                          className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
+                        >
+                          {l.ingredient}
+                        </Link>
+                        <Badge status="info">Preparación</Badge>
+                      </span>
+                    ) : (
+                      <span className="text-ink">{l.ingredient}</span>
+                    )}
                     <span className="text-ink-muted tabular-nums">
                       {formatQuantity(l.quantity)} {unitLabel(l.unit)} ·{" "}
                       {BASIS_LABELS[l.basis].toLowerCase()}
@@ -464,17 +526,7 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
           {recipe.open && diff.length > 0 ? (
             <Card className="flex flex-col gap-4">
               <CardTitle>Cambios contra la versión anterior</CardTitle>
-              <ul className="flex flex-col gap-2" aria-label="Cambios">
-                {diff.map((d) => (
-                  <li key={`${d.change}-${d.ingredient}-${d.unit}`} className="text-ink">
-                    {d.change === "added"
-                      ? `Se agrega ${d.ingredient}: ${formatQuantity(d.newQuantity)} ${d.unit}`
-                      : d.change === "removed"
-                        ? `Se quita ${d.ingredient} (${formatQuantity(d.oldQuantity)} ${d.unit})`
-                        : `${d.ingredient}: de ${formatQuantity(d.oldQuantity)} a ${formatQuantity(d.newQuantity)} ${d.unit}`}
-                  </li>
-                ))}
-              </ul>
+              <DiffList rows={diff} label="Cambios" />
             </Card>
           ) : null}
         </>
@@ -583,6 +635,128 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
           ))}
         </ul>
       </Card>
+
+      {showMasterDiff ? (
+        <Card className="flex flex-col gap-4">
+          <CardTitle>Diferencias con la maestra</CardTitle>
+          <CardDescription>
+            Qué cambia este local respecto de «{recipe.variantOf?.name}» (su versión vigente).
+          </CardDescription>
+          {masterDiff.length === 0 ? (
+            <p className="text-base text-ink-muted">No cambia nada respecto de la maestra.</p>
+          ) : (
+            <DiffList rows={masterDiff} label="Diferencias con la maestra" />
+          )}
+        </Card>
+      ) : null}
+
+      {usage.length > 0 || recipe.type === "preparation" ? (
+        <Card className="flex flex-col gap-4">
+          <CardTitle>Recetas que la usan como preparación</CardTitle>
+          <CardDescription>
+            Cuando publicás una versión nueva, estas recetas pasan a usarla solas y avisamos a sus
+            locales.
+          </CardDescription>
+          {usage.length === 0 ? (
+            <p className="text-base text-ink-muted">Ninguna receta la usa todavía.</p>
+          ) : (
+            <ul className="flex flex-col gap-2" aria-label="Recetas que la usan">
+              {usage.map((u) => (
+                <li
+                  key={u.id}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2 last:border-0"
+                >
+                  <Link
+                    href={`/recetas/${u.id}`}
+                    className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
+                  >
+                    {u.name}
+                  </Link>
+                  <Badge status={STATUS_BADGE[u.status]}>{VERSION_STATUS_LABELS[u.status]}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      ) : null}
+
+      {variants.length > 0 || variantPlaces.length > 0 ? (
+        <Card className="flex flex-col gap-4">
+          <CardTitle>Variantes de local</CardTitle>
+          <CardDescription>
+            Un local puede tener su versión de esta receta. Cuando se publica, ese local deja de
+            usar la maestra.
+          </CardDescription>
+          {variants.length === 0 ? (
+            <p className="text-base text-ink-muted">No tiene variantes.</p>
+          ) : (
+            <ul className="flex flex-col gap-2" aria-label="Variantes">
+              {variants.map((v) => (
+                <li
+                  key={v.id}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2 last:border-0"
+                >
+                  <Link
+                    href={`/recetas/${v.id}`}
+                    className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
+                  >
+                    {v.name}
+                  </Link>
+                  <span className="text-sm text-ink-muted">{v.restaurant}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {variantPlaces.length > 0 ? (
+            <Disclosure summary="Crear una variante para un local">
+              <p className="text-base text-ink">
+                Hacemos una copia de la receta vigente para ese local. Después la ajustás y pedís la
+                revisión.
+              </p>
+              <ActionForm
+                action={createVariantAction}
+                schema="variant"
+                submitLabel="Crear variante"
+              >
+                <Ids recipe={recipe} />
+                <FormSelect
+                  id={`rec-${recipe.id}-variante-local`}
+                  label="Local"
+                  name="restaurant_id"
+                  required
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    Elegí el local
+                  </option>
+                  {variantPlaces.map((a) => (
+                    <option key={a.restaurantId} value={a.restaurantId}>
+                      {a.restaurant}
+                    </option>
+                  ))}
+                </FormSelect>
+                <FormInput
+                  id={`rec-${recipe.id}-variante-codigo`}
+                  label="Código de la variante"
+                  name="code"
+                  hint="Único en el grupo. Por ejemplo: LOC-0101."
+                  required
+                  maxLength={30}
+                />
+                <FormInput
+                  id={`rec-${recipe.id}-variante-nombre`}
+                  label="Nombre de la variante"
+                  name="name"
+                  hint={`Por ejemplo: «${recipe.name} (Centro)».`}
+                  required
+                  maxLength={120}
+                />
+                <Reason id={`rec-${recipe.id}-motivo-variante`} />
+              </ActionForm>
+            </Disclosure>
+          ) : null}
+        </Card>
+      ) : null}
 
       <Card className="flex flex-col gap-4">
         <CardTitle>Locales que la usan</CardTitle>

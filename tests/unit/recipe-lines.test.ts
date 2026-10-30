@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { recipeLinesSchema } from "@/lib/forms/schemas";
+import { lineUnitForYield, unitDimension } from "@/lib/recipe-format";
 
 const ingredient = "00000000-0000-4000-8000-000000000801";
 const preparation = "00000000-0000-4000-8000-000000001102";
@@ -43,5 +44,30 @@ describe("líneas de una receta", () => {
     expect(
       messages({ ingredient_id: null, sub_recipe_id: preparation, basis: "purchase" }),
     ).toEqual([wrong]);
+  });
+});
+
+describe("unidad sugerida para una preparación", () => {
+  it("es la unidad chica de la dimensión de su rendimiento", () => {
+    expect(lineUnitForYield("kg")).toBe("g");
+    expect(lineUnitForYield("g")).toBe("g");
+    expect(lineUnitForYield("l")).toBe("ml");
+    expect(lineUnitForYield("ml")).toBe("ml");
+    expect(lineUnitForYield("unit")).toBe("unit");
+    expect(lineUnitForYield("dozen")).toBe("unit");
+  });
+
+  it("sin rendimiento conocido, gramos", () => {
+    expect(lineUnitForYield(null)).toBe("g");
+    expect(lineUnitForYield("caja")).toBe("g");
+  });
+});
+
+describe("tipo de una unidad de línea", () => {
+  it("agrupa las unidades que se convierten entre sí", () => {
+    expect([unitDimension("g"), unitDimension("kg")]).toEqual(["mass", "mass"]);
+    expect([unitDimension("ml"), unitDimension("l")]).toEqual(["volume", "volume"]);
+    expect([unitDimension("unit"), unitDimension("dozen")]).toEqual(["count", "count"]);
+    expect(unitDimension("caja")).toBeNull();
   });
 });

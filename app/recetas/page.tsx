@@ -15,6 +15,7 @@ import {
   RECIPES_PAGE,
   RECIPE_TYPE_LABELS,
   SCOPE_LABELS,
+  VARIANT_FILTER_LABEL,
   getRecipeCategories,
   getRecipes,
   type RecipeScope,
@@ -40,6 +41,11 @@ export default function RecetasPage({ searchParams }: PageProps<"/recetas">) {
 
 const TYPES = Object.keys(RECIPE_TYPE_LABELS) as RecipeType[];
 const SCOPES = Object.keys(SCOPE_LABELS) as RecipeScope[];
+// El filtro de alcance suma las variantes de local ("?alcance=variant").
+const SCOPE_FILTERS: { value: NonNullable<RecipesFilter["scope"]>; label: string }[] = [
+  ...SCOPES.map((s) => ({ value: s, label: SCOPE_LABELS[s] })),
+  { value: "variant", label: VARIANT_FILTER_LABEL },
+];
 
 async function Recipes({ searchParams }: { searchParams: PageProps<"/recetas">["searchParams"] }) {
   await requireMenu("recipes");
@@ -53,7 +59,7 @@ async function Recipes({ searchParams }: { searchParams: PageProps<"/recetas">["
   const filter: RecipesFilter = {
     search: cleanSearch(first(params.q)),
     type: TYPES.includes(type as RecipeType) ? (type as RecipeType) : undefined,
-    scope: SCOPES.includes(scope as RecipeScope) ? (scope as RecipeScope) : undefined,
+    scope: SCOPE_FILTERS.find((s) => s.value === scope)?.value,
     categoryId: uuidOrUndefined(first(params.categoria)),
     page,
   };
@@ -77,7 +83,7 @@ async function Recipes({ searchParams }: { searchParams: PageProps<"/recetas">["
   const activeFilters = [
     filter.search ? `«${filter.search}»` : null,
     filter.type ? RECIPE_TYPE_LABELS[filter.type] : null,
-    filter.scope ? SCOPE_LABELS[filter.scope] : null,
+    filter.scope ? SCOPE_FILTERS.find((s) => s.value === filter.scope)?.label : null,
     filter.categoryId ? categories.find((c) => c.id === filter.categoryId)?.label : null,
   ].filter((x): x is string => Boolean(x));
 
@@ -106,9 +112,9 @@ async function Recipes({ searchParams }: { searchParams: PageProps<"/recetas">["
           <Field id="rec-filtro-alcance" label="Alcance">
             <Select name="alcance" defaultValue={filter.scope ?? ""}>
               <option value="">Todos</option>
-              {SCOPES.map((s) => (
-                <option key={s} value={s}>
-                  {SCOPE_LABELS[s]}
+              {SCOPE_FILTERS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
                 </option>
               ))}
             </Select>

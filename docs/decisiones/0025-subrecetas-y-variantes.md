@@ -52,6 +52,41 @@
   - los Ravioles suman la bolognesa;
   - Demo Pastas Norte tiene una variante publicada de los Ñoquis, y ya no usa la maestra.
 
+## Cómo quedó (PR 2, pantallas)
+
+- **Sin migraciones.** Solo cambia el seed: un aviso DEMO sin leer para el Chef del grupo.
+- **Editor de componentes:**
+  - el buscador trae dos listas, "Materias primas" y "Preparaciones" (`searchComponentsAction`, que llama a `catalog.search_components` y a `recipes.search_subrecipes`);
+  - una preparación entra en cantidad terminada, con la unidad chica de su rendimiento (`lineUnitForYield`: kg → g, l → ml), y lleva la etiqueta "Preparación".
+- **Ficha:**
+  - las preparaciones son enlaces a su ficha;
+  - "Variante de «…»", con enlace solo si la persona ve la maestra;
+  - secciones nuevas:
+    - "Diferencias con la maestra", si la persona la ve (`variant_diff`);
+    - "Dónde se usa", en las preparaciones o si alguna receta la usa (`recipe_usage`);
+    - "Variantes de local", con el formulario para crear una. Solo ofrece los locales del alcance donde la persona tiene `recipes.approve` y que todavía no tienen variante.
+- **Vista de cocina:**
+  - la preparación lleva a su propia ficha de cocina;
+  - una variante dice de qué maestra sale, solo a quien la ve.
+- **Lista:** etiqueta "Variante" y filtro de alcance "Variantes de local" (`?alcance=variant`).
+- **Aprobaciones:** sección "Avisos de recetas" con los avisos `recipe_changed` sin leer, su texto y el enlace a la receta. Se marcan como leídos con el botón que ya existía.
+- **Pruebas:**
+  - `tests/e2e/subrecetas.spec.ts`: en celular y computadora, con axe;
+  - Vitest: la unidad sugerida para una preparación y el tipo de cada unidad.
+- **Revisiones del PR 2:**
+  - **`ui-reviewer`:** sin graves. Sus 5 medios quedaron resueltos:
+    - enlaces de 44 px a la preparación y a la maestra, también en la vista de cocina;
+    - "Recetas que la usan como preparación", con un texto claro;
+    - "Cantidad terminada" a la vista, y unidades solo del tipo del rendimiento;
+    - avisos con título más chico y la etiqueta "Cambió una preparación".
+  - **`ui-reviewer`, menores:** van en este PR los textos, el contador "20 o más", los ids con prefijo y los enlaces distinguibles. Queda para después agrupar las secciones del final de la ficha.
+  - **`security-auditor`:** apto, sin graves ni medios. De sus menores:
+    - el enlace de un aviso se filtra con la misma regla que la base;
+    - **se aceptan, anotados acá:**
+      - el mensaje "ya existe una receta con ese código" confirma que un código existe, porque son únicos por grupo a propósito;
+      - el formulario puede ofrecer un local con una variante en borrador que la persona no ve, y entonces la base lo rechaza;
+      - el buscador lo puede llamar cualquiera con sesión, pero solo devuelve lo que esa persona ya ve.
+
 ## Casos del documento
 
 - **10:** C no puede usar A si A usa B y B usa C. Se frena al guardar y también al pedir la revisión.

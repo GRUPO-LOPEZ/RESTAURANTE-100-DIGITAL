@@ -157,7 +157,8 @@ export async function getRecipeSettingsCategories(groupId: string): Promise<Sett
 export type RecipesFilter = {
   search?: string;
   type?: RecipeType;
-  scope?: RecipeScope;
+  // "variant": las variantes de local (recetas de local hechas a partir de una maestra).
+  scope?: RecipeScope | "variant";
   categoryId?: string;
   page: number;
 };
@@ -172,6 +173,7 @@ export type RecipeRow = {
   current: number | null;
   open: VersionStatus | null;
   isActive: boolean;
+  isVariant: boolean;
 };
 
 function placeName(
@@ -198,7 +200,7 @@ export async function getRecipes(
     .schema("recipes")
     .from("recipes")
     .select(
-      "id, code, name, recipe_type, scope_type, group_id, brand_id, restaurant_id, category_id, is_active",
+      "id, code, name, recipe_type, scope_type, group_id, brand_id, restaurant_id, category_id, is_active, variant_of_recipe_id",
       {
         count: "exact",
       },
@@ -206,7 +208,8 @@ export async function getRecipes(
     .order("name")
     .range(filter.page * RECIPES_PAGE, (filter.page + 1) * RECIPES_PAGE - 1);
   if (filter.type) query = query.eq("recipe_type", filter.type);
-  if (filter.scope) query = query.eq("scope_type", filter.scope);
+  if (filter.scope === "variant") query = query.not("variant_of_recipe_id", "is", null);
+  else if (filter.scope) query = query.eq("scope_type", filter.scope);
   if (filter.categoryId) query = query.eq("category_id", filter.categoryId);
   if (filter.search)
     query = query.or(`name.ilike.%${filter.search}%,code.ilike.%${filter.search}%`);
@@ -241,6 +244,7 @@ export async function getRecipes(
         current: mine.find((v) => v.status === "published")?.version_number ?? null,
         open: mine.find((v) => v.status !== "published")?.status ?? null,
         isActive: r.is_active,
+        isVariant: r.variant_of_recipe_id !== null,
       };
     }),
   };
@@ -308,8 +312,18 @@ export type RecipeDetail = {
   versions: RecipeVersion[];
   current: RecipeVersion | null;
   open: RecipeVersion | null;
+  // Si es una variante: su maestra (el nombre, solo si la sesión la ve).
+  variantOf: { id: string; name: string | null } | null;
   // Lo que puede hacer la sesión con esta receta (solo interfaz: la base vuelve a controlar).
-  can: { draft: boolean; review: boolean; publish: boolean; assign: boolean; archive: boolean };
+  can: {
+    draft: boolean;
+    review: boolean;
+    publish: boolean;
+    assign: boolean;
+    archive: boolean;
+    // Locales donde puede crear una variante de esta maestra (recipes.approve en el local).
+    variantPlaces: Assignment[];
+  };
 };
 
 async function allowed(
@@ -338,13 +352,23 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
     .schema("recipes")
     .from("recipes")
     .select(
-      "id, group_id, brand_id, restaurant_id, scope_type, code, name, short_name, recipe_type, category_id, sector, station, is_active",
+      "id, group_id, brand_id, restaurant_id, scope_type, code, name, short_name, recipe_type, category_id, sector, station, is_active, variant_of_recipe_id",
     )
     .eq("id", id)
     .maybeSingle();
   if (error) failed("la receta");
   if (!r) return null;
-  const [versions, places, draft, review, publish, archive, assignAnywhere] = await Promise.all([
+  const [
+    versions,
+    places,
+    draft,
+    review,
+    publish,
+    archive,
+    assignAnywhere,
+    approveAnywhere,
+    master,
+  ] = await Promise.all([
     supabase
       .schema("recipes")
       .from("recipe_versions")
@@ -359,6 +383,16 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
     allowed("recipes.publish", r),
     allowed("recipes.archive", r),
     permitted("restaurant", "recipes.assign"),
+    permitted("restaurant", "recipes.approve"),
+    // La maestra se lee con la sesión: si no la ve, queda sin nombre.
+    r.variant_of_recipe_id
+      ? supabase
+          .schema("recipes")
+          .from("recipes")
+          .select("id, name")
+          .eq("id", r.variant_of_recipe_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
   if (versions.error) failed("las versiones");
   const unitIds = [
@@ -408,6 +442,14 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
         ? x.brandId === r.brand_id
         : places.brands.some((b) => b.id === x.brandId && b.groupId === r.group_id),
   );
+  // Variantes: solo de una maestra del grupo o de una marca, activa y con versión vigente.
+  const current = list.find((v) => v.status === "published") ?? null;
+  const variantPlaces =
+    r.scope_type !== "restaurant" && r.is_active && current
+      ? inScope
+          .filter((x) => approveAnywhere.includes(x.id))
+          .map((x) => ({ restaurantId: x.id, restaurant: x.name }))
+      : [];
   return {
     id: r.id,
     groupId: r.group_id,
@@ -424,14 +466,18 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
     station: r.station,
     isActive: r.is_active,
     versions: list,
-    current: list.find((v) => v.status === "published") ?? null,
+    current,
     open: list.find((v) => v.status === "draft" || v.status === "in_review") ?? null,
+    variantOf: r.variant_of_recipe_id
+      ? { id: r.variant_of_recipe_id, name: master.data?.name ?? null }
+      : null,
     can: {
       draft,
       review,
       publish,
       archive,
       assign: inScope.some((x) => assignAnywhere.includes(x.id)),
+      variantPlaces,
     },
   };
 }
@@ -565,6 +611,66 @@ export async function getVersionDiff(versionId: string): Promise<DiffRow[]> {
   }));
 }
 
+// Una variante contra la vigente de su maestra (vacío si la sesión no ve la maestra).
+export async function getVariantDiff(recipeId: string): Promise<DiffRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("recipes")
+    .rpc("variant_diff", { p_variant_id: recipeId });
+  if (error) failed("las diferencias con la maestra");
+  return data.map((d) => ({
+    change: d.change,
+    ingredient: d.ingredient,
+    unit: d.unit,
+    oldQuantity: d.old_quantity,
+    newQuantity: d.new_quantity,
+  }));
+}
+
+// Recetas que usan esta como preparación (las que la sesión ve), y las variantes de una maestra.
+export type RecipeUse = { id: string; code: string; name: string; status: VersionStatus };
+export type RecipeVariant = {
+  id: string;
+  code: string;
+  name: string;
+  restaurantId: string | null;
+  restaurant: string;
+};
+
+export async function getRecipeUsage(recipeId: string): Promise<RecipeUse[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("recipes")
+    .rpc("recipe_usage", { p_recipe_id: recipeId });
+  if (error) failed("dónde se usa");
+  return data
+    .map((u) => ({ id: u.recipe_id, code: u.code, name: u.name, status: u.status }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+
+export async function getVariants(recipeId: string): Promise<RecipeVariant[]> {
+  const supabase = await createClient();
+  const [{ data, error }, places] = await Promise.all([
+    supabase
+      .schema("recipes")
+      .from("recipes")
+      .select("id, code, name, restaurant_id")
+      .eq("variant_of_recipe_id", recipeId)
+      .eq("is_active", true)
+      .order("name"),
+    getPlaces(),
+  ]);
+  if (error) failed("las variantes");
+  const name = new Map(places.restaurants.map((r) => [r.id, r.name]));
+  return data.map((v) => ({
+    id: v.id,
+    code: v.code,
+    name: v.name,
+    restaurantId: v.restaurant_id,
+    restaurant: (v.restaurant_id ? name.get(v.restaurant_id) : undefined) ?? "Local",
+  }));
+}
+
 export type Assignment = { restaurantId: string; restaurant: string };
 
 // Locales que usan la receta hoy (los que la sesión ve) y los locales donde se puede asignar.
@@ -682,9 +788,13 @@ export type KitchenCard = {
   presentationNotes: string | null;
   totalMinutes: number;
   activeMinutes: number;
+  // La maestra, si es una variante y la sesión la ve.
+  variantOf: { recipe_id: string; name: string } | null;
   components: {
     line: number;
     ingredient: string;
+    // Una preparación: enlace a su propia ficha de cocina.
+    sub_recipe_id: string | null;
     quantity: number;
     unit: string;
     basis: QuantityBasis;
@@ -725,6 +835,7 @@ export async function getKitchenCard(recipeId: string): Promise<KitchenCard | nu
     presentationNotes: c.presentation_notes == null ? null : String(c.presentation_notes),
     totalMinutes: Number(c.total_minutes ?? 0),
     activeMinutes: Number(c.active_minutes ?? 0),
+    variantOf: (c.variant_of ?? null) as KitchenCard["variantOf"],
     components: (c.components ?? []) as KitchenCard["components"],
     steps: (c.steps ?? []) as KitchenCard["steps"],
     allergens: (c.allergens ?? []) as AllergenStatus[],

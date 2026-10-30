@@ -15,9 +15,11 @@ import {
   formatDateTime,
   formatField,
   getInbox,
+  getRecipeNotices,
   getRoles,
   getUnreadCount,
   type InboxRow,
+  type NoticeRow,
 } from "@/lib/data";
 import { requireMenu } from "@/lib/auth/session";
 
@@ -29,7 +31,8 @@ const STATUS: Record<InboxRow["status"], { label: string; status: BadgeStatus }>
 };
 
 // Bandeja de aprobaciones (sección 9): las pendientes con el antes y el después, aprobar o
-// rechazar con motivo, y las resueltas recientemente.
+// rechazar con motivo, y las resueltas recientemente. Arriba, los avisos de cambios de recetas
+// (una preparación que cambió y que usan platos de la persona; ADR-0026).
 export default function AprobacionesPage() {
   return (
     <AppShell
@@ -46,11 +49,12 @@ export default function AprobacionesPage() {
 async function Inbox() {
   await requireMenu("approvals");
   // Las pendientes (hasta 100) y las últimas 20 resueltas.
-  const [pending, resolved, roles, unread] = await Promise.all([
+  const [pending, resolved, roles, unread, notices] = await Promise.all([
     getInbox(true, 100),
     getInbox(false, 20),
     getRoles(),
     getUnreadCount(),
+    getRecipeNotices(),
   ]);
   const roleNames = Object.fromEntries(roles.map((r) => [r.code, r.name]));
 
@@ -59,8 +63,7 @@ async function Inbox() {
       {unread > 0 ? (
         <Card className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-base text-ink">
-            Tenés {unread} {unread === 1 ? "aviso nuevo" : "avisos nuevos"} de solicitudes que podés
-            decidir.
+            Tenés {unread} {unread === 1 ? "aviso nuevo" : "avisos nuevos"}.
           </p>
           <form action={markNotificationsReadAction}>
             <Button type="submit" variant="outline" className="w-full sm:w-auto">
@@ -69,6 +72,7 @@ async function Inbox() {
           </form>
         </Card>
       ) : null}
+      {notices.length > 0 ? <Notices rows={notices} /> : null}
       {pending.length === 0 && resolved.length === 0 ? (
         <EmptyState title="No hay solicitudes para mostrar." />
       ) : (
@@ -122,6 +126,40 @@ function BeforeAfter({ row, roleNames }: { row: InboxRow; roleNames: Record<stri
         </div>
       ))}
     </dl>
+  );
+}
+
+// Avisos de cambios de recetas: qué cambió y el enlace a la receta. Se marcan como leídos con el
+// botón de arriba, junto con los de solicitudes.
+function Notices({ rows }: { rows: NoticeRow[] }) {
+  return (
+    <section aria-labelledby="apr-avisos" className="flex flex-col gap-4">
+      <h2 id="apr-avisos" className="text-xl text-ink">
+        Avisos de recetas ({rows.length >= 20 ? "20 o más" : rows.length})
+      </h2>
+      <ul className="flex flex-col gap-4">
+        {rows.map((n) => (
+          <li key={n.id}>
+            <Card className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-semibold text-ink">{n.title}</h3>
+                <Badge status="info">Cambió una preparación</Badge>
+              </div>
+              <CardDescription>{formatDateTime(n.createdAt)}</CardDescription>
+              {n.body ? <p className="text-base text-ink">{n.body}</p> : null}
+              {n.link ? (
+                <Link
+                  href={n.link}
+                  className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+                >
+                  Ver la receta<span className="sr-only"> ({n.title})</span>
+                </Link>
+              ) : null}
+            </Card>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

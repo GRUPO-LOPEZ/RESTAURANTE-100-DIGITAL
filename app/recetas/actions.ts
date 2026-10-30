@@ -179,31 +179,72 @@ export async function saveStepsAction(payload: z.input<typeof stepsPayload>): Pr
   return toActionState(data, error);
 }
 
-// Buscador de materias primas para el editor: desde 3 letras, por nombre, alias o código. Un error
-// se informa como error (no como "no hay resultados").
-export type IngredientSearch =
-  | { status: "ok"; results: { id: string; name: string; code: string; unit: string }[] }
+// Buscador del editor: desde 3 letras, materias primas (por nombre, alias o código) y preparaciones
+// con versión vigente al alcance de la receta (ADR-0025). Un error se informa como error (no como
+// "no hay resultados").
+export type ComponentFound = { id: string; name: string; code: string; unit: string };
+export type ComponentSearch =
+  | { status: "ok"; ingredients: ComponentFound[]; preparations: ComponentFound[] }
   | { status: "error" };
 
-export async function searchIngredientsAction(query: unknown): Promise<IngredientSearch> {
+export async function searchComponentsAction(
+  query: unknown,
+  recipeId: unknown,
+): Promise<ComponentSearch> {
   const text = z.string().max(200).safeParse(query);
-  if (!text.success) return { status: "error" };
+  const recipe = uuid.safeParse(recipeId);
+  if (!text.success || !recipe.success) return { status: "error" };
   const q = text.data
     .replace(/[^\p{L}\p{N} -]/gu, "")
     .trim()
     .slice(0, 60);
-  if (q.length < 3) return { status: "ok", results: [] };
+  if (q.length < 3) return { status: "ok", ingredients: [], preparations: [] };
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("catalog")
-    .rpc("search_components", { p_query: q, p_limit: 12 });
-  if (error) return { status: "error" };
+  const [ingredients, preparations] = await Promise.all([
+    supabase.schema("catalog").rpc("search_components", { p_query: q, p_limit: 12 }),
+    supabase
+      .schema("recipes")
+      .rpc("search_subrecipes", { p_query: q, p_recipe_id: recipe.data, p_limit: 12 }),
+  ]);
+  if (ingredients.error || preparations.error) return { status: "error" };
   return {
     status: "ok",
-    results: data
+    ingredients: ingredients.data
       .filter((c) => c.kind === "ingredient")
       .map((c) => ({ id: c.id, name: c.name, code: c.code, unit: c.unit })),
+    preparations: preparations.data.map((p) => ({
+      id: p.id,
+      name: p.name,
+      code: p.code,
+      unit: p.unit,
+    })),
   };
+}
+
+// Variante local de una maestra: la base pide recipes.approve en ese local, copia la vigente y la
+// asigna. Al crearla, se va a su ficha para ajustarla.
+export async function createVariantAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.variant.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const { recipe } = ids(formData);
+  const place = uuid.safeParse(fields.data.restaurant_id);
+  if (!recipe.success) return { status: "bad", message: "Falta la receta." };
+  if (!place.success) return { status: "bad", fieldErrors: { restaurant_id: "Elegí el local." } };
+  const supabase = await createClient();
+  const { data, error } = await supabase.schema("recipes").rpc("create_variant", {
+    p_master_id: recipe.data,
+    p_restaurant_id: place.data,
+    p_code: fields.data.code,
+    p_name: fields.data.name,
+    p_reason: fields.data.reason,
+  });
+  const result = data as { result?: string; id?: string } | null;
+  if (error || result?.result !== "applied" || !result.id) return toActionState(data, error);
+  refresh(recipe.data);
+  redirect(`/recetas/${result.id}`);
 }
 
 async function versionCall(
