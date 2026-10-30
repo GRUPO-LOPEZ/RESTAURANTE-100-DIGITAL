@@ -2,7 +2,7 @@
 // (database.md: "un diccionario de datos generado desde la base").
 // Uso: npm run db:dictionary (con `npm run db:start` corriendo). Solo lee: no cambia la base.
 // Con argumentos, otros esquemas y otro archivo:
-//   node scripts/data-dictionary.mjs catalog docs/modulos/02-recetario-diccionario.md
+//   node scripts/data-dictionary.mjs catalog,recipes docs/modulos/02-recetario-diccionario.md
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 

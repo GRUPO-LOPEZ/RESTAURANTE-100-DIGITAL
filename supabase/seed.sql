@@ -362,6 +362,170 @@ values
    '00000000-0000-4000-8000-000000000201', current_date - 1, 1, null, null, 1000, 2450, 'Julián (prueba)',
    '00000000-0000-4000-8000-000000000406');
 
+-- ---------------------------------------------------------------------------
+-- Recetas (Fase 2, etapa 2.2 A). Todo ficticio, con código DEMO-.
+-- Ids fijos: categorías ...00106C, recetas ...0011NN, versiones ...0012NN.
+-- Maestras del grupo (1 a 5), de Demo Pastas (6 a 11), de Demo Parrilla (12 a 17), de Demo Café (18 y 19)
+-- y una de local (20, Demo Pastas Centro). Todas publicadas salvo el risotto (11), en borrador.
+-- La bolognesa (2) tiene los pasos del caso 22: 20 + máx(60, 30) + 10 = 90 minutos.
+-- ---------------------------------------------------------------------------
+insert into recipes.recipe_categories (id, group_id, name) values
+  ('00000000-0000-4000-8000-000000001061', '00000000-0000-4000-8000-000000000001', 'Salsas'),
+  ('00000000-0000-4000-8000-000000001062', '00000000-0000-4000-8000-000000000001', 'Pastas'),
+  ('00000000-0000-4000-8000-000000001063', '00000000-0000-4000-8000-000000000001', 'Carnes'),
+  ('00000000-0000-4000-8000-000000001064', '00000000-0000-4000-8000-000000000001', 'Guarniciones'),
+  ('00000000-0000-4000-8000-000000001065', '00000000-0000-4000-8000-000000000001', 'Pastelería y café');
+
+create temporary table seed_recipes (n int, code text, name text, kind text, brand int, restaurant int, category int,
+                                     yield_qty numeric, yield_unit text, portions int, portion_grams numeric,
+                                     cook_text text, active int, passive int, published boolean) on commit drop;
+insert into seed_recipes values
+  (1, 'DEMO-SAL-01', 'Salsa fileto', 'preparation', null, null, 1, 2, 'l', null, null,
+   'Rehogar cebolla y ajo en el aceite, sumar el tomate y cocinar a fuego bajo.', 15, 40, true),
+  (2, 'DEMO-SAL-02', 'Salsa bolognesa', 'preparation', null, null, 1, 3, 'kg', null, null, null, 0, 0, true),
+  (3, 'DEMO-SAL-03', 'Salsa blanca', 'preparation', null, null, 1, 1, 'l', null, null,
+   'Hacer un roux con la manteca y la harina, sumar la leche caliente y batir hasta espesar.', 15, 5, true),
+  (4, 'DEMO-GUA-01', 'Puré de papas', 'preparation', null, null, 4, 2, 'kg', null, null,
+   'Hervir las papas, pisarlas y sumar la manteca y la leche caliente.', 15, 25, true),
+  (5, 'DEMO-GUA-02', 'Papas rústicas', 'preparation', null, null, 4, 1.5, 'kg', null, null,
+   'Cortar en gajos, condimentar y hornear hasta dorar.', 10, 40, true),
+  (6, 'DEMO-PAS-01', 'Masa de pasta fresca', 'preparation', 1, null, 2, 1.2, 'kg', null, null,
+   'Formar la masa, amasar y dejar reposar tapada.', 15, 30, true),
+  (7, 'DEMO-PAS-02', 'Spaghetti al fileto', 'dish', 1, null, 2, 1, 'unit', 1, 350,
+   'Hervir la pasta al dente y saltear con la salsa.', 5, 9, true),
+  (8, 'DEMO-PAS-03', 'Ravioles de ricota', 'dish', 1, null, 2, 1, 'unit', 1, 300,
+   'Estirar la masa, rellenar, cortar y hervir.', 20, 5, true),
+  (9, 'DEMO-PAS-04', 'Ñoquis de papa', 'dish', 1, null, 2, 1.2, 'kg', 4, 300,
+   'Hacer la masa con la papa pisada, cortar los ñoquis y hervir hasta que suban.', 30, 5, true),
+  (10, 'DEMO-PAS-05', 'Lasaña bolognesa', 'dish', 1, null, 2, 3, 'kg', 8, 375,
+   'Armar capas de pasta, salsa y queso, y hornear.', 25, 45, true),
+  (11, 'DEMO-PAS-06', 'Risotto de hongos', 'dish', 1, null, 2, 1.2, 'kg', 4, 300,
+   'Nacarar el arroz, sumar caldo de a poco y terminar con manteca y queso.', 25, 0, false),
+  (12, 'DEMO-PAR-01', 'Chimichurri', 'preparation', 2, null, 1, 0.5, 'l', null, null,
+   'Picar, mezclar con el vinagre y el aceite, y dejar macerar.', 15, 60, true),
+  (13, 'DEMO-PAR-02', 'Vacío a la parrilla', 'dish', 2, null, 3, 1, 'unit', 1, 350,
+   'Asar a fuego medio, dar vuelta una vez y dejar reposar antes de cortar.', 10, 80, true),
+  (14, 'DEMO-PAR-03', 'Provoleta', 'dish', 2, null, 3, 1, 'unit', 1, 200,
+   'Grillar en provoletera hasta dorar los dos lados.', 5, 8, true),
+  (15, 'DEMO-PAR-04', 'Bondiola braseada', 'preparation', 2, null, 3, 2, 'kg', null, null,
+   'Sellar, sumar la cebolla y el vino, tapar y cocinar a fuego bajo.', 20, 150, true),
+  (16, 'DEMO-PAR-05', 'Chorizo a la parrilla', 'dish', 2, null, 3, 1, 'unit', 1, 120,
+   'Asar a fuego medio dando vuelta seguido.', 5, 20, true),
+  (17, 'DEMO-PAR-06', 'Pollo grillado al limón', 'dish', 2, null, 3, 1, 'unit', 1, 250,
+   'Marinar con limón y aceite, y grillar hasta cocinar bien.', 10, 15, true),
+  (18, 'DEMO-CAF-01', 'Budín de limón', 'preparation', 3, null, 5, 1, 'unit', 10, 80,
+   'Batir, sumar los secos y la ralladura, y hornear en molde.', 20, 45, true),
+  (19, 'DEMO-CAF-02', 'Ensalada de atún', 'dish', 3, null, 5, 1, 'unit', 1, 330,
+   'Hervir la papa y el huevo, enfriar y armar con el atún y las aceitunas.', 10, 20, true),
+  (20, 'DEMO-LOC-01', 'Sorrentinos de zapallo', 'dish', 1, 201, 2, 1, 'unit', 1, 320,
+   'Asar el zapallo, hacer el relleno, armar los sorrentinos y hervir.', 30, 40, true);
+
+create temporary table seed_recipe_lines (ord int generated always as identity, n int, ingredient int, qty numeric, unit text)
+  on commit drop;
+insert into seed_recipe_lines (n, ingredient, qty, unit) values
+  (1, 35, 2000, 'g'), (1, 2, 300, 'g'), (1, 3, 20, 'g'), (1, 33, 60, 'ml'), (1, 7, 10, 'g'), (1, 37, 15, 'g'), (1, 36, 10, 'g'),
+  (2, 11, 1500, 'g'), (2, 35, 1500, 'g'), (2, 2, 400, 'g'), (2, 4, 200, 'g'), (2, 39, 200, 'ml'), (2, 34, 50, 'ml'),
+  (2, 37, 20, 'g'), (2, 46, 2, 'g'),
+  (3, 23, 1000, 'ml'), (3, 24, 60, 'g'), (3, 28, 60, 'g'), (3, 44, 1, 'g'), (3, 37, 8, 'g'),
+  (4, 5, 2, 'kg'), (4, 24, 100, 'g'), (4, 23, 300, 'ml'), (4, 37, 15, 'g'), (4, 44, 1, 'g'),
+  (5, 5, 2000, 'g'), (5, 34, 100, 'ml'), (5, 37, 15, 'g'), (5, 45, 5, 'g'), (5, 42, 3, 'g'),
+  (6, 27, 1000, 'g'), (6, 26, 8, 'unit'), (6, 37, 10, 'g'), (6, 33, 20, 'ml'),
+  (7, 30, 120, 'g'), (7, 35, 150, 'g'), (7, 33, 10, 'ml'), (7, 20, 15, 'g'), (7, 7, 2, 'g'),
+  (8, 27, 100, 'g'), (8, 26, 1, 'unit'), (8, 21, 120, 'g'), (8, 20, 20, 'g'), (8, 44, 0.5, 'g'),
+  (9, 5, 1000, 'g'), (9, 27, 250, 'g'), (9, 26, 1, 'unit'), (9, 37, 8, 'g'),
+  (10, 11, 800, 'g'), (10, 35, 800, 'g'), (10, 19, 500, 'g'), (10, 27, 500, 'g'), (10, 26, 4, 'unit'), (10, 23, 1000, 'ml'),
+  (10, 24, 60, 'g'),
+  (11, 31, 320, 'g'), (11, 50, 300, 'g'), (11, 2, 100, 'g'), (11, 24, 60, 'g'), (11, 20, 60, 'g'), (11, 33, 20, 'ml'),
+  (12, 8, 50, 'g'), (12, 3, 20, 'g'), (12, 42, 10, 'g'), (12, 43, 5, 'g'), (12, 38, 100, 'ml'), (12, 34, 300, 'ml'),
+  (12, 37, 8, 'g'),
+  (13, 17, 400, 'g'), (13, 37, 6, 'g'),
+  (14, 25, 200, 'g'), (14, 42, 1, 'g'), (14, 43, 0.5, 'g'), (14, 33, 5, 'ml'),
+  (15, 15, 2500, 'g'), (15, 2, 400, 'g'), (15, 39, 300, 'ml'), (15, 46, 2, 'g'), (15, 37, 20, 'g'), (15, 41, 3, 'g'),
+  (16, 18, 1, 'unit'),
+  (17, 14, 250, 'g'), (17, 9, 1, 'unit'), (17, 33, 10, 'ml'), (17, 37, 3, 'g'), (17, 41, 1, 'g'),
+  (18, 28, 250, 'g'), (18, 36, 200, 'g'), (18, 26, 3, 'unit'), (18, 24, 150, 'g'), (18, 9, 1, 'unit'), (18, 23, 100, 'ml'),
+  (19, 49, 120, 'g'), (19, 5, 150, 'g'), (19, 26, 1, 'unit'), (19, 48, 20, 'g'), (19, 33, 10, 'ml'), (19, 37, 2, 'g'),
+  (20, 27, 120, 'g'), (20, 26, 1, 'unit'), (20, 10, 200, 'g'), (20, 20, 20, 'g'), (20, 24, 20, 'g'), (20, 44, 0.5, 'g');
+
+insert into recipes.recipes (id, group_id, brand_id, restaurant_id, scope_type, code, name, recipe_type, category_id)
+select format('00000000-0000-4000-8000-%s', lpad((1100 + r.n)::text, 12, '0'))::uuid, '00000000-0000-4000-8000-000000000001',
+       case when r.brand is not null then format('00000000-0000-4000-8000-%s', lpad((100 + r.brand)::text, 12, '0'))::uuid end,
+       case when r.restaurant is not null then format('00000000-0000-4000-8000-%s', lpad(r.restaurant::text, 12, '0'))::uuid end,
+       case when r.restaurant is not null then 'restaurant' when r.brand is not null then 'brand' else 'group' end::recipes.recipe_scope,
+       r.code, r.name, r.kind::recipes.recipe_type,
+       format('00000000-0000-4000-8000-%s', lpad((1060 + r.category)::text, 12, '0'))::uuid
+  from seed_recipes r;
+
+insert into recipes.recipe_versions (id, group_id, recipe_id, version_number, yield_quantity, yield_unit_id, portions,
+                                     portion_grams, description)
+select format('00000000-0000-4000-8000-%s', lpad((1200 + r.n)::text, 12, '0'))::uuid, '00000000-0000-4000-8000-000000000001',
+       format('00000000-0000-4000-8000-%s', lpad((1100 + r.n)::text, 12, '0'))::uuid, 1, r.yield_qty, u.id, r.portions,
+       r.portion_grams, 'Receta de prueba (DEMO).'
+  from seed_recipes r join catalog.units u on u.code = r.yield_unit;
+
+insert into recipes.recipe_components (group_id, recipe_version_id, line_order, ingredient_id, quantity, unit_id)
+select '00000000-0000-4000-8000-000000000001', format('00000000-0000-4000-8000-%s', lpad((1200 + l.n)::text, 12, '0'))::uuid,
+       row_number() over (partition by l.n order by l.ord), format('00000000-0000-4000-8000-%s', lpad((800 + l.ingredient)::text, 12, '0'))::uuid,
+       l.qty, u.id
+  from seed_recipe_lines l join catalog.units u on u.code = l.unit;
+
+-- Pasos: preparar, el paso propio de cada receta y terminar (uno espera al otro). La bolognesa, en paralelo.
+insert into recipes.recipe_steps (group_id, recipe_version_id, step_number, kind, instructions, active_minutes, passive_minutes)
+select '00000000-0000-4000-8000-000000000001', format('00000000-0000-4000-8000-%s', lpad((1200 + r.n)::text, 12, '0'))::uuid,
+       s.step, s.kind::recipes.step_kind, s.instructions, s.active, s.passive
+  from seed_recipes r
+ cross join lateral (values
+   (1, 'preparation', 'Pesar y preparar los ingredientes.', 10, 0),
+   (2, 'cooking', r.cook_text, r.active, r.passive),
+   (3, case when r.kind = 'dish' then 'plating' else 'cooling' end,
+    case when r.kind = 'dish' then 'Emplatar y servir.' else 'Enfriar, rotular y guardar según el procedimiento validado.' end, 5, 0)
+ ) as s (step, kind, instructions, active, passive)
+ where r.n <> 2;
+insert into recipes.recipe_steps (group_id, recipe_version_id, step_number, kind, instructions, active_minutes, passive_minutes)
+values
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001202', 1, 'preparation',
+   'Picar la cebolla y la zanahoria.', 20, 0),
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001202', 2, 'cooking',
+   'Dorar la carne, sumar el vino y el tomate, y cocinar a fuego bajo.', 15, 45),
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001202', 3, 'cooking',
+   'Rehogar la cebolla y la zanahoria en otra olla.', 30, 0),
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001202', 4, 'cooking',
+   'Unir todo, ajustar la sal y enfriar.', 10, 0);
+insert into recipes.recipe_step_dependencies (group_id, step_id, depends_on_step_id)
+select '00000000-0000-4000-8000-000000000001', s.id, d.id
+  from (values (2, 1), (3, 2)) as x (step, dep)
+  join recipes.recipe_steps s on s.step_number = x.step
+  join recipes.recipe_steps d on d.recipe_version_id = s.recipe_version_id and d.step_number = x.dep
+ where s.recipe_version_id <> '00000000-0000-4000-8000-000000001202';
+insert into recipes.recipe_step_dependencies (group_id, step_id, depends_on_step_id)
+select '00000000-0000-4000-8000-000000000001', s.id, d.id
+  from (values (2, 1), (3, 1), (4, 2), (4, 3)) as x (step, dep)
+  join recipes.recipe_steps s on s.recipe_version_id = '00000000-0000-4000-8000-000000001202' and s.step_number = x.step
+  join recipes.recipe_steps d on d.recipe_version_id = s.recipe_version_id and d.step_number = x.dep;
+
+-- Publicadas: recorren los estados de siempre. Las aprueba la Chef de Demo Pastas o el Chef del grupo.
+update recipes.recipe_versions v set status = 'in_review'
+  from seed_recipes r where v.id = format('00000000-0000-4000-8000-%s', lpad((1200 + r.n)::text, 12, '0'))::uuid and r.published;
+update recipes.recipe_versions v
+   set status = 'approved',
+       approved_by = case when r.brand = 1 then '00000000-0000-4000-8000-000000000405'
+                          else '00000000-0000-4000-8000-000000000413' end::uuid
+  from seed_recipes r where v.id = format('00000000-0000-4000-8000-%s', lpad((1200 + r.n)::text, 12, '0'))::uuid and r.published;
+update recipes.recipe_versions v set status = 'published', published_at = now()
+  from seed_recipes r where v.id = format('00000000-0000-4000-8000-%s', lpad((1200 + r.n)::text, 12, '0'))::uuid and r.published;
+
+-- Asignaciones: las maestras a los locales de Pastas y Parrilla; las de marca, a sus locales.
+insert into recipes.recipe_assignments (group_id, recipe_id, restaurant_id, valid_from)
+select '00000000-0000-4000-8000-000000000001', format('00000000-0000-4000-8000-%s', lpad((1100 + r.n)::text, 12, '0'))::uuid,
+       rest.id, current_date - 30
+  from seed_recipes r
+  join org.restaurants rest
+    on case when r.restaurant is not null
+              then rest.id = ('00000000-0000-4000-8000-' || lpad(r.restaurant::text, 12, '0'))::uuid
+            when r.brand is not null
+              then rest.brand_id = ('00000000-0000-4000-8000-' || lpad((100 + r.brand)::text, 12, '0'))::uuid
+            else rest.brand_id in ('00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000102') end;
+
 -- Ingresos ficticios de los últimos 30 días, para el gráfico del tablero.
 set role audit_owner;
 insert into audit.authentication_security_events (event_type, occurred_at, operation, reason, user_id, email, scope_group_id)
