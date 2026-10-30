@@ -1248,6 +1248,16 @@ export type Database = {
           profile_id: string;
         }[];
       };
+      archive_category: { Args: { p_id: string; p_reason: string }; Returns: undefined };
+      archive_yield_process: { Args: { p_id: string; p_reason: string }; Returns: undefined };
+      category_group: { Args: { p_category_id: string }; Returns: string };
+      category_usage: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          category_id: string;
+          ingredients: number;
+        }[];
+      };
       check_ingredient_products: {
         Args: { p_action: string; p_ingredient_id: string };
         Returns: undefined;
@@ -1263,6 +1273,10 @@ export type Database = {
           quantity: number;
           status: string;
         }[];
+      };
+      create_category: {
+        Args: { p_group_id: string; p_name: string; p_parent_id?: string; p_reason: string };
+        Returns: string;
       };
       create_ingredient: {
         Args: {
@@ -1309,6 +1323,13 @@ export type Database = {
         Args: { p_content_unit_id: string; p_ingredient_id: string };
         Returns: string;
       };
+      process_usage: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          process_id: string;
+          standards: number;
+        }[];
+      };
       propose_yield_standard: {
         Args: {
           p_cleaning_yield: number;
@@ -1339,6 +1360,15 @@ export type Database = {
         };
         Returns: string;
       };
+      rename_category: {
+        Args: { p_id: string; p_name: string; p_reason: string };
+        Returns: undefined;
+      };
+      rename_yield_process: {
+        Args: { p_id: string; p_name: string; p_reason: string };
+        Returns: undefined;
+      };
+      require_name: { Args: { p_name: string }; Returns: undefined };
       search_components: {
         Args: { p_limit?: number; p_query: string };
         Returns: {
@@ -1417,6 +1447,7 @@ export type Database = {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
       };
+      yield_process_group: { Args: { p_process_id: string }; Returns: string };
       yield_summary: {
         Args: { p_ingredient_id: string };
         Returns: {

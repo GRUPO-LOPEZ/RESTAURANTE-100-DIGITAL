@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { FiltersPanel } from "@/components/filters-panel";
@@ -114,14 +114,24 @@ async function Ingredients({
           <CardTitle className="tabular-nums">
             {total === 1 ? "1 materia prima" : `${total.toLocaleString("es-AR")} materias primas`}
           </CardTitle>
-          {menus.catalogManage ? (
-            <Button asChild variant="outline">
-              <Link href="/materias-primas/nueva">
-                <Plus aria-hidden="true" />
-                Nueva materia prima
-              </Link>
-            </Button>
-          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {menus.catalogSettings ? (
+              <Button asChild variant="outline">
+                <Link href="/materias-primas/configuracion">
+                  <Settings aria-hidden="true" />
+                  Configuración
+                </Link>
+              </Button>
+            ) : null}
+            {menus.catalogManage ? (
+              <Button asChild variant="outline">
+                <Link href="/materias-primas/nueva">
+                  <Plus aria-hidden="true" />
+                  Nueva materia prima
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         </div>
         {rows.length === 0 && total > 0 ? (
           <EmptyState title="Esa página no existe.">

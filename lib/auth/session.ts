@@ -77,6 +77,7 @@ export const getMenus = cache(async () => {
     catalog,
     catalogManage,
     yieldsRecord,
+    yieldsApprove,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -89,6 +90,8 @@ export const getMenus = cache(async () => {
     groupWide("catalog.manage"),
     // Ensayos y propuestas de rendimiento: en su local o su marca (la base controla dónde).
     check("yields.record"),
+    // Procesos de rendimiento: los administra quien aprueba estándares para todo el grupo.
+    groupWide("yields.approve"),
   ]);
   return {
     users,
@@ -101,6 +104,9 @@ export const getMenus = cache(async () => {
     catalog,
     catalogManage,
     yieldsRecord,
+    yieldsApprove,
+    // Configuración del catálogo: categorías (catalog.manage) o procesos (yields.approve).
+    catalogSettings: catalogManage || yieldsApprove,
   };
 });
 

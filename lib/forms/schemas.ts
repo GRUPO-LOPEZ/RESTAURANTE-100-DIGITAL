@@ -45,6 +45,7 @@ const catalogName = z
   .trim()
   .min(1, "Escribí el nombre.")
   .max(120, "Hasta 120 caracteres.");
+const settingName = catalogName.max(80, "Hasta 80 caracteres.");
 const notesField = z.string().trim().max(1000, "Hasta 1.000 caracteres.").optional();
 // Número positivo, con coma o punto decimal (como se escribe en la Argentina).
 export const positiveNumber = z
@@ -208,6 +209,14 @@ export const schemas = {
       .optional(),
     reason: reasonField,
   }),
+  // Configuración del catálogo (ADR-0022): categorías y procesos, con nombres de hasta 80, como la base.
+  category: z.object({
+    name: settingName,
+    parent_id: z.string().max(60).optional(),
+    reason: reasonField,
+  }),
+  rename: z.object({ name: settingName, reason: reasonField }),
+  yieldProcess: z.object({ code: catalogCode, name: settingName, reason: reasonField }),
   // Ensayo de rendimiento: pesos en gramos, al menos un par completo (bruto y limpio, o antes y
   // después de cocinar), y el limpio no pesa más que el bruto. Lo mismo exige la base.
   yieldTest: z

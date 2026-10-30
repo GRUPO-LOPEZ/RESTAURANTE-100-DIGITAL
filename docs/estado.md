@@ -1,8 +1,31 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Etapa 2.1 A fusionada (PR #19). **Etapa 2.1 B (rendimientos) terminada**, con PR desde `feat/recetario-rendimientos`._
+_Última actualización: 2026-10-29. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Etapas 2.1 A y 2.1 B fusionadas (PR #19 y #20). **Configuración del catálogo terminada**, con PR desde `feat/catalogo-configuracion`._
 
-## Al retomar: etapa 2.1 B terminada (PR de `feat/recetario-rendimientos`)
+## Al retomar: configuración del catálogo (PR de `feat/catalogo-configuracion`)
+
+- **Por qué:** en staging no se podía cargar ninguna materia prima. Cada una necesita una categoría, las categorías solo las cargaba el seed (que no corre en staging) y no había cómo crearlas. Lo detectó Joaco.
+- **Qué se hizo:**
+  - migración `20261031120000_catalog_settings.sql`: crear, renombrar y dar de baja categorías (`catalog.manage` de grupo) y procesos de rendimiento (`yields.approve` de grupo). Nada en uso se da de baja;
+  - pantalla `/materias-primas/configuracion`, con enlace desde la lista de materias primas;
+  - el alta de materia prima sin categorías lleva a la configuración;
+  - una baja y una carga al mismo tiempo ya no se cruzan (trigger con `for share`, probado a mano con dos sesiones).
+  - Detalle en ADR-0022.
+- **Pruebas (2026-10-29, `npm run test` completo, después de las revisiones):**
+  - lint y tipos ✅;
+  - Vitest 141 de 141 ✅;
+  - pgTAP 995 de 995 ✅ (la nueva `160` tiene 44);
+  - Playwright 80 de 80 ✅ (celular y computadora, con axe).
+- **Pantalla:** mirada en capturas de celular y computadora.
+- **Revisiones:** `security-auditor` apto; `db-reviewer` y `ui-reviewer` sin graves. Todo lo medio y lo menor que valía la pena, resuelto (ADR-0022).
+- **Arreglo de paso en la 2.1 B:** la prueba `150` usaba la fecha UTC y fallaba después de las 21 h de la Argentina. Ahora usa la fecha de la Argentina, como la base.
+- **Pendiente de Joaco:**
+  1. abrir el PR y fusionarlo con "Pruebas" en verde;
+  2. en staging, entrar con alguien que tenga `catalog.manage` de grupo (Superadministrador o Compras de grupo) y crear las categorías reales en Materias primas → Configuración;
+  3. recién ahí se pueden cargar materias primas en staging.
+- **Próximas etapas:** 2.2 A (recetas sin subrecetas ni Pariggi; no depende de Soy), 2.2 B y 2.1 C (necesitan respuestas de Soy).
+
+## Antes: etapa 2.1 B terminada (fusionada, PR #20)
 
 - **Qué se hizo:**
   - migración `20261030120000_catalog_yields.sql`: procesos, estándar de rendimiento con aprobación y ensayos (solo de inserción);

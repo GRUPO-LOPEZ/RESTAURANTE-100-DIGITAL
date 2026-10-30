@@ -53,9 +53,11 @@ select is(
   (select array_agg(n.nspname || '.' || p.proname order by n.nspname || '.' || p.proname collate "C")
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = any (pg_temp.business_schemas()) and has_function_privilege('authenticated', p.oid, 'execute')),
-  array['catalog.convert_quantity', 'catalog.create_ingredient', 'catalog.create_purchase_product',
-        'catalog.create_supplier', 'catalog.create_yield_process', 'catalog.propose_yield_standard',
-        'catalog.record_yield_test', 'catalog.search_components', 'catalog.set_aliases', 'catalog.set_allergen_status',
+  array['catalog.archive_category', 'catalog.archive_yield_process', 'catalog.category_usage',
+        'catalog.convert_quantity', 'catalog.create_category', 'catalog.create_ingredient', 'catalog.create_purchase_product',
+        'catalog.create_supplier', 'catalog.create_yield_process', 'catalog.process_usage',
+        'catalog.propose_yield_standard', 'catalog.record_yield_test', 'catalog.rename_category', 'catalog.rename_yield_process',
+        'catalog.search_components', 'catalog.set_aliases', 'catalog.set_allergen_status',
         'catalog.set_ingredient_active', 'catalog.set_unit_conversion', 'catalog.standard_yield', 'catalog.to_base_quantity',
         'catalog.update_ingredient', 'catalog.update_purchase_product', 'catalog.update_supplier', 'catalog.yield_summary',
         'core.add_member', 'core.assign_role', 'core.audit_export', 'core.audit_history', 'core.can_invite',

@@ -1,6 +1,6 @@
 # Diccionario de datos — catalog
 
-> Generado desde los `comment on` de la base local el 2026-10-29 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-10-30 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
 ## `catalog.allergens`
 

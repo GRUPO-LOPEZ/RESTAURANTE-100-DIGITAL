@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ChevronDown } from "lucide-react";
 
 import {
   createProductAction,
@@ -16,6 +15,7 @@ import {
 } from "@/app/materias-primas/actions";
 import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
+import { Disclosure } from "@/components/disclosure";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
@@ -57,22 +57,6 @@ function Reason({ id, label = "Motivo" }: { id: string; label?: string }) {
       required
       maxLength={500}
     />
-  );
-}
-
-// Cada acción va plegada, como en la ficha de una persona.
-function Action({ summary, children }: { summary: string; children: React.ReactNode }) {
-  return (
-    <details className="group rounded-sm border border-line">
-      <summary className="flex min-h-touch cursor-pointer items-center justify-between gap-2 px-3 text-base font-medium text-primary underline-offset-4 hover:underline">
-        {summary}
-        <ChevronDown
-          aria-hidden="true"
-          className="size-5 shrink-0 transition-transform group-open:rotate-180"
-        />
-      </summary>
-      <div className="flex flex-col gap-4 p-3">{children}</div>
-    </details>
   );
 }
 
@@ -157,7 +141,7 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
         </p>
         {canManage ? (
           <div className="flex flex-col gap-2">
-            <Action summary="Editar datos">
+            <Disclosure summary="Editar datos">
               <ActionForm
                 action={updateIngredientAction}
                 schema="ingredientEdit"
@@ -194,8 +178,8 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
                 />
                 <Reason id="mp-motivo-datos" />
               </ActionForm>
-            </Action>
-            <Action summary="Cambiar los otros nombres">
+            </Disclosure>
+            <Disclosure summary="Cambiar los otros nombres">
               <ActionForm action={setAliasesAction} schema="aliases" submitLabel="Guardar nombres">
                 <input type="hidden" name="ingredientId" value={ingredient.id} />
                 <FormTextarea
@@ -208,8 +192,8 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
                 />
                 <Reason id="mp-motivo-alias" />
               </ActionForm>
-            </Action>
-            <Action summary={ingredient.isActive ? "Desactivar" : "Volver a activar"}>
+            </Disclosure>
+            <Disclosure summary={ingredient.isActive ? "Desactivar" : "Volver a activar"}>
               <ActionForm
                 action={setActiveAction}
                 schema="reason"
@@ -225,7 +209,7 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
                 </p>
                 <Reason id="mp-motivo-activa" />
               </ActionForm>
-            </Action>
+            </Disclosure>
           </div>
         ) : null}
       </Card>
@@ -237,6 +221,7 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
         canRecord={canRecordYields}
         processes={processes}
         restaurants={yieldRestaurants}
+        canManageProcesses={menus.yieldsApprove}
       />
       <Conversions ingredient={ingredient} canManage={canManage} />
       <Allergens ingredient={ingredient} canManage={canManage} />
@@ -281,7 +266,7 @@ function Products({
       )}
       {canManage ? (
         <div className="flex flex-col gap-2">
-          <Action summary="Agregar un producto de compra">
+          <Disclosure summary="Agregar un producto de compra">
             <ActionForm
               action={createProductAction}
               schema="product"
@@ -370,8 +355,8 @@ function Products({
               </div>
               <Reason id="mp-motivo-producto" />
             </ActionForm>
-          </Action>
-          <Action summary="Crear un proveedor">
+          </Disclosure>
+          <Disclosure summary="Crear un proveedor">
             <ActionForm
               action={createSupplierAction}
               schema="supplier"
@@ -404,7 +389,7 @@ function Products({
               </div>
               <Reason id="mp-motivo-proveedor" />
             </ActionForm>
-          </Action>
+          </Disclosure>
         </div>
       ) : null}
     </Card>
@@ -445,7 +430,7 @@ function Conversions({
         </dl>
       )}
       {canManage ? (
-        <Action summary="Cargar o cambiar una conversión">
+        <Disclosure summary="Cargar o cambiar una conversión">
           <ActionForm
             action={setConversionAction}
             schema="conversion"
@@ -489,7 +474,7 @@ function Conversions({
             </div>
             <Reason id="mp-motivo-conversion" />
           </ActionForm>
-        </Action>
+        </Disclosure>
       ) : null}
     </Card>
   );
@@ -531,7 +516,7 @@ function Allergens({
         ))}
       </ul>
       {canManage && ingredient.allergens.length > 0 ? (
-        <Action summary="Cambiar un alérgeno">
+        <Disclosure summary="Cambiar un alérgeno">
           <ActionForm action={setAllergenAction} schema="allergen" submitLabel="Guardar alérgeno">
             <input type="hidden" name="ingredientId" value={ingredient.id} />
             <div className="grid gap-4 sm:grid-cols-3">
@@ -576,7 +561,7 @@ function Allergens({
             </div>
             <Reason id="mp-motivo-alergeno" />
           </ActionForm>
-        </Action>
+        </Disclosure>
       ) : null}
     </Card>
   );
@@ -619,12 +604,14 @@ function Yields({
   canRecord,
   processes,
   restaurants,
+  canManageProcesses,
 }: {
   ingredient: IngredientDetail;
   rows: YieldRow[];
   canRecord: boolean;
   processes: { id: string; name: string }[];
   restaurants: { id: string; name: string }[];
+  canManageProcesses: boolean;
 }) {
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Argentina/Buenos_Aires",
@@ -665,13 +652,24 @@ function Yields({
         </ul>
       )}
       {canRecord && processes.length === 0 ? (
-        <p className="text-base text-ink">
-          No hay procesos cargados (pelado, hervido…). Los crea un Chef de todo el grupo.
-        </p>
+        <div className="flex flex-col gap-1">
+          <p className="text-base text-ink">
+            No hay procesos cargados (pelado, hervido…).
+            {canManageProcesses ? "" : " Los crea un Chef de todo el grupo."}
+          </p>
+          {canManageProcesses ? (
+            <Link
+              href="/materias-primas/configuracion"
+              className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+            >
+              Crealos en la configuración del catálogo
+            </Link>
+          ) : null}
+        </div>
       ) : null}
       {canRecord && processes.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <Action summary="Registrar un ensayo">
+          <Disclosure summary="Registrar un ensayo">
             {restaurants.length === 0 ? (
               <p className="text-base text-ink">No tenés locales donde registrar ensayos.</p>
             ) : (
@@ -781,8 +779,8 @@ function Yields({
                 <Reason id="mp-motivo-ensayo" />
               </ActionForm>
             )}
-          </Action>
-          <Action summary="Proponer un estándar nuevo">
+          </Disclosure>
+          <Disclosure summary="Proponer un estándar nuevo">
             <p className="text-base text-ink">
               No cambia nada hasta que lo apruebe un Chef de todo el grupo, distinto de vos.
             </p>
@@ -850,7 +848,7 @@ function Yields({
               />
               <Reason id="mp-motivo-estandar" />
             </ActionForm>
-          </Action>
+          </Disclosure>
         </div>
       ) : null}
     </Card>
