@@ -2,7 +2,36 @@
 
 _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: segundas respuestas de Soy (ADR-0026)
+## Al retomar: etapa 2.4, importar el recetario de Excel (PR 1 de 2, base, rama `feat/importar-recetario`)
+
+- **Qué se hizo:** migración `20261106120000_imports.sql`. Detalle en ADR-0027.
+  - zona intermedia con vista previa, sin tocar nada oficial;
+  - confirmación en dos pasos: Compras confirma las materias primas y la cocina las recetas, que quedan en borrador;
+  - sin duplicados (caso 8);
+  - las reglas del recetario: alcance, unidades, círculos y niveles;
+  - precios aparte, solo para quien ve precios.
+- **Decisiones de Joaco (2026-10-31):**
+  - precios del Excel como prueba;
+  - "Plato finalizado" son los platos de la carta;
+  - se conservan los códigos con el prefijo de la marca;
+  - un importador para las tres marcas;
+  - ExcelJS en el servidor;
+  - dos pasos;
+  - el Chef no ve precios;
+  - se acepta el riesgo de la carga de filas.
+- **Revisiones:**
+  - `security-auditor`: apto en la segunda pasada;
+  - `db-reviewer`: 3 graves en total (2 en la primera pasada y 1 en la segunda), todos reproducidos, resueltos y con prueba.
+- **Pruebas (2026-10-31):** pgTAP 1.306 de 1.306 ✅ (nuevas `200`, `201` y `205`) · lint, tipos y Vitest 145 ✅ · Playwright 88 de 88 ✅.
+- **Datos reales:** el Excel de Nonnos sigue fuera del repositorio y nunca se carga en desarrollo. Se carga en producción con el PR 2.
+- **Orden de los PR:** primero el de pantallas de subrecetas (`feat/recetario-subrecetas-pantallas`), después este. Los dos tocan este archivo.
+- **Próximo:** PR 2 de la importación:
+  - lector con ExcelJS;
+  - Excel ficticio de prueba;
+  - pantallas de vista previa y confirmación;
+  - CSV de errores escapado.
+
+## Antes: segundas respuestas de Soy (ADR-0026)
 
 - **Registradas en ADR-0026.** Lo que cambia el plan:
   - **precios (2.1 C):** vienen de un sistema futuro de lectura de facturas; mientras tanto, valores simbólicos. La 2.1 C se achica a guardar precios con historia y aprobación;
