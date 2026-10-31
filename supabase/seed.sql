@@ -570,6 +570,13 @@ values ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000
 update recipes.recipe_assignments set valid_to = current_date - 7
  where recipe_id = '00000000-0000-4000-8000-000000001109' and restaurant_id = '00000000-0000-4000-8000-000000000202';
 
+-- Un aviso de cambio de receta sin leer para el Chef del grupo (etapa 2.2 B, ADR-0026).
+insert into core.notifications (recipient_user_id, group_id, kind, title, body, link)
+values ('00000000-0000-4000-8000-000000000413', '00000000-0000-4000-8000-000000000001', 'recipe_changed',
+        'Cambió «Salsa bolognesa» (v1)',
+        'Las recetas que la usan ya usan la versión nueva. Revisá si hace falta ajustar algo.',
+        '/recetas/00000000-0000-4000-8000-000000001102');
+
 -- Ingresos ficticios de los últimos 30 días, para el gráfico del tablero.
 set role audit_owner;
 insert into audit.authentication_security_events (event_type, occurred_at, operation, reason, user_id, email, scope_group_id)

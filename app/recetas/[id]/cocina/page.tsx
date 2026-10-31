@@ -92,6 +92,11 @@ async function Kitchen({ params }: { params: PageProps<"/recetas/[id]/cocina">["
             {card.code} · versión {card.versionNumber} · vigente desde{" "}
             {formatDateTime(card.publishedAt)}
           </span>
+          {card.variantOf ? (
+            <span className="text-base text-ink-muted">
+              Variante de «{card.variantOf.name}» para este local.
+            </span>
+          ) : null}
         </div>
         {card.description ? <p className="text-xl text-ink">{card.description}</p> : null}
         <dl className="grid gap-4 text-xl sm:grid-cols-3">
@@ -161,8 +166,20 @@ async function Kitchen({ params }: { params: PageProps<"/recetas/[id]/cocina">["
               className="flex flex-wrap justify-between gap-2 border-b border-line pb-3 last:border-0"
             >
               <span className="text-ink">
-                {c.ingredient}
-                {c.basis !== "purchase" ? (
+                {c.sub_recipe_id ? (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/recetas/${c.sub_recipe_id}/cocina`}
+                      className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
+                    >
+                      {c.ingredient}
+                    </Link>
+                    <Badge status="info">Preparación</Badge>
+                  </span>
+                ) : (
+                  c.ingredient
+                )}
+                {c.basis !== "purchase" && c.basis !== "finished" ? (
                   <span className="text-base text-ink-muted">
                     {" "}
                     ({BASIS_LABELS[c.basis].toLowerCase()})

@@ -278,6 +278,38 @@ export async function getUnreadCount(): Promise<number> {
   return count ?? 0;
 }
 
+// Avisos sin leer de cambios de recetas (una preparación que cambió y que usan platos de la persona,
+// ADR-0026). Los de solicitudes ya se ven en la bandeja.
+export type NoticeRow = {
+  id: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  createdAt: string;
+};
+
+export async function getRecipeNotices(limit = 20): Promise<NoticeRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("core")
+    .from("notifications")
+    .select("id, title, body, link, created_at")
+    .eq("kind", "recipe_changed")
+    .is("read_at", null)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) failed("los avisos");
+  return data.map((n) => ({
+    id: n.id,
+    title: n.title,
+    body: n.body,
+    // Solo rutas internas, con la misma regla que el check de la base (revisión de seguridad).
+    link: n.link && /^\/[A-Za-z][A-Za-z0-9/_?=&-]*$/.test(n.link) ? n.link : null,
+    createdAt: n.created_at,
+  }));
+}
+
 // Historial con filtros (sección 9).
 export type HistoryFilter = {
   before?: number;

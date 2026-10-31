@@ -12,6 +12,7 @@ function StatusBadges({ row }: { row: RecipeRow }) {
   if (!row.isActive) return <Badge>Archivada</Badge>;
   return (
     <span className="flex flex-wrap gap-1">
+      {row.isVariant ? <Badge status="info">Variante</Badge> : null}
       {row.current ? <Badge status="ok">Vigente v{row.current}</Badge> : <Badge>Sin vigente</Badge>}
       {row.open === "draft" ? <Badge status="draft">Borrador</Badge> : null}
       {row.open === "in_review" ? <Badge status="review">En revisión</Badge> : null}

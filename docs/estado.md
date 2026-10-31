@@ -24,12 +24,32 @@ _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - `db-reviewer`: 3 graves en total (2 en la primera pasada y 1 en la segunda), todos reproducidos, resueltos y con prueba.
 - **Pruebas (2026-10-31):** pgTAP 1.306 de 1.306 ✅ (nuevas `200`, `201` y `205`) · lint, tipos y Vitest 145 ✅ · Playwright 88 de 88 ✅.
 - **Datos reales:** el Excel de Nonnos sigue fuera del repositorio y nunca se carga en desarrollo. Se carga en producción con el PR 2.
-- **Orden de los PR:** primero el de pantallas de subrecetas (`feat/recetario-subrecetas-pantallas`), después este. Los dos tocan este archivo.
+- **Encontrado al fusionar (problema de la Fase 1, va en un PR aparte):** el sellado del registro de seguridad (`audit.seal_security_events`, que corre a los 7 minutos de cada hora) toma los eventos de más de 10 minutos aunque queden huecos en la secuencia. Si un evento con número más bajo es más nuevo, el sello deja un hueco y `verify_security_seals` lo marca inválido: una falsa alarma de registro alterado. Pasó en local al reiniciar la base a las 16:06 (la prueba `060` falla si el sellado corre dentro de los 10 minutos posteriores a un `db reset`). En producción puede pasar con transacciones cruzadas. **Arreglo:** sellar solo el tramo continuo de la secuencia, y revisar `audit.seal_events`, que podría tener la misma forma.
 - **Próximo:** PR 2 de la importación:
   - lector con ExcelJS;
   - Excel ficticio de prueba;
   - pantallas de vista previa y confirmación;
   - CSV de errores escapado.
+
+## Antes: etapa 2.2 B, subrecetas y variantes (PR 2 de 2, pantallas; fusionado, PR #27)
+
+- **Ya fusionados:** el PR 1 (base, #25) y los avisos de la respuesta 5 de Soy (#26).
+- **Qué se hizo:** sin migraciones nuevas (solo un aviso DEMO en el seed). Detalle en ADR-0025 (PR 2).
+  - el buscador del editor trae materias primas y preparaciones;
+  - en la ficha: "Recetas que la usan como preparación", variantes de local con el formulario para crear una, y las diferencias con la maestra;
+  - la vista de cocina enlaza cada preparación con su ficha;
+  - la lista tiene el filtro "Variantes de local";
+  - "Aprobaciones" tiene la sección "Avisos de recetas".
+- **Revisiones:**
+  - `ui-reviewer`: sin graves; 5 medios resueltos;
+  - `security-auditor`: apto, sin graves ni medios.
+- **Pantallas:** miradas en capturas de celular y computadora.
+- **Pruebas (2026-10-30):**
+  - **antes de las correcciones de las revisiones, `npm run test` completo:** lint y tipos ✅ · Vitest 147 de 147 ✅ · pgTAP 1.209 de 1.209 ✅ · Playwright 98 de 98 ✅;
+  - **después de las correcciones:** lint, tipos y Vitest de líneas ✅, y Playwright de recetas y subrecetas 18 de 18 ✅;
+  - **corrida final (2026-10-31), con todas las correcciones:** lint y tipos ✅ · Vitest 148 de 148 ✅ · pgTAP 1.209 de 1.209 ✅ · Playwright 98 de 98 ✅.
+  - Ojo: si Playwright falla en masa en el ingreso con "name resolution failed", el contenedor de Edge Functions quedó apagado (`docker start supabase_edge_runtime_grupo-lf`). Pasó el 2026-10-31.
+- **Excel de Nonnos:** está en `C:\Users\julym\Downloads\proyecto Lucho\recetarios\`, fuera del repositorio. Análisis hecho: 294 insumos, 65 pre-elaborados y 66 platos.
 
 ## Antes: segundas respuestas de Soy (ADR-0026)
 
