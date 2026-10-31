@@ -3,7 +3,11 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
-import { saveLinesAction, searchIngredientsAction } from "@/app/recetas/actions";
+import {
+  saveLinesAction,
+  searchComponentsAction,
+  type ComponentFound,
+} from "@/app/recetas/actions";
 import { FormNotice } from "@/components/form-notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +15,13 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { useUnsavedWarning } from "@/components/use-unsaved-warning";
 import type { ActionState } from "@/lib/auth/results";
 import { reasonField, recipeLinesSchema } from "@/lib/forms/schemas";
-import { BASIS_LABELS, LINE_UNITS, type QuantityBasis } from "@/lib/recipe-format";
+import {
+  BASIS_LABELS,
+  LINE_UNITS,
+  lineUnitForYield,
+  unitDimension,
+  type QuantityBasis,
+} from "@/lib/recipe-format";
 import type { RecipeLine } from "@/lib/recipes";
 
 type Line = {
@@ -25,8 +35,12 @@ type Line = {
   no_scale: boolean;
   notes: string;
 };
-type Found = { id: string; name: string; code: string; unit: string };
-type Search = { status: "idle" | "searching" | "error" | "done"; results: Found[] };
+type Search = {
+  status: "idle" | "searching" | "error" | "done";
+  ingredients: ComponentFound[];
+  preparations: ComponentFound[];
+};
+const IDLE: Search = { status: "idle", ingredients: [], preparations: [] };
 
 const toLine = (l: RecipeLine, key: number): Line => ({
   key,
@@ -61,8 +75,9 @@ function suggestedUnit(unitName: string): Line["unit"] {
   return "g";
 }
 
-// Componentes de un borrador: la persona arma la lista (buscando materias primas desde 3 letras) y
-// la guarda entera. Se valida con el mismo esquema en el navegador y en el servidor; la base controla
+// Componentes de un borrador: la persona arma la lista (buscando materias primas y preparaciones
+// desde 3 letras) y la guarda entera. Una preparación (subreceta) usa siempre su versión vigente y va en
+// cantidad terminada (ADR-0025). Se valida con el mismo esquema en el navegador y en el servidor; la base controla
 // unidades, permisos y que nadie haya cambiado el borrador mientras tanto.
 export function RecipeLinesEditor({
   recipeId,
@@ -80,7 +95,7 @@ export function RecipeLinesEditor({
   const [nextKey, setNextKey] = useState(initial.length + 1);
   const [saved, setSaved] = useState(() => snapshot(initial.map((l, i) => toLine(l, i + 1))));
   const [query, setQuery] = useState("");
-  const [search, setSearch] = useState<Search>({ status: "idle", results: [] });
+  const [search, setSearch] = useState<Search>(IDLE);
   const [reason, setReason] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [state, setState] = useState<ActionState>({});
@@ -97,17 +112,17 @@ export function RecipeLinesEditor({
     lastQuery.current = query;
     const timer = setTimeout(() => {
       setSearch((s) => ({ ...s, status: "searching" }));
-      void searchIngredientsAction(query).then((r) => {
+      void searchComponentsAction(query, recipeId).then((r) => {
         if (lastQuery.current !== query) return;
         setSearch(
           r.status === "ok"
-            ? { status: "done", results: r.results }
-            : { status: "error", results: [] },
+            ? { status: "done", ingredients: r.ingredients, preparations: r.preparations }
+            : { ...IDLE, status: "error" },
         );
       });
     }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, recipeId]);
 
   // El foco va a donde corresponde después de agregar o quitar (no se pierde en la página).
   useEffect(() => {
@@ -120,17 +135,20 @@ export function RecipeLinesEditor({
   const update = (key: number, change: Partial<Line>) =>
     setLines((all) => all.map((l) => (l.key === key ? { ...l, ...change } : l)));
 
-  function add(r: Found) {
+  // Una materia prima entra en peso de compra; una preparación, en cantidad terminada y con la
+  // unidad de su rendimiento.
+  function add(r: ComponentFound, kind: "ingredient" | "preparation") {
+    const preparation = kind === "preparation";
     setLines((all) => [
       ...all,
       {
         key: nextKey,
-        ingredient_id: r.id,
-        sub_recipe_id: null,
+        ingredient_id: preparation ? null : r.id,
+        sub_recipe_id: preparation ? r.id : null,
         ingredient: r.name,
         quantity: "",
-        unit: suggestedUnit(r.unit),
-        basis: "purchase",
+        unit: preparation ? lineUnitForYield(r.unit) : suggestedUnit(r.unit),
+        basis: preparation ? "finished" : "purchase",
         no_scale: false,
         notes: "",
       },
@@ -138,8 +156,9 @@ export function RecipeLinesEditor({
     focusNext.current = id(nextKey, "quantity");
     setNextKey((k) => k + 1);
     setQuery("");
-    setSearch({ status: "idle", results: [] });
+    setSearch(IDLE);
   }
+  const found = search.ingredients.length + search.preparations.length;
 
   function remove(key: number) {
     setLines((all) => all.filter((l) => l.key !== key));
@@ -191,15 +210,16 @@ export function RecipeLinesEditor({
       ) : null}
       {lines.length === 0 ? (
         <p className="text-base text-ink-muted">
-          Todavía no tiene componentes. Buscá una materia prima para agregarla.
+          Todavía no tiene componentes. Buscá una materia prima o una preparación para agregarla.
         </p>
       ) : (
         <ol className="flex flex-col gap-3" aria-label="Componentes del borrador">
           {lines.map((line, index) => (
             <li key={line.key} className="flex flex-col gap-3 rounded-sm border border-line p-3">
               <div className="flex items-start justify-between gap-2">
-                <span className="font-medium text-ink">
+                <span className="flex flex-wrap items-center gap-2 font-medium text-ink">
                   {index + 1}. {line.ingredient}
+                  {line.sub_recipe_id ? <Badge status="info">Preparación</Badge> : null}
                 </span>
                 <Button
                   type="button"
@@ -215,6 +235,7 @@ export function RecipeLinesEditor({
                 <Field
                   id={id(line.key, "quantity")}
                   label="Cantidad"
+                  hint={line.sub_recipe_id ? "Cantidad terminada" : undefined}
                   error={errors[id(line.key, "quantity")]}
                 >
                   <Input
@@ -232,7 +253,11 @@ export function RecipeLinesEditor({
                     value={line.unit}
                     onChange={(e) => update(line.key, { unit: e.target.value as Line["unit"] })}
                   >
-                    {LINE_UNITS.map((u) => (
+                    {/* Una preparación solo se mide como su rendimiento (peso, volumen o unidades). */}
+                    {LINE_UNITS.filter(
+                      (u) =>
+                        !line.sub_recipe_id || unitDimension(u.code) === unitDimension(line.unit),
+                    ).map((u) => (
                       <option key={u.code} value={u.code}>
                         {u.label}
                       </option>
@@ -248,7 +273,7 @@ export function RecipeLinesEditor({
                 }
               >
                 <summary className="flex min-h-touch cursor-pointer items-center text-base text-primary underline-offset-4 hover:underline">
-                  Base de la cantidad y observaciones
+                  {line.sub_recipe_id ? "Observaciones" : "Base de la cantidad y observaciones"}
                 </summary>
                 <div className="flex flex-col gap-3 pt-2">
                   {/* Una preparación va siempre en cantidad terminada. */}
@@ -290,7 +315,7 @@ export function RecipeLinesEditor({
 
       <Field
         id={`${prefix}-buscar`}
-        label="Agregar materia prima"
+        label="Agregar materia prima o preparación"
         hint="Escribí al menos 3 letras del nombre, un alias o el código."
       >
         <Input value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
@@ -303,29 +328,24 @@ export function RecipeLinesEditor({
             ? "Buscando…"
             : search.status === "error"
               ? "No pudimos buscar. Probá de nuevo."
-              : search.results.length === 0
-                ? `No encontramos materias primas con «${query.trim()}».`
-                : `${search.results.length} ${search.results.length === 1 ? "resultado" : "resultados"}.`}
+              : found === 0
+                ? `No encontramos materias primas ni preparaciones con «${query.trim()}».`
+                : `${found} ${found === 1 ? "resultado" : "resultados"}.`}
       </p>
-      {searching && search.status === "done" && search.results.length > 0 ? (
-        <ul className="flex flex-col gap-1" aria-label="Materias primas encontradas">
-          {search.results.map((r) => (
-            <li key={r.id}>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-auto w-full justify-start py-2 text-left whitespace-normal"
-                onClick={() => add(r)}
-              >
-                <Plus aria-hidden="true" />
-                <span className="flex flex-col">
-                  <span>{r.name}</span>
-                  <span className="text-sm text-ink-muted">{r.code}</span>
-                </span>
-              </Button>
-            </li>
-          ))}
-        </ul>
+      {searching && search.status === "done" ? (
+        <>
+          <Results
+            title="Materias primas"
+            rows={search.ingredients}
+            onAdd={(r) => add(r, "ingredient")}
+          />
+          <Results
+            title="Preparaciones"
+            hint="Siempre usa su versión vigente."
+            rows={search.preparations}
+            onAdd={(r) => add(r, "preparation")}
+          />
+        </>
       ) : null}
 
       <Field
@@ -340,6 +360,48 @@ export function RecipeLinesEditor({
       <Button type="button" onClick={save} disabled={pending} className="w-full sm:w-auto">
         {pending ? "Guardando…" : "Guardar componentes"}
       </Button>
+    </div>
+  );
+}
+
+// Un grupo de resultados del buscador, con su título (se omite si está vacío).
+function Results({
+  title,
+  hint,
+  rows,
+  onAdd,
+}: {
+  title: string;
+  hint?: string;
+  rows: ComponentFound[];
+  onAdd: (r: ComponentFound) => void;
+}) {
+  const headingId = useId();
+  if (rows.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      <h3 id={headingId} className="text-base font-medium text-ink">
+        {title}
+      </h3>
+      {hint ? <p className="text-sm text-ink-muted">{hint}</p> : null}
+      <ul className="flex flex-col gap-1" aria-labelledby={headingId}>
+        {rows.map((r) => (
+          <li key={r.id}>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto w-full justify-start py-2 text-left whitespace-normal"
+              onClick={() => onAdd(r)}
+            >
+              <Plus aria-hidden="true" />
+              <span className="flex flex-col">
+                <span>{r.name}</span>
+                <span className="text-sm text-ink-muted">{r.code}</span>
+              </span>
+            </Button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

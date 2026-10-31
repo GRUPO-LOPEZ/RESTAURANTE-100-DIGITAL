@@ -22,6 +22,9 @@ export const SCOPE_LABELS: Record<RecipeScope, string> = {
   restaurant: "De local",
 };
 
+// Filtro de la lista: las variantes de local (ADR-0025).
+export const VARIANT_FILTER_LABEL = "Variantes de local";
+
 export const VERSION_STATUS_LABELS: Record<VersionStatus, string> = {
   draft: "Borrador",
   in_review: "En revisión",
@@ -64,6 +67,32 @@ export const LINE_UNITS = [
   { code: "unit", label: "unidad" },
   { code: "dozen", label: "docena" },
 ] as const;
+
+// La unidad sugerida para una línea de preparación: la del rendimiento, en la unidad chica de su
+// dimensión (una salsa que rinde kilos se usa en gramos). Sin rendimiento, gramos.
+export function lineUnitForYield(yieldUnit: string | null): (typeof LINE_UNITS)[number]["code"] {
+  switch (yieldUnit) {
+    case "kg":
+    case "g":
+      return "g";
+    case "l":
+    case "ml":
+      return "ml";
+    case "unit":
+    case "dozen":
+      return "unit";
+    default:
+      return "g";
+  }
+}
+
+// De qué se trata una unidad de línea: peso, volumen o unidades (se convierten solo dentro de su tipo).
+export function unitDimension(unit: string): "mass" | "volume" | "count" | null {
+  if (unit === "g" || unit === "kg") return "mass";
+  if (unit === "ml" || unit === "l") return "volume";
+  if (unit === "unit" || unit === "dozen") return "count";
+  return null;
+}
 
 // Formatos para la cocina: "1,5 kg", "1 h 30 min".
 const quantityFormat = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 3 });
