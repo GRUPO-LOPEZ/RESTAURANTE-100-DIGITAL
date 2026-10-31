@@ -18,10 +18,11 @@ _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Pruebas (2026-10-30):**
   - **antes de las correcciones de las revisiones, `npm run test` completo:** lint y tipos ✅ · Vitest 147 de 147 ✅ · pgTAP 1.209 de 1.209 ✅ · Playwright 98 de 98 ✅;
   - **después de las correcciones:** lint, tipos y Vitest de líneas ✅, y Playwright de recetas y subrecetas 18 de 18 ✅;
-  - **la corrida completa final quedó en curso al cerrar la sesión.** Al retomar: `npm run db:reset` y `npm run test`, y recién ahí abrir el PR.
+  - **corrida final (2026-10-31), con todas las correcciones:** lint y tipos ✅ · Vitest 148 de 148 ✅ · pgTAP 1.209 de 1.209 ✅ · Playwright 98 de 98 ✅.
+  - Ojo: si Playwright falla en masa en el ingreso con "name resolution failed", el contenedor de Edge Functions quedó apagado (`docker start supabase_edge_runtime_grupo-lf`). Pasó el 2026-10-31.
 - **Excel de Nonnos:** está en `C:\Users\julym\Downloads\proyecto Lucho\recetarios\`, fuera del repositorio. Análisis hecho: 294 insumos, 65 pre-elaborados y 66 platos.
 - **Próximo:**
-  - abrir el PR 2 (rama ya subida);
+  - fusionar el PR 2 (rama ya subida);
   - plan de la importación del Excel de Nonnos. Faltan 4 respuestas: qué hacer con los precios del Excel, qué es el rubro "Plato finalizado", si se conservan los códigos y si los otros recetarios tienen el mismo formato;
   - aprobación de recetas en varios pasos (faltan respuestas de Soy).
 
