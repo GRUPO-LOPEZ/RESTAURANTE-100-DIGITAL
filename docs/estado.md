@@ -2,7 +2,20 @@
 
 _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: etapa 2.2 B, subrecetas y variantes (PR 2 de 2, pantallas, rama `feat/recetario-subrecetas-pantallas`)
+## Al retomar: arreglo del sellado de la auditoría (rama `fix/auditoria-sellado`)
+
+- **Qué pasaba:** el sellado de la auditoría y del registro de seguridad salteaba eventos nuevos en el medio de la secuencia. Eso dejaba huecos, y la verificación daba "alterado" sin que nadie hubiera tocado nada: una falsa alarma. Detalle en ADR-0028.
+- **Qué se hizo:** migración `20261107120000_audit_seal_contiguous.sql`.
+  - el sellado toma solo el tramo continuo de la secuencia;
+  - un evento con fecha futura se rechaza, porque frenaría el sellado.
+- **Pruebas:** nueva `025` (14 casos). Contra el código anterior fallan 10.
+- **Revisiones:** `security-auditor` apto; `db-reviewer` sin graves. Sus menores están resueltos y el medio está documentado.
+- **Pendiente antes de las importaciones grandes:** acotar la duración de las transacciones a menos que el margen del sellado (ADR-0028).
+- **Otras ramas abiertas:**
+  - `feat/importar-recetario`: base de la importación del Excel, PR 1, para fusionar;
+  - después sigue el PR 2 de la importación (lector y pantallas).
+
+## Antes: etapa 2.2 B, subrecetas y variantes (PR 2 de 2, pantallas; fusionado, PR #27)
 
 - **Ya fusionados:** el PR 1 (base, #25) y los avisos de la respuesta 5 de Soy (#26).
 - **Qué se hizo:** sin migraciones nuevas (solo un aviso DEMO en el seed). Detalle en ADR-0025 (PR 2).
