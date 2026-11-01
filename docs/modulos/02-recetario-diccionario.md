@@ -1,6 +1,6 @@
-# Diccionario de datos — catalog, recipes
+# Diccionario de datos — catalog, recipes, imports
 
-> Generado desde los `comment on` de la base local el 2026-10-30 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-10-31 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
 ## `catalog.allergens`
 
@@ -275,6 +275,104 @@ Procesos que cambian el peso de una materia prima: pelado, desgrasado, deshuesad
 | `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.       |
 | `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                              |
 
+## `imports.import_errors`
+
+Errores y avisos de la validación, por fila, en español. Se descargan para corregir el Excel. Al volver a validar, los anteriores quedan dados de baja.
+
+| Columna      | Tipo                       | Nulo | Qué guarda                                                |
+| ------------ | -------------------------- | ---- | --------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador.                                            |
+| `group_id`   | `uuid`                     | no   | Grupo.                                                    |
+| `job_id`     | `uuid`                     | no   | Importación.                                              |
+| `row_id`     | `uuid`                     | sí   | Fila intermedia, si el problema es de una fila.           |
+| `sheet`      | `text`                     | sí   | Solapa del Excel.                                         |
+| `row_number` | `integer`                  | sí   | Fila del Excel.                                           |
+| `field`      | `text`                     | sí   | Columna o dato con problema.                              |
+| `code`       | `text`                     | no   | Código del problema (por ejemplo, unknown_code).          |
+| `severity`   | `imports.issue_severity`   | no   | Error (la fila no se importa) o aviso (se importa igual). |
+| `message`    | `text`                     | no   | Qué pasa y qué hacer, en español.                         |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se detectó (lo pone la base).                      |
+| `created_by` | `uuid`                     | sí   | Quién validó (lo pone la base).                           |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).           |
+| `updated_by` | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).         |
+| `deleted_at` | `timestamp with time zone` | sí   | Baja al volver a validar.                                 |
+| `deleted_by` | `uuid`                     | sí   | Quién lo dio de baja (lo pone la base).                   |
+
+## `imports.import_jobs`
+
+Cada archivo de Excel que se importa: de qué marca, con qué prefijo de códigos, su huella (para no importarlo dos veces) y en qué paso está.
+
+| Columna                    | Tipo                       | Nulo | Qué guarda                                                                                                   |
+| -------------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------ |
+| `id`                       | `uuid`                     | no   | Identificador de la importación.                                                                             |
+| `group_id`                 | `uuid`                     | no   | Grupo.                                                                                                       |
+| `brand_id`                 | `uuid`                     | no   | Marca a la que van las recetas importadas.                                                                   |
+| `kind`                     | `text`                     | no   | Tipo de archivo: recipe_book (el recetario de Excel de un restaurante).                                      |
+| `code_prefix`              | `text`                     | no   | Prefijo de la marca para los códigos del Excel (NON → NON-190000). Es siempre el mismo para la marca.        |
+| `file_name`                | `text`                     | no   | Nombre del archivo que se subió.                                                                             |
+| `storage_path`             | `text`                     | no   | Dónde está el archivo en el bucket imports: <grupo>/<marca>/<archivo>.xlsx.                                  |
+| `file_sha256`              | `text`                     | no   | Huella SHA-256 del contenido, calculada por el servidor al leerlo: el mismo archivo no se importa dos veces. |
+| `status`                   | `imports.job_status`       | no   | Paso en el que está la importación.                                                                          |
+| `ingredients_confirmed_by` | `uuid`                     | sí   | Quién confirmó las materias primas nuevas (Compras).                                                         |
+| `ingredients_confirmed_at` | `timestamp with time zone` | sí   | Cuándo se confirmaron las materias primas.                                                                   |
+| `confirmed_by`             | `uuid`                     | sí   | Quién confirmó las recetas.                                                                                  |
+| `confirmed_at`             | `timestamp with time zone` | sí   | Cuándo se confirmaron las recetas.                                                                           |
+| `created_at`               | `timestamp with time zone` | no   | Cuándo se subió (lo pone la base).                                                                           |
+| `created_by`               | `uuid`                     | sí   | Quién la subió (lo pone la base).                                                                            |
+| `updated_at`               | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                              |
+| `updated_by`               | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                            |
+| `deleted_at`               | `timestamp with time zone` | sí   | Borrado lógico.                                                                                              |
+| `deleted_by`               | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                            |
+
+## `imports.import_prices`
+
+Precios de compra que trae el Excel, por materia prima. Son valores de prueba, sin factura: pasan a la tabla de precios en la etapa 2.1 C. Los ve solo quien tiene prices.view.
+
+| Columna        | Tipo                       | Nulo | Qué guarda                                              |
+| -------------- | -------------------------- | ---- | ------------------------------------------------------- |
+| `id`           | `uuid`                     | no   | Identificador.                                          |
+| `group_id`     | `uuid`                     | no   | Grupo.                                                  |
+| `job_id`       | `uuid`                     | no   | Importación.                                            |
+| `row_id`       | `uuid`                     | no   | Fila de la materia prima.                               |
+| `price`        | `numeric(18,4)`            | sí   | Precio de la presentación, tal como estaba en el Excel. |
+| `price_per_kg` | `numeric(20,8)`            | sí   | Precio por kilo o litro que calculaba el Excel.         |
+| `currency`     | `text`                     | no   | Moneda (ISO 4217).                                      |
+| `created_at`   | `timestamp with time zone` | no   | Cuándo se cargó (lo pone la base).                      |
+| `created_by`   | `uuid`                     | sí   | Quién lo cargó (lo pone la base).                       |
+| `updated_at`   | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).         |
+| `updated_by`   | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).       |
+| `deleted_at`   | `timestamp with time zone` | sí   | Borrado lógico.                                         |
+| `deleted_by`   | `uuid`                     | sí   | Quién lo borró (lo pone la base).                       |
+
+## `imports.import_staging_rows`
+
+Filas del Excel tal como se leyeron (raw) y ya interpretadas (parsed), sin precios, con qué pasa con cada una al confirmar. No tocan lo oficial hasta confirmar.
+
+| Columna             | Tipo                       | Nulo | Qué guarda                                                                                                                              |
+| ------------------- | -------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no   | Identificador de la fila.                                                                                                               |
+| `group_id`          | `uuid`                     | no   | Grupo.                                                                                                                                  |
+| `job_id`            | `uuid`                     | no   | Importación a la que pertenece.                                                                                                         |
+| `sheet`             | `text`                     | no   | Solapa del Excel.                                                                                                                       |
+| `row_number`        | `integer`                  | no   | Número de fila en la solapa (para encontrarla y corregirla).                                                                            |
+| `kind`              | `imports.row_kind`         | no   | Materia prima, preparación, plato o línea de una receta.                                                                                |
+| `source_code`       | `text`                     | sí   | Código en el Excel (sin prefijo). En una línea, el código del componente.                                                               |
+| `parent_code`       | `text`                     | sí   | En una línea: el código de la receta a la que pertenece.                                                                                |
+| `parent_row`        | `integer`                  | sí   | En una línea: la fila de su receta en la misma solapa (ata la línea a su bloque).                                                       |
+| `raw`               | `jsonb`                    | no   | Las celdas tal como estaban en el Excel, sin las de precio.                                                                             |
+| `parsed`            | `jsonb`                    | no   | Lo interpretado, sin precios: nombre, rubro, rinde, porciones, peso por porción, gramos, medida casera, presentación, peso neto, merma. |
+| `action`            | `imports.row_action`       | sí   | Qué pasa al confirmar (la calcula la validación).                                                                                       |
+| `ingredient_id`     | `uuid`                     | sí   | Materia prima: la existente que se reutiliza, o la creada al confirmar.                                                                 |
+| `recipe_id`         | `uuid`                     | sí   | Receta: la existente que se omite, o la creada al confirmar.                                                                            |
+| `recipe_version_id` | `uuid`                     | sí   | Línea: la versión en la que quedó, después de confirmar.                                                                                |
+| `level`             | `integer`                  | sí   | En las recetas: niveles de preparaciones que tiene debajo (para crearlas en orden).                                                     |
+| `created_at`        | `timestamp with time zone` | no   | Cuándo se cargó (lo pone la base).                                                                                                      |
+| `created_by`        | `uuid`                     | sí   | Quién la cargó (lo pone la base).                                                                                                       |
+| `updated_at`        | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                                                         |
+| `updated_by`        | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                       |
+| `deleted_at`        | `timestamp with time zone` | sí   | Borrado lógico.                                                                                                                         |
+| `deleted_by`        | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                                       |
+
 ## `recipes.recipe_assignments`
 
 Qué receta usa cada local y desde cuándo, sin copiarla. Una receta de local queda asignada a su local sola.
@@ -476,6 +574,10 @@ Recetas: la identidad (código, nombre, alcance, tipo). La fórmula vive en reci
 | `catalog.data_source`     | `manual`, `excel_import`, `measured`, `supplier`, `calculated`, `estimated`, `verified`                      | Fuente de un dato (sección 6): manual, importado de Excel, medido en ensayo, informado por proveedor, calculado por el sistema, estimado o verificado por un responsable.                                          |
 | `catalog.dimension`       | `mass`, `volume`, `count`, `package`                                                                         | Dimensión de una unidad: mass (masa, base g), volume (volumen, base ml), count (conteo, base unidad) o package (envase sin contenido fijo: caja, bolsa, horma).                                                    |
 | `catalog.yield_status`    | `draft`, `approved`, `superseded`                                                                            | Estado de un perfil de rendimiento: draft (propuesto, esperando aprobación), approved (el estándar vigente) o superseded (reemplazado por otro aprobado).                                                          |
+| `imports.issue_severity`  | `error`, `warning`                                                                                           | Un error frena la fila; un aviso no (por ejemplo, una receta sin componentes).                                                                                                                                     |
+| `imports.job_status`      | `uploaded`, `staged`, `validated`, `ingredients_confirmed`, `confirmed`, `cancelled`                         | Estado de una importación: subida, filas cargadas, validada, materias primas confirmadas (por Compras), confirmada (recetas creadas) o cancelada.                                                                  |
+| `imports.row_action`      | `create`, `reuse`, `skip`, `error`                                                                           | Qué pasa con una fila al confirmar: se crea, se reutiliza lo que ya existe, se omite (ya existe y no se pisa) o tiene un error.                                                                                    |
+| `imports.row_kind`        | `ingredient`, `preparation`, `dish`, `line`                                                                  | Qué es una fila del Excel: materia prima, preparación (pre-elaborado), plato o línea de una receta.                                                                                                                |
 | `recipes.media_kind`      | `final_product`, `plating`, `raw_material`, `step`, `critical_point`, `correct_example`, `incorrect_example` | Tipo de foto: producto final, emplatado, materia prima, paso, punto crítico, ejemplo correcto o ejemplo incorrecto.                                                                                                |
 | `recipes.quantity_basis`  | `purchase`, `clean`, `cooked`, `finished`                                                                    | Qué representa la cantidad de una línea: peso de compra (purchase), limpio (clean) o cocido (cooked) de una materia prima, o cantidad terminada (finished) de una subreceta.                                       |
 | `recipes.recipe_scope`    | `group`, `brand`, `restaurant`                                                                               | Alcance de una receta: maestra del grupo, de marca o de local. Una variante es una receta de local con su maestra (variant_of_recipe_id). La cocina central no se usa: Pariggi es un proveedor externo (ADR-0025). |
