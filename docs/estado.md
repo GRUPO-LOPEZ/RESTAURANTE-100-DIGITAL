@@ -2,7 +2,36 @@
 
 _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: etapa 2.2 B, subrecetas y variantes (PR 2 de 2, pantallas, rama `feat/recetario-subrecetas-pantallas`)
+## Al retomar: etapa 2.4, importar el recetario de Excel (PR 1 de 2, base, rama `feat/importar-recetario`)
+
+- **Qué se hizo:** migración `20261106120000_imports.sql`. Detalle en ADR-0027.
+  - zona intermedia con vista previa, sin tocar nada oficial;
+  - confirmación en dos pasos: Compras confirma las materias primas y la cocina las recetas, que quedan en borrador;
+  - sin duplicados (caso 8);
+  - las reglas del recetario: alcance, unidades, círculos y niveles;
+  - precios aparte, solo para quien ve precios.
+- **Decisiones de Joaco (2026-10-31):**
+  - precios del Excel como prueba;
+  - "Plato finalizado" son los platos de la carta;
+  - se conservan los códigos con el prefijo de la marca;
+  - un importador para las tres marcas;
+  - ExcelJS en el servidor;
+  - dos pasos;
+  - el Chef no ve precios;
+  - se acepta el riesgo de la carga de filas.
+- **Revisiones:**
+  - `security-auditor`: apto en la segunda pasada;
+  - `db-reviewer`: 3 graves en total (2 en la primera pasada y 1 en la segunda), todos reproducidos, resueltos y con prueba.
+- **Pruebas (2026-10-31):** pgTAP 1.306 de 1.306 ✅ (nuevas `200`, `201` y `205`) · lint, tipos y Vitest 145 ✅ · Playwright 88 de 88 ✅.
+- **Datos reales:** el Excel de Nonnos sigue fuera del repositorio y nunca se carga en desarrollo. Se carga en producción con el PR 2.
+- **Encontrado al fusionar (problema de la Fase 1, va en un PR aparte):** el sellado del registro de seguridad (`audit.seal_security_events`, que corre a los 7 minutos de cada hora) toma los eventos de más de 10 minutos aunque queden huecos en la secuencia. Si un evento con número más bajo es más nuevo, el sello deja un hueco y `verify_security_seals` lo marca inválido: una falsa alarma de registro alterado. Pasó en local al reiniciar la base a las 16:06 (la prueba `060` falla si el sellado corre dentro de los 10 minutos posteriores a un `db reset`). En producción puede pasar con transacciones cruzadas. **Arreglo:** sellar solo el tramo continuo de la secuencia, y revisar `audit.seal_events`, que podría tener la misma forma.
+- **Próximo:** PR 2 de la importación:
+  - lector con ExcelJS;
+  - Excel ficticio de prueba;
+  - pantallas de vista previa y confirmación;
+  - CSV de errores escapado.
+
+## Antes: etapa 2.2 B, subrecetas y variantes (PR 2 de 2, pantallas; fusionado, PR #27)
 
 - **Ya fusionados:** el PR 1 (base, #25) y los avisos de la respuesta 5 de Soy (#26).
 - **Qué se hizo:** sin migraciones nuevas (solo un aviso DEMO en el seed). Detalle en ADR-0025 (PR 2).
@@ -21,10 +50,6 @@ _Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - **corrida final (2026-10-31), con todas las correcciones:** lint y tipos ✅ · Vitest 148 de 148 ✅ · pgTAP 1.209 de 1.209 ✅ · Playwright 98 de 98 ✅.
   - Ojo: si Playwright falla en masa en el ingreso con "name resolution failed", el contenedor de Edge Functions quedó apagado (`docker start supabase_edge_runtime_grupo-lf`). Pasó el 2026-10-31.
 - **Excel de Nonnos:** está en `C:\Users\julym\Downloads\proyecto Lucho\recetarios\`, fuera del repositorio. Análisis hecho: 294 insumos, 65 pre-elaborados y 66 platos.
-- **Próximo:**
-  - fusionar el PR 2 (rama ya subida);
-  - plan de la importación del Excel de Nonnos. Faltan 4 respuestas: qué hacer con los precios del Excel, qué es el rubro "Plato finalizado", si se conservan los códigos y si los otros recetarios tienen el mismo formato;
-  - aprobación de recetas en varios pasos (faltan respuestas de Soy).
 
 ## Antes: segundas respuestas de Soy (ADR-0026)
 

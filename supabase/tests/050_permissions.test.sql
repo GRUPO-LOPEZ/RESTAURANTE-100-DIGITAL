@@ -47,7 +47,7 @@ $$;
 -- ---------------------------------------------------------------------------
 create function pg_temp.business_schemas() returns text[] language sql as $$
   select array['core', 'org', 'audit', 'workflow', 'catalog', 'recipes', 'costing', 'purchasing',
-               'inventory', 'production', 'ai', 'reporting']
+               'inventory', 'production', 'ai', 'reporting', 'imports']
 $$;
 select is(
   (select array_agg(n.nspname || '.' || p.proname order by n.nspname || '.' || p.proname collate "C")
@@ -72,6 +72,9 @@ select is(
         'core.set_active_restaurant', 'core.suspend_user', 'core.unlock_user', 'core.update_my_profile',
         'core.user_detail', 'core.users_control_panel', 'core.users_dashboard', 'core.users_overview',
         'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_group_ids', 'core.visible_user_ids',
+        'imports.cancel_job', 'imports.confirm_ingredients', 'imports.confirm_recipes', 'imports.create_job',
+        'imports.file_brand_id', 'imports.file_group_id', 'imports.job_summary', 'imports.stage_rows', 'imports.validate_job',
+        'imports.visible_job_ids',
         'org.create_area',
         'org.create_brand', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted', 'org.update_area',
         'org.update_brand', 'org.update_group', 'org.update_restaurant',
@@ -86,7 +89,7 @@ select is(
         'recipes.visible_version_ids',
         'recipes.withdraw_review', 'recipes.workable_recipe_ids', 'workflow.cancel_request',
         'workflow.decide_approval', 'workflow.inbox'],
-  'authenticated solo puede llamar a estas funciones (en los 12 esquemas de negocio)'
+  'authenticated solo puede llamar a estas funciones (en los 13 esquemas de negocio)'
 );
 select is(
   (select array_agg(n.nspname || '.' || c.relname order by n.nspname || '.' || c.relname collate "C")
@@ -98,7 +101,8 @@ select is(
         'catalog.ingredient_yield_tests', 'catalog.ingredients', 'catalog.purchase_products', 'catalog.suppliers',
         'catalog.unit_conversions', 'catalog.units', 'catalog.yield_processes',
         'core.notifications', 'core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships',
-        'core.user_role_assignments', 'core.v_test_documents', 'org.areas', 'org.brands',
+        'core.user_role_assignments', 'core.v_test_documents', 'imports.import_errors', 'imports.import_jobs', 'imports.import_prices',
+        'imports.import_staging_rows', 'org.areas', 'org.brands',
         'org.groups', 'org.restaurants', 'org.time_zones', 'recipes.recipe_assignments', 'recipes.recipe_categories',
         'recipes.recipe_components', 'recipes.recipe_media', 'recipes.recipe_step_dependencies', 'recipes.recipe_steps', 'recipes.recipe_versions',
         'recipes.recipes', 'workflow.approval_decisions',

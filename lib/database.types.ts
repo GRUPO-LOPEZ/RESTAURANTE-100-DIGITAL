@@ -2817,6 +2817,414 @@ export type Database = {
       [_ in never]: never;
     };
   };
+  imports: {
+    Tables: {
+      import_errors: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          field: string | null;
+          group_id: string;
+          id: string;
+          job_id: string;
+          message: string;
+          row_id: string | null;
+          row_number: number | null;
+          severity: Database["imports"]["Enums"]["issue_severity"];
+          sheet: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          field?: string | null;
+          group_id: string;
+          id?: string;
+          job_id: string;
+          message: string;
+          row_id?: string | null;
+          row_number?: number | null;
+          severity?: Database["imports"]["Enums"]["issue_severity"];
+          sheet?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          field?: string | null;
+          group_id?: string;
+          id?: string;
+          job_id?: string;
+          message?: string;
+          row_id?: string | null;
+          row_number?: number | null;
+          severity?: Database["imports"]["Enums"]["issue_severity"];
+          sheet?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "import_errors_job_fkey";
+            columns: ["job_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "import_jobs";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "import_errors_row_fkey";
+            columns: ["row_id", "job_id"];
+            isOneToOne: false;
+            referencedRelation: "import_staging_rows";
+            referencedColumns: ["id", "job_id"];
+          },
+        ];
+      };
+      import_jobs: {
+        Row: {
+          brand_id: string;
+          code_prefix: string;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          file_name: string;
+          file_sha256: string;
+          group_id: string;
+          id: string;
+          ingredients_confirmed_at: string | null;
+          ingredients_confirmed_by: string | null;
+          kind: string;
+          status: Database["imports"]["Enums"]["job_status"];
+          storage_path: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id: string;
+          code_prefix: string;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          file_name: string;
+          file_sha256: string;
+          group_id: string;
+          id?: string;
+          ingredients_confirmed_at?: string | null;
+          ingredients_confirmed_by?: string | null;
+          kind?: string;
+          status?: Database["imports"]["Enums"]["job_status"];
+          storage_path: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          brand_id?: string;
+          code_prefix?: string;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          file_name?: string;
+          file_sha256?: string;
+          group_id?: string;
+          id?: string;
+          ingredients_confirmed_at?: string | null;
+          ingredients_confirmed_by?: string | null;
+          kind?: string;
+          status?: Database["imports"]["Enums"]["job_status"];
+          storage_path?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      import_prices: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          job_id: string;
+          price: number | null;
+          price_per_kg: number | null;
+          row_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          job_id: string;
+          price?: number | null;
+          price_per_kg?: number | null;
+          row_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          job_id?: string;
+          price?: number | null;
+          price_per_kg?: number | null;
+          row_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "import_prices_job_fkey";
+            columns: ["job_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "import_jobs";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "import_prices_row_fkey";
+            columns: ["row_id", "job_id"];
+            isOneToOne: false;
+            referencedRelation: "import_staging_rows";
+            referencedColumns: ["id", "job_id"];
+          },
+        ];
+      };
+      import_staging_rows: {
+        Row: {
+          action: Database["imports"]["Enums"]["row_action"] | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string | null;
+          job_id: string;
+          kind: Database["imports"]["Enums"]["row_kind"];
+          level: number | null;
+          parent_code: string | null;
+          parent_row: number | null;
+          parsed: NonNullable<Json>;
+          raw: NonNullable<Json>;
+          recipe_id: string | null;
+          recipe_version_id: string | null;
+          row_number: number;
+          sheet: string;
+          source_code: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          action?: Database["imports"]["Enums"]["row_action"] | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id?: string | null;
+          job_id: string;
+          kind: Database["imports"]["Enums"]["row_kind"];
+          level?: number | null;
+          parent_code?: string | null;
+          parent_row?: number | null;
+          parsed?: NonNullable<Json>;
+          raw?: NonNullable<Json>;
+          recipe_id?: string | null;
+          recipe_version_id?: string | null;
+          row_number: number;
+          sheet: string;
+          source_code?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          action?: Database["imports"]["Enums"]["row_action"] | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string | null;
+          job_id?: string;
+          kind?: Database["imports"]["Enums"]["row_kind"];
+          level?: number | null;
+          parent_code?: string | null;
+          parent_row?: number | null;
+          parsed?: NonNullable<Json>;
+          raw?: NonNullable<Json>;
+          recipe_id?: string | null;
+          recipe_version_id?: string | null;
+          row_number?: number;
+          sheet?: string;
+          source_code?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "import_staging_rows_job_fkey";
+            columns: ["job_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "import_jobs";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      brand_recipes: {
+        Args: { p_brand_id: string; p_group_id: string };
+        Returns: {
+          code: string;
+          id: string;
+          published_unit: string;
+        }[];
+      };
+      cancel_job: { Args: { p_job_id: string; p_reason: string }; Returns: Json };
+      category_name: { Args: { p_parsed: Json }; Returns: string };
+      changed_since_validation: { Args: { p_what: string }; Returns: undefined };
+      clean: { Args: { p_text: string }; Returns: string };
+      confirm_ingredients: { Args: { p_job_id: string; p_reason: string }; Returns: Json };
+      confirm_recipes: { Args: { p_job_id: string; p_reason: string }; Returns: Json };
+      create_job: {
+        Args: {
+          p_brand_id: string;
+          p_code_prefix: string;
+          p_file_name: string;
+          p_file_sha256: string;
+          p_reason: string;
+          p_storage_path: string;
+        };
+        Returns: Json;
+      };
+      file_brand_id: { Args: { p_name: string }; Returns: string };
+      file_group_id: { Args: { p_name: string }; Returns: string };
+      find_job: {
+        Args: { p_job_id: string };
+        Returns: {
+          brand_id: string;
+          code_prefix: string;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          file_name: string;
+          file_sha256: string;
+          group_id: string;
+          id: string;
+          ingredients_confirmed_at: string | null;
+          ingredients_confirmed_by: string | null;
+          kind: string;
+          status: Database["imports"]["Enums"]["job_status"];
+          storage_path: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "import_jobs";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      full_code: { Args: { p_code: string; p_prefix: string }; Returns: string };
+      job_summary: {
+        Args: { p_job_id: string };
+        Returns: {
+          action: Database["imports"]["Enums"]["row_action"];
+          kind: Database["imports"]["Enums"]["row_kind"];
+          rows: number;
+        }[];
+      };
+      lock_job: {
+        Args: { p_job_id: string };
+        Returns: {
+          brand_id: string;
+          code_prefix: string;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          file_name: string;
+          file_sha256: string;
+          group_id: string;
+          id: string;
+          ingredients_confirmed_at: string | null;
+          ingredients_confirmed_by: string | null;
+          kind: string;
+          status: Database["imports"]["Enums"]["job_status"];
+          storage_path: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "import_jobs";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      norm: { Args: { p_text: string }; Returns: string };
+      num: { Args: { p_value: string }; Returns: number };
+      stage_rows: { Args: { p_job_id: string; p_rows: Json }; Returns: Json };
+      validate_job: { Args: { p_job_id: string }; Returns: Json };
+      visible_job_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+    };
+    Enums: {
+      issue_severity: "error" | "warning";
+      job_status:
+        "uploaded" | "staged" | "validated" | "ingredients_confirmed" | "confirmed" | "cancelled";
+      row_action: "create" | "reuse" | "skip" | "error";
+      row_kind: "ingredient" | "preparation" | "dish" | "line";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   org: {
     Tables: {
       areas: {
@@ -4488,6 +4896,21 @@ export const Constants = {
       notification_kind: ["approval_requested", "recipe_changed"],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
+    },
+  },
+  imports: {
+    Enums: {
+      issue_severity: ["error", "warning"],
+      job_status: [
+        "uploaded",
+        "staged",
+        "validated",
+        "ingredients_confirmed",
+        "confirmed",
+        "cancelled",
+      ],
+      row_action: ["create", "reuse", "skip", "error"],
+      row_kind: ["ingredient", "preparation", "dish", "line"],
     },
   },
   org: {
