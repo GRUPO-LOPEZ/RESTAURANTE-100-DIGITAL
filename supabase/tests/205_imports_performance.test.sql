@@ -62,8 +62,8 @@ select r from generate_series(1, 90) d,
 
 create temporary table timings (what text, ms numeric);
 create temporary table job (id uuid);
-insert into storage.objects (bucket_id, name)
-values ('imports', format('%s/%s/%s.xlsx', pg_temp.u(1), pg_temp.u(101), pg_temp.u(9500)));
+insert into storage.objects (bucket_id, name, owner_id)
+values ('imports', format('%s/%s/%s.xlsx', pg_temp.u(1), pg_temp.u(101), pg_temp.u(9500)), pg_temp.u(405)::text);
 insert into job
 select (pg_temp.as_user(pg_temp.u(405), format(
   $$select imports.create_job(%L, '%s/%s/%s.xlsx', 'carga.xlsx', %L, 'CARGA', 'Prueba de volumen')$$,

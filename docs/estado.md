@@ -1,8 +1,34 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-02. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: etapa 2.4, importar el recetario de Excel (PR 1 de 2, base, rama `feat/importar-recetario`)
+## Al retomar: etapa 2.4, importar el recetario de Excel (PR 2 de 2, lector y pantallas, rama `feat/importar-recetario-pantallas`)
+
+- **Sale de la rama del PR 1** (`feat/importar-recetario`), que **ya está fusionada (PR #28)**: el PR 2 va contra `main`.
+- **Estado:** commiteado y subido; falta abrir el PR contra `main` y fusionarlo.
+- **Pruebas (2026-11-02), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 161 de 161 ✅ · pgTAP 1.316 de 1.316 ✅ · Playwright 102 de 102 ✅ (con axe, en celular y computadora).
+  - En la corrida anterior falló `materias-primas.spec.ts:22`: la importación de prueba creaba "MUZZA DEMO" y la búsqueda "muzz" encontraba 2. Se arregló en la causa: el Excel DEMO usa nombres que ninguna otra prueba busca ("QUESO TYBO XLS", "ZAPALLO XLS", etc.).
+- **Pantallas:** miradas en capturas de celular y computadora (subir, vista previa y lista).
+- **El PR del sellado** (`fix/auditoria-sellado`) tenía conflicto en este archivo con `main`. Se resolvió y se subió (commit `1e16d60`); queda para fusionar.
+- **Qué se hizo** (detalle en ADR-0027, "Cómo quedó (PR 2)"):
+  - **lector del Excel** en el servidor con ExcelJS 4.4.0 (`lib/imports/recipe-book.ts`), con topes contra archivos enormes;
+  - **el navegador sube el Excel directo al bucket** (Vercel no acepta más de 4,5 MB por pedido) y una acción de servidor lo lee con la sesión de quien lo subió;
+  - **pantallas:** `/recetas/importar` (lista), `/nueva` (subir) y `/[id]` (vista previa, confirmar materias primas o recetas, validar, cancelar, recetas creadas, problemas y su CSV). Botón "Importaciones" en Recetas;
+  - **migración `20261108120000_imports_upload_checks.sql`:**
+    - lee su archivo quien lo subió, mientras importe en la marca;
+    - se sube solo a nombre propio;
+    - la importación se registra solo sobre un archivo propio;
+    - una carga cortada no se valida (`expected_rows`).
+- **Excel real de Nonnos:** comprobado **solo leyéndolo**, con una prueba temporal borrada; nunca entró en la base. 161 materias primas, 65 preparaciones, 135 platos y 602 líneas, iguales al análisis inicial. Se lee en unos 15 s.
+- **Revisiones:**
+  - `ui-reviewer`: sin graves, 5 medios resueltos;
+  - `security-auditor`: apto, sin graves. 2 de sus 3 medios resueltos;
+  - `db-reviewer`: 1 grave (una prueba) resuelto; la segunda pasada, sin graves ni medios.
+- **Pendiente para decidir con Joaco antes de producción:** los **archivos huérfanos** del bucket (medio 2 de seguridad). Un Excel que se subió pero no se importó queda guardado y nadie lo puede borrar. Propuesta: una limpieza programada en el servidor y una regla de cuántos días se guardan.
+- **Pendiente para la próxima migración de importaciones:** que `parsed` acepte solo valores simples (menor 4 de seguridad).
+- **Después del PR 2, la compuerta 2.4 (en producción):** Joaco y el Chef cargan el Excel real de Nonnos y verifican que no haya duplicados. El Excel real nunca entra en desarrollo.
+
+## Antes: etapa 2.4, importar el recetario de Excel (PR 1 de 2, base, rama `feat/importar-recetario`)
 
 - **Qué se hizo:** migración `20261106120000_imports.sql`. Detalle en ADR-0027.
   - zona intermedia con vista previa, sin tocar nada oficial;

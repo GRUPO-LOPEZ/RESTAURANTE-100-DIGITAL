@@ -6,7 +6,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(46);
+select plan(56);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -57,11 +57,12 @@ create temporary table ids (k text primary key, id uuid);
 grant select on ids to authenticated;
 create function pg_temp.id(p_k text) returns uuid language sql as $$ select id from ids where k = p_k $$;
 grant execute on function pg_temp.u(int), pg_temp.id(text) to authenticated;
-create function pg_temp.upload(p_brand int, p_n int) returns text language plpgsql as $$
+-- Un archivo "subido" al bucket por esa persona (la API de Storage pone owner_id; la prueba, a mano).
+create function pg_temp.upload(p_brand int, p_n int, p_owner int default 405) returns text language plpgsql as $$
 declare
   v_path text := format('%s/%s/%s.xlsx', pg_temp.u(1), pg_temp.u(p_brand), pg_temp.u(9100 + p_n));
 begin
-  insert into storage.objects (bucket_id, name) values ('imports', v_path);
+  insert into storage.objects (bucket_id, name, owner_id) values ('imports', v_path, pg_temp.u(p_owner)::text);
   return v_path;
 end
 $$;
@@ -144,10 +145,32 @@ select is(pg_temp.q(pg_temp.u(405), $$select count(*)::text from imports.import_
   'la Chef importa sin ver los precios');
 select is(pg_temp.q(pg_temp.u(408), $$select string_agg(price::numeric(10,0)::text, ',') from imports.import_prices$$), '900',
   'Compras sí los ve');
-select is(pg_temp.q(pg_temp.u(405), $$select count(*)::text from storage.objects where bucket_id = 'imports'$$), '0',
-  'la Chef no baja el Excel (tiene precios)');
+-- Los archivos de la prueba los "sube" la base con su dueño puesto a mano: en la realidad owner_id lo pone
+-- Storage con la sesión de quien sube.
+select is(pg_temp.q(pg_temp.u(405), format($$select count(*)::text from storage.objects
+                                            where bucket_id = 'imports' and owner_id is distinct from %L$$,
+                                           pg_temp.u(405)::text)), '0',
+  'la Chef no baja un Excel ajeno (tiene precios)');
 select is(pg_temp.q(pg_temp.u(408), $$select (count(*) > 0)::text from storage.objects where bucket_id = 'imports'$$), 'true',
   'Compras sí');
+-- Quien sube un archivo lo puede volver a leer (el servidor lo lee con su sesión; ya lo tiene en su
+-- computadora). Los demás sin prices.view, no.
+insert into storage.objects (bucket_id, name, owner_id)
+values ('imports', format('%s/%s/%s.xlsx', pg_temp.u(1), pg_temp.u(101), pg_temp.u(9190)), pg_temp.u(405)::text);
+select is(pg_temp.q(pg_temp.u(405), format($$select count(*)::text from storage.objects where bucket_id = 'imports' and name like '%%%s.xlsx'$$,
+    pg_temp.u(9190))), '1', 'la Chef lee el Excel que subió ella');
+select is(pg_temp.q(pg_temp.u(413), format($$select count(*)::text from storage.objects where bucket_id = 'imports' and name like '%%%s.xlsx'$$,
+    pg_temp.u(9190))), '0', 'otro que importa pero no ve precios, no');
+select is(pg_temp.q(pg_temp.u(408), format($$select count(*)::text from storage.objects where bucket_id = 'imports' and name like '%%%s.xlsx'$$,
+    pg_temp.u(9190))), '1', 'Compras lee el Excel que subió otra persona');
+select ok(pg_temp.q(pg_temp.u(405), format($$insert into storage.objects (bucket_id, name, owner_id) values ('imports', '%s/%s/%s.xlsx', %L) returning 'x'$$,
+    pg_temp.u(1), pg_temp.u(101), pg_temp.u(9198), pg_temp.u(413)::text)) like 'ERROR 42501%',
+  'nadie sube un archivo a nombre de otro');
+-- Quien subió y ya no importa en la marca deja de leerlo (revisión de seguridad del PR 2, menor 1).
+insert into storage.objects (bucket_id, name, owner_id)
+values ('imports', format('%s/%s/%s.xlsx', pg_temp.u(1), pg_temp.u(101), pg_temp.u(9191)), pg_temp.u(409)::text);
+select is(pg_temp.q(pg_temp.u(409), format($$select count(*)::text from storage.objects where bucket_id = 'imports' and name like '%%%s.xlsx'$$,
+    pg_temp.u(9191))), '0', 'quien subió pero no importa en la marca, no lo lee');
 select ok(pg_temp.q(pg_temp.u(409), format($$insert into storage.objects (bucket_id, name) values ('imports', '%s/%s/%s.xlsx') returning 'x'$$,
     pg_temp.u(1), pg_temp.u(101), pg_temp.u(9199))) like 'ERROR 42501%', 'la Cocinera no sube archivos');
 select is(pg_temp.msg(pg_temp.u(405), format($$select imports.stage_rows(%L, '[{"sheet": "X", "row_number": 1, "kind": "ingredient",
@@ -219,11 +242,47 @@ select is(pg_temp.res(pg_temp.u(405), format($$imports.confirm_recipes(%L, 'Rece
 
 -- Prefijos: uno por marca, y cada marca siempre el mismo.
 select is(pg_temp.msg(pg_temp.u(413), format($$select imports.create_job(pg_temp.u(102), %L, 'parrilla.xlsx', %L, 'DEMO', 'Prueba')$$,
-    pg_temp.upload(102, 2), repeat('c2', 32))),
+    pg_temp.upload(102, 2, 413), repeat('c2', 32))),
   'El prefijo DEMO ya lo usa otra marca del grupo: elegí otro.', 'otra marca no usa el prefijo de Pastas');
 select is(pg_temp.msg(pg_temp.u(405), format($$select imports.create_job(pg_temp.u(101), %L, 'otro.xlsx', %L, 'OTRO', 'Prueba')$$,
     pg_temp.upload(101, 3), repeat('c3', 32))),
   'Esta marca ya importó con el prefijo DEMO: usá el mismo, así no se duplican los códigos.', 'Pastas no cambia de prefijo');
+
+
+-- Una importación se registra solo sobre un archivo propio (menor 2).
+select is(pg_temp.msg(pg_temp.u(405), format($$select imports.create_job(pg_temp.u(101), %L, 'ajeno.xlsx', %L, 'DEMO', 'Prueba')$$,
+    pg_temp.upload(101, 6, 413), repeat('c6', 32))),
+  'El archivo no se subió bien: probá de nuevo.', 'no se registra una importación sobre el archivo de otro');
+
+-- Una carga cortada a mitad de camino no se valida (medio 3): faltan filas de las que leyó el servidor.
+insert into ids values ('job_cut', (pg_temp.q(pg_temp.u(405),
+  format($$select imports.create_job(pg_temp.u(101), %L, 'cortado.xlsx', %L, 'DEMO', 'Prueba', 2) ->> 'id'$$,
+         pg_temp.upload(101, 7), repeat('c7', 32))))::uuid);
+select is((select expected_rows from imports.import_jobs where id = pg_temp.id('job_cut')), 2,
+  'la importación guarda cuántas filas tiene el archivo');
+select pg_temp.q(pg_temp.u(405), format($$select imports.stage_rows(%L, '[{"sheet": "INSUMOS", "row_number": 2,
+  "kind": "ingredient", "source_code": "777001", "raw": {"codigo": "777001", "producto": "Sal de prueba"},
+  "parsed": {"name": "Sal de prueba"}}]')$$, pg_temp.id('job_cut')));
+select is(pg_temp.msg(pg_temp.u(405), format($$select imports.validate_job(%L)$$, pg_temp.id('job_cut'))),
+  'La carga de filas no coincide con el archivo (1 de 2). Cancelá esta importación y subí el archivo de nuevo.',
+  'con filas de menos no se valida');
+select pg_temp.q(pg_temp.u(405), format($$select imports.stage_rows(%L, '[{"sheet": "INSUMOS", "row_number": 3,
+  "kind": "ingredient", "source_code": "777002", "raw": {"codigo": "777002", "producto": "Pimienta de prueba"},
+  "parsed": {"name": "Pimienta de prueba"}}]')$$, pg_temp.id('job_cut')));
+select is(pg_temp.res(pg_temp.u(405), format($$imports.validate_job(%L)$$, pg_temp.id('job_cut'))), 'applied',
+  'con todas las filas, sí');
+-- Con filas de más, tampoco.
+insert into ids values ('job_extra', (pg_temp.q(pg_temp.u(405),
+  format($$select imports.create_job(pg_temp.u(101), %L, 'de-mas.xlsx', %L, 'DEMO', 'Prueba', 1) ->> 'id'$$,
+         pg_temp.upload(101, 8), repeat('c8', 32))))::uuid);
+select pg_temp.q(pg_temp.u(405), format($$select imports.stage_rows(%L, '[{"sheet": "INSUMOS", "row_number": 2,
+  "kind": "ingredient", "source_code": "777011", "raw": {"codigo": "777011", "producto": "Sal extra"},
+  "parsed": {"name": "Sal extra"}}, {"sheet": "INSUMOS", "row_number": 3, "kind": "ingredient",
+  "source_code": "777012", "raw": {"codigo": "777012", "producto": "Pimienta extra"},
+  "parsed": {"name": "Pimienta extra"}}]')$$, pg_temp.id('job_extra')));
+select is(pg_temp.msg(pg_temp.u(405), format($$select imports.validate_job(%L)$$, pg_temp.id('job_extra'))),
+  'La carga de filas no coincide con el archivo (2 de 1). Cancelá esta importación y subí el archivo de nuevo.',
+  'con filas de más no se valida');
 
 select * from finish();
 rollback;
