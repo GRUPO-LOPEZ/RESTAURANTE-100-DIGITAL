@@ -56,12 +56,12 @@ create temporary table ids (k text primary key, id uuid);
 grant select on ids to authenticated;
 create function pg_temp.id(p_k text) returns uuid language sql as $$ select id from ids where k = p_k $$;
 grant execute on function pg_temp.u(int), pg_temp.id(text) to authenticated;
--- Un archivo "subido" al bucket (la prueba no pasa por la API de Storage).
+-- Un archivo "subido" al bucket por la Chef 405 (la prueba no pasa por la API de Storage, que pone owner_id).
 create function pg_temp.upload(p_n int) returns text language plpgsql as $$
 declare
   v_path text := format('%s/%s/%s.xlsx', pg_temp.u(1), pg_temp.u(101), pg_temp.u(9000 + p_n));
 begin
-  insert into storage.objects (bucket_id, name) values ('imports', v_path);
+  insert into storage.objects (bucket_id, name, owner_id) values ('imports', v_path, pg_temp.u(405)::text);
   return v_path;
 end
 $$;

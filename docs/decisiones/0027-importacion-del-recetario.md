@@ -154,6 +154,73 @@
   - **un lector propio:** código nuestro que hay que mantener y que solo entiende lo básico.
 - **Elegida: ExcelJS, solo en el servidor** y con versión fija. El navegador no la carga y no decide nada.
 
+## Cómo quedó (PR 2, lector y pantallas; 2026-11-01)
+
+- **El archivo no pasa por el servidor de la app.** Vercel acepta hasta 4,5 MB por pedido a una función, y el Excel de Nonnos pesa 7,3 MB.
+  - El navegador sube el Excel directo al bucket privado `imports` (`<grupo>/<marca>/<uuid>.xlsx`), con la sesión de la persona.
+  - Después llama a una **acción de servidor** que recibe solo la ruta, la marca, el prefijo, el nombre y el motivo. La acción baja el archivo, lo lee y llama a `create_job`, `stage_rows` (en lotes de 500) y `validate_job`. Si la carga de filas falla a mitad de camino, cancela la importación.
+  - Se descartó una función Edge con `service_role`: tiene 2 s de CPU por pedido, poco para un Excel de 7 MB.
+  - Se eligió una acción de servidor en lugar de una ruta `POST`. Hace lo mismo y Next le agrega su control contra pedidos de otros sitios. La pantalla le da hasta 60 s (`maxDuration`); el Excel real se lee en unos 15 s.
+- **"Lee quien subió"** (migración `20261108120000_imports_upload_checks.sql`): la política `imports_read` del bucket suma `owner_id = auth.uid()`, **mientras esa persona siga importando en la marca**.
+  - `owner_id` lo pone Storage al subir, y la política de subida exige que sea el de la sesión: nadie sube a nombre de otro.
+  - Así el servidor lee el archivo con la sesión de quien lo subió, sin ninguna clave especial. No expone nada nuevo, porque es su propio archivo.
+  - Los archivos de los demás siguen visibles solo con `prices.view`. Pruebas en la `201`.
+- **La misma migración suma dos controles** (de la revisión de seguridad):
+  - `create_job` registra una importación solo sobre un archivo que subió la misma persona;
+  - `create_job` guarda cuántas filas leyó el servidor (`expected_rows`), y un trigger no deja pasar a "validada" si las filas cargadas no son esas. Una carga cortada a mitad de camino (un corte de tiempo, una caída) no se puede confirmar como si fuera el recetario completo.
+- **El lector** (`lib/imports/recipe-book.ts`) encuentra las columnas por el título, no por la posición:
+  - **INSUMOS:** una materia prima por fila. Las de rubro "Plato finalizado" son platos: si tienen bloque en PLATOS se usa el bloque; si no, entran sin componentes.
+  - **pre-elaborado y PLATOS:** cada fila `CODIGO / INGREDIENTES / Medida / Receta (GRS)` abre un bloque, **aunque sea una plantilla vacía**. Así un bloque nunca se come las filas del siguiente.
+  - **El título del bloque** es la fila de arriba con "Precio por porción" o "Peso Neto Total". Un número suelto entre el título y el encabezado no cuenta.
+  - **Se descartan** las plantillas sin código, y las que no tienen nombre ni líneas.
+  - **El precio va en `price`,** nunca en `raw` ni en `parsed`. Una fórmula con error (`#N/A`) queda vacía.
+  - **Topes:** 15 MB, 10.000 filas, y se mira que el contenido sea un zip.
+- **Comprobado contra el Excel real de Nonnos, solo leyéndolo** (con una prueba temporal que se borró; nada entró en la base de desarrollo):
+  - 161 materias primas, 65 preparaciones, 64 platos de PLATOS y 71 de INSUMOS sin bloque;
+  - 289 líneas en pre-elaborado y 313 en PLATOS: las mismas que contó el análisis inicial;
+  - 2 líneas sin gramos, y recetas con nombre pero sin ingredientes cargados, que entran con aviso;
+  - descomprimido ocupa 53 MB (el tope es 250 MB) y se lee en unos 15 s.
+  - La primera versión del lector contaba 72 preparaciones y 873 líneas: se comía las plantillas vacías y tomaba el rinde de una plantilla sin código como si fuera el código. Ya no.
+- **Pantallas:**
+  - `/recetas/importar` (lista);
+  - `/recetas/importar/nueva` (subir);
+  - `/recetas/importar/[id]` (vista previa con totales, próximo paso según permiso, recetas creadas, problemas paginados y cancelar);
+  - `/recetas/importar/[id]/errores`, el CSV de problemas: escapa las celdas que empiezan con `= + - @` y pide de a 1.000 filas.
+  - Ninguna pantalla lee precios.
+- **Dependencias:** `exceljs` 4.4.0 fija, con un override de `uuid` 11.1.1 que cierra su aviso. Quedan **8 avisos moderados** de `npm audit` (`minimatch`, vía `archiver`), que ExcelJS usa solo para **escribir** archivos. Acá solo se leen. Riesgo aceptado por Joaco; se revisa con Dependabot.
+
+## Revisiones (PR 2)
+
+- **`ui-reviewer`:** sin graves.
+  - **5 medios, resueltos:**
+    - el formulario ya no se pierde si la lectura falla;
+    - el prefijo de una marca no queda puesto al elegir otra;
+    - antes de validar, los totales dicen "Sin validar" en vez de "Sin errores";
+    - las recetas creadas están paginadas;
+    - en celular, los totales van en una columna.
+  - **Menores resueltos:**
+    - etiquetas de motivo distintas en cada formulario;
+    - "Validar" como acción principal antes de validar;
+    - el avance se anuncia al lector de pantalla;
+    - el campo del problema aparece en la lista;
+    - un error del CSV vuelve a la pantalla con un aviso;
+    - axe también en la lista y en el formulario con errores;
+    - el botón de Recetas dice "Importaciones".
+- **`security-auditor`: apto, sin graves.**
+  - **Resueltos:**
+    - medio 1, archivo enorme por dentro: se mira el índice del zip antes de abrirlo (tope de 250 MB descomprimido y 5.000 archivos) y se recorren hasta 20.000 filas por solapa;
+    - medio 3, carga cortada: `expected_rows` y el trigger;
+    - menor 1: el dueño lee su archivo solo mientras importa en la marca;
+    - menor 2: la importación solo se registra sobre un archivo propio;
+    - menor 3: un número a la derecha de una etiqueta vacía, o de un título sin código, ya no se toma como dato. Era real: así se colaban 7 preparaciones falsas del Excel de Nonnos;
+    - menor 5: el CSV también escapa los caracteres de ancho completo y los espacios de adelante.
+  - **Pendiente, medio 2: archivos huérfanos.** Si la lectura falla o la persona cierra la pantalla, el Excel queda en el bucket, sin importación y sin forma de borrarlo. Lo ven quien lo subió y quien ve precios. Hace falta una limpieza programada en el servidor (con la clave de servicio, nunca en el navegador) y una regla de cuánto se guardan los archivos. **Se decide con Joaco antes de producción.**
+  - **Pendiente, menor 4:** `stage_rows` no exige valores simples en `parsed`, como sí lo hace en `raw`. Requiere a alguien de adentro que además ya ve precios. Va en la próxima migración de importaciones.
+- **`db-reviewer`:** la primera pasada encontró 1 grave: la prueba "la Chef no baja un Excel ajeno" fallaba al poner el dueño en los archivos de prueba. Se corrigió para que cuente solo archivos ajenos, sin debilitarla. Además se sumaron las pruebas de Compras leyendo el archivo de otra persona y del dueño que ya no importa. La segunda pasada no encontró graves ni medios.
+  - **Menor resuelto:** prueba de la carga con filas de más.
+  - **Menor aceptado:** `create_job` acepta `expected_rows` vacío, para no romper las importaciones anteriores. La app siempre lo manda, y quien llama a la función directo ya decide qué filas carga, así que no gana nada.
+  - **Menor aceptado:** si la carga quedó incompleta, "Validar" muestra el error y la salida es "Cancelar importación", que está en la misma pantalla.
+
 ## Riesgos
 
 - **El Excel real puede traer casos que el ficticio no tiene.** El lector informa toda fila que no entiende como error, nunca la adivina, y la vista previa no toca nada oficial.
