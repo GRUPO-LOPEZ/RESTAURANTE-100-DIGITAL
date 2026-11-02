@@ -4,6 +4,8 @@ _Última actualización: 2026-11-02. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 
 ## Al retomar: etapa 2.1 C, precios (PR 1 de 2, base, rama `feat/precios-base`)
 
+- **Estado (pausa del 2026-11-02):** commiteado y subido, con `main` ya fusionado adentro (sin conflictos). Falta que GitHub Actions dé verde y fusionar el PR.
+- **Al retomar:** plan de las pantallas de precios (2.1 C, PR 2), en modo plan para que Joaco lo apruebe. Las preguntas para Soy ya se le pasaron a Joaco; con las respuestas se destraban producción y la 2.5.
 - **Qué se hizo:** migración `20261109120000_prices.sql`. Detalle en ADR-0029.
   - **razones sociales** (`org.legal_entities`) y la de cada local: deciden si el costo va con o sin IVA;
   - **precios solo de inserción y solo aprobados** (`costing.price_records`), con neto y bruto calculados por la base y el contenido del envase congelado al aprobar;
