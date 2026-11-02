@@ -1,8 +1,36 @@
 # Estado del proyecto
 
-_Última actualización: 2026-10-30. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-02. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: arreglo del sellado de la auditoría (rama `fix/auditoria-sellado`)
+## Al retomar: etapa 2.1 C, precios (PR 1 de 2, base, rama `feat/precios-base`)
+
+- **Qué se hizo:** migración `20261109120000_prices.sql`. Detalle en ADR-0029.
+  - **razones sociales** (`org.legal_entities`) y la de cada local: deciden si el costo va con o sin IVA;
+  - **precios solo de inserción y solo aprobados** (`costing.price_records`), con neto y bruto calculados por la base y el contenido del envase congelado al aprobar;
+  - **aprobación:** Compras propone, aprueba el Controller y, si la variación contra el costo que se usa hoy supera el % del grupo (15 por defecto), también Dirección General;
+  - **configuración del grupo** (% y días de desactualizado), solo Dirección General (`prices.configure`);
+  - **qué precio vale** en un local (local → marca → grupo, el último aprobado) y el costo de una línea: `costing.resolve_price`, `resolve_prices` e `ingredient_line_cost`, nunca $ 0;
+  - **el Gerente** ve los precios y costos de su local (respuesta 7 de Soy).
+- **Decisiones de Joaco (2026-11-02):** 10, en ADR-0029. Entre otras:
+  - el último aprobado entre varias presentaciones;
+  - Controller y después Dirección;
+  - la variación contra el costo que se usa hoy;
+  - el contenido congelado al aprobar;
+  - ninguna fecha anterior al precio que vale hoy;
+  - la razón social de un local la elige solo quien administra el grupo;
+  - los fletes quedan para después.
+- **Revisiones:**
+  - `db-reviewer`: dos pasadas; los graves y medios quedaron resueltos o aceptados por escrito;
+  - `security-auditor`: cuatro pasadas; la última, **apto**, sin graves ni medios. Todos los caminos que encontraron para mover un costo sin aprobación quedaron cerrados y con prueba.
+- **Pruebas nuevas:** `210`, `211` y `212` (500 materias primas por debajo de 300 ms). Snapshots actualizados a propósito: `000`, `030`, `050` y `140`.
+- **Pruebas (2026-11-02), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 148 de 148 ✅ · pgTAP 1.442 de 1.442 ✅ · Playwright 98 de 98 ✅ · formato ✅.
+- **Preguntas para Soy:** se le pasaron a Joaco el 2026-11-02 (plan de Supabase, datos reales del grupo, "administración maestra", pasos de aprobación y Salón, aviso de rendimiento, variación de precio y subas en escalones, otros negocios, compras excepcionales).
+- **Pendiente:**
+  - el PR 2, con las pantallas: precios en la ficha, proponer, la bandeja y la configuración. Tiene que pedir que no se escriban montos en el motivo;
+  - **pregunta abierta para Joaco y Soy:** ¿se miden las subas en escalones (varias por debajo del %) contra el precio de hace N días?
+  - **para la 2.3:** congelar la cantidad de las líneas de receta en la unidad de uso, porque hoy una densidad nueva la cambia sin aprobación.
+
+## Antes: arreglo del sellado de la auditoría (fusionado, PR #29)
 
 - **Qué pasaba:** el sellado de la auditoría y del registro de seguridad salteaba eventos nuevos en el medio de la secuencia. Eso dejaba huecos, y la verificación daba "alterado" sin que nadie hubiera tocado nada: una falsa alarma. Detalle en ADR-0028.
 - **Qué se hizo:** migración `20261107120000_audit_seal_contiguous.sql`.

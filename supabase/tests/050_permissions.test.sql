@@ -57,7 +57,7 @@ select is(
         'catalog.convert_quantity', 'catalog.create_category', 'catalog.create_ingredient', 'catalog.create_purchase_product',
         'catalog.create_supplier', 'catalog.create_yield_process', 'catalog.ingredient_usage', 'catalog.process_usage',
         'catalog.propose_yield_standard', 'catalog.record_yield_test', 'catalog.rename_category', 'catalog.rename_yield_process',
-        'catalog.search_components', 'catalog.set_aliases', 'catalog.set_allergen_status',
+        'catalog.search_components', 'catalog.set_aliases', 'catalog.set_allergen_status', 'catalog.set_category_stale_days',
         'catalog.set_ingredient_active', 'catalog.set_unit_conversion', 'catalog.standard_yield', 'catalog.to_base_quantity',
         'catalog.update_ingredient', 'catalog.update_purchase_product', 'catalog.update_supplier', 'catalog.yield_summary',
         'core.add_member', 'core.assign_role', 'core.audit_export', 'core.audit_history', 'core.can_invite',
@@ -72,12 +72,15 @@ select is(
         'core.set_active_restaurant', 'core.suspend_user', 'core.unlock_user', 'core.update_my_profile',
         'core.user_detail', 'core.users_control_panel', 'core.users_dashboard', 'core.users_overview',
         'core.visible_assignment_ids', 'core.visible_brand_ids', 'core.visible_group_ids', 'core.visible_user_ids',
+        'costing.ingredient_line_cost', 'costing.price_view_brand_ids', 'costing.price_view_group_ids',
+        'costing.propose_price', 'costing.resolve_price', 'costing.resolve_prices', 'costing.update_price_settings',
         'imports.cancel_job', 'imports.confirm_ingredients', 'imports.confirm_recipes', 'imports.create_job',
         'imports.file_brand_id', 'imports.file_group_id', 'imports.job_summary', 'imports.stage_rows', 'imports.validate_job',
         'imports.visible_job_ids',
         'org.create_area',
-        'org.create_brand', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted', 'org.update_area',
-        'org.update_brand', 'org.update_group', 'org.update_restaurant',
+        'org.create_brand', 'org.create_legal_entity', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted',
+        'org.set_restaurant_legal_entity', 'org.update_area',
+        'org.update_brand', 'org.update_group', 'org.update_legal_entity', 'org.update_restaurant',
         'recipes.add_media', 'recipes.archive_category', 'recipes.archive_recipe', 'recipes.can_upload_media',
         'recipes.category_usage',
         'recipes.create_category', 'recipes.create_recipe', 'recipes.create_variant', 'recipes.critical_path', 'recipes.kitchen_card',
@@ -101,9 +104,9 @@ select is(
         'catalog.ingredient_yield_tests', 'catalog.ingredients', 'catalog.purchase_products', 'catalog.suppliers',
         'catalog.unit_conversions', 'catalog.units', 'catalog.yield_processes',
         'core.notifications', 'core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships',
-        'core.user_role_assignments', 'core.v_test_documents', 'imports.import_errors', 'imports.import_jobs', 'imports.import_prices',
+        'core.user_role_assignments', 'core.v_test_documents', 'costing.price_records', 'costing.price_settings', 'imports.import_errors', 'imports.import_jobs', 'imports.import_prices',
         'imports.import_staging_rows', 'org.areas', 'org.brands',
-        'org.groups', 'org.restaurants', 'org.time_zones', 'recipes.recipe_assignments', 'recipes.recipe_categories',
+        'org.groups', 'org.legal_entities', 'org.restaurants', 'org.time_zones', 'recipes.recipe_assignments', 'recipes.recipe_categories',
         'recipes.recipe_components', 'recipes.recipe_media', 'recipes.recipe_step_dependencies', 'recipes.recipe_steps', 'recipes.recipe_versions',
         'recipes.recipes', 'workflow.approval_decisions',
         'workflow.approval_workflows'],
@@ -124,7 +127,8 @@ select is(
   (select array_agg(a.attname::text order by a.attname::text collate "C") from pg_attribute a
     where a.attrelid = 'workflow.approval_requests'::regclass and a.attnum > 0 and not a.attisdropped
       and not has_column_privilege('authenticated', a.attrelid, a.attnum, 'select')),
-  array['previous_values'], 'de las solicitudes se lee todo menos el antes (sale por la bandeja)'
+  array['previous_values', 'proposed_changes'],
+  'de las solicitudes se lee todo menos el antes y lo propuesto, que pueden traer precios (salen por la bandeja; ADR-0029)'
 );
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace

@@ -10,12 +10,12 @@ Toda la información vive en PostgreSQL, separada en esquemas por tema. Cada tem
 | Esquema       | Tema                                 | Tablas principales                                                                                                             |
 | ------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
 | `core`        | Identidad, roles y permisos          | user_profiles, roles, permissions, role_permissions, user_memberships, user_role_assignments, service_accounts, notifications  |
-| `org`         | Estructura del grupo                 | groups, brands, restaurants, areas                                                                                             |
+| `org`         | Estructura del grupo                 | groups, brands, restaurants, areas, legal_entities (razones sociales; ADR-0029)                                                |
 | `audit`       | Historia inalterable                 | audit_events, authentication_security_events (ingresos, bloqueos y rechazos; ADR-0014 y ADR-0015), sellos                      |
 | `workflow`    | Aprobaciones                         | approval_workflows, approval_requests, approval_decisions                                                                      |
 | `catalog`     | Materias primas y proveedores        | ingredients, ingredient_aliases, purchase_products, suppliers, units, unit_conversions, allergens (precios: costing; ADR-0020) |
 | `recipes`     | Recetario y fichas técnicas          | recipes, recipe_versions, recipe_lines, recipe_steps, recipe_photos                                                            |
-| `costing`     | Costos                               | cost_snapshots, recipe_costs, price_history                                                                                    |
+| `costing`     | Costos                               | price_records y price_settings (precios; ADR-0029), cost_snapshots, recipe_costs                                               |
 | `purchasing`  | Compras                              | purchase_orders, purchase_order_lines, invoices, invoice_lines                                                                 |
 | `inventory`   | Stock                                | stock_locations, stock_movements, stock_counts                                                                                 |
 | `production`  | Producción                           | production_plans, production_batches                                                                                           |
@@ -37,7 +37,7 @@ Toda la información vive en PostgreSQL, separada en esquemas por tema. Cada tem
 - Clave primaria `id uuid` generada en la base. Nunca reutilizar ni cambiar un id.
 - Toda tabla de negocio lleva `group_id`, y `brand_id` / `restaurant_id` cuando corresponda. Así funcionan los permisos por alcance.
 - Columnas de control en toda tabla modificable: `created_at`, `created_by`, `updated_at`, `updated_by`, `deleted_at`, `deleted_by`. **Se completan por trigger, no desde la app.**
-- Fechas siempre `timestamptz`. Dinero en `numeric(14,4)` con su moneda. Cantidades con su unidad. **Nunca `float` para plata.**
+- Fechas siempre `timestamptz`. Dinero en `numeric(14,4)` con su moneda (en el recetario, importes en `numeric(18,4)` y costo por gramo, mililitro o unidad en `numeric(20,8)`: ADR-0020, N1b). Cantidades con su unidad. **Nunca `float` para plata.**
 - Estados con tablas de referencia o tipos enum documentados, nunca texto libre.
 - Claves foráneas siempre declaradas, con `on delete restrict` por defecto.
 - Borrado lógico (`deleted_at`). El borrado físico solo lo hace el superadministrador en tareas de mantenimiento documentadas.

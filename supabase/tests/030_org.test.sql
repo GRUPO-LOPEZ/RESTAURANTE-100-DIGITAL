@@ -48,7 +48,8 @@ select is((select name from org.areas where id = '00000000-0000-4000-8000-000000
   'las áreas del seed tienen ids fijos');
 select is(
   (select count(*)::int from audit.audit_events where table_schema = 'org' and source = 'seed'),
-  20,
+  -- 20 de la estructura, más 2 razones sociales y la razón social de los 4 locales (2.1 C, ADR-0029).
+  26,
   'cada alta del seed quedó auditada con origen seed'
 );
 
@@ -278,7 +279,8 @@ select ok(
 select is(
   (select array_agg(policyname || ':' || cmd order by policyname)::text[]
      from pg_policies where schemaname = 'org' and roles <> '{audit_owner}'),
-  array['areas_select:SELECT', 'brands_select:SELECT', 'groups_select:SELECT', 'restaurants_select:SELECT', 'time_zones_select:SELECT'],
+  array['areas_select:SELECT', 'brands_select:SELECT', 'groups_select:SELECT', 'legal_entities_select:SELECT', 'restaurants_select:SELECT',
+        'time_zones_select:SELECT'],
   'en org solo hay políticas de lectura (las escrituras van por funciones), más las de la auditoría'
 );
 select is(

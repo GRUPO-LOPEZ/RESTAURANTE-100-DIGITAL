@@ -12,7 +12,7 @@ port = 54321
 # endpoints. `public` and `graphql_public` schemas are included by default.
 # Grupo LF (ADR-0005): core, org, workflow y catalog (ADR-0020), con RLS y has_permission.
 # audit nunca se expone. Staging lo hereda de acá y lo sube `config push`.
-schemas = ["public", "graphql_public", "core", "org", "workflow", "catalog", "recipes", "imports"]
+schemas = ["public", "graphql_public", "core", "org", "workflow", "catalog", "recipes", "imports", "costing"]
 # Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size

@@ -577,6 +577,44 @@ values ('00000000-0000-4000-8000-000000000413', '00000000-0000-4000-8000-0000000
         'Las recetas que la usan ya usan la versión nueva. Revisá si hace falta ajustar algo.',
         '/recetas/00000000-0000-4000-8000-000000001102');
 
+-- ---------------------------------------------------------------------------
+-- Precios (Fase 2, etapa 2.1 C; ADR-0029). Todo ficticio: razones sociales con CUIT inventado y
+-- valores simbólicos (source test_value), como pidió Soy mientras no lleguen las facturas.
+-- Ids fijos: razones sociales ...0015NN.
+-- ---------------------------------------------------------------------------
+insert into org.legal_entities (id, group_id, name, tax_id, vat_condition) values
+  ('00000000-0000-4000-8000-000000001501', '00000000-0000-4000-8000-000000000001', 'Demo Gastronomía S.R.L. (ficticia)', '30000000001', 'registered'),
+  ('00000000-0000-4000-8000-000000001502', '00000000-0000-4000-8000-000000000001', 'Demo Café de Lucía (ficticia)', '20000000002', 'monotax');
+update org.restaurants set legal_entity_id = '00000000-0000-4000-8000-000000001501'
+ where id in ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000203');
+update org.restaurants set legal_entity_id = '00000000-0000-4000-8000-000000001502'
+ where id = '00000000-0000-4000-8000-000000000204';
+
+-- Precios de grupo, con factura y 21 % de IVA incluido, de los productos de las materias primas 1 a 20.
+insert into costing.price_records (group_id, purchase_product_id, supplier_id, scope_type, valid_from, package_price,
+                                   document_type, vat_rate, price_includes_vat, source, notes)
+select p.group_id, p.id, p.supplier_id, 'group', current_date - 10, 1000 * s.n + 500, 'invoice', 21, true, 'test_value',
+       'Valor simbólico de prueba'
+  from seed_ingredients s
+  join catalog.purchase_products p on p.code = format('DEMO-PROD-%s', lpad(s.n::text, 3, '0'))
+ where s.n between 1 and 20 and s.n not in (7, 20);
+-- La albahaca, "precio ingresado" (sin factura): el precio es el final.
+insert into costing.price_records (group_id, purchase_product_id, scope_type, valid_from, package_price, document_type,
+                                   source, notes)
+select group_id, id, 'group', current_date - 10, 2500, 'no_invoice', 'test_value', 'Valor simbólico de prueba, sin factura'
+  from catalog.purchase_products where code = 'DEMO-PROD-007';
+-- El queso rallado, con un precio viejo: desactualizado.
+insert into costing.price_records (group_id, purchase_product_id, scope_type, valid_from, package_price, document_type,
+                                   vat_rate, source, notes)
+select group_id, id, 'group', current_date - 60, 9000, 'invoice', 21, 'test_value', 'Valor simbólico de prueba, viejo'
+  from catalog.purchase_products where code = 'DEMO-PROD-020';
+-- La mozzarella: Demo Pastas tiene su propio precio (los locales de Pastas no heredan el del grupo).
+insert into costing.price_records (group_id, purchase_product_id, scope_type, brand_id, valid_from, package_price,
+                                   document_type, vat_rate, source, notes)
+select group_id, id, 'brand', '00000000-0000-4000-8000-000000000101', current_date - 5, 36000, 'invoice', 21, 'test_value',
+       'Valor simbólico de prueba, de la marca'
+  from catalog.purchase_products where code = 'DEMO-PROD-019';
+
 -- Ingresos ficticios de los últimos 30 días, para el gráfico del tablero.
 set role audit_owner;
 insert into audit.authentication_security_events (event_type, occurred_at, operation, reason, user_id, email, scope_group_id)
