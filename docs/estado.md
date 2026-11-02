@@ -9,7 +9,7 @@ _Última actualización: 2026-11-02. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Pruebas (2026-11-02), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 161 de 161 ✅ · pgTAP 1.316 de 1.316 ✅ · Playwright 102 de 102 ✅ (con axe, en celular y computadora).
   - En la corrida anterior falló `materias-primas.spec.ts:22`: la importación de prueba creaba "MUZZA DEMO" y la búsqueda "muzz" encontraba 2. Se arregló en la causa: el Excel DEMO usa nombres que ninguna otra prueba busca ("QUESO TYBO XLS", "ZAPALLO XLS", etc.).
 - **Pantallas:** miradas en capturas de celular y computadora (subir, vista previa y lista).
-- **El PR del sellado** (`fix/auditoria-sellado`) tenía conflicto en este archivo con `main`. Se resolvió y se subió (commit `1e16d60`); queda para fusionar.
+- **El arreglo del sellado ya está fusionado (PR #29):** esta rama trae `main` con ese cambio. Con las dos migraciones juntas, desde una base recién creada: pgTAP 1.330 de 1.330 ✅.
 - **Qué se hizo** (detalle en ADR-0027, "Cómo quedó (PR 2)"):
   - **lector del Excel** en el servidor con ExcelJS 4.4.0 (`lib/imports/recipe-book.ts`), con topes contra archivos enormes;
   - **el navegador sube el Excel directo al bucket** (Vercel no acepta más de 4,5 MB por pedido) y una acción de servidor lo lee con la sesión de quien lo subió;
@@ -28,7 +28,17 @@ _Última actualización: 2026-11-02. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Pendiente para la próxima migración de importaciones:** que `parsed` acepte solo valores simples (menor 4 de seguridad).
 - **Después del PR 2, la compuerta 2.4 (en producción):** Joaco y el Chef cargan el Excel real de Nonnos y verifican que no haya duplicados. El Excel real nunca entra en desarrollo.
 
-## Antes: etapa 2.4, importar el recetario de Excel (PR 1 de 2, base, rama `feat/importar-recetario`)
+## Antes: arreglo del sellado de la auditoría (fusionado, PR #29)
+
+- **Qué pasaba:** el sellado de la auditoría y del registro de seguridad salteaba eventos nuevos en el medio de la secuencia. Eso dejaba huecos, y la verificación daba "alterado" sin que nadie hubiera tocado nada: una falsa alarma. Detalle en ADR-0028.
+- **Qué se hizo:** migración `20261107120000_audit_seal_contiguous.sql`.
+  - el sellado toma solo el tramo continuo de la secuencia;
+  - un evento con fecha futura se rechaza, porque frenaría el sellado.
+- **Pruebas:** nueva `025` (14 casos). Contra el código anterior fallan 10.
+- **Revisiones:** `security-auditor` apto; `db-reviewer` sin graves. Sus menores están resueltos y el medio está documentado.
+- **Pendiente antes de las importaciones grandes:** acotar la duración de las transacciones a menos que el margen del sellado (ADR-0028).
+
+## Antes: etapa 2.4, importar el recetario de Excel (PR 1 de 2, base; fusionado, PR #28)
 
 - **Qué se hizo:** migración `20261106120000_imports.sql`. Detalle en ADR-0027.
   - zona intermedia con vista previa, sin tocar nada oficial;
