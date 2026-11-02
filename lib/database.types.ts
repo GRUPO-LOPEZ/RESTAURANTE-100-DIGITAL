@@ -3252,6 +3252,7 @@ export type Database = {
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          expected_rows: number | null;
           file_name: string;
           file_sha256: string;
           group_id: string;
@@ -3274,6 +3275,7 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          expected_rows?: number | null;
           file_name: string;
           file_sha256: string;
           group_id: string;
@@ -3295,6 +3297,7 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          expected_rows?: number | null;
           file_name?: string;
           file_sha256?: string;
           group_id?: string;
@@ -3480,6 +3483,7 @@ export type Database = {
         Args: {
           p_brand_id: string;
           p_code_prefix: string;
+          p_expected_rows?: number;
           p_file_name: string;
           p_file_sha256: string;
           p_reason: string;
@@ -3500,6 +3504,7 @@ export type Database = {
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          expected_rows: number | null;
           file_name: string;
           file_sha256: string;
           group_id: string;
@@ -3539,6 +3544,7 @@ export type Database = {
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          expected_rows: number | null;
           file_name: string;
           file_sha256: string;
           group_id: string;

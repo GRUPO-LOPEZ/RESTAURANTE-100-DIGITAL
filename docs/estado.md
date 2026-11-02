@@ -30,6 +30,32 @@ _Última actualización: 2026-11-02. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - **pregunta abierta para Joaco y Soy:** ¿se miden las subas en escalones (varias por debajo del %) contra el precio de hace N días?
   - **para la 2.3:** congelar la cantidad de las líneas de receta en la unidad de uso, porque hoy una densidad nueva la cambia sin aprobación.
 
+## Antes: etapa 2.4, importar el recetario de Excel (PR 2 de 2, lector y pantallas; fusionado, PR #31)
+
+- **Sale de la rama del PR 1** (`feat/importar-recetario`), que **ya está fusionada (PR #28)**: el PR 2 va contra `main`.
+- **Estado:** fusionado (PR #31).
+- **Pruebas (2026-11-02), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 161 de 161 ✅ · pgTAP 1.316 de 1.316 ✅ · Playwright 102 de 102 ✅ (con axe, en celular y computadora).
+  - En la corrida anterior falló `materias-primas.spec.ts:22`: la importación de prueba creaba "MUZZA DEMO" y la búsqueda "muzz" encontraba 2. Se arregló en la causa: el Excel DEMO usa nombres que ninguna otra prueba busca ("QUESO TYBO XLS", "ZAPALLO XLS", etc.).
+- **Pantallas:** miradas en capturas de celular y computadora (subir, vista previa y lista).
+- **El arreglo del sellado ya está fusionado (PR #29):** esta rama trae `main` con ese cambio. Con las dos migraciones juntas, desde una base recién creada: pgTAP 1.330 de 1.330 ✅.
+- **Qué se hizo** (detalle en ADR-0027, "Cómo quedó (PR 2)"):
+  - **lector del Excel** en el servidor con ExcelJS 4.4.0 (`lib/imports/recipe-book.ts`), con topes contra archivos enormes;
+  - **el navegador sube el Excel directo al bucket** (Vercel no acepta más de 4,5 MB por pedido) y una acción de servidor lo lee con la sesión de quien lo subió;
+  - **pantallas:** `/recetas/importar` (lista), `/nueva` (subir) y `/[id]` (vista previa, confirmar materias primas o recetas, validar, cancelar, recetas creadas, problemas y su CSV). Botón "Importaciones" en Recetas;
+  - **migración `20261108120000_imports_upload_checks.sql`:**
+    - lee su archivo quien lo subió, mientras importe en la marca;
+    - se sube solo a nombre propio;
+    - la importación se registra solo sobre un archivo propio;
+    - una carga cortada no se valida (`expected_rows`).
+- **Excel real de Nonnos:** comprobado **solo leyéndolo**, con una prueba temporal borrada; nunca entró en la base. 161 materias primas, 65 preparaciones, 135 platos y 602 líneas, iguales al análisis inicial. Se lee en unos 15 s.
+- **Revisiones:**
+  - `ui-reviewer`: sin graves, 5 medios resueltos;
+  - `security-auditor`: apto, sin graves. 2 de sus 3 medios resueltos;
+  - `db-reviewer`: 1 grave (una prueba) resuelto; la segunda pasada, sin graves ni medios.
+- **Pendiente para decidir con Joaco antes de producción:** los **archivos huérfanos** del bucket (medio 2 de seguridad). Un Excel que se subió pero no se importó queda guardado y nadie lo puede borrar. Propuesta: una limpieza programada en el servidor y una regla de cuántos días se guardan.
+- **Pendiente para la próxima migración de importaciones:** que `parsed` acepte solo valores simples (menor 4 de seguridad).
+- **Después del PR 2, la compuerta 2.4 (en producción):** Joaco y el Chef cargan el Excel real de Nonnos y verifican que no haya duplicados. El Excel real nunca entra en desarrollo.
+
 ## Antes: arreglo del sellado de la auditoría (fusionado, PR #29)
 
 - **Qué pasaba:** el sellado de la auditoría y del registro de seguridad salteaba eventos nuevos en el medio de la secuencia. Eso dejaba huecos, y la verificación daba "alterado" sin que nadie hubiera tocado nada: una falsa alarma. Detalle en ADR-0028.
@@ -39,9 +65,6 @@ _Última actualización: 2026-11-02. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Pruebas:** nueva `025` (14 casos). Contra el código anterior fallan 10.
 - **Revisiones:** `security-auditor` apto; `db-reviewer` sin graves. Sus menores están resueltos y el medio está documentado.
 - **Pendiente antes de las importaciones grandes:** acotar la duración de las transacciones a menos que el margen del sellado (ADR-0028).
-- **Otras ramas:**
-  - `feat/importar-recetario`: base de la importación del Excel, PR 1. **Fusionada (PR #28).**
-  - `feat/importar-recetario-pantallas`: PR 2 de la importación (lector y pantallas), en curso.
 
 ## Antes: etapa 2.4, importar el recetario de Excel (PR 1 de 2, base; fusionado, PR #28)
 

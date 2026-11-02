@@ -360,6 +360,17 @@ export const schemas = {
     description: z.string().trim().max(300, "Hasta 300 caracteres.").optional(),
     reason: reasonField,
   }),
+  // Importar el recetario (ADR-0027): el archivo lo controla el navegador (tipo y tamaño), otra vez
+  // el bucket y el lector del servidor.
+  importBook: z.object({
+    brand_id: choice("Elegí la marca."),
+    code_prefix: z
+      .string({ message: "Escribí el prefijo." })
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9]{2,6}$/, "De 2 a 6 letras o números, por ejemplo NON."),
+    reason: reasonField,
+  }),
 } as const;
 
 export type FormSchemaName = keyof typeof schemas;

@@ -355,27 +355,28 @@ Errores y avisos de la validación, por fila, en español. Se descargan para cor
 
 Cada archivo de Excel que se importa: de qué marca, con qué prefijo de códigos, su huella (para no importarlo dos veces) y en qué paso está.
 
-| Columna                    | Tipo                       | Nulo | Qué guarda                                                                                                   |
-| -------------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------ |
-| `id`                       | `uuid`                     | no   | Identificador de la importación.                                                                             |
-| `group_id`                 | `uuid`                     | no   | Grupo.                                                                                                       |
-| `brand_id`                 | `uuid`                     | no   | Marca a la que van las recetas importadas.                                                                   |
-| `kind`                     | `text`                     | no   | Tipo de archivo: recipe_book (el recetario de Excel de un restaurante).                                      |
-| `code_prefix`              | `text`                     | no   | Prefijo de la marca para los códigos del Excel (NON → NON-190000). Es siempre el mismo para la marca.        |
-| `file_name`                | `text`                     | no   | Nombre del archivo que se subió.                                                                             |
-| `storage_path`             | `text`                     | no   | Dónde está el archivo en el bucket imports: <grupo>/<marca>/<archivo>.xlsx.                                  |
-| `file_sha256`              | `text`                     | no   | Huella SHA-256 del contenido, calculada por el servidor al leerlo: el mismo archivo no se importa dos veces. |
-| `status`                   | `imports.job_status`       | no   | Paso en el que está la importación.                                                                          |
-| `ingredients_confirmed_by` | `uuid`                     | sí   | Quién confirmó las materias primas nuevas (Compras).                                                         |
-| `ingredients_confirmed_at` | `timestamp with time zone` | sí   | Cuándo se confirmaron las materias primas.                                                                   |
-| `confirmed_by`             | `uuid`                     | sí   | Quién confirmó las recetas.                                                                                  |
-| `confirmed_at`             | `timestamp with time zone` | sí   | Cuándo se confirmaron las recetas.                                                                           |
-| `created_at`               | `timestamp with time zone` | no   | Cuándo se subió (lo pone la base).                                                                           |
-| `created_by`               | `uuid`                     | sí   | Quién la subió (lo pone la base).                                                                            |
-| `updated_at`               | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                              |
-| `updated_by`               | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                            |
-| `deleted_at`               | `timestamp with time zone` | sí   | Borrado lógico.                                                                                              |
-| `deleted_by`               | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                            |
+| Columna                    | Tipo                       | Nulo | Qué guarda                                                                                                                                                            |
+| -------------------------- | -------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                       | `uuid`                     | no   | Identificador de la importación.                                                                                                                                      |
+| `group_id`                 | `uuid`                     | no   | Grupo.                                                                                                                                                                |
+| `brand_id`                 | `uuid`                     | no   | Marca a la que van las recetas importadas.                                                                                                                            |
+| `kind`                     | `text`                     | no   | Tipo de archivo: recipe_book (el recetario de Excel de un restaurante).                                                                                               |
+| `code_prefix`              | `text`                     | no   | Prefijo de la marca para los códigos del Excel (NON → NON-190000). Es siempre el mismo para la marca.                                                                 |
+| `file_name`                | `text`                     | no   | Nombre del archivo que se subió.                                                                                                                                      |
+| `storage_path`             | `text`                     | no   | Dónde está el archivo en el bucket imports: <grupo>/<marca>/<archivo>.xlsx.                                                                                           |
+| `file_sha256`              | `text`                     | no   | Huella SHA-256 del contenido, calculada por el servidor al leerlo: el mismo archivo no se importa dos veces.                                                          |
+| `status`                   | `imports.job_status`       | no   | Paso en el que está la importación.                                                                                                                                   |
+| `ingredients_confirmed_by` | `uuid`                     | sí   | Quién confirmó las materias primas nuevas (Compras).                                                                                                                  |
+| `ingredients_confirmed_at` | `timestamp with time zone` | sí   | Cuándo se confirmaron las materias primas.                                                                                                                            |
+| `confirmed_by`             | `uuid`                     | sí   | Quién confirmó las recetas.                                                                                                                                           |
+| `confirmed_at`             | `timestamp with time zone` | sí   | Cuándo se confirmaron las recetas.                                                                                                                                    |
+| `created_at`               | `timestamp with time zone` | no   | Cuándo se subió (lo pone la base).                                                                                                                                    |
+| `created_by`               | `uuid`                     | sí   | Quién la subió (lo pone la base).                                                                                                                                     |
+| `updated_at`               | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                                                                                       |
+| `updated_by`               | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                                     |
+| `deleted_at`               | `timestamp with time zone` | sí   | Borrado lógico.                                                                                                                                                       |
+| `deleted_by`               | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                                                                     |
+| `expected_rows`            | `integer`                  | sí   | Cuántas filas leyó el servidor en el archivo. Para validar tienen que estar todas cargadas (una carga cortada no se confirma). Vacío en las importaciones anteriores. |
 
 ## `imports.import_prices`
 

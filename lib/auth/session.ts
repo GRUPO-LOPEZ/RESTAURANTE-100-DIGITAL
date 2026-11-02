@@ -81,6 +81,8 @@ export const getMenus = cache(async () => {
     recipes,
     recipesDraft,
     recipesSettings,
+    importsRun,
+    importsApprove,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -99,6 +101,10 @@ export const getMenus = cache(async () => {
     check("recipes.view"),
     check("recipes.draft"),
     groupWide("recipes.draft"),
+    // Importar el recetario (ADR-0027): sube quien importa en una marca; confirma la cocina
+    // (imports.approve) y las materias primas nuevas, Compras (catalog.manage en el grupo).
+    check("imports.run"),
+    check("imports.approve"),
   ]);
   return {
     users,
@@ -118,6 +124,9 @@ export const getMenus = cache(async () => {
     recipes,
     recipesDraft,
     recipesSettings,
+    importsRun,
+    importsApprove,
+    imports: importsRun || importsApprove || catalogManage,
   };
 });
 

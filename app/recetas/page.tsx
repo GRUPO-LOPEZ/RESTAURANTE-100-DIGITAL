@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Upload } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { FiltersPanel } from "@/components/filters-panel";
@@ -144,6 +144,14 @@ async function Recipes({ searchParams }: { searchParams: PageProps<"/recetas">["
                 <Link href="/materias-primas/configuracion">
                   <Settings aria-hidden="true" />
                   Categorías
+                </Link>
+              </Button>
+            ) : null}
+            {menus.imports ? (
+              <Button asChild variant="outline">
+                <Link href="/recetas/importar">
+                  <Upload aria-hidden="true" />
+                  Importaciones
                 </Link>
               </Button>
             ) : null}
