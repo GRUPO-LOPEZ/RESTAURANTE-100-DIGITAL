@@ -1405,6 +1405,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_category_stale_days: {
+        Args: { p_category_id: string; p_days: number; p_reason: string };
+        Returns: undefined;
+      };
       set_ingredient_active: {
         Args: { p_active: boolean; p_id: string; p_reason: string };
         Returns: undefined;
@@ -2817,6 +2821,352 @@ export type Database = {
       [_ in never]: never;
     };
   };
+  costing: {
+    Tables: {
+      price_records: {
+        Row: {
+          approval_request_id: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
+          base_quantity: number;
+          brand_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          discount_amount: number;
+          document_type: Database["costing"]["Enums"]["price_document"];
+          entry_number: number;
+          gross_package_price: number;
+          group_id: string;
+          id: string;
+          net_package_price: number;
+          notes: string | null;
+          package_price: number;
+          price_includes_vat: boolean;
+          purchase_product_id: string;
+          restaurant_id: string | null;
+          scope_type: Database["core"]["Enums"]["scope_type"];
+          source: Database["costing"]["Enums"]["price_source"];
+          supplier_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          valid_from: string;
+          vat_rate: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          approval_request_id?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          base_quantity: number;
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          discount_amount?: number;
+          document_type: Database["costing"]["Enums"]["price_document"];
+          entry_number?: never;
+          gross_package_price: number;
+          group_id: string;
+          id?: string;
+          net_package_price: number;
+          notes?: string | null;
+          package_price: number;
+          price_includes_vat?: boolean;
+          purchase_product_id: string;
+          restaurant_id?: string | null;
+          scope_type: Database["core"]["Enums"]["scope_type"];
+          source: Database["costing"]["Enums"]["price_source"];
+          supplier_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          valid_from: string;
+          vat_rate?: number | null;
+        };
+        Update: {
+          approval_request_id?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          base_quantity?: number;
+          brand_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          discount_amount?: number;
+          document_type?: Database["costing"]["Enums"]["price_document"];
+          entry_number?: never;
+          gross_package_price?: number;
+          group_id?: string;
+          id?: string;
+          net_package_price?: number;
+          notes?: string | null;
+          package_price?: number;
+          price_includes_vat?: boolean;
+          purchase_product_id?: string;
+          restaurant_id?: string | null;
+          scope_type?: Database["core"]["Enums"]["scope_type"];
+          source?: Database["costing"]["Enums"]["price_source"];
+          supplier_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          valid_from?: string;
+          vat_rate?: number | null;
+        };
+        Relationships: [];
+      };
+      price_settings: {
+        Row: {
+          approval_variation_pct: number;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          stale_days: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          approval_variation_pct?: number;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          stale_days?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          approval_variation_pct?: number;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          stale_days?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      apply_price: { Args: { p_request_id: string }; Returns: undefined };
+      apply_price_direction: { Args: { p_request_id: string }; Returns: undefined };
+      check_reference: {
+        Args: {
+          p_req: Omit<
+            Database["workflow"]["Tables"]["approval_requests"]["Row"],
+            Database["workflow"]["Tables"]["approval_requests"]["ComputedFields"]
+          >;
+        };
+        Returns: undefined;
+      };
+      has_scope_permission: {
+        Args: {
+          p_brand_id: string;
+          p_group_id: string;
+          p_permission: string;
+          p_restaurant_id: string;
+          p_scope: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: boolean;
+      };
+      ingredient_line_cost: {
+        Args: {
+          p_as_of?: string;
+          p_basis?: string;
+          p_ingredient_id: string;
+          p_process_id?: string;
+          p_quantity: number;
+          p_restaurant_id: string;
+          p_unit_id: string;
+        };
+        Returns: {
+          base_quantity: number;
+          inherited: boolean;
+          line_cost: number;
+          price_level: string;
+          price_record_id: string;
+          purchase_quantity: number;
+          status: string;
+          unit_cost: number;
+        }[];
+      };
+      insert_approved_price: {
+        Args: {
+          p_req: Omit<
+            Database["workflow"]["Tables"]["approval_requests"]["Row"],
+            Database["workflow"]["Tables"]["approval_requests"]["ComputedFields"]
+          >;
+        };
+        Returns: undefined;
+      };
+      package_amounts: {
+        Args: {
+          p_discount: number;
+          p_document: Database["costing"]["Enums"]["price_document"];
+          p_includes_vat: boolean;
+          p_price: number;
+          p_vat_rate: number;
+        };
+        Returns: {
+          gross_amount: number;
+          net_amount: number;
+        }[];
+      };
+      price_rows: {
+        Args: { p_as_of: string; p_ingredient_id: string; p_restaurant_id: string };
+        Returns: {
+          base_unit: string;
+          document_type: string;
+          gross_unit_cost: number;
+          ingredient_id: string;
+          inherited: boolean;
+          net_unit_cost: number;
+          price_level: string;
+          price_record_id: string;
+          product_description: string;
+          purchase_product_id: string;
+          stale: boolean;
+          status: string;
+          unit_cost: number;
+          valid_from: string;
+        }[];
+      };
+      price_view_brand_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      price_view_group_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      propose_price: {
+        Args: {
+          p_brand_id: string;
+          p_discount_amount: number;
+          p_document_type: string;
+          p_notes: string;
+          p_package_price: number;
+          p_price_includes_vat: boolean;
+          p_purchase_product_id: string;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_scope_type: string;
+          p_source: string;
+          p_supplier_id: string;
+          p_valid_from: string;
+          p_vat_rate: number;
+        };
+        Returns: string;
+      };
+      reference_price: {
+        Args: {
+          p_as_of: string;
+          p_brand_id: string;
+          p_group_id: string;
+          p_ingredient_id: string;
+          p_restaurant_id: string;
+          p_scope: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: {
+          gross_unit_cost: number;
+          net_unit_cost: number;
+          price_record_id: string;
+          valid_from: string;
+        }[];
+      };
+      resolve_price: {
+        Args: { p_as_of?: string; p_ingredient_id: string; p_restaurant_id: string };
+        Returns: {
+          base_unit: string;
+          document_type: string;
+          gross_unit_cost: number;
+          inherited: boolean;
+          net_unit_cost: number;
+          price_level: string;
+          price_record_id: string;
+          product_description: string;
+          purchase_product_id: string;
+          stale: boolean;
+          status: string;
+          unit_cost: number;
+          valid_from: string;
+        }[];
+      };
+      resolve_price_internal: {
+        Args: { p_as_of: string; p_ingredient_id: string; p_restaurant_id: string };
+        Returns: {
+          base_unit: string;
+          document_type: string;
+          gross_unit_cost: number;
+          inherited: boolean;
+          net_unit_cost: number;
+          price_level: string;
+          price_record_id: string;
+          product_description: string;
+          purchase_product_id: string;
+          stale: boolean;
+          status: string;
+          unit_cost: number;
+          valid_from: string;
+        }[];
+      };
+      resolve_prices: {
+        Args: { p_as_of?: string; p_restaurant_id: string };
+        Returns: {
+          base_unit: string;
+          document_type: string;
+          gross_unit_cost: number;
+          ingredient_id: string;
+          inherited: boolean;
+          net_unit_cost: number;
+          price_level: string;
+          price_record_id: string;
+          product_description: string;
+          purchase_product_id: string;
+          stale: boolean;
+          status: string;
+          unit_cost: number;
+          valid_from: string;
+        }[];
+      };
+      update_price_settings: {
+        Args: {
+          p_approval_variation_pct: number;
+          p_group_id: string;
+          p_reason: string;
+          p_stale_days: number;
+        };
+        Returns: undefined;
+      };
+      valid_from_floor: {
+        Args: {
+          p_brand_id: string;
+          p_product_id: string;
+          p_restaurant_id: string;
+          p_scope: Database["core"]["Enums"]["scope_type"];
+        };
+        Returns: string;
+      };
+    };
+    Enums: {
+      price_document: "invoice" | "no_invoice";
+      price_source: "manual" | "test_value" | "excel_import" | "invoice";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   imports: {
     Tables: {
       import_errors: {
@@ -3382,6 +3732,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      legal_entities: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          tax_id: string;
+          updated_at: string;
+          updated_by: string | null;
+          vat_condition: Database["org"]["Enums"]["vat_condition"];
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          name: string;
+          tax_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_condition: Database["org"]["Enums"]["vat_condition"];
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          name?: string;
+          tax_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_condition?: Database["org"]["Enums"]["vat_condition"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "legal_entities_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       restaurants: {
         Row: {
           address: string | null;
@@ -3393,6 +3794,7 @@ export type Database = {
           deleted_by: string | null;
           group_id: string;
           id: string;
+          legal_entity_id: string | null;
           legal_name: string | null;
           locality: string | null;
           name: string;
@@ -3417,6 +3819,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id: string;
           id?: string;
+          legal_entity_id?: string | null;
           legal_name?: string | null;
           locality?: string | null;
           name: string;
@@ -3440,6 +3843,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
+          legal_entity_id?: string | null;
           legal_name?: string | null;
           locality?: string | null;
           name?: string;
@@ -3467,6 +3871,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "groups";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "restaurants_legal_entity_fkey";
+            columns: ["legal_entity_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "legal_entities";
+            referencedColumns: ["id", "group_id"];
           },
           {
             foreignKeyName: "restaurants_predecessor_id_fkey";
@@ -3512,6 +3923,16 @@ export type Database = {
         Args: { p_code: string; p_group_id: string; p_name: string; p_reason: string };
         Returns: string;
       };
+      create_legal_entity: {
+        Args: {
+          p_group_id: string;
+          p_name: string;
+          p_reason: string;
+          p_tax_id: string;
+          p_vat_condition: string;
+        };
+        Returns: string;
+      };
       create_restaurant: {
         Args: { p_brand_id: string; p_details: Json; p_name: string; p_reason: string };
         Returns: string;
@@ -3530,6 +3951,10 @@ export type Database = {
         Args: { p_deleted: boolean; p_id: string; p_reason: string; p_table: string };
         Returns: undefined;
       };
+      set_restaurant_legal_entity: {
+        Args: { p_legal_entity_id: string; p_reason: string; p_restaurant_id: string };
+        Returns: undefined;
+      };
       update_area: {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
@@ -3542,6 +3967,10 @@ export type Database = {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
       };
+      update_legal_entity: {
+        Args: { p_changes: Json; p_id: string; p_reason: string };
+        Returns: undefined;
+      };
       update_restaurant: {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
@@ -3550,6 +3979,7 @@ export type Database = {
     Enums: {
       site_type: "restaurant" | "central_kitchen" | "production_unit";
       unit_status: "active" | "inactive";
+      vat_condition: "registered" | "monotax" | "exempt";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -4680,6 +5110,15 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      can_see_amounts: {
+        Args: {
+          p_brand_id: string;
+          p_group_id: string;
+          p_restaurant_id: string;
+          p_workflow_code: string;
+        };
+        Returns: boolean;
+      };
       cancel_request: { Args: { p_reason: string; p_request_id: string }; Returns: Json };
       cannot_apply: { Args: { p_why: string }; Returns: undefined };
       decide_approval: {
@@ -4904,6 +5343,12 @@ export const Constants = {
       version_status: ["draft", "in_review", "approved", "published", "archived"],
     },
   },
+  costing: {
+    Enums: {
+      price_document: ["invoice", "no_invoice"],
+      price_source: ["manual", "test_value", "excel_import", "invoice"],
+    },
+  },
   imports: {
     Enums: {
       issue_severity: ["error", "warning"],
@@ -4923,6 +5368,7 @@ export const Constants = {
     Enums: {
       site_type: ["restaurant", "central_kitchen", "production_unit"],
       unit_status: ["active", "inactive"],
+      vat_condition: ["registered", "monotax", "exempt"],
     },
   },
   public: {

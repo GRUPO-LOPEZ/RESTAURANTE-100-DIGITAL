@@ -138,21 +138,21 @@ select is((select site_type::text from org.restaurants where id = pg_temp.u(201)
 -- Matriz de permisos del recetario (sección 17 y decisión de Joaco del 2026-10-28)
 -- ---------------------------------------------------------------------------
 select is((select count(*)::int from core.permissions
-            where module in ('catalog', 'prices', 'yields', 'recipes', 'scenarios', 'imports', 'reports')), 19,
-  'hay 19 permisos del recetario');
+            where module in ('catalog', 'prices', 'yields', 'recipes', 'scenarios', 'imports', 'reports')), 20,
+  'hay 20 permisos del recetario (prices.configure llegó con la 2.1 C, ADR-0029)');
 select is(pg_temp.perms('superadmin'), pg_temp.sorted(array['catalog.view', 'catalog.manage', 'prices.view', 'prices.propose',
   'imports.run', 'recipes.view', 'recipes.view_costs', 'recipes.draft', 'recipes.review', 'yields.record', 'reports.export']),
   'Superadministrador: los de quienes puede suspender (Gerente, Jefe de Cocina, Cocinero, Compras y Auditor)');
-select is(pg_temp.perms('general_management'), pg_temp.sorted(array['catalog.view', 'prices.view', 'prices.approve',
+select is(pg_temp.perms('general_management'), pg_temp.sorted(array['catalog.view', 'prices.view', 'prices.approve', 'prices.configure',
   'recipes.view', 'recipes.view_costs', 'recipes.approve', 'recipes.publish', 'recipes.archive', 'recipes.assign',
-  'scenarios.manage', 'imports.approve', 'reports.export']), 'Dirección General: ver con costos, aprobar y exportar');
+  'scenarios.manage', 'imports.approve', 'reports.export']), 'Dirección General: ver con costos, aprobar, exportar y configurar los precios');
 select is(pg_temp.perms('brand_director'), pg_temp.sorted(array['catalog.view', 'prices.view', 'recipes.view',
   'recipes.view_costs', 'recipes.draft', 'recipes.review', 'recipes.approve', 'recipes.publish', 'recipes.archive',
   'recipes.assign', 'yields.record', 'yields.approve', 'scenarios.manage', 'imports.run', 'imports.approve',
   'reports.export']), 'Director de Marca: su marca, con lo del Chef y el Gerente');
-select is(pg_temp.perms('restaurant_manager'), pg_temp.sorted(array['catalog.view', 'recipes.view',
-  'recipes.draft', 'recipes.review', 'yields.record', 'reports.export']),
-  'Gerente: su local y lo del Jefe de Cocina, sin costos ni precios hasta que Soy responda N2');
+select is(pg_temp.perms('restaurant_manager'), pg_temp.sorted(array['catalog.view', 'prices.view', 'recipes.view',
+  'recipes.view_costs', 'recipes.draft', 'recipes.review', 'yields.record', 'reports.export']),
+  'Gerente: su local y lo del Jefe de Cocina, con los costos y precios de su local (respuesta 7 de Soy, ADR-0024)');
 select is(pg_temp.perms('executive_chef'), pg_temp.sorted(array['catalog.view', 'yields.record', 'yields.approve',
   'recipes.view', 'recipes.view_costs', 'recipes.draft', 'recipes.review', 'recipes.approve', 'recipes.publish',
   'recipes.archive', 'recipes.assign', 'imports.run', 'imports.approve', 'reports.export']),
@@ -318,9 +318,10 @@ select is(pg_temp.q(pg_temp.u(408), $$select catalog.set_allergen_status(pg_temp
 select is(pg_temp.msg(pg_temp.u(408), $$select catalog.set_unit_conversion(pg_temp.ing(9), 'unit_weight', null, null, null, null, 'Prueba')$$),
   'No se puede quitar esta conversión: el producto «Limón, por kg» se compra en otra unidad y necesita su peso por unidad.',
   'no se quita el peso por unidad del limón mientras se compre por kg');
-select is(pg_temp.msg(pg_temp.u(408), $$select catalog.update_ingredient(pg_temp.ing(1), '{"recipe_unit": "ml"}', 'Prueba')$$),
-  'No se puede cambiar la unidad de uso: el producto «Tomate perita, cajón de 10 kg» se compra en otra unidad y necesita su densidad.',
-  'no se cambia el tomate a ml: sus productos están en g y no tiene densidad');
+-- Con una materia prima sin precios: con precios, la unidad de uso no cambia nunca (2.1 C, ADR-0029; prueba 211).
+select is(pg_temp.msg(pg_temp.u(408), $$select catalog.update_ingredient(pg_temp.ing(29), '{"recipe_unit": "ml"}', 'Prueba')$$),
+  'No se puede cambiar la unidad de uso: el producto «Sémola, bolsa de 5 kg» se compra en otra unidad y necesita su densidad.',
+  'no se cambia la sémola a ml: sus productos están en g y no tiene densidad');
 select is(pg_temp.q(pg_temp.u(408), $$select catalog.update_purchase_product((select id from catalog.purchase_products where code = 'DEMO-PROD-009'),
             '{"is_active": false}', 'Ya no se compra')::text$$),
   '', 'desactivar un producto nunca se frena');
@@ -415,8 +416,8 @@ select is(pg_temp.internal(pg_temp.u(409), $$select core.can_see_costs(pg_temp.u
   'el Cocinero no ve costos en su local');
 select is(pg_temp.internal(pg_temp.u(406), $$select core.can_see_costs(pg_temp.u(1), pg_temp.u(101), pg_temp.u(201))::text$$), 'false',
   'el Jefe de Cocina tampoco');
-select is(pg_temp.internal(pg_temp.u(404), $$select core.can_see_costs(pg_temp.u(1), pg_temp.u(101), pg_temp.u(201))::text$$), 'false',
-  'el Gerente tampoco, hasta que Soy responda N2');
+select is(pg_temp.internal(pg_temp.u(404), $$select core.can_see_costs(pg_temp.u(1), pg_temp.u(101), pg_temp.u(201))::text$$), 'true',
+  'el Gerente sí, en su local (respuesta 7 de Soy, ADR-0024)');
 -- El historial de verdad (no solo la función): el costo del documento de ensayo del seed.
 select is(pg_temp.q(pg_temp.u(410), $$select new_values ->> 'cost' from core.audit_history(p_limit => 50, p_record_id => pg_temp.u(601))
             where table_name = 'test_documents' and record_id = pg_temp.u(601) and action = 'insert'$$),
