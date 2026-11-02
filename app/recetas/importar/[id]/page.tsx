@@ -128,7 +128,10 @@ async function Preview({
         ) : null}
       </Card>
 
-      <section aria-label="Totales" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section
+        aria-label="Totales"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
         {unvalidated ? (
           <Kpi
             label="Estado"
@@ -304,7 +307,10 @@ async function Preview({
             </ul>
           )}
           {recipePages > 1 ? (
-            <nav aria-label="Páginas de recetas creadas" className="flex flex-wrap items-center gap-2">
+            <nav
+              aria-label="Páginas de recetas creadas"
+              className="flex flex-wrap items-center gap-2"
+            >
               {recipesPage > 0 ? (
                 <Button asChild variant="outline">
                   <Link href={`/recetas/importar/${job.id}?recetas=${recipesPage}`}>Anterior</Link>

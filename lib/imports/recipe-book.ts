@@ -128,7 +128,11 @@ export function zipTooLarge(file: ArrayBuffer): boolean {
     if (size === 0xffffffff) return true;
     total += size;
     if (total > MAX_UNZIPPED_BYTES) return true;
-    at += 46 + view.getUint16(at + 28, true) + view.getUint16(at + 30, true) + view.getUint16(at + 32, true);
+    at +=
+      46 +
+      view.getUint16(at + 28, true) +
+      view.getUint16(at + 30, true) +
+      view.getUint16(at + 32, true);
   }
   return false;
 }
@@ -369,7 +373,8 @@ export async function readRecipeBook(file: ArrayBuffer): Promise<ReadResult> {
   if (zipTooLarge(file))
     return {
       ok: false,
-      message: "El Excel es demasiado grande por dentro. Sacale las solapas que no son del recetario.",
+      message:
+        "El Excel es demasiado grande por dentro. Sacale las solapas que no son del recetario.",
     };
   const wb = new ExcelJS.Workbook();
   try {

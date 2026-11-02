@@ -83,7 +83,9 @@ test("la Chef sube el recetario, Compras confirma las materias primas y la Chef,
   const purchasing = await browser.newPage({ ...testInfo.project.use });
   await login(purchasing, "compras@ejemplo.test");
   await purchasing.goto(url);
-  await purchasing.getByLabel("Motivo de la confirmación").fill("Materias primas del recetario de prueba");
+  await purchasing
+    .getByLabel("Motivo de la confirmación")
+    .fill("Materias primas del recetario de prueba");
   await purchasing.getByRole("button", { name: "Confirmar materias primas" }).click();
   // La pantalla pasa al paso siguiente: la confirmación queda en el encabezado.
   await expect(purchasing.getByText(/^Materias primas confirmadas el /)).toBeVisible();
