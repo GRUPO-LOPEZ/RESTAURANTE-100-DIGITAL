@@ -1,3 +1,4 @@
+import { IngredientPrices } from "@/components/ingredient-prices";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -139,9 +140,6 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
           />
           <Row label="Observaciones" value={ingredient.notes} />
         </dl>
-        <p className="rounded-sm border border-line bg-info p-3 text-base text-info-ink">
-          Todavía no se cargan precios.
-        </p>
         {canManage ? (
           <div className="flex flex-col gap-2">
             <Disclosure summary="Editar datos">
@@ -217,6 +215,13 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
         ) : null}
       </Card>
 
+      {menus.pricesView ? (
+        <IngredientPrices
+          ingredient={ingredient}
+          canPropose={menus.pricesPropose}
+          suppliers={suppliers}
+        />
+      ) : null}
       <Products ingredient={ingredient} canManage={canManage} units={units} suppliers={suppliers} />
       <Yields
         ingredient={ingredient}

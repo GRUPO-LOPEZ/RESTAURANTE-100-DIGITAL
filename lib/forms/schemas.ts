@@ -128,6 +128,21 @@ const restaurantFields = {
   legal_entity_id: z.string().max(60).optional(),
 };
 
+// Una fecha obligatoria que existe (2026-02-31 no).
+const validDate = z
+  .string({ message: "Elegí la fecha." })
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Elegí la fecha.")
+  .refine((v) => {
+    const d = new Date(`${v}T12:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+  }, "Esa fecha no existe.");
+const days = z
+  .string({ message: "Escribí los días." })
+  .trim()
+  .regex(/^[0-9]{1,3}$/, "Escribí los días, por ejemplo 30.")
+  .refine((v) => Number(v) >= 1 && Number(v) <= 365, "De 1 a 365 días.");
+
 const repeatMatches = (v: { password: string; repeat: string }) => v.password === v.repeat;
 const repeatError = { message: "Las dos contraseñas no coinciden.", path: ["repeat"] };
 
@@ -460,6 +475,61 @@ export const schemas = {
     reason: reasonField,
   }),
   area: z.object({ name: orgName, reason: reasonField }),
+  // Precios (ADR-0029): los mismos controles que hace costing.propose_price.
+  priceProposal: z
+    .object({
+      product_id: choice("Elegí el producto."),
+      place: choice("Elegí para quién vale."),
+      valid_from: validDate,
+      package_price: positiveNumber,
+      discount_amount: z
+        .string()
+        .trim()
+        .regex(/^$|^[0-9]{1,12}([.,][0-9]{1,4})?$/, "Escribí un número, por ejemplo 150,50.")
+        .optional(),
+      document_type: z.enum(["invoice", "no_invoice"], { message: "Elegí el comprobante." }),
+      vat_rate: z.string().trim().optional(),
+      price_includes_vat: z.union([z.boolean(), z.string()]).optional(),
+      supplier_id: z.string().max(60).optional(),
+      source: z.enum(["manual", "test_value"], { message: "Elegí el origen." }),
+      notes: z.string().trim().max(1000, "Hasta 1.000 caracteres.").optional(),
+      reason: reasonField,
+    })
+    .superRefine((v, ctx) => {
+      if (v.document_type === "invoice" && !["0", "10.5", "21", "27"].includes(v.vat_rate ?? ""))
+        ctx.addIssue({ code: "custom", path: ["vat_rate"], message: "Elegí la alícuota de IVA." });
+      const price = Number(v.package_price.replace(",", "."));
+      const discount = Number((v.discount_amount || "0").replace(",", "."));
+      // Con un precio inválido ya hay un error en el precio: no se suma otro en el descuento.
+      if (price > 0 && discount >= price)
+        ctx.addIssue({
+          code: "custom",
+          path: ["discount_amount"],
+          message: "El descuento tiene que ser menor que el precio.",
+        });
+    }),
+  priceSettings: z.object({
+    approval_variation_pct: z
+      .string({ message: "Escribí el porcentaje." })
+      .trim()
+      .regex(/^[0-9]{1,3}([.,][0-9]{1,2})?$/, "Escribí un porcentaje, por ejemplo 15.")
+      .refine((v) => {
+        const n = Number(v.replace(",", "."));
+        return n > 0 && n <= 100;
+      }, "De más de 0 a 100."),
+    stale_days: days,
+    lookback_days: days,
+    reason: reasonField,
+  }),
+  categoryStaleDays: z.object({
+    stale_price_days: z
+      .string()
+      .trim()
+      .regex(/^$|^[0-9]{1,3}$/, "Escribí los días, por ejemplo 30.")
+      .refine((v) => v === "" || (Number(v) >= 1 && Number(v) <= 365), "De 1 a 365 días.")
+      .optional(),
+    reason: reasonField,
+  }),
 } as const;
 
 export type FormSchemaName = keyof typeof schemas;

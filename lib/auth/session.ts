@@ -85,6 +85,9 @@ export const getMenus = cache(async () => {
     importsApprove,
     orgManage,
     orgManageGroup,
+    pricesView,
+    pricesPropose,
+    pricesConfigure,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -111,6 +114,10 @@ export const getMenus = cache(async () => {
     // las marcas nuevas y las razones sociales, solo quien administra todo el grupo.
     check("org.manage"),
     groupWide("org.manage"),
+    // Precios (ADR-0029): ver, proponer y configurar (este último, para todo el grupo).
+    check("prices.view"),
+    check("prices.propose"),
+    groupWide("prices.configure"),
   ]);
   return {
     users,
@@ -135,6 +142,11 @@ export const getMenus = cache(async () => {
     imports: importsRun || importsApprove || catalogManage,
     orgManage,
     orgManageGroup,
+    pricesView,
+    pricesPropose,
+    pricesConfigure,
+    // El panel de control: la estructura (org.manage) o la configuración de precios.
+    panel: orgManage || pricesConfigure,
   };
 });
 

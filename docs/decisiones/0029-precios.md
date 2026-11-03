@@ -163,15 +163,56 @@ Y después de la segunda pasada:
   - **menor:** cambiar la categoría escondía el aviso de desactualizado; ahora lo decide Dirección General. Una fecha mínima vencida al aprobar sale como "no se puede aplicar", no como un error crudo.
 - **Cuarta pasada (`security-auditor`): apto, sin graves ni medios.** Sus dos menores quedaron resueltos: el precio se registra con el contenido que se aprobó (si cambió en el medio, se rechaza), y la solicitud guarda también la unidad de uso. Se acepta que el mensaje "ya tiene precios" le diga a quien administra el catálogo que existen precios, sin mostrar montos (hoy Compras ve precios igual).
 
+## PR 2: pantallas y subas en escalones (2026-11-03)
+
+### Subas en escalones (ADR-0030, respuesta 8)
+
+- Migración `20261111120000_prices_lookback.sql`.
+- **`costing.price_settings.lookback_days`:** cuántos días hacia atrás se compara también. Por defecto 30, de 1 a 365.
+- **`costing.update_price_settings`** recibe los días como parámetro opcional. Si no llegan, quedan los que había.
+- **`costing.propose_price`** compara contra el costo que se usa hoy y contra el que valía hace `lookback_days` días en el mismo lugar (con herencia y de cualquier producto). La variación que decide es la más grande en valor absoluto, neta y bruta.
+  - Tres subas de 12 % en días distintos: la tercera llega a Dirección, porque supera el 15 % contra hace 30 días.
+  - Sin precio de hace N días, vale solo la de hoy.
+  - La solicitud guarda las dos variaciones y el precio de hace N días, para que la bandeja muestre contra qué se comparó.
+
+### Pantallas
+
+- **Ficha de materia prima:** una tarjeta "Precios", solo con `prices.view`.
+  - **Costo en el local:** el costo por kg, litro o unidad, con y sin IVA, de qué nivel viene ("Heredado de la marca" o "del grupo") y si está desactualizado. El local es el que se eligió arriba; quien tiene un solo local no ve el selector y se usa ese.
+  - **Precios vigentes** por producto y lugar, y el historial plegado.
+  - **"Proponer precio",** solo con `prices.propose`. Las pistas piden no escribir montos en el motivo ni en las observaciones.
+- **Aprobaciones:** un resumen propio para los precios (materia prima, producto, precio del envase, desde cuándo y la variación contra hoy y contra hace N días). Los importes ocultos salen "[oculto]".
+  - **Resuelve el riesgo de "aprobada aunque falte Dirección":** la tarjeta aprobada por el Controller dice "ahora la decide Dirección General", y la de Dirección dice que ya la aprobó el Controller. El aviso va en la tarjeta y no en el formulario, porque al aprobar el formulario desaparece.
+- **Panel de control → Precios** (`prices.configure` de todo el grupo, hoy Dirección General): el %, los días hacia atrás y los de desactualizado, y los días por categoría.
+
+### Pruebas del PR 2
+
+- pgTAP `213_prices_lookback` (21): sin historia, escalones, una ventana corta que cae en el mismo precio, una bajada (vale la de hoy si es más grande), la configuración con sus límites y su auditoría, y que la función vieja no quede.
+- Vitest `price-schemas` (7): formularios y formato de montos.
+- Playwright `precios` (celular y computadora, con axe):
+  - Compras propone, el Controller aprueba y la ficha muestra el precio;
+  - una suba grande: la tarjeta dice que pasa a Dirección y Dirección la aprueba;
+  - el Gerente ve el costo de su local heredado de la marca;
+  - el Chef no ve la tarjeta de precios;
+  - Dirección cambia los días en el panel.
+
+### Revisiones (PR 2)
+
+- **`security-auditor`: apto,** sin graves ni medios. Menores resueltos: un error de restricción sin traducir ("violates …") ya no llega a la pantalla, y el lugar del precio se valida como uuid. Aceptado: el motivo y las observaciones no se ocultan (el formulario lo advierte).
+- **`db-reviewer`:** sin graves. Se sumaron las pruebas que pidió (límites, auditoría, función vieja, ventana corta, bajada).
+  - **Las bajadas también llegan a Dirección** si superan el % contra hoy o contra hace N días. Es la misma regla del PR 1 (valor absoluto). **A confirmar con Joaco.**
+  - Con un precio que vale desde una fecha futura, "hace N días" se cuenta desde esa fecha.
+- **`ui-reviewer`:** sin graves. Medios resueltos: la configuración sin grupo o sin categorías muestra un aviso; el estado vacío no manda a un botón que no está; el historial marca "Vigente", "Programado" o "Anterior"; lo vigente se calcula con la fecha de Argentina. Menores resueltos: "Incompleto" sin unidad, aviso para elegir un local, "Es el primer precio", y solo se traen los nombres de marcas y locales que aparecen.
+
 ## Riesgos y pendientes
 
 - **Locales sin razón social:** en producción hay que cargarlas antes de mirar costos sin IVA.
-- **La primera solicitud queda "aprobada" aunque falte Dirección.** El motor responde "aprobada y aplicada"; la pantalla del PR 2 tiene que aclarar que pasó a Dirección. El motor de varios pasos (Chef, Compras y Salón) llega con su propio plan.
+- **La primera solicitud queda "aprobada" aunque falte Dirección.** Resuelto en la pantalla (PR 2): la tarjeta dice que pasó a Dirección. El motor de varios pasos (Chef, Compras y Salón) llega con su propio plan.
 - **Fletes y cargos:** cuando lleguen las facturas o el módulo de compras.
 - **La foto de costo de la 2.3** tiene que guardar los valores usados (precio, rendimiento y condición frente al IVA).
 - **Las conversiones todavía mueven la cantidad de una línea de receta.** Una línea en ml de una materia prima que se usa en gramos se convierte con la densidad de hoy, que Compras puede cambiar sin aprobación. Antes de la 2.3 hay que congelar la cantidad en la unidad de uso al publicar la versión de la receta (o en la foto de costo), o pasar por aprobación el cambio de una conversión usada en recetas publicadas.
 - **Un precio con fecha futura** (hasta un año) fija la fecha mínima de los siguientes del mismo lugar hasta que empieza a valer.
-- **El motivo y las observaciones de una solicitud de precio** se ven en la bandeja aunque los importes salgan ocultos, y el motivo va en el aviso. La pantalla del PR 2 tiene que pedir que no se escriban montos ahí.
-- **Subas en escalones:** varias propuestas seguidas por debajo del % del grupo, cada una contra la anterior, no llegan a Dirección. Cada una la ve el Controller. Si Soy quiere cubrirlo, se puede medir también contra el precio de hace N días: **pregunta abierta para Joaco y Soy.**
+- **El motivo y las observaciones de una solicitud de precio** se ven en la bandeja aunque los importes salgan ocultos, y el motivo va en el aviso. El formulario del PR 2 pide que no se escriban montos ahí.
+- **Subas en escalones:** varias propuestas seguidas por debajo del % del grupo, cada una contra la anterior, no llegan a Dirección. Cada una la ve el Controller. **Resuelto en el PR 2:** se mide también contra el precio de hace N días (ADR-0030, respuesta 8).
 - **El historial y su exportación** ocultan importes con `recipes.view_costs`, no con `prices.view`. Hoy todo rol con `audit.view` o `audit.export` también ve precios; si eso cambia, hay que aplicar la regla de `workflow.can_see_amounts`.
 - **El Gerente ve todas las razones sociales del grupo** (nombre, CUIT y condición frente al IVA). Son datos públicos de las sociedades; se acepta así.

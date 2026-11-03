@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/kpi";
 import {
   FIELD_LABELS,
   UUID,
+  formatDate,
   formatDateTime,
   formatField,
   getInbox,
@@ -21,6 +22,7 @@ import {
   type InboxRow,
   type NoticeRow,
 } from "@/lib/data";
+import { formatMoney } from "@/lib/prices";
 import { requireMenu } from "@/lib/auth/session";
 
 const STATUS: Record<InboxRow["status"], { label: string; status: BadgeStatus }> = {
@@ -57,6 +59,13 @@ async function Inbox() {
     getRecipeNotices(),
   ]);
   const roleNames = Object.fromEntries(roles.map((r) => [r.code, r.name]));
+  // Los precios que, aprobados por el Controller, pasaron a Dirección General (ADR-0029).
+  const toDirection = new Set(
+    [...pending, ...resolved]
+      .filter((r) => r.workflow_code === "costing.approve_price_direction")
+      .map((r) => (r.proposed_changes as Record<string, unknown> | null)?.first_request_id)
+      .filter((id): id is string => typeof id === "string"),
+  );
 
   return (
     <>
@@ -84,7 +93,7 @@ async function Inbox() {
             {pending.length === 0 ? (
               <EmptyState title="No hay nada esperando una decisión." />
             ) : (
-              <RequestList rows={pending} roleNames={roleNames} />
+              <RequestList rows={pending} roleNames={roleNames} toDirection={toDirection} />
             )}
           </section>
           {resolved.length > 0 ? (
@@ -92,7 +101,7 @@ async function Inbox() {
               <h2 id="resueltas" className="text-xl text-ink">
                 Resueltas recientemente
               </h2>
-              <RequestList rows={resolved} roleNames={roleNames} />
+              <RequestList rows={resolved} roleNames={roleNames} toDirection={toDirection} />
             </section>
           ) : null}
         </>
@@ -163,6 +172,70 @@ function Notices({ rows }: { rows: NoticeRow[] }) {
   );
 }
 
+// Un precio de compra (ADR-0029): qué producto, cuánto y cuánto cambia. Los importes llegan "[oculto]"
+// desde la base a quien no ve precios en ese lugar (workflow.can_see_amounts), y se muestran así.
+function PriceSummary({ row, toDirection }: { row: InboxRow; toDirection: boolean }) {
+  const c = (row.proposed_changes ?? {}) as Record<string, unknown>;
+  const money = (v: unknown) =>
+    v === "[oculto]" ? "[oculto]" : typeof v === "number" ? formatMoney(v) : "—";
+  const pct = (v: unknown) =>
+    v === "[oculto]"
+      ? "[oculto]"
+      : typeof v === "number"
+        ? `${v > 0 ? "+" : ""}${v.toLocaleString("es-AR")} %`
+        : "sin precio anterior";
+  const lookback = typeof c.lookback_days === "number" ? c.lookback_days : null;
+  const today = c.price_variation_today_pct ?? c.price_variation_pct;
+  return (
+    <>
+      <dl className="flex flex-col gap-1 rounded-sm border border-line p-3 text-sm">
+        <div className="flex flex-col sm:flex-row sm:gap-2">
+          <dt className="font-medium text-ink sm:w-48 sm:shrink-0">Materia prima</dt>
+          <dd className="text-ink-muted">
+            {[c.ingredient, c.product].filter((x) => typeof x === "string" && x).join(" · ") || "—"}
+          </dd>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:gap-2">
+          <dt className="font-medium text-ink sm:w-48 sm:shrink-0">Precio del envase</dt>
+          <dd className="text-ink-muted tabular-nums">
+            {money(c.package_price)} · sin IVA {money(c.net_package_price)} · con IVA{" "}
+            {money(c.gross_package_price)}
+          </dd>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:gap-2">
+          <dt className="font-medium text-ink sm:w-48 sm:shrink-0">Vale desde</dt>
+          <dd className="text-ink-muted tabular-nums">
+            {typeof c.valid_from === "string" ? formatDate(c.valid_from) : "—"}
+          </dd>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:gap-2">
+          <dt className="font-medium text-ink sm:w-48 sm:shrink-0">Variación</dt>
+          <dd className="text-ink-muted tabular-nums">
+            {today === null || today === undefined
+              ? "Es el primer precio: no hay contra qué comparar"
+              : `${pct(today)} contra el costo de hoy`}
+            {c.price_variation_lookback_pct !== null &&
+            c.price_variation_lookback_pct !== undefined &&
+            lookback !== null
+              ? ` · ${pct(c.price_variation_lookback_pct)} contra el de hace ${lookback} días`
+              : ""}
+          </dd>
+        </div>
+      </dl>
+      {row.workflow_code === "costing.approve_price_direction" ? (
+        <p className="text-base text-ink">
+          Ya la aprobó el Controller. Como la variación supera el % del grupo, la decide Dirección
+          General.
+        </p>
+      ) : toDirection ? (
+        <p className="text-base text-ink">
+          Como la variación supera el % del grupo, ahora la decide Dirección General.
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 // Una versión de receta se revisa en la receta: la solicitud lleva solo un resumen (ADR-0023).
 function RecipeLink({ row }: { row: InboxRow }) {
   const recipeId = (row.proposed_changes as Record<string, unknown> | null)?.recipe_id;
@@ -182,7 +255,15 @@ function RecipeLink({ row }: { row: InboxRow }) {
   );
 }
 
-function RequestList({ rows, roleNames }: { rows: InboxRow[]; roleNames: Record<string, string> }) {
+function RequestList({
+  rows,
+  roleNames,
+  toDirection,
+}: {
+  rows: InboxRow[];
+  roleNames: Record<string, string>;
+  toDirection: Set<string>;
+}) {
   return (
     <ul className="flex flex-col gap-4">
       {rows.map((r) => (
@@ -197,7 +278,11 @@ function RequestList({ rows, roleNames }: { rows: InboxRow[]; roleNames: Record<
               {r.place_name ? ` · ${r.place_name}` : ""}
             </CardDescription>
             <p className="text-base text-ink">Motivo: {r.reason}</p>
-            <BeforeAfter row={r} roleNames={roleNames} />
+            {r.workflow_code.startsWith("costing.") ? (
+              <PriceSummary row={r} toDirection={toDirection.has(r.id)} />
+            ) : (
+              <BeforeAfter row={r} roleNames={roleNames} />
+            )}
             <RecipeLink row={r} />
             {r.resolved_at ? (
               <p className="text-sm text-ink-muted">
