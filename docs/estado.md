@@ -1,11 +1,30 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-02. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: etapa 2.1 C, precios (PR 1 de 2, base, rama `feat/precios-base`)
+## Al retomar: terceras respuestas de Soy (ADR-0030)
 
-- **Estado (pausa del 2026-11-02):** commiteado y subido, con `main` ya fusionado adentro (sin conflictos). Falta que GitHub Actions dé verde y fusionar el PR.
-- **Al retomar:** plan de las pantallas de precios (2.1 C, PR 2), en modo plan para que Joaco lo apruebe. Las preguntas para Soy ya se le pasaron a Joaco; con las respuestas se destraban producción y la 2.5.
+- **Registradas en ADR-0030.** Lo que cambia el plan:
+  - **plan pago de Supabase: sí.** Joaco crea el proyecto de producción con la cuenta de Soy;
+  - **datos reales:** Soy pide un **panel de control** para dar de alta marcas, locales y razones sociales; cuando esté, los cargan juntos (en producción, nunca en desarrollo);
+  - **"administración maestra":** un permiso que se asigna desde el panel de roles, no un rol fijo;
+  - **aprobación de recetas en varios pasos:** el "Salón" es el Gerente del local; el orden es Chef → Compras → Gerente;
+  - **aviso de rendimiento:** umbral cargado a mano y aviso al Chef y al Controller;
+  - **precios:** confirma la comparación contra el costo de hoy; pide además comparar contra el precio de hace 30 días (subas en escalones) y que el % lo cambie "el administrador";
+  - **otros negocios:** no por ahora.
+- **Próximo, en este orden:**
+  1. **panel de control de la estructura del grupo** (marcas, locales y razones sociales): es lo que frena la carga real;
+  2. **2.1 C, PR 2:** pantallas de precios, configuración y subas en escalones;
+  3. **producción**, con la carga de datos reales junto a Soy y la compuerta 2.4;
+  4. **2.3, motor de costos;** después, la aprobación en varios pasos, con su plan.
+- **A confirmar con Soy:**
+  - ¿"el administrador" del % es Dirección General o el Superadministrador?
+  - ¿el permiso de "administración maestra" nace asignado a algún rol?
+  - en una receta que usan varios locales, ¿aprueba un Gerente por local?
+
+## Antes: etapa 2.1 C, precios (PR 1 de 2, base; fusionado, PR #32)
+
+- **Estado:** fusionado (PR #32).
 - **Qué se hizo:** migración `20261109120000_prices.sql`. Detalle en ADR-0029.
   - **razones sociales** (`org.legal_entities`) y la de cada local: deciden si el costo va con o sin IVA;
   - **precios solo de inserción y solo aprobados** (`costing.price_records`), con neto y bruto calculados por la base y el contenido del envase congelado al aprobar;
