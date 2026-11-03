@@ -29,7 +29,15 @@ test.describe("quién ve qué", () => {
     test.setTimeout(120_000);
     await login(page, "direccion@ejemplo.test", { mfa: true });
     await page.goto("/usuarios?local=todos");
-    await expect(localRows(page)).toHaveCount(4);
+    // Los 4 locales del seed. Por nombre y no por cantidad: la prueba del panel de control
+    // (panel-estructura.spec.ts) crea locales en la misma base, y Dirección los ve todos (ADR-0031).
+    for (const name of [
+      "Demo Pastas Centro",
+      "Demo Pastas Norte",
+      "Demo Parrilla Centro",
+      "Demo Café Centro",
+    ])
+      await expect(localRows(page).filter({ hasText: name })).toHaveCount(1);
     await noHorizontalScroll(page);
     await logout(page);
 
