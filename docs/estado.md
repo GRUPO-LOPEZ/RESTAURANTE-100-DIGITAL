@@ -2,7 +2,28 @@
 
 _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: terceras respuestas de Soy (ADR-0030)
+## Al retomar: panel de control de la estructura (rama `feat/panel-estructura`)
+
+- **Qué se hizo** (ADR-0031): el "Panel de control" (`/configuracion`), que pidió Soy para cargar los datos reales.
+  - **marcas** (alta, nombre, código y estado);
+  - **locales** (alta con tipo y razón social en un paso, datos, tipo y estado);
+  - **áreas** de cada local;
+  - **razones sociales** (CUIT con o sin guiones, condición frente al IVA, qué locales usa cada una y cuáles no tienen).
+- **Quién puede:** se carga con Superadministrador (decisión de Joaco). No cambió ningún permiso: la Directora maneja su marca, el Gerente los datos y áreas de su local, y la razón social la elige solo quien administra el grupo.
+- **Base:** migración `20261110120000_org_panel.sql`. `create_restaurant` acepta tipo y razón social, y arregla un error de la Fase 1: una fecha de apertura vacía rompía el alta.
+- **Revisiones:**
+  - `security-auditor`: apto;
+  - `db-reviewer`: sin graves, sus 2 medios resueltos;
+  - `ui-reviewer`: su grave (un aviso falso de "sin razón social") resuelto.
+- **Pruebas (2026-11-03), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 167 de 167 ✅ · pgTAP 1.466 de 1.466 ✅ · Playwright 110 de 110 ✅ · formato ✅.
+  - La prueba `admin` («Dirección ve los 4 locales») ahora busca los 4 locales del seed por nombre y no por cantidad: el panel crea locales en la misma base. La del Gerente sigue exacta.
+  - Ojo: `npm run test` corre pgTAP sobre la base que dejó la corrida anterior de Playwright. Antes de correrlo, `npm run db:reset`.
+- **Fuera de esta versión:** archivar y restaurar, y el traspaso de un local.
+- **Pregunta para Joaco:** ¿los locales cerrados se siguen mostrando en «Personas por local» (`/usuarios`)? Hoy sí.
+- **Pregunta para Joaco:** ¿el código del local lo puede cambiar el Gerente (hoy sí) o solo quien administra la marca?
+- **Después:** con producción creada (plan Pro), Joaco y Soy cargan juntos los datos reales desde el panel.
+
+## Antes: terceras respuestas de Soy (ADR-0030)
 
 - **Registradas en ADR-0030.** Lo que cambia el plan:
   - **plan pago de Supabase: sí.** Joaco crea el proyecto de producción con la cuenta de Soy;

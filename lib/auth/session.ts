@@ -83,6 +83,8 @@ export const getMenus = cache(async () => {
     recipesSettings,
     importsRun,
     importsApprove,
+    orgManage,
+    orgManageGroup,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -105,6 +107,10 @@ export const getMenus = cache(async () => {
     // (imports.approve) y las materias primas nuevas, Compras (catalog.manage en el grupo).
     check("imports.run"),
     check("imports.approve"),
+    // Panel de control de la estructura (ADR-0031): marcas, locales y áreas donde la persona administra;
+    // las marcas nuevas y las razones sociales, solo quien administra todo el grupo.
+    check("org.manage"),
+    groupWide("org.manage"),
   ]);
   return {
     users,
@@ -127,6 +133,8 @@ export const getMenus = cache(async () => {
     importsRun,
     importsApprove,
     imports: importsRun || importsApprove || catalogManage,
+    orgManage,
+    orgManageGroup,
   };
 });
 

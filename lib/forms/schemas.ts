@@ -72,6 +72,62 @@ const optionalGrams = z
   .optional();
 const choice = (message: string) => z.string({ message }).min(1, message).max(60, message);
 
+// Estructura del grupo (panel de control, ADR-0031): los mismos formatos que exige la base.
+const orgName = z
+  .string({ message: "Escribí el nombre." })
+  .trim()
+  .min(1, "Escribí el nombre.")
+  .max(120, "Hasta 120 caracteres.");
+const orgCode = z
+  .string({ message: "Escribí el código." })
+  .trim()
+  .toUpperCase()
+  .regex(
+    /^[A-Z0-9][A-Z0-9-]{1,19}$/,
+    "Mayúsculas, números y guiones, de 2 a 20 caracteres (por ejemplo, PASTAS).",
+  );
+const optionalText = (max: number) =>
+  z.string().trim().max(max, `Hasta ${max} caracteres.`).optional();
+// El CUIT se puede escribir con o sin guiones; la base lo guarda con 11 números.
+export const taxId = z
+  .string({ message: "Escribí el CUIT." })
+  .trim()
+  .transform((v) => v.replace(/[\s-]/g, ""))
+  .pipe(z.string().regex(/^[0-9]{11}$/, "El CUIT tiene 11 números (con o sin guiones)."));
+const restaurantFields = {
+  name: orgName,
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^$|^[A-Z0-9][A-Z0-9-]{1,19}$/,
+      "Mayúsculas, números y guiones, de 2 a 20 caracteres (por ejemplo, PAS-CENTRO).",
+    )
+    .optional(),
+  address: optionalText(200),
+  locality: optionalText(120),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^$|^[0-9 +()-]{6,30}$/, "Solo números, espacios, +, guiones y paréntesis.")
+    .optional(),
+  opened_on: z
+    .string()
+    .trim()
+    .regex(/^$|^\d{4}-\d{2}-\d{2}$/, "Elegí la fecha.")
+    .refine((v) => {
+      if (v === "") return true;
+      const d = new Date(`${v}T12:00:00Z`);
+      return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+    }, "Esa fecha no existe.")
+    .optional(),
+  site_type: z
+    .enum(["restaurant", "central_kitchen", "production_unit"], { message: "Elegí el tipo." })
+    .optional(),
+  legal_entity_id: z.string().max(60).optional(),
+};
+
 const repeatMatches = (v: { password: string; repeat: string }) => v.password === v.repeat;
 const repeatError = { message: "Las dos contraseñas no coinciden.", path: ["repeat"] };
 
@@ -371,6 +427,39 @@ export const schemas = {
       .regex(/^[A-Z0-9]{2,6}$/, "De 2 a 6 letras o números, por ejemplo NON."),
     reason: reasonField,
   }),
+  // Panel de control de la estructura (ADR-0031): los mismos formatos que exige la base.
+  brand: z.object({ name: orgName, code: orgCode, reason: reasonField }),
+  // Quien administra solo su marca edita el nombre; el código y el estado, quien administra el grupo
+  // (los campos que no se muestran no se mandan).
+  brandEdit: z.object({
+    name: orgName,
+    code: orgCode.optional(),
+    status: z.enum(["active", "inactive"], { message: "Elegí el estado." }).optional(),
+    reason: reasonField,
+  }),
+  restaurant: z.object({ ...restaurantFields, reason: reasonField }),
+  restaurantEdit: z.object({
+    ...restaurantFields,
+    status: z.enum(["active", "inactive"], { message: "Elegí el estado." }).optional(),
+    reason: reasonField,
+  }),
+  legalEntity: z.object({
+    name: z
+      .string({ message: "Escribí el nombre." })
+      .trim()
+      .min(1, "Escribí el nombre.")
+      .max(200, "Hasta 200 caracteres."),
+    tax_id: taxId,
+    vat_condition: z.enum(["registered", "monotax", "exempt"], {
+      message: "Elegí la condición frente al IVA.",
+    }),
+    reason: reasonField,
+  }),
+  restaurantLegalEntity: z.object({
+    legal_entity_id: choice("Elegí la razón social."),
+    reason: reasonField,
+  }),
+  area: z.object({ name: orgName, reason: reasonField }),
 } as const;
 
 export type FormSchemaName = keyof typeof schemas;

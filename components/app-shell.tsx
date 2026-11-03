@@ -63,6 +63,7 @@ async function SessionMenu() {
     { href: "/aprobaciones", label: "Aprobaciones", count: unread, show: menus.approvals },
     { href: "/historial", label: "Historial", show: menus.audit },
     { href: "/roles", label: "Roles y permisos", show: menus.roles },
+    { href: "/configuracion", label: "Panel de control", show: menus.orgManage },
     { href: "/ensayo", label: "Ensayo", show: menus.testDocuments },
     { href: "/mi-cuenta", label: "Mi cuenta", show: true },
   ];
