@@ -19,8 +19,7 @@ _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - La prueba `admin` («Dirección ve los 4 locales») ahora busca los 4 locales del seed por nombre y no por cantidad: el panel crea locales en la misma base. La del Gerente sigue exacta.
   - Ojo: `npm run test` corre pgTAP sobre la base que dejó la corrida anterior de Playwright. Antes de correrlo, `npm run db:reset`.
 - **Fuera de esta versión:** archivar y restaurar, y el traspaso de un local.
-- **Pregunta para Joaco:** ¿los locales cerrados se siguen mostrando en «Personas por local» (`/usuarios`)? Hoy sí.
-- **Pregunta para Joaco:** ¿el código del local lo puede cambiar el Gerente (hoy sí) o solo quien administra la marca?
+- **Respondido por Joaco (2026-11-03):** el Gerente puede cambiar el código de su local, y los locales cerrados siguen apareciendo en «Personas por local». Queda como está.
 - **Después:** con producción creada (plan Pro), Joaco y Soy cargan juntos los datos reales desde el panel.
 
 ## Antes: terceras respuestas de Soy (ADR-0030)

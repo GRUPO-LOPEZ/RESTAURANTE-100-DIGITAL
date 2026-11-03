@@ -86,7 +86,7 @@ Con el seed, esto queda así:
   - **El título de la marca y del local** está en la tarjeta, no en el encabezado de la página.
   - **`org.update_restaurant`** todavía convierte una fecha con solo espacios con el criterio viejo. La pantalla nunca la manda así (Zod recorta).
   - **`legal_name` y `tax_id` viejos** se siguen aceptando si alguien llama a la función directo. Se sacan en una migración futura.
-  - **Para Joaco:** ¿el código del local lo puede cambiar el Gerente (hoy sí) o solo quien administra la marca?
+  - **Respondido por Joaco (2026-11-03):** el Gerente **sí** puede cambiar el código de su local, y los locales cerrados **siguen apareciendo** en «Personas por local» (`/usuarios`). Queda como está.
 
 ## Riesgos y pendientes
 
