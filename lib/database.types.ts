@@ -2929,6 +2929,7 @@ export type Database = {
           deleted_by: string | null;
           group_id: string;
           id: string;
+          lookback_days: number;
           stale_days: number;
           updated_at: string;
           updated_by: string | null;
@@ -2942,6 +2943,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id: string;
           id?: string;
+          lookback_days?: number;
           stale_days?: number;
           updated_at?: string;
           updated_by?: string | null;
@@ -2954,6 +2956,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
+          lookback_days?: number;
           stale_days?: number;
           updated_at?: string;
           updated_by?: string | null;
@@ -3144,6 +3147,7 @@ export type Database = {
         Args: {
           p_approval_variation_pct: number;
           p_group_id: string;
+          p_lookback_days?: number;
           p_reason: string;
           p_stale_days: number;
         };

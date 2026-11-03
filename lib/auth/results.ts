@@ -53,7 +53,13 @@ export function toActionState(
 
 function friendlyError(error: { message?: string; code?: string }): string {
   // Las validaciones de la base (23514, 23505, 22023) ya traen un mensaje en español.
-  if (error.code && ["23514", "23505", "22023"].includes(error.code) && error.message)
+  // Un choque con una restricción sin traducir trae el nombre técnico ("violates ..."): no se muestra.
+  if (
+    error.code &&
+    ["23514", "23505", "22023"].includes(error.code) &&
+    error.message &&
+    !error.message.includes("violates")
+  )
     return error.message;
   if (error.code === "42501") return "No tenés permiso para hacer esto.";
   return "No pudimos completar la operación. Probá de nuevo.";

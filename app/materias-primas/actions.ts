@@ -317,6 +317,57 @@ export async function proposeYieldAction(
       };
 }
 
+// Proponer un precio (ADR-0029). La base controla prices.propose en el lugar elegido, calcula la
+// variación y crea la solicitud: la aprueba el Controller y, si la variación supera el % del grupo,
+// también Dirección General.
+const PLACE =
+  /^(group|brand|restaurant):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+
+export async function proposePriceAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.priceProposal.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = ingredientId(formData);
+  const product = uuid.safeParse(fields.data.product_id);
+  const place = PLACE.exec(fields.data.place);
+  const supplier = fields.data.supplier_id ? uuid.safeParse(fields.data.supplier_id) : null;
+  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
+  if (!product.success) return { status: "bad", fieldErrors: { product_id: "Elegí el producto." } };
+  if (!place) return { status: "bad", fieldErrors: { place: "Elegí para quién vale." } };
+  if (supplier && !supplier.success)
+    return { status: "bad", fieldErrors: { supplier_id: "Elegí el proveedor." } };
+  const [, scope, placeId] = place;
+  const invoice = fields.data.document_type === "invoice";
+  const supabase = await createClient();
+  const { error } = await supabase.schema("costing").rpc("propose_price", {
+    p_purchase_product_id: product.data,
+    p_scope_type: scope as string,
+    // La función acepta lugares vacíos (según el alcance); el tipo generado no lo refleja.
+    p_brand_id: (scope === "brand" ? placeId : null) as string,
+    p_restaurant_id: (scope === "restaurant" ? placeId : null) as string,
+    p_valid_from: fields.data.valid_from,
+    p_package_price: decimal(fields.data.package_price),
+    p_document_type: fields.data.document_type,
+    p_vat_rate: (invoice ? Number(fields.data.vat_rate) : null) as number,
+    p_price_includes_vat: invoice ? isChecked(fields.data.price_includes_vat) : true,
+    p_discount_amount: fields.data.discount_amount ? decimal(fields.data.discount_amount) : 0,
+    p_supplier_id: (supplier?.data ?? null) as string,
+    p_source: fields.data.source,
+    p_notes: fields.data.notes ?? "",
+    p_reason: fields.data.reason,
+  });
+  revalidatePath(`/materias-primas/${id.data}`);
+  return error
+    ? toActionState(null, error)
+    : {
+        status: "info",
+        message:
+          "Precio propuesto. Queda pendiente: lo aprueba el Controller y, si cambia mucho, también Dirección General.",
+      };
+}
+
 // Configuración del catálogo (ADR-0022). Categorías: catalog.manage para todo el grupo. Procesos:
 // yields.approve para todo el grupo. La base controla el permiso y que no se dé de baja algo en uso.
 function settingsDone(error: { message?: string; code?: string } | null, message: string) {

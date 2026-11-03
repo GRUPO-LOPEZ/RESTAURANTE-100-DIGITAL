@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Building2, ChevronRight, FileText, Settings, ShieldCheck, Users } from "lucide-react";
+import { Building2, ChevronRight, FileText, Settings, ShieldCheck, Tag, Users } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -52,7 +52,7 @@ function Entry({
 }
 
 async function Panel() {
-  await requireMenu("orgManage");
+  await requireMenu("panel");
   const menus = await getMenus();
   const restaurants = menus.orgManageGroup ? await getRestaurants() : [];
   const withoutEntity = restaurants.filter((r) => !r.legalEntityId).length;
@@ -71,29 +71,44 @@ async function Panel() {
           </Link>
         </Notice>
       ) : null}
-      <Card className="flex flex-col gap-4">
-        <CardTitle>Estructura del grupo</CardTitle>
-        <CardDescription>
-          Lo que se carga una vez y usan todas las pantallas. Cada cambio pide un motivo y queda en
-          el historial.
-        </CardDescription>
-        <ul className="flex flex-col gap-2">
-          <Entry
-            href="/configuracion/marcas"
-            title="Marcas y locales"
-            description="Altas, datos, tipo y estado de cada marca y local, y las áreas de cada local."
-            Icon={Building2}
-          />
-          {menus.orgManageGroup ? (
+      {menus.orgManage ? (
+        <Card className="flex flex-col gap-4">
+          <CardTitle>Estructura del grupo</CardTitle>
+          <CardDescription>
+            Lo que se carga una vez y usan todas las pantallas. Cada cambio pide un motivo y queda
+            en el historial.
+          </CardDescription>
+          <ul className="flex flex-col gap-2">
             <Entry
-              href="/configuracion/razones-sociales"
-              title="Razones sociales"
-              description="Las sociedades con su CUIT y su condición frente al IVA, y qué locales usa cada una."
-              Icon={FileText}
+              href="/configuracion/marcas"
+              title="Marcas y locales"
+              description="Altas, datos, tipo y estado de cada marca y local, y las áreas de cada local."
+              Icon={Building2}
             />
-          ) : null}
-        </ul>
-      </Card>
+            {menus.orgManageGroup ? (
+              <Entry
+                href="/configuracion/razones-sociales"
+                title="Razones sociales"
+                description="Las sociedades con su CUIT y su condición frente al IVA, y qué locales usa cada una."
+                Icon={FileText}
+              />
+            ) : null}
+          </ul>
+        </Card>
+      ) : null}
+      {menus.pricesConfigure ? (
+        <Card className="flex flex-col gap-4">
+          <CardTitle>Precios</CardTitle>
+          <ul className="flex flex-col gap-2">
+            <Entry
+              href="/configuracion/precios"
+              title="Configuración de precios"
+              description="Desde qué variación aprueba también Dirección, contra cuántos días atrás se compara y cuándo un precio está desactualizado."
+              Icon={Tag}
+            />
+          </ul>
+        </Card>
+      ) : null}
       {menus.users || menus.roles || menus.catalogSettings ? (
         <Card className="flex flex-col gap-4">
           <CardTitle>Personas y listas</CardTitle>

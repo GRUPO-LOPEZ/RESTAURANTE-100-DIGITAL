@@ -277,3 +277,43 @@ export async function updateLegalEntityAction(
   });
   return done(error, "Razón social guardada.", ["/configuracion/razones-sociales"]);
 }
+
+// ---------------------------------------------------------------------------
+// Configuración de precios (ADR-0029): prices.configure de todo el grupo (Dirección General)
+// ---------------------------------------------------------------------------
+export async function updatePriceSettingsAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.priceSettings.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const group = uuid.safeParse(formData.get("groupId"));
+  if (!group.success) return { status: "bad", message: "Falta el grupo." };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("costing").rpc("update_price_settings", {
+    p_group_id: group.data,
+    p_approval_variation_pct: Number(fields.data.approval_variation_pct.replace(",", ".")),
+    p_stale_days: Number(fields.data.stale_days),
+    p_lookback_days: Number(fields.data.lookback_days),
+    p_reason: fields.data.reason,
+  });
+  return done(error, "Configuración de precios guardada.", ["/configuracion/precios"]);
+}
+
+export async function setCategoryStaleDaysAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.categoryStaleDays.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const category = uuid.safeParse(formData.get("categoryId"));
+  if (!category.success) return { status: "bad", message: "Falta la categoría." };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("catalog").rpc("set_category_stale_days", {
+    p_category_id: category.data,
+    // Vacío: vale el plazo del grupo. La función acepta null; el tipo generado no lo refleja.
+    p_days: (fields.data.stale_price_days ? Number(fields.data.stale_price_days) : null) as number,
+    p_reason: fields.data.reason,
+  });
+  return done(error, "Días guardados.", ["/configuracion/precios"]);
+}

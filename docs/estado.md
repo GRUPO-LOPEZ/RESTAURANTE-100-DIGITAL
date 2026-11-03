@@ -2,7 +2,19 @@
 
 _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: panel de control de la estructura (rama `feat/panel-estructura`)
+## Al retomar: pantallas de precios (rama `feat/precios-pantallas`, etapa 2.1 C, PR 2)
+
+- **Sale de `feat/panel-estructura`:** Joaco fusiona primero el PR del panel y después este.
+- **Qué se hizo** (ADR-0029, sección "PR 2"):
+  - **ficha de materia prima:** tarjeta "Precios" (solo con `prices.view`) con el costo en el local, los precios vigentes, el historial y "Proponer precio";
+  - **aprobaciones:** resumen propio de los precios, con la variación contra hoy y contra hace N días; la tarjeta dice cuándo pasó a Dirección General;
+  - **Panel de control → Precios:** el %, los días hacia atrás y los de desactualizado, y los días por categoría (Dirección General);
+  - **subas en escalones** (respuesta 8 de Soy): migración `20261111120000_prices_lookback.sql`.
+- **Revisiones:** `security-auditor` apto; `db-reviewer` y `ui-reviewer` sin graves, medios resueltos.
+- **Pruebas (2026-11-03), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 174 de 174 ✅ · pgTAP 1.487 de 1.487 ✅ · Playwright 118 de 118 ✅ · formato ✅.
+- **A confirmar con Joaco:** una **bajada** grande también pasa a Dirección (como en el PR 1).
+
+## Antes: panel de control de la estructura (rama `feat/panel-estructura`)
 
 - **Qué se hizo** (ADR-0031): el "Panel de control" (`/configuracion`), que pidió Soy para cargar los datos reales.
   - **marcas** (alta, nombre, código y estado);
