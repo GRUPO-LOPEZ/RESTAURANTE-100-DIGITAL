@@ -15,6 +15,12 @@ _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Compuerta 2.3:** Joaco y el Controller validan [docs/guias/costos-demo.md](guias/costos-demo.md).
 - **Pruebas (2026-11-03), desde una base recién creada:** lint y tipos ✅ · Vitest 174 de 174 ✅ · pgTAP 1.642 de 1.642 ✅ · formato ✅ · Playwright 117 de 118 en la corrida completa. La que faltó (`admin`, celular) falló en la primera carga del servidor y pasó sola, en celular y computadora.
 - **Producción:** Joaco lo ve después.
+- **Al retomar (Joaco):**
+  1. abrir el PR de `feat/costos-motor` contra `main` y mirar GitHub Actions (hay que confirmar Playwright completo);
+  2. confirmar la excepción a la auditoría en las fotos y la cola (aprobada solo para el costo vigente);
+  3. validar la planilla de costos DEMO con el Controller;
+  4. después de fusionar, armar el plan del PR 2 (pantallas).
+- **Sin causa encontrada:** una vez falló el reset de la base al iniciar el contenedor, y después anduvo cuatro veces seguidas.
 
 ## Antes: pantallas de precios (fusionado, PR #35)
 
