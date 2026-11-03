@@ -79,7 +79,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Estructura
 -- ---------------------------------------------------------------------------
-select is((select count(*)::int from pg_tables where schemaname = 'recipes'), 8, 'el esquema recipes tiene 8 tablas (con las fotos)');
+select is((select count(*)::int from pg_tables where schemaname = 'recipes'), 9, 'el esquema recipes tiene 9 tablas (con las fotos y las cantidades congeladas)');
 select ok(not exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
                        where n.nspname = 'recipes' and c.relkind = 'r' and not c.relrowsecurity),
   'RLS activado en todas las tablas de recipes');

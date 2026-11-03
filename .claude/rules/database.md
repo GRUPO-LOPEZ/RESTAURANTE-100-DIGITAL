@@ -15,7 +15,7 @@ Toda la información vive en PostgreSQL, separada en esquemas por tema. Cada tem
 | `workflow`    | Aprobaciones                         | approval_workflows, approval_requests, approval_decisions                                                                      |
 | `catalog`     | Materias primas y proveedores        | ingredients, ingredient_aliases, purchase_products, suppliers, units, unit_conversions, allergens (precios: costing; ADR-0020) |
 | `recipes`     | Recetario y fichas técnicas          | recipes, recipe_versions, recipe_lines, recipe_steps, recipe_photos                                                            |
-| `costing`     | Costos                               | price_records y price_settings (precios; ADR-0029), cost_snapshots, recipe_costs                                               |
+| `costing`     | Costos                               | price_records y price_settings (precios; ADR-0029), recipe_cost_current, recipe_cost_snapshots, cost_recalc_queue (ADR-0032)   |
 | `purchasing`  | Compras                              | purchase_orders, purchase_order_lines, invoices, invoice_lines                                                                 |
 | `inventory`   | Stock                                | stock_locations, stock_movements, stock_counts                                                                                 |
 | `production`  | Producción                           | production_plans, production_batches                                                                                           |
@@ -45,7 +45,7 @@ Toda la información vive en PostgreSQL, separada en esquemas por tema. Cada tem
 
 ## Eficiencia de escritura
 
-- Escrituras críticas dentro de funciones SQL transaccionales: dato + auditoría + recálculo en una sola operación.
+- Escrituras críticas dentro de funciones SQL transaccionales: dato y auditoría en una sola operación. El costo se recalcula con una cola (ADR-0032).
 - Pocas tablas por operación y restricciones (`check`, `unique`, `not null`) para que el error se detecte en la base.
 - Importaciones masivas en lotes, con tabla de carga intermedia y validación previa.
 

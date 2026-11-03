@@ -2,9 +2,22 @@
 
 _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: pantallas de precios (rama `feat/precios-pantallas`, etapa 2.1 C, PR 2)
+## Al retomar: motor de costos (rama `feat/costos-motor`, etapa 2.3, PR 1 de 3)
 
-- **Sale de `feat/panel-estructura`:** Joaco fusiona primero el PR del panel y después este.
+- **Qué se hizo** (ADR-0032): cada receta tiene costo en cada local, con y sin IVA, por porción y con su confiabilidad.
+  - **Cantidades congeladas al publicar:** una densidad nueva ya no mueve una receta publicada.
+  - **Fotos históricas** que no cambian, y **cola de recálculo** cada minuto: aprobar un precio tarda milisegundos.
+  - **Variantes:** un plato usa la variante de su local.
+- **Decisiones de Joaco:** ver ADR-0032 (qué ve el Chef, qué ve Compras, cola y bajas de precio).
+- **Falta en esta etapa:**
+  - **PR 2:** pantallas (costos en la receta, `/costos`, impacto de un precio), mostrar los errores de la cola y retirar `core.test_documents`.
+  - **PR 3:** escalado, escenarios, tarea diaria (precios con fecha futura y "desactualizado") y `integration_outbox`.
+- **Compuerta 2.3:** Joaco y el Controller validan [docs/guias/costos-demo.md](guias/costos-demo.md).
+- **Pruebas (2026-11-03), desde una base recién creada:** lint y tipos ✅ · Vitest 174 de 174 ✅ · pgTAP 1.642 de 1.642 ✅ · formato ✅ · Playwright 117 de 118 en la corrida completa. La que faltó (`admin`, celular) falló en la primera carga del servidor y pasó sola, en celular y computadora.
+- **Producción:** Joaco lo ve después.
+
+## Antes: pantallas de precios (fusionado, PR #35)
+
 - **Qué se hizo** (ADR-0029, sección "PR 2"):
   - **ficha de materia prima:** tarjeta "Precios" (solo con `prices.view`) con el costo en el local, los precios vigentes, el historial y "Proponer precio";
   - **aprobaciones:** resumen propio de los precios, con la variación contra hoy y contra hace N días; la tarjeta dice cuándo pasó a Dirección General;
@@ -12,7 +25,7 @@ _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - **subas en escalones** (respuesta 8 de Soy): migración `20261111120000_prices_lookback.sql`.
 - **Revisiones:** `security-auditor` apto; `db-reviewer` y `ui-reviewer` sin graves, medios resueltos.
 - **Pruebas (2026-11-03), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 174 de 174 ✅ · pgTAP 1.487 de 1.487 ✅ · Playwright 118 de 118 ✅ · formato ✅.
-- **A confirmar con Joaco:** una **bajada** grande también pasa a Dirección (como en el PR 1).
+- **Confirmado por Joaco:** una baja grande también pasa a Dirección.
 
 ## Antes: panel de control de la estructura (rama `feat/panel-estructura`)
 

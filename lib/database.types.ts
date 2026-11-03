@@ -2823,6 +2823,61 @@ export type Database = {
   };
   costing: {
     Tables: {
+      cost_recalc_queue: {
+        Row: {
+          attempts: number;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          entry_number: number;
+          error: string | null;
+          group_id: string;
+          id: string;
+          processed_at: string | null;
+          reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          recipe_ids: string[];
+          restaurant_ids: string[] | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempts?: number;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          entry_number?: never;
+          error?: string | null;
+          group_id: string;
+          id?: string;
+          processed_at?: string | null;
+          reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          recipe_ids: string[];
+          restaurant_ids?: string[] | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          attempts?: number;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          entry_number?: never;
+          error?: string | null;
+          group_id?: string;
+          id?: string;
+          processed_at?: string | null;
+          reason?: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          recipe_ids?: string[];
+          restaurant_ids?: string[] | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       price_records: {
         Row: {
           approval_request_id: string | null;
@@ -2963,6 +3018,270 @@ export type Database = {
         };
         Relationships: [];
       };
+      recipe_cost_current: {
+        Row: {
+          as_of: string;
+          cost_per_base_unit: number | null;
+          cost_per_portion: number | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          method_version: number;
+          recipe_id: string;
+          recipe_version_id: string;
+          reliability: Database["costing"]["Enums"]["cost_reliability"];
+          restaurant_id: string;
+          total_cost: number | null;
+          total_gross_cost: number | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          as_of: string;
+          cost_per_base_unit?: number | null;
+          cost_per_portion?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          method_version?: number;
+          recipe_id: string;
+          recipe_version_id: string;
+          reliability: Database["costing"]["Enums"]["cost_reliability"];
+          restaurant_id: string;
+          total_cost?: number | null;
+          total_gross_cost?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          as_of?: string;
+          cost_per_base_unit?: number | null;
+          cost_per_portion?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          method_version?: number;
+          recipe_id?: string;
+          recipe_version_id?: string;
+          reliability?: Database["costing"]["Enums"]["cost_reliability"];
+          restaurant_id?: string;
+          total_cost?: number | null;
+          total_gross_cost?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      recipe_cost_snapshot_lines: {
+        Row: {
+          base_quantity: number | null;
+          cleaning_yield: number | null;
+          cooking_factor: number | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          gross_unit_cost: number | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string | null;
+          item: string;
+          line_cost: number | null;
+          line_gross_cost: number | null;
+          line_order: number;
+          line_status: string;
+          package_base_quantity: number | null;
+          price_level: Database["core"]["Enums"]["scope_type"] | null;
+          price_record_id: string | null;
+          purchase_quantity: number | null;
+          quantity: number;
+          quantity_basis: Database["recipes"]["Enums"]["quantity_basis"];
+          recipe_version_id: string;
+          restaurant_id: string;
+          share_pct: number | null;
+          snapshot_id: string;
+          sub_recipe_id: string | null;
+          sub_recipe_version_id: string | null;
+          unit_cost: number | null;
+          unit_id: string;
+          updated_at: string;
+          updated_by: string | null;
+          vat_condition: Database["org"]["Enums"]["vat_condition"] | null;
+          yield_profile_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          base_quantity?: number | null;
+          cleaning_yield?: number | null;
+          cooking_factor?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          gross_unit_cost?: number | null;
+          group_id: string;
+          id?: string;
+          ingredient_id?: string | null;
+          item: string;
+          line_cost?: number | null;
+          line_gross_cost?: number | null;
+          line_order: number;
+          line_status: string;
+          package_base_quantity?: number | null;
+          price_level?: Database["core"]["Enums"]["scope_type"] | null;
+          price_record_id?: string | null;
+          purchase_quantity?: number | null;
+          quantity: number;
+          quantity_basis: Database["recipes"]["Enums"]["quantity_basis"];
+          recipe_version_id: string;
+          restaurant_id: string;
+          share_pct?: number | null;
+          snapshot_id: string;
+          sub_recipe_id?: string | null;
+          sub_recipe_version_id?: string | null;
+          unit_cost?: number | null;
+          unit_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_condition?: Database["org"]["Enums"]["vat_condition"] | null;
+          yield_profile_id?: string | null;
+        };
+        Update: {
+          base_quantity?: number | null;
+          cleaning_yield?: number | null;
+          cooking_factor?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          gross_unit_cost?: number | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string | null;
+          item?: string;
+          line_cost?: number | null;
+          line_gross_cost?: number | null;
+          line_order?: number;
+          line_status?: string;
+          package_base_quantity?: number | null;
+          price_level?: Database["core"]["Enums"]["scope_type"] | null;
+          price_record_id?: string | null;
+          purchase_quantity?: number | null;
+          quantity?: number;
+          quantity_basis?: Database["recipes"]["Enums"]["quantity_basis"];
+          recipe_version_id?: string;
+          restaurant_id?: string;
+          share_pct?: number | null;
+          snapshot_id?: string;
+          sub_recipe_id?: string | null;
+          sub_recipe_version_id?: string | null;
+          unit_cost?: number | null;
+          unit_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_condition?: Database["org"]["Enums"]["vat_condition"] | null;
+          yield_profile_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_cost_snapshot_lines_price_record_id_fkey";
+            columns: ["price_record_id"];
+            isOneToOne: false;
+            referencedRelation: "price_records";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recipe_cost_snapshot_lines_snapshot_id_fkey";
+            columns: ["snapshot_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_cost_snapshots";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      recipe_cost_snapshots: {
+        Row: {
+          as_of: string;
+          cost_per_base_unit: number | null;
+          cost_per_portion: number | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          method_version: number;
+          reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          recipe_id: string;
+          recipe_version_id: string;
+          reliability: Database["costing"]["Enums"]["cost_reliability"];
+          restaurant_id: string;
+          total_cost: number | null;
+          total_gross_cost: number | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          as_of: string;
+          cost_per_base_unit?: number | null;
+          cost_per_portion?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          method_version?: number;
+          reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          recipe_id: string;
+          recipe_version_id: string;
+          reliability: Database["costing"]["Enums"]["cost_reliability"];
+          restaurant_id: string;
+          total_cost?: number | null;
+          total_gross_cost?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          as_of?: string;
+          cost_per_base_unit?: number | null;
+          cost_per_portion?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          method_version?: number;
+          reason?: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          recipe_id?: string;
+          recipe_version_id?: string;
+          reliability?: Database["costing"]["Enums"]["cost_reliability"];
+          restaurant_id?: string;
+          total_cost?: number | null;
+          total_gross_cost?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -2979,6 +3298,22 @@ export type Database = {
         };
         Returns: undefined;
       };
+      enqueue_recalc: {
+        Args: {
+          p_reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          p_recipe_ids: string[];
+          p_restaurant_ids: string[];
+        };
+        Returns: undefined;
+      };
+      enqueue_restaurant: {
+        Args: {
+          p_reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          p_restaurant_id: string;
+        };
+        Returns: undefined;
+      };
+      fit: { Args: { p_limit: number; p_value: number }; Returns: number };
       has_scope_permission: {
         Args: {
           p_brand_id: string;
@@ -3053,6 +3388,7 @@ export type Database = {
       };
       price_view_brand_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
       price_view_group_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
+      process_recalc_queue: { Args: { p_limit?: number }; Returns: number };
       propose_price: {
         Args: {
           p_brand_id: string;
@@ -3072,6 +3408,60 @@ export type Database = {
         };
         Returns: string;
       };
+      purchase_quantity: {
+        Args: { p_base: number; p_basis: string; p_cleaning: number; p_cooking: number };
+        Returns: number;
+      };
+      recipe_cost: {
+        Args: { p_restaurant_id: string; p_version_id: string };
+        Returns: {
+          cost_per_base_unit: number;
+          cost_per_portion: number;
+          reliability: Database["costing"]["Enums"]["cost_reliability"];
+          total_cost: number;
+          total_gross_cost: number;
+        }[];
+      };
+      recipe_cost_lines: {
+        Args: { p_restaurant_id: string; p_version_id: string };
+        Returns: {
+          base_quantity: number;
+          ingredient_id: string;
+          item: string;
+          line_cost: number;
+          line_gross_cost: number;
+          line_order: number;
+          quantity: number;
+          quantity_basis: string;
+          share_pct: number;
+          status: string;
+          sub_recipe_id: string;
+          unit_id: string;
+        }[];
+      };
+      recipe_line_costs_internal: {
+        Args: { p_as_of: string; p_memo?: Json; p_restaurant_id: string; p_version_id: string };
+        Returns: Database["costing"]["CompositeTypes"]["recipe_cost_line"][];
+        SetofOptions: {
+          from: "*";
+          to: "recipe_cost_line";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      recipe_totals_internal: {
+        Args: { p_as_of: string; p_memo?: Json; p_restaurant_id: string; p_version_id: string };
+        Returns: Database["costing"]["CompositeTypes"]["recipe_cost_total"];
+        SetofOptions: {
+          from: "*";
+          to: "recipe_cost_total";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      recipes_above: { Args: { p_recipe_ids: string[] }; Returns: string[] };
+      recipes_below: { Args: { p_recipe_id: string }; Returns: string[] };
+      recipes_using_ingredient: { Args: { p_ingredient_id: string }; Returns: string[] };
       reference_price: {
         Args: {
           p_as_of: string;
@@ -3087,6 +3477,18 @@ export type Database = {
           price_record_id: string;
           valid_from: string;
         }[];
+      };
+      refresh_recipes: {
+        Args: {
+          p_reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          p_recipe_ids: string[];
+          p_restaurant_ids: string[];
+        };
+        Returns: undefined;
+      };
+      require_recipe_cost: {
+        Args: { p_restaurant_id: string; p_version_id: string };
+        Returns: undefined;
       };
       resolve_price: {
         Args: { p_as_of?: string; p_ingredient_id: string; p_restaurant_id: string };
@@ -3143,6 +3545,32 @@ export type Database = {
           valid_from: string;
         }[];
       };
+      restaurant_recipes: { Args: { p_restaurant_id: string }; Returns: string[] };
+      store_recipe_cost: {
+        Args: {
+          p_group_id: string;
+          p_lines: Database["costing"]["CompositeTypes"]["recipe_cost_line"][];
+          p_reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
+          p_recipe_id: string;
+          p_restaurant_id: string;
+          p_total: Database["costing"]["CompositeTypes"]["recipe_cost_total"];
+          p_version_id: string;
+        };
+        Returns: undefined;
+      };
+      totals_of_lines: {
+        Args: {
+          p_lines: Database["costing"]["CompositeTypes"]["recipe_cost_line"][];
+          p_version_id: string;
+        };
+        Returns: Database["costing"]["CompositeTypes"]["recipe_cost_total"];
+        SetofOptions: {
+          from: "*";
+          to: "recipe_cost_total";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       update_price_settings: {
         Args: {
           p_approval_variation_pct: number;
@@ -3164,11 +3592,52 @@ export type Database = {
       };
     };
     Enums: {
+      cost_reliability: "verified" | "estimated" | "stale" | "incomplete";
+      cost_snapshot_reason:
+        | "publish"
+        | "price_change"
+        | "yield_change"
+        | "assignment"
+        | "legal_entity_change"
+        | "restaurant_reopened";
       price_document: "invoice" | "no_invoice";
       price_source: "manual" | "test_value" | "excel_import" | "invoice";
     };
     CompositeTypes: {
-      [_ in never]: never;
+      recipe_cost_line: {
+        component_id: string | null;
+        line_order: number | null;
+        item: string | null;
+        ingredient_id: string | null;
+        sub_recipe_id: string | null;
+        sub_recipe_version_id: string | null;
+        quantity: number | null;
+        unit_id: string | null;
+        quantity_basis: string | null;
+        base_quantity: number | null;
+        purchase_quantity: number | null;
+        yield_profile_id: string | null;
+        cleaning_yield: number | null;
+        cooking_factor: number | null;
+        price_record_id: string | null;
+        price_level: string | null;
+        package_base_quantity: number | null;
+        vat_condition: string | null;
+        unit_cost: number | null;
+        gross_unit_cost: number | null;
+        line_cost: number | null;
+        line_gross_cost: number | null;
+        estimated: boolean | null;
+        stale: boolean | null;
+        status: string | null;
+      };
+      recipe_cost_total: {
+        total_cost: number | null;
+        total_gross_cost: number | null;
+        cost_per_base_unit: number | null;
+        cost_per_portion: number | null;
+        reliability: Database["costing"]["Enums"]["cost_reliability"] | null;
+      };
     };
   };
   imports: {
@@ -4008,6 +4477,67 @@ export type Database = {
   };
   recipes: {
     Tables: {
+      component_base_quantities: {
+        Row: {
+          base_quantity: number;
+          base_unit_id: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          recipe_component_id: string;
+          recipe_version_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          base_quantity: number;
+          base_unit_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          recipe_component_id: string;
+          recipe_version_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          base_quantity?: number;
+          base_unit_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          recipe_component_id?: string;
+          recipe_version_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "component_base_quantities_recipe_component_id_fkey";
+            columns: ["recipe_component_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_components";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "component_base_quantities_recipe_version_id_fkey";
+            columns: ["recipe_version_id"];
+            isOneToOne: false;
+            referencedRelation: "recipe_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       recipe_assignments: {
         Row: {
           created_at: string;
@@ -4687,6 +5217,7 @@ export type Database = {
           why: string;
         }[];
       };
+      freeze_base_quantities: { Args: { p_version_id: string }; Returns: undefined };
       kitchen_card: { Args: { p_recipe_id: string }; Returns: Json };
       lock_sub_graph: { Args: { p_group_id: string }; Returns: undefined };
       media_recipe_id: { Args: { p_name: string }; Returns: string };
@@ -5349,6 +5880,15 @@ export const Constants = {
   },
   costing: {
     Enums: {
+      cost_reliability: ["verified", "estimated", "stale", "incomplete"],
+      cost_snapshot_reason: [
+        "publish",
+        "price_change",
+        "yield_change",
+        "assignment",
+        "legal_entity_change",
+        "restaurant_reopened",
+      ],
       price_document: ["invoice", "no_invoice"],
       price_source: ["manual", "test_value", "excel_import", "invoice"],
     },

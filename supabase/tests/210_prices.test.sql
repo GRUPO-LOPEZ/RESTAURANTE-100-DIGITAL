@@ -3,7 +3,7 @@
 -- Personas del seed: ...0401 superadmin, ...0402 Dirección, ...0403 directora de Demo Pastas (...101),
 -- ...0404 gerente de ...201, ...0405 chef, ...0407 controller, ...0408 compras, ...0409 cocinera,
 -- ...0410 auditor, ...0411 gerente de ...201 y ...202.
--- El seed trae 20 precios de grupo y 1 de la marca Demo Pastas.
+-- El seed trae 47 precios de grupo y 1 de la marca Demo Pastas.
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
@@ -187,12 +187,12 @@ insert into costing.price_records (group_id, purchase_product_id, scope_type, br
 values (pg_temp.u(1), pg_temp.product('DEMO-PROD-012'), 'brand', pg_temp.u(102), current_date - 2, 20000, 'no_invoice', 'test_value');
 insert into costing.price_records (group_id, purchase_product_id, scope_type, restaurant_id, valid_from, package_price, document_type, source)
 values (pg_temp.u(1), pg_temp.product('DEMO-PROD-012'), 'restaurant', pg_temp.u(202), current_date - 2, 21000, 'no_invoice', 'test_value');
-select is(pg_temp.prices_seen(407), '27', 'el Controller ve todos (24 de grupo, 2 de marca y 1 de local)');
-select is(pg_temp.prices_seen(404), '25', 'el Gerente de Pastas Centro ve los de grupo y los de su marca, no los de Parrilla ni de Pastas Norte');
-select is(pg_temp.prices_seen(411), '26', 'la Gerente de los dos locales de Pastas ve también el de Pastas Norte');
-select is(pg_temp.prices_seen(403), '26', 'la Directora de Pastas ve los de su marca y sus locales, no los de Parrilla');
+select is(pg_temp.prices_seen(407), '54', 'el Controller ve todos (51 de grupo, 2 de marca y 1 de local)');
+select is(pg_temp.prices_seen(404), '52', 'el Gerente de Pastas Centro ve los de grupo y los de su marca, no los de Parrilla ni de Pastas Norte');
+select is(pg_temp.prices_seen(411), '53', 'la Gerente de los dos locales de Pastas ve también el de Pastas Norte');
+select is(pg_temp.prices_seen(403), '53', 'la Directora de Pastas ve los de su marca y sus locales, no los de Parrilla');
 select is(pg_temp.prices_seen(405) || '/' || pg_temp.prices_seen(409), '0/0', 'el Chef y la Cocinera no ven ningún precio');
-select is(pg_temp.prices_seen(410), '27', 'el Auditor los ve todos');
+select is(pg_temp.prices_seen(410), '54', 'el Auditor los ve todos');
 
 -- La auditoría guarda el precio, pero el historial lo oculta a quien no ve costos.
 select is((select core.hide_costs(new_values) ->> 'package_price' || '/' || (core.hide_costs(new_values) ->> 'net_package_price')

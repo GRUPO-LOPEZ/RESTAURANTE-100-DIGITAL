@@ -275,6 +275,28 @@ Procesos que cambian el peso de una materia prima: pelado, desgrasado, deshuesad
 | `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.       |
 | `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                              |
 
+## `costing.cost_recalc_queue`
+
+Pedidos de recálculo de costos. Los anotan los triggers al publicar, aprobar un precio o un rendimiento, asignar una receta o cambiar la razón social; los procesa costing.process_recalc_queue cada minuto. Interna: no se expone por la API.
+
+| Columna          | Tipo                           | Nulo | Qué guarda                                                             |
+| ---------------- | ------------------------------ | ---- | ---------------------------------------------------------------------- |
+| `id`             | `uuid`                         | no   | Identificador.                                                         |
+| `entry_number`   | `bigint`                       | no   | Orden de llegada.                                                      |
+| `group_id`       | `uuid`                         | no   | Grupo de las recetas.                                                  |
+| `recipe_ids`     | `uuid[]`                       | no   | Recetas por recalcular. También se recalculan las que las usan.        |
+| `restaurant_ids` | `uuid[]`                       | sí   | Locales por recalcular. Vacío: todos los que las usan.                 |
+| `reason`         | `costing.cost_snapshot_reason` | no   | Qué lo causó. Es el motivo de la foto.                                 |
+| `attempts`       | `integer`                      | no   | Intentos fallidos. Con 3, deja de intentarse y hay que mirar el error. |
+| `processed_at`   | `timestamp with time zone`     | sí   | Cuándo se procesó. Vacío: pendiente.                                   |
+| `error`          | `text`                         | sí   | El último error, si falló.                                             |
+| `created_at`     | `timestamp with time zone`     | no   | Cuándo se anotó (lo pone la base).                                     |
+| `created_by`     | `uuid`                         | sí   | Quién hizo el cambio (lo pone la base).                                |
+| `updated_at`     | `timestamp with time zone`     | no   | Cuándo cambió por última vez (lo pone la base).                        |
+| `updated_by`     | `uuid`                         | sí   | Quién la cambió por última vez (lo pone la base).                      |
+| `deleted_at`     | `timestamp with time zone`     | sí   | Baja lógica. No se usa.                                                |
+| `deleted_by`     | `uuid`                         | sí   | Quién la dio de baja (lo pone la base).                                |
+
 ## `costing.price_records`
 
 Precios de compra aprobados, para siempre: un precio nuevo es un registro nuevo y nunca se cambia uno viejo. Cada uno vale para un producto de compra en el grupo, una marca o un local, desde una fecha.
@@ -327,6 +349,101 @@ Configuración de precios de cada grupo. Sin fila, valen los valores por defecto
 | `updated_by`             | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                                                                                 |
 | `deleted_at`             | `timestamp with time zone` | sí   | Baja lógica. Nunca se borra.                                                                                                                                                                                      |
 | `deleted_by`             | `uuid`                     | sí   | Quién la dio de baja (lo pone la base).                                                                                                                                                                           |
+| `lookback_days`          | `integer`                  | no   | Días hacia atrás contra los que también se compara un precio nuevo (subas en escalones). Vale la variación más grande entre la de hoy y la de hace estos días.                                                    |
+
+## `costing.recipe_cost_current`
+
+El costo vigente de cada receta en cada local. Dato derivado: lo escribe solo el motor y no pasa por la auditoría, para no llenarla en cada recálculo; la historia son las fotos (recipe_cost_snapshots).
+
+| Columna              | Tipo                       | Nulo | Qué guarda                                                                                                                  |
+| -------------------- | -------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`                     | no   | Identificador.                                                                                                              |
+| `group_id`           | `uuid`                     | no   | Grupo de la receta.                                                                                                         |
+| `restaurant_id`      | `uuid`                     | no   | Local: una misma receta cuesta distinto en cada uno.                                                                        |
+| `recipe_id`          | `uuid`                     | no   | Receta.                                                                                                                     |
+| `recipe_version_id`  | `uuid`                     | no   | Versión publicada con la que se calculó.                                                                                    |
+| `as_of`              | `date`                     | no   | Fecha de los precios que se usaron.                                                                                         |
+| `total_cost`         | `numeric(18,4)`            | sí   | Costo total de la receta, sin el IVA recuperable. Vacío si falta un dato: nunca $ 0.                                        |
+| `total_gross_cost`   | `numeric(18,4)`            | sí   | Costo total con IVA. Vacío si falta un dato.                                                                                |
+| `cost_per_base_unit` | `numeric(20,8)`            | sí   | Costo por unidad base terminada (g, ml o unidad). Vacío si falta el rendimiento.                                            |
+| `cost_per_portion`   | `numeric(18,4)`            | sí   | Costo por porción. Vacío si no hay porciones.                                                                               |
+| `reliability`        | `costing.cost_reliability` | no   | Confiabilidad: gana la peor línea.                                                                                          |
+| `currency`           | `text`                     | no   | Moneda. Solo ARS.                                                                                                           |
+| `method_version`     | `integer`                  | no   | Versión del método de cálculo.                                                                                              |
+| `created_at`         | `timestamp with time zone` | no   | Cuándo se calculó por primera vez (lo pone la base).                                                                        |
+| `created_by`         | `uuid`                     | sí   | Vacío: lo escribe el proceso de la cola. Quién hizo el cambio está en la auditoría del precio, el rendimiento o la versión. |
+| `updated_at`         | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                                             |
+| `updated_by`         | `uuid`                     | sí   | Vacío: lo escribe el proceso de la cola.                                                                                    |
+| `deleted_at`         | `timestamp with time zone` | sí   | Baja lógica: el local dejó de usar la receta.                                                                               |
+| `deleted_by`         | `uuid`                     | sí   | Vacío: lo da de baja el proceso de la cola.                                                                                 |
+
+## `costing.recipe_cost_snapshot_lines`
+
+Detalle de una foto: cada línea con lo que no tiene versión (cantidad, rendimiento, precio, contenido del envase, condición frente al IVA y versión de la subreceta). Solo de inserción. Quien ve costos lee el costo de la línea; el precio y su origen no se exponen por la API.
+
+| Columna                 | Tipo                       | Nulo | Qué guarda                                                                             |
+| ----------------------- | -------------------------- | ---- | -------------------------------------------------------------------------------------- |
+| `id`                    | `uuid`                     | no   | Identificador.                                                                         |
+| `group_id`              | `uuid`                     | no   | Grupo de la receta.                                                                    |
+| `restaurant_id`         | `uuid`                     | no   | Local de la foto.                                                                      |
+| `snapshot_id`           | `uuid`                     | no   | Foto a la que pertenece.                                                               |
+| `recipe_version_id`     | `uuid`                     | no   | Versión de la foto. Una línea muestra la fórmula: la ve quien ve esa versión.          |
+| `line_order`            | `integer`                  | no   | Orden de la línea en la fórmula.                                                       |
+| `item`                  | `text`                     | no   | Nombre de la materia prima o la preparación en ese momento.                            |
+| `ingredient_id`         | `uuid`                     | sí   | Materia prima, si la línea es una.                                                     |
+| `sub_recipe_id`         | `uuid`                     | sí   | Preparación, si la línea es una. Puede ser la variante del local.                      |
+| `sub_recipe_version_id` | `uuid`                     | sí   | Versión de la preparación que se usó.                                                  |
+| `quantity`              | `numeric(18,6)`            | no   | Cantidad de la línea.                                                                  |
+| `unit_id`               | `uuid`                     | no   | Unidad de la cantidad.                                                                 |
+| `quantity_basis`        | `recipes.quantity_basis`   | no   | Cómo va la cantidad: como se compra, limpia, cocida o terminada.                       |
+| `base_quantity`         | `numeric(18,6)`            | sí   | Cantidad en la unidad de uso.                                                          |
+| `purchase_quantity`     | `numeric(18,6)`            | sí   | Cantidad a comprar, después del rendimiento.                                           |
+| `yield_profile_id`      | `uuid`                     | sí   | Estándar de rendimiento aprobado que se usó.                                           |
+| `cleaning_yield`        | `numeric(7,4)`             | sí   | Rendimiento de limpieza usado.                                                         |
+| `cooking_factor`        | `numeric(7,4)`             | sí   | Factor de cocción usado.                                                               |
+| `price_record_id`       | `uuid`                     | sí   | Precio que se usó.                                                                     |
+| `price_level`           | `core.scope_type`          | sí   | De dónde vino el precio: local, marca o grupo.                                         |
+| `package_base_quantity` | `numeric(18,6)`            | sí   | Contenido del envase de ese precio, en la unidad de uso.                               |
+| `vat_condition`         | `org.vat_condition`        | sí   | Condición frente al IVA del local en ese momento.                                      |
+| `unit_cost`             | `numeric(20,8)`            | sí   | Costo por unidad de uso, sin el IVA recuperable.                                       |
+| `gross_unit_cost`       | `numeric(20,8)`            | sí   | Costo por unidad de uso, con IVA.                                                      |
+| `line_cost`             | `numeric(18,4)`            | sí   | Costo de la línea, sin el IVA recuperable.                                             |
+| `line_gross_cost`       | `numeric(18,4)`            | sí   | Costo de la línea, con IVA.                                                            |
+| `share_pct`             | `numeric(7,2)`             | sí   | Participación de la línea en el costo total, en %.                                     |
+| `line_status`           | `text`                     | no   | Estado: ok, o qué faltó (conversión, rendimiento, precio, razón social o preparación). |
+| `created_at`            | `timestamp with time zone` | no   | Cuándo se sacó (lo pone la base).                                                      |
+| `created_by`            | `uuid`                     | sí   | Vacío: la saca el proceso de la cola.                                                  |
+| `updated_at`            | `timestamp with time zone` | no   | Igual a created_at: la línea no cambia.                                                |
+| `updated_by`            | `uuid`                     | sí   | Igual a created_by: la línea no cambia.                                                |
+| `deleted_at`            | `timestamp with time zone` | sí   | Siempre vacío: la línea no se da de baja.                                              |
+| `deleted_by`            | `uuid`                     | sí   | Siempre vacío: la línea no se da de baja.                                              |
+
+## `costing.recipe_cost_snapshots`
+
+Foto histórica del costo de una receta en un local. Solo de inserción: se saca cada vez que el costo cambia, y una foto vieja nunca cambia. Es la historia del costo, por eso no pasa por la auditoría.
+
+| Columna              | Tipo                           | Nulo | Qué guarda                                                                                                               |
+| -------------------- | ------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------ |
+| `id`                 | `uuid`                         | no   | Identificador.                                                                                                           |
+| `group_id`           | `uuid`                         | no   | Grupo de la receta.                                                                                                      |
+| `restaurant_id`      | `uuid`                         | no   | Local.                                                                                                                   |
+| `recipe_id`          | `uuid`                         | no   | Receta.                                                                                                                  |
+| `recipe_version_id`  | `uuid`                         | no   | Versión con la que se calculó.                                                                                           |
+| `as_of`              | `date`                         | no   | Fecha de los precios que se usaron.                                                                                      |
+| `reason`             | `costing.cost_snapshot_reason` | no   | Por qué se sacó la foto.                                                                                                 |
+| `total_cost`         | `numeric(18,4)`                | sí   | Costo total, sin el IVA recuperable. Vacío si faltaba un dato.                                                           |
+| `total_gross_cost`   | `numeric(18,4)`                | sí   | Costo total con IVA. Vacío si faltaba un dato.                                                                           |
+| `cost_per_base_unit` | `numeric(20,8)`                | sí   | Costo por unidad base terminada.                                                                                         |
+| `cost_per_portion`   | `numeric(18,4)`                | sí   | Costo por porción.                                                                                                       |
+| `reliability`        | `costing.cost_reliability`     | no   | Confiabilidad en ese momento.                                                                                            |
+| `currency`           | `text`                         | no   | Moneda. Solo ARS.                                                                                                        |
+| `method_version`     | `integer`                      | no   | Versión del método de cálculo.                                                                                           |
+| `created_at`         | `timestamp with time zone`     | no   | Cuándo se sacó (lo pone la base).                                                                                        |
+| `created_by`         | `uuid`                         | sí   | Vacío: la saca el proceso de la cola. Quién hizo el cambio está en la auditoría del precio, el rendimiento o la versión. |
+| `updated_at`         | `timestamp with time zone`     | no   | Igual a created_at: la foto no cambia.                                                                                   |
+| `updated_by`         | `uuid`                         | sí   | Igual a created_by: la foto no cambia.                                                                                   |
+| `deleted_at`         | `timestamp with time zone`     | sí   | Siempre vacío: la foto no se da de baja.                                                                                 |
+| `deleted_by`         | `uuid`                         | sí   | Siempre vacío: la foto no se da de baja.                                                                                 |
 
 ## `imports.import_errors`
 
@@ -426,6 +543,25 @@ Filas del Excel tal como se leyeron (raw) y ya interpretadas (parsed), sin preci
 | `updated_by`        | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                       |
 | `deleted_at`        | `timestamp with time zone` | sí   | Borrado lógico.                                                                                                                         |
 | `deleted_by`        | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                                       |
+
+## `recipes.component_base_quantities`
+
+Cantidad de cada línea en la unidad de uso, congelada al publicar la versión: una conversión nueva no mueve una receta publicada. Solo de inserción. No es un dato económico. Solo la lee el motor de costos.
+
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                           |
+| --------------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no   | Identificador.                                                                                       |
+| `group_id`            | `uuid`                     | no   | Grupo de la receta.                                                                                  |
+| `recipe_version_id`   | `uuid`                     | no   | Versión publicada.                                                                                   |
+| `recipe_component_id` | `uuid`                     | no   | Línea de la fórmula. Una sola cantidad por línea.                                                    |
+| `base_quantity`       | `numeric(18,6)`            | no   | Cantidad de la línea en la unidad de uso de la materia prima, o en la unidad base de la preparación. |
+| `base_unit_id`        | `uuid`                     | no   | Unidad de esa cantidad (g, ml o unidad).                                                             |
+| `created_at`          | `timestamp with time zone` | no   | Cuándo se congeló (lo pone la base).                                                                 |
+| `created_by`          | `uuid`                     | sí   | Quién publicó (lo pone la base).                                                                     |
+| `updated_at`          | `timestamp with time zone` | no   | Igual a created_at: la fila no cambia.                                                               |
+| `updated_by`          | `uuid`                     | sí   | Igual a created_by: la fila no cambia.                                                               |
+| `deleted_at`          | `timestamp with time zone` | sí   | Siempre vacío: la fila no se da de baja.                                                             |
+| `deleted_by`          | `uuid`                     | sí   | Siempre vacío: la fila no se da de baja.                                                             |
 
 ## `recipes.recipe_assignments`
 
@@ -621,21 +757,23 @@ Recetas: la identidad (código, nombre, alcance, tipo). La fórmula vive en reci
 
 ## Tipos
 
-| Tipo                      | Valores                                                                                                      | Qué significa                                                                                                                                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `catalog.allergen_status` | `contains`, `may_contain`, `free_verified`                                                                   | Estado de un alérgeno en un ingrediente: contains (contiene), may_contain (puede contener, trazas) o free_verified (no contiene, verificado). Sin fila = sin dato: nunca se toma como "sin alérgenos".             |
-| `catalog.conversion_kind` | `density`, `unit_weight`                                                                                     | Conversión propia de un ingrediente: density (gramos por mililitro) o unit_weight (gramos por unidad: 1 huevo, 1 atado).                                                                                           |
-| `catalog.data_source`     | `manual`, `excel_import`, `measured`, `supplier`, `calculated`, `estimated`, `verified`                      | Fuente de un dato (sección 6): manual, importado de Excel, medido en ensayo, informado por proveedor, calculado por el sistema, estimado o verificado por un responsable.                                          |
-| `catalog.dimension`       | `mass`, `volume`, `count`, `package`                                                                         | Dimensión de una unidad: mass (masa, base g), volume (volumen, base ml), count (conteo, base unidad) o package (envase sin contenido fijo: caja, bolsa, horma).                                                    |
-| `catalog.yield_status`    | `draft`, `approved`, `superseded`                                                                            | Estado de un perfil de rendimiento: draft (propuesto, esperando aprobación), approved (el estándar vigente) o superseded (reemplazado por otro aprobado).                                                          |
-| `costing.price_document`  | `invoice`, `no_invoice`                                                                                      | Comprobante del precio: factura con IVA discriminado, o "precio ingresado" sin factura (el precio es el final y no da crédito fiscal).                                                                             |
-| `costing.price_source`    | `manual`, `test_value`, `excel_import`, `invoice`                                                            | De dónde viene un precio: carga manual, valor de prueba (simbólico, mientras no lleguen las facturas), importación de Excel o factura (reservado para la Fase 5).                                                  |
-| `imports.issue_severity`  | `error`, `warning`                                                                                           | Un error frena la fila; un aviso no (por ejemplo, una receta sin componentes).                                                                                                                                     |
-| `imports.job_status`      | `uploaded`, `staged`, `validated`, `ingredients_confirmed`, `confirmed`, `cancelled`                         | Estado de una importación: subida, filas cargadas, validada, materias primas confirmadas (por Compras), confirmada (recetas creadas) o cancelada.                                                                  |
-| `imports.row_action`      | `create`, `reuse`, `skip`, `error`                                                                           | Qué pasa con una fila al confirmar: se crea, se reutiliza lo que ya existe, se omite (ya existe y no se pisa) o tiene un error.                                                                                    |
-| `imports.row_kind`        | `ingredient`, `preparation`, `dish`, `line`                                                                  | Qué es una fila del Excel: materia prima, preparación (pre-elaborado), plato o línea de una receta.                                                                                                                |
-| `recipes.media_kind`      | `final_product`, `plating`, `raw_material`, `step`, `critical_point`, `correct_example`, `incorrect_example` | Tipo de foto: producto final, emplatado, materia prima, paso, punto crítico, ejemplo correcto o ejemplo incorrecto.                                                                                                |
-| `recipes.quantity_basis`  | `purchase`, `clean`, `cooked`, `finished`                                                                    | Qué representa la cantidad de una línea: peso de compra (purchase), limpio (clean) o cocido (cooked) de una materia prima, o cantidad terminada (finished) de una subreceta.                                       |
-| `recipes.recipe_scope`    | `group`, `brand`, `restaurant`                                                                               | Alcance de una receta: maestra del grupo, de marca o de local. Una variante es una receta de local con su maestra (variant_of_recipe_id). La cocina central no se usa: Pariggi es un proveedor externo (ADR-0025). |
-| `recipes.recipe_type`     | `preparation`, `dish`, `unit_component`                                                                      | Tipo de receta: preparation (salsa, masa, caldo), dish (plato terminado, por porción) o unit_component (medallón, bollo, empanada armada).                                                                         |
-| `recipes.step_kind`       | `preparation`, `cooking`, `resting`, `fermentation`, `cooling`, `regeneration`, `plating`, `other`           | Tipo de paso: preparación, cocción, reposo, fermentación, enfriamiento, regeneración, emplatado u otro.                                                                                                            |
+| Tipo                           | Valores                                                                                                      | Qué significa                                                                                                                                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `catalog.allergen_status`      | `contains`, `may_contain`, `free_verified`                                                                   | Estado de un alérgeno en un ingrediente: contains (contiene), may_contain (puede contener, trazas) o free_verified (no contiene, verificado). Sin fila = sin dato: nunca se toma como "sin alérgenos".             |
+| `catalog.conversion_kind`      | `density`, `unit_weight`                                                                                     | Conversión propia de un ingrediente: density (gramos por mililitro) o unit_weight (gramos por unidad: 1 huevo, 1 atado).                                                                                           |
+| `catalog.data_source`          | `manual`, `excel_import`, `measured`, `supplier`, `calculated`, `estimated`, `verified`                      | Fuente de un dato (sección 6): manual, importado de Excel, medido en ensayo, informado por proveedor, calculado por el sistema, estimado o verificado por un responsable.                                          |
+| `catalog.dimension`            | `mass`, `volume`, `count`, `package`                                                                         | Dimensión de una unidad: mass (masa, base g), volume (volumen, base ml), count (conteo, base unidad) o package (envase sin contenido fijo: caja, bolsa, horma).                                                    |
+| `catalog.yield_status`         | `draft`, `approved`, `superseded`                                                                            | Estado de un perfil de rendimiento: draft (propuesto, esperando aprobación), approved (el estándar vigente) o superseded (reemplazado por otro aprobado).                                                          |
+| `costing.cost_reliability`     | `verified`, `estimated`, `stale`, `incomplete`                                                               | Confiabilidad de un costo; gana la peor línea: verified (completo y verificado), estimated (con estimaciones: algún precio heredado), stale (desactualizado: algún precio vencido) e incomplete (falta un dato).   |
+| `costing.cost_snapshot_reason` | `publish`, `price_change`, `yield_change`, `assignment`, `legal_entity_change`, `restaurant_reopened`        | Por qué se sacó una foto de costo: se publicó una versión, se aprobó un precio o un rendimiento, se asignó la receta a un local, cambió la razón social o se reabrió el local.                                     |
+| `costing.price_document`       | `invoice`, `no_invoice`                                                                                      | Comprobante del precio: factura con IVA discriminado, o "precio ingresado" sin factura (el precio es el final y no da crédito fiscal).                                                                             |
+| `costing.price_source`         | `manual`, `test_value`, `excel_import`, `invoice`                                                            | De dónde viene un precio: carga manual, valor de prueba (simbólico, mientras no lleguen las facturas), importación de Excel o factura (reservado para la Fase 5).                                                  |
+| `imports.issue_severity`       | `error`, `warning`                                                                                           | Un error frena la fila; un aviso no (por ejemplo, una receta sin componentes).                                                                                                                                     |
+| `imports.job_status`           | `uploaded`, `staged`, `validated`, `ingredients_confirmed`, `confirmed`, `cancelled`                         | Estado de una importación: subida, filas cargadas, validada, materias primas confirmadas (por Compras), confirmada (recetas creadas) o cancelada.                                                                  |
+| `imports.row_action`           | `create`, `reuse`, `skip`, `error`                                                                           | Qué pasa con una fila al confirmar: se crea, se reutiliza lo que ya existe, se omite (ya existe y no se pisa) o tiene un error.                                                                                    |
+| `imports.row_kind`             | `ingredient`, `preparation`, `dish`, `line`                                                                  | Qué es una fila del Excel: materia prima, preparación (pre-elaborado), plato o línea de una receta.                                                                                                                |
+| `recipes.media_kind`           | `final_product`, `plating`, `raw_material`, `step`, `critical_point`, `correct_example`, `incorrect_example` | Tipo de foto: producto final, emplatado, materia prima, paso, punto crítico, ejemplo correcto o ejemplo incorrecto.                                                                                                |
+| `recipes.quantity_basis`       | `purchase`, `clean`, `cooked`, `finished`                                                                    | Qué representa la cantidad de una línea: peso de compra (purchase), limpio (clean) o cocido (cooked) de una materia prima, o cantidad terminada (finished) de una subreceta.                                       |
+| `recipes.recipe_scope`         | `group`, `brand`, `restaurant`                                                                               | Alcance de una receta: maestra del grupo, de marca o de local. Una variante es una receta de local con su maestra (variant_of_recipe_id). La cocina central no se usa: Pariggi es un proveedor externo (ADR-0025). |
+| `recipes.recipe_type`          | `preparation`, `dish`, `unit_component`                                                                      | Tipo de receta: preparation (salsa, masa, caldo), dish (plato terminado, por porción) o unit_component (medallón, bollo, empanada armada).                                                                         |
+| `recipes.step_kind`            | `preparation`, `cooking`, `resting`, `fermentation`, `cooling`, `regeneration`, `plating`, `other`           | Tipo de paso: preparación, cocción, reposo, fermentación, enfriamiento, regeneración, emplatado u otro.                                                                                                            |

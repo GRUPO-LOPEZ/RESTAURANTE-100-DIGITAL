@@ -200,7 +200,7 @@ Y después de la segunda pasada:
 
 - **`security-auditor`: apto,** sin graves ni medios. Menores resueltos: un error de restricción sin traducir ("violates …") ya no llega a la pantalla, y el lugar del precio se valida como uuid. Aceptado: el motivo y las observaciones no se ocultan (el formulario lo advierte).
 - **`db-reviewer`:** sin graves. Se sumaron las pruebas que pidió (límites, auditoría, función vieja, ventana corta, bajada).
-  - **Las bajadas también llegan a Dirección** si superan el % contra hoy o contra hace N días. Es la misma regla del PR 1 (valor absoluto). **A confirmar con Joaco.**
+  - **Las bajadas también llegan a Dirección** si superan el % contra hoy o contra hace N días. Es la misma regla del PR 1 (valor absoluto). **Confirmado por Joaco (2026-11-03).**
   - Con un precio que vale desde una fecha futura, "hace N días" se cuenta desde esa fecha.
 - **`ui-reviewer`:** sin graves. Medios resueltos: la configuración sin grupo o sin categorías muestra un aviso; el estado vacío no manda a un botón que no está; el historial marca "Vigente", "Programado" o "Anterior"; lo vigente se calcula con la fecha de Argentina. Menores resueltos: "Incompleto" sin unidad, aviso para elegir un local, "Es el primer precio", y solo se traen los nombres de marcas y locales que aparecen.
 
@@ -210,7 +210,7 @@ Y después de la segunda pasada:
 - **La primera solicitud queda "aprobada" aunque falte Dirección.** Resuelto en la pantalla (PR 2): la tarjeta dice que pasó a Dirección. El motor de varios pasos (Chef, Compras y Salón) llega con su propio plan.
 - **Fletes y cargos:** cuando lleguen las facturas o el módulo de compras.
 - **La foto de costo de la 2.3** tiene que guardar los valores usados (precio, rendimiento y condición frente al IVA).
-- **Las conversiones todavía mueven la cantidad de una línea de receta.** Una línea en ml de una materia prima que se usa en gramos se convierte con la densidad de hoy, que Compras puede cambiar sin aprobación. Antes de la 2.3 hay que congelar la cantidad en la unidad de uso al publicar la versión de la receta (o en la foto de costo), o pasar por aprobación el cambio de una conversión usada en recetas publicadas.
+- **Resuelto en ADR-0032: la cantidad se congela al publicar.** Antes, las conversiones movían la cantidad de una línea de receta. Una línea en ml de una materia prima que se usa en gramos se convierte con la densidad de hoy, que Compras puede cambiar sin aprobación. Antes de la 2.3 hay que congelar la cantidad en la unidad de uso al publicar la versión de la receta (o en la foto de costo), o pasar por aprobación el cambio de una conversión usada en recetas publicadas.
 - **Un precio con fecha futura** (hasta un año) fija la fecha mínima de los siguientes del mismo lugar hasta que empieza a valer.
 - **El motivo y las observaciones de una solicitud de precio** se ven en la bandeja aunque los importes salgan ocultos, y el motivo va en el aviso. El formulario del PR 2 pide que no se escriban montos ahí.
 - **Subas en escalones:** varias propuestas seguidas por debajo del % del grupo, cada una contra la anterior, no llegan a Dirección. Cada una la ve el Controller. **Resuelto en el PR 2:** se mide también contra el precio de hace N días (ADR-0030, respuesta 8).

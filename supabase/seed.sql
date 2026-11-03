@@ -590,14 +590,15 @@ update org.restaurants set legal_entity_id = '00000000-0000-4000-8000-0000000015
 update org.restaurants set legal_entity_id = '00000000-0000-4000-8000-000000001502'
  where id = '00000000-0000-4000-8000-000000000204';
 
--- Precios de grupo, con factura y 21 % de IVA incluido, de los productos de las materias primas 1 a 20.
+-- Precios de grupo, con factura y 21 % de IVA incluido, de los productos de las materias primas 1 a 50. Las 25, 28 y
+-- 29 no tienen precio: sus recetas salen incompletas, y las pruebas proponen ahí un primer precio o cambian su unidad.
 insert into costing.price_records (group_id, purchase_product_id, supplier_id, scope_type, valid_from, package_price,
                                    document_type, vat_rate, price_includes_vat, source, notes)
 select p.group_id, p.id, p.supplier_id, 'group', current_date - 10, 1000 * s.n + 500, 'invoice', 21, true, 'test_value',
        'Valor simbólico de prueba'
   from seed_ingredients s
   join catalog.purchase_products p on p.code = format('DEMO-PROD-%s', lpad(s.n::text, 3, '0'))
- where s.n between 1 and 20 and s.n not in (7, 20);
+ where s.n between 1 and 50 and s.n not in (7, 20, 25, 28, 29);
 -- La albahaca, "precio ingresado" (sin factura): el precio es el final.
 insert into costing.price_records (group_id, purchase_product_id, scope_type, valid_from, package_price, document_type,
                                    source, notes)
@@ -614,6 +615,9 @@ insert into costing.price_records (group_id, purchase_product_id, scope_type, br
 select group_id, id, 'brand', '00000000-0000-4000-8000-000000000101', current_date - 5, 36000, 'invoice', 21, 'test_value',
        'Valor simbólico de prueba, de la marca'
   from catalog.purchase_products where code = 'DEMO-PROD-019';
+
+-- Los costos de las recetas: en la base los calcula la cola cada minuto.
+select costing.process_recalc_queue(10000);
 
 -- Ingresos ficticios de los últimos 30 días, para el gráfico del tablero.
 set role audit_owner;

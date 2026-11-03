@@ -25,7 +25,7 @@ El Módulo Maestro de Usuarios redactado por Soy **es ley** y se guarda completo
 - Una versión publicada es **inmutable**. Corregir = crear versión nueva.
 - Estados de versión: borrador, en revisión, aprobada, publicada, archivada.
 - Las políticas pueden exigir que apruebe alguien distinto de quien pidió el cambio. **La base lo valida, no la pantalla.**
-- Al publicar, una sola transacción: publica, recalcula costos, audita y crea las notificaciones a los restaurantes afectados.
+- Al publicar, una sola transacción: publica, congela las cantidades, audita y crea las notificaciones a los restaurantes afectados. El costo se recalcula con una cola, cada minuto (ADR-0032).
 
 ## Cuentas
 
