@@ -219,6 +219,7 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
         <IngredientPrices
           ingredient={ingredient}
           canPropose={menus.pricesPropose}
+          canSeeImpact={menus.costs}
           suppliers={suppliers}
         />
       ) : null}

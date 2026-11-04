@@ -112,17 +112,63 @@ Los triggers anotan un pedido en `costing.cost_recalc_queue`, y `costing.process
 - `233_recipe_costs_performance` (5).
 - **Planilla a mano:** [docs/guias/costos-demo.md](../guias/costos-demo.md). La validan Joaco y el Controller.
 
+## PR 2: pantallas (2026-11-04)
+
+Migración `20261113120000_cost_screens.sql`.
+
+### Pantallas
+
+- **Menú "Costos":** con `recipes.view_costs` en algún local.
+- **`/costos`:** ¿cuánto cuesta cada receta en este local? Tarjetas, filtros, lista paginada y avisos de la cola.
+- **`/costos/[id]`:** ¿qué encarece esta receta? Tarjetas, línea por línea, de mayor a menor, y las últimas 10 fotos. Calcula con los precios de hoy.
+- **`/costos/impacto/[id]`:** ¿a qué le pegó este precio? Se llega desde "Ver el impacto", en cada precio vigente de la ficha de materia prima.
+- **`/recetas`:** suma el costo, con un local definido. **`/recetas/[id]`:** una tarjeta con el costo, también de un borrador.
+- **La vista de cocina no cambió.**
+- **El detalle va en una pantalla propia** y no en una pestaña de la receta: el Gerente y el Controller no trabajan recetas, y `/recetas/[id]` los manda a la vista de cocina.
+
+### Base
+
+- **`costing.recalc_status`:** pendientes y fallidos, solo de los locales de la sesión. Nunca el texto del error.
+- **`costing.restaurant_costs`** y **`restaurant_cost_summary`:** la lista y las tarjetas de un local, solo con recetas que la persona ve.
+- **`costing.price_impact`:** el antes y el después.
+  - **La tanda sale del pedido:** `cost_recalc_queue.price_record_id`. Las fotos repiten todas las líneas, así que no alcanzan para saber qué precio causó qué.
+  - **Solo las recetas que lo usan:** las fotos de esa tanda con una línea de ese precio y, hacia arriba, las que usan esas preparaciones.
+  - **Un precio que no cambió nada** no muestra impacto.
+  - **La diferencia incluye lo demás** que entró en esa tanda. Si cambió la versión, lo dice.
+- **`recipe_cost_snapshots.entry_number`:** el orden de las fotos, porque las de una tanda comparten la hora.
+
+### Excepciones a las reglas de tableros (a confirmar con Joaco)
+
+- **`/costos` no compara contra el período anterior:** todavía no hay fotos de fin de mes. Llega con el PR 3.
+- **Sin filtro de marca ni de fecha:** se elige un local, que ya define la marca, y el costo es el vigente.
+- **Sin gráfico:** son una lista y un detalle. El candidato es "Cómo fue cambiando", cuando haya historia real.
+
+### Pruebas del PR 2
+
+- `234_cost_screens` (42): quién ve qué, la cuenta del antes y el después, dos precios en una tanda, un precio sin efecto y recetas que un local dejó de usar.
+- `tests/unit/costs.test.ts` (9) y Playwright `costos` (celular y computadora, con axe), con la tarea de la cola de verdad.
+
+### Revisiones (PR 2)
+
+- **`db-reviewer`:** dos graves, resueltos con el ancla en la cola: el impacto mostraba recetas de otro precio de la misma tanda, y un precio sin efecto heredaba la suba de otro.
+- **`security-auditor`:** apto. Resuelto: las funciones mostraban nombres de recetas que la persona ya no ve, y el estado de la cola contaba pedidos de otros locales.
+- **`ui-reviewer`:** resueltos los graves: fecha de los datos, tarjetas con estado y comparación, y errores que se veían como datos vacíos. También unidades en español y etiquetas.
+
 ## Riesgos y pendientes
 
 - **Los costos pueden tener hasta 1 minuto de demora.** Después de aprobar un precio, una pantalla puede mostrar el costo anterior. La pantalla del PR 2 lo tiene que aclarar.
 - **Precios con fecha futura y "desactualizado":** un precio que empieza mañana no anota nada. El paso del tiempo y cambiar los días de desactualizado (`update_price_settings`, `set_category_stale_days`, la categoría) tampoco. Los absorbe la tarea diaria del PR 3.
-- **Si un error se repite 3 veces,** ese pedido queda sin procesar hasta que alguien lo mire. El PR 2 lo tiene que mostrar.
+- **Si un error se repite 3 veces,** ese pedido queda sin procesar. `/costos` avisa, pero todavía no hay cómo reintentarlo ni descartarlo: el aviso queda aunque el costo se haya arreglado después.
 - **Casi todo puede salir "con estimaciones":** un precio heredado cuenta como estimación (caso 21). Si los precios se cargan a nivel grupo, cada local los hereda. Hay que mirarlo con datos reales.
 - **Las validaciones de publicación no siguen variantes.** El motor se protege (círculos y unidades), pero una variante mal armada se publica igual y queda incompleta. Conviene validarlo al publicar.
 - **`recipe_cost_current` no está en plural,** como pedía el plan de la Fase 2.
+- **Al impacto de un precio le puede faltar alguna receta** si otro recálculo lo tomó antes que su propio pedido (por ejemplo, si el pedido falló). Nunca atribuye de más. Es poco frecuente.
+- **La tarea diaria del PR 3 tiene que anotar el precio** (`p_price_record_id`) al procesar los de fecha futura; si no, su impacto queda vacío.
+- **Falta medir `price_impact` con `explain analyze`** en el escenario grande. La lista de un local sí está medida.
 - **Las fotos crecen** con cada cambio de precio: 1.200 filas y unas 11.000 líneas en el peor caso medido. Se revisa con datos reales.
 - **La historia de costos de un local nuevo:** quien entra hoy lee todas las fotos de totales de su local. Las líneas, solo de las versiones que ve.
 - **`core.audit_history`** destapa valores con `recipes.view_costs`, no con `prices.view`. Hoy no se explota (ADR-0029): ningún rol con `audit.view` deja de ver precios.
 - **La cola no se limpia:** guarda los pedidos procesados. Se revisa con datos reales.
-- **Sin tope de trabajo en `recipe_cost`:** sin memo, repite las preparaciones. Con recetas normales no se nota; hay que medirlo cuando el PR 2 lo use en pantalla.
+- **Sin tope de trabajo en `recipe_cost`:** sin memo, repite las preparaciones. Con recetas normales no se nota; falta medirlo con datos reales.
+- **Quien tiene varios locales y ninguno elegido** no ve costos en `/recetas`: los ve en `/costos`.
 - **La bandeja de aprobaciones** oculta importes por nombre de clave: un Chef o un Jefe de Cocina con `approvals.view` ve el producto, el proveedor y el comprobante de una solicitud de precio. Coincide con la decisión 1, salvo el comprobante.

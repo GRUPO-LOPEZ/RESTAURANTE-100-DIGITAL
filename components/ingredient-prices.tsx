@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { proposePriceAction } from "@/app/materias-primas/actions";
 import { ActionForm } from "@/components/action-form";
 import { Disclosure } from "@/components/disclosure";
@@ -30,10 +32,13 @@ import { getMySession } from "@/lib/auth/session";
 export async function IngredientPrices({
   ingredient,
   canPropose,
+  canSeeImpact,
   suppliers,
 }: {
   ingredient: IngredientDetail;
   canPropose: boolean;
+  // Quien ve costos de recetas puede ver a qué platos les pegó cada precio.
+  canSeeImpact: boolean;
   suppliers: Supplier[];
 }) {
   const session = await getMySession();
@@ -71,7 +76,7 @@ export async function IngredientPrices({
       ) : (
         <ul aria-label="Precios vigentes" className="flex flex-col divide-y divide-line">
           {current.map((r) => (
-            <PriceItem key={r.id} row={r} />
+            <PriceItem key={r.id} row={r} impact={canSeeImpact} />
           ))}
         </ul>
       )}
@@ -298,7 +303,15 @@ const WHEN = {
   previous: { status: "neutral", label: "Anterior" },
 } as const;
 
-function PriceItem({ row, when }: { row: PriceRecordRow; when?: keyof typeof WHEN }) {
+function PriceItem({
+  row,
+  when,
+  impact,
+}: {
+  row: PriceRecordRow;
+  when?: keyof typeof WHEN;
+  impact?: boolean;
+}) {
   return (
     <li className="flex flex-col gap-1 py-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -316,6 +329,18 @@ function PriceItem({ row, when }: { row: PriceRecordRow; when?: keyof typeof WHE
         {row.vatRate !== null ? ` (${String(row.vatRate).replace(".", ",")} %)` : ""} · desde el{" "}
         {formatDate(row.validFrom)}
       </span>
+      {impact ? (
+        <Link
+          href={`/costos/impacto/${row.id}`}
+          className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+        >
+          Ver el impacto
+          <span className="sr-only">
+            {" "}
+            de {row.product} en {row.place}
+          </span>
+        </Link>
+      ) : null}
     </li>
   );
 }

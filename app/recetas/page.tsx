@@ -10,6 +10,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
 import { EmptyState } from "@/components/ui/kpi";
 import { cleanSearch } from "@/lib/catalog";
+import { getCostsByRecipe, resolveCostPlace } from "@/lib/costs";
 import { first, uuidOrUndefined } from "@/lib/data";
 import {
   RECIPES_PAGE,
@@ -25,7 +26,7 @@ import {
 import { getMenus, requireMenu } from "@/lib/auth/session";
 
 // Recetas (sección 18): ¿qué preparamos y cómo? Preparaciones, platos y componentes en una sola
-// lista; "?tipo=preparation" filtra las preparaciones. Los costos llegan en la etapa 2.3.
+// lista; "?tipo=preparation" filtra las preparaciones. Quien ve costos y tiene un local definido ve el costo ahí.
 export default function RecetasPage({ searchParams }: PageProps<"/recetas">) {
   return (
     <AppShell
@@ -48,7 +49,7 @@ const SCOPE_FILTERS: { value: NonNullable<RecipesFilter["scope"]>; label: string
 ];
 
 async function Recipes({ searchParams }: { searchParams: PageProps<"/recetas">["searchParams"] }) {
-  await requireMenu("recipes");
+  const session = await requireMenu("recipes");
   const params = await searchParams;
   const type = first(params.tipo);
   const scope = first(params.alcance);
@@ -69,6 +70,13 @@ async function Recipes({ searchParams }: { searchParams: PageProps<"/recetas">["
     getMenus(),
   ]);
   const pages = Math.max(1, Math.ceil(total / RECIPES_PAGE));
+  const costPlace = menus.costs ? (await resolveCostPlace(session.user_id)).place : null;
+  const costs = costPlace
+    ? await getCostsByRecipe(
+        costPlace.id,
+        rows.map((r) => r.id),
+      )
+    : null;
 
   const pageLink = (n: number) => {
     const query = new URLSearchParams();
@@ -186,7 +194,11 @@ async function Recipes({ searchParams }: { searchParams: PageProps<"/recetas">["
                 : "Las cargan los chefs y jefes de cocina."}
           </EmptyState>
         ) : (
-          <RecipesTable rows={rows} />
+          <RecipesTable
+            rows={rows}
+            costs={costs ? Object.fromEntries(costs) : undefined}
+            costPlace={costPlace?.name}
+          />
         )}
         {pages > 1 ? (
           <nav aria-label="Páginas" className="flex flex-wrap items-center gap-2">

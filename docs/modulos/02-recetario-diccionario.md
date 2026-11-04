@@ -1,6 +1,6 @@
 # Diccionario de datos — catalog, recipes, imports, costing
 
-> Generado desde los `comment on` de la base local el 2026-11-03 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-11-04 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
 ## `catalog.allergens`
 
@@ -279,23 +279,24 @@ Procesos que cambian el peso de una materia prima: pelado, desgrasado, deshuesad
 
 Pedidos de recálculo de costos. Los anotan los triggers al publicar, aprobar un precio o un rendimiento, asignar una receta o cambiar la razón social; los procesa costing.process_recalc_queue cada minuto. Interna: no se expone por la API.
 
-| Columna          | Tipo                           | Nulo | Qué guarda                                                             |
-| ---------------- | ------------------------------ | ---- | ---------------------------------------------------------------------- |
-| `id`             | `uuid`                         | no   | Identificador.                                                         |
-| `entry_number`   | `bigint`                       | no   | Orden de llegada.                                                      |
-| `group_id`       | `uuid`                         | no   | Grupo de las recetas.                                                  |
-| `recipe_ids`     | `uuid[]`                       | no   | Recetas por recalcular. También se recalculan las que las usan.        |
-| `restaurant_ids` | `uuid[]`                       | sí   | Locales por recalcular. Vacío: todos los que las usan.                 |
-| `reason`         | `costing.cost_snapshot_reason` | no   | Qué lo causó. Es el motivo de la foto.                                 |
-| `attempts`       | `integer`                      | no   | Intentos fallidos. Con 3, deja de intentarse y hay que mirar el error. |
-| `processed_at`   | `timestamp with time zone`     | sí   | Cuándo se procesó. Vacío: pendiente.                                   |
-| `error`          | `text`                         | sí   | El último error, si falló.                                             |
-| `created_at`     | `timestamp with time zone`     | no   | Cuándo se anotó (lo pone la base).                                     |
-| `created_by`     | `uuid`                         | sí   | Quién hizo el cambio (lo pone la base).                                |
-| `updated_at`     | `timestamp with time zone`     | no   | Cuándo cambió por última vez (lo pone la base).                        |
-| `updated_by`     | `uuid`                         | sí   | Quién la cambió por última vez (lo pone la base).                      |
-| `deleted_at`     | `timestamp with time zone`     | sí   | Baja lógica. No se usa.                                                |
-| `deleted_by`     | `uuid`                         | sí   | Quién la dio de baja (lo pone la base).                                |
+| Columna           | Tipo                           | Nulo | Qué guarda                                                                                 |
+| ----------------- | ------------------------------ | ---- | ------------------------------------------------------------------------------------------ |
+| `id`              | `uuid`                         | no   | Identificador.                                                                             |
+| `entry_number`    | `bigint`                       | no   | Orden de llegada.                                                                          |
+| `group_id`        | `uuid`                         | no   | Grupo de las recetas.                                                                      |
+| `recipe_ids`      | `uuid[]`                       | no   | Recetas por recalcular. También se recalculan las que las usan.                            |
+| `restaurant_ids`  | `uuid[]`                       | sí   | Locales por recalcular. Vacío: todos los que las usan.                                     |
+| `reason`          | `costing.cost_snapshot_reason` | no   | Qué lo causó. Es el motivo de la foto.                                                     |
+| `attempts`        | `integer`                      | no   | Intentos fallidos. Con 3, deja de intentarse y hay que mirar el error.                     |
+| `processed_at`    | `timestamp with time zone`     | sí   | Cuándo se procesó. Vacío: pendiente.                                                       |
+| `error`           | `text`                         | sí   | El último error, si falló.                                                                 |
+| `created_at`      | `timestamp with time zone`     | no   | Cuándo se anotó (lo pone la base).                                                         |
+| `created_by`      | `uuid`                         | sí   | Quién hizo el cambio (lo pone la base).                                                    |
+| `updated_at`      | `timestamp with time zone`     | no   | Cuándo cambió por última vez (lo pone la base).                                            |
+| `updated_by`      | `uuid`                         | sí   | Quién la cambió por última vez (lo pone la base).                                          |
+| `deleted_at`      | `timestamp with time zone`     | sí   | Baja lógica. No se usa.                                                                    |
+| `deleted_by`      | `uuid`                         | sí   | Quién la dio de baja (lo pone la base).                                                    |
+| `price_record_id` | `uuid`                         | sí   | El precio que causó el pedido, si fue un precio. Con processed_at dice en qué tanda entró. |
 
 ## `costing.price_records`
 
@@ -444,6 +445,7 @@ Foto histórica del costo de una receta en un local. Solo de inserción: se saca
 | `updated_by`         | `uuid`                         | sí   | Igual a created_by: la foto no cambia.                                                                                   |
 | `deleted_at`         | `timestamp with time zone`     | sí   | Siempre vacío: la foto no se da de baja.                                                                                 |
 | `deleted_by`         | `uuid`                         | sí   | Siempre vacío: la foto no se da de baja.                                                                                 |
+| `entry_number`       | `bigint`                       | no   | Orden de las fotos. Las de una misma tanda comparten la hora.                                                            |
 
 ## `imports.import_errors`
 

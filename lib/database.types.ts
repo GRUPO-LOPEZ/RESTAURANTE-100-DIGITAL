@@ -2834,6 +2834,7 @@ export type Database = {
           error: string | null;
           group_id: string;
           id: string;
+          price_record_id: string | null;
           processed_at: string | null;
           reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
           recipe_ids: string[];
@@ -2852,6 +2853,7 @@ export type Database = {
           error?: string | null;
           group_id: string;
           id?: string;
+          price_record_id?: string | null;
           processed_at?: string | null;
           reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
           recipe_ids: string[];
@@ -2869,6 +2871,7 @@ export type Database = {
           error?: string | null;
           group_id?: string;
           id?: string;
+          price_record_id?: string | null;
           processed_at?: string | null;
           reason?: Database["costing"]["Enums"]["cost_snapshot_reason"];
           recipe_ids?: string[];
@@ -2876,7 +2879,15 @@ export type Database = {
           updated_at?: string;
           updated_by?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "cost_recalc_queue_price_record_id_fkey";
+            columns: ["price_record_id"];
+            isOneToOne: false;
+            referencedRelation: "price_records";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       price_records: {
         Row: {
@@ -3222,6 +3233,7 @@ export type Database = {
           currency: string;
           deleted_at: string | null;
           deleted_by: string | null;
+          entry_number: number;
           group_id: string;
           id: string;
           method_version: number;
@@ -3245,6 +3257,7 @@ export type Database = {
           currency?: string;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          entry_number?: never;
           group_id: string;
           id?: string;
           method_version?: number;
@@ -3267,6 +3280,7 @@ export type Database = {
           currency?: string;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          entry_number?: never;
           group_id?: string;
           id?: string;
           method_version?: number;
@@ -3300,6 +3314,7 @@ export type Database = {
       };
       enqueue_recalc: {
         Args: {
+          p_price_record_id?: string;
           p_reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
           p_recipe_ids: string[];
           p_restaurant_ids: string[];
@@ -3367,6 +3382,24 @@ export type Database = {
           net_amount: number;
         }[];
       };
+      price_impact: {
+        Args: { p_limit?: number; p_offset?: number; p_price_record_id: string };
+        Returns: {
+          calculated_at: string;
+          cost_after: number;
+          cost_before: number;
+          difference: number;
+          difference_pct: number;
+          ingredient: string;
+          recipe: string;
+          recipe_id: string;
+          restaurant: string;
+          restaurant_id: string;
+          total_rows: number;
+          valid_from: string;
+          version_changed: boolean;
+        }[];
+      };
       price_rows: {
         Args: { p_as_of: string; p_ingredient_id: string; p_restaurant_id: string };
         Returns: {
@@ -3411,6 +3444,13 @@ export type Database = {
       purchase_quantity: {
         Args: { p_base: number; p_basis: string; p_cleaning: number; p_cooking: number };
         Returns: number;
+      };
+      recalc_status: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          failed: number;
+          pending: number;
+        }[];
       };
       recipe_cost: {
         Args: { p_restaurant_id: string; p_version_id: string };
@@ -3545,6 +3585,42 @@ export type Database = {
           valid_from: string;
         }[];
       };
+      restaurant_cost_summary: {
+        Args: { p_restaurant_id: string };
+        Returns: {
+          complete: number;
+          incomplete: number;
+          stale: number;
+          total: number;
+          updated_at: string;
+        }[];
+      };
+      restaurant_costs: {
+        Args: {
+          p_limit?: number;
+          p_offset?: number;
+          p_recipe_id?: string;
+          p_reliability?: Database["costing"]["Enums"]["cost_reliability"];
+          p_restaurant_id: string;
+          p_search?: string;
+        };
+        Returns: {
+          base_unit: string;
+          code: string;
+          cost_per_base_unit: number;
+          cost_per_portion: number;
+          name: string;
+          portions: number;
+          recipe_id: string;
+          recipe_type: string;
+          recipe_version_id: string;
+          reliability: Database["costing"]["Enums"]["cost_reliability"];
+          total_cost: number;
+          total_gross_cost: number;
+          total_rows: number;
+          updated_at: string;
+        }[];
+      };
       restaurant_recipes: { Args: { p_restaurant_id: string }; Returns: string[] };
       store_recipe_cost: {
         Args: {
@@ -3590,6 +3666,7 @@ export type Database = {
         };
         Returns: string;
       };
+      visible_recipe_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
     };
     Enums: {
       cost_reliability: "verified" | "estimated" | "stale" | "incomplete";
