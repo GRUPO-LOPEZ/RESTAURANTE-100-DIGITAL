@@ -7,22 +7,22 @@ paths:
 
 Toda la información vive en PostgreSQL, separada en esquemas por tema. Cada tema es una carpeta lógica: fácil de encontrar, de permisar y de respaldar.
 
-| Esquema       | Tema                                 | Tablas principales                                                                                                             |
-| ------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `core`        | Identidad, roles y permisos          | user_profiles, roles, permissions, role_permissions, user_memberships, user_role_assignments, service_accounts, notifications  |
-| `org`         | Estructura del grupo                 | groups, brands, restaurants, areas, legal_entities (razones sociales; ADR-0029)                                                |
-| `audit`       | Historia inalterable                 | audit_events, authentication_security_events (ingresos, bloqueos y rechazos; ADR-0014 y ADR-0015), sellos                      |
-| `workflow`    | Aprobaciones                         | approval_workflows, approval_requests, approval_decisions                                                                      |
-| `catalog`     | Materias primas y proveedores        | ingredients, ingredient_aliases, purchase_products, suppliers, units, unit_conversions, allergens (precios: costing; ADR-0020) |
-| `recipes`     | Recetario y fichas técnicas          | recipes, recipe_versions, recipe_lines, recipe_steps, recipe_photos                                                            |
-| `costing`     | Costos                               | price_records y price_settings (precios; ADR-0029), recipe_cost_current, recipe_cost_snapshots, cost_recalc_queue (ADR-0032)   |
-| `purchasing`  | Compras                              | purchase_orders, purchase_order_lines, invoices, invoice_lines                                                                 |
-| `inventory`   | Stock                                | stock_locations, stock_movements, stock_counts                                                                                 |
-| `production`  | Producción                           | production_plans, production_batches                                                                                           |
-| `ai`          | Agentes                              | agent_runs, agent_proposals, integration_permissions                                                                           |
-| `reporting`   | Lectura para tableros                | vistas y vistas materializadas, **nunca datos propios**                                                                        |
-| `imports`     | Carga de Excel (Fase 2)              | import_jobs, import_column_mappings, import_staging_rows, import_errors (ADR-0020)                                             |
-| `integration` | Eventos para otros sistemas (Fase 2) | integration_outbox. No se expone por la API (ADR-0020)                                                                         |
+| Esquema       | Tema                                 | Tablas principales                                                                                                                           |
+| ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core`        | Identidad, roles y permisos          | user_profiles, roles, permissions, role_permissions, user_memberships, user_role_assignments, service_accounts, notifications                |
+| `org`         | Estructura del grupo                 | groups, brands, restaurants, areas, legal_entities (razones sociales; ADR-0029)                                                              |
+| `audit`       | Historia inalterable                 | audit_events, authentication_security_events (ingresos, bloqueos y rechazos; ADR-0014 y ADR-0015), sellos                                    |
+| `workflow`    | Aprobaciones                         | approval_workflows, approval_requests, approval_decisions                                                                                    |
+| `catalog`     | Materias primas y proveedores        | ingredients, ingredient_aliases, purchase_products, suppliers, units, unit_conversions, allergens (precios: costing; ADR-0020)               |
+| `recipes`     | Recetario y fichas técnicas          | recipes, recipe_versions, recipe_lines, recipe_steps, recipe_photos                                                                          |
+| `costing`     | Costos                               | price_records y price_settings (precios; ADR-0029), recipe_cost_current, recipe_cost_snapshots, cost_recalc_queue, cost_scenarios (ADR-0032) |
+| `purchasing`  | Compras                              | purchase_orders, purchase_order_lines, invoices, invoice_lines                                                                               |
+| `inventory`   | Stock                                | stock_locations, stock_movements, stock_counts                                                                                               |
+| `production`  | Producción                           | production_plans, production_batches                                                                                                         |
+| `ai`          | Agentes                              | agent_runs, agent_proposals, integration_permissions                                                                                         |
+| `reporting`   | Lectura para tableros                | vistas y vistas materializadas, **nunca datos propios**                                                                                      |
+| `imports`     | Carga de Excel (Fase 2)              | import_jobs, import_column_mappings, import_staging_rows, import_errors (ADR-0020)                                                           |
+| `integration` | Eventos para otros sistemas (Fase 2) | integration_outbox. No se expone por la API (ADR-0020)                                                                                       |
 
 ## Migraciones
 

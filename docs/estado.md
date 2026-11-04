@@ -1,8 +1,18 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-04. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: escalado (rama `feat/costos-escalado`, etapa 2.3, PR 3B)
+## Al retomar: escenarios (rama `feat/costos-escenarios`, etapa 2.3, PR 3C)
+
+- **Qué se hizo** (ADR-0032): `/costos/escenarios`. Se simula un precio (también de otro proveedor), un rendimiento o un gramaje en un local, y se ve cuánto cambia cada receta. Nunca toca lo oficial. Con esto se cierra el contenido de la etapa 2.3.
+- **Pruebas (2026-11-04), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 202 de 202 ✅ · pgTAP 1.883 de 1.883 ✅ · Playwright 141 de 142. La que faltó (`escenarios`, celular) la rompió la prueba nueva de anchos, que no volvía al tamaño original. Corregida, `escenarios` pasó sola, 6 de 6 en celular y computadora, sin otra corrida completa.
+- **Revisión:** `db-reviewer`, `security-auditor` y `ui-reviewer`. Sus graves y medios están corregidos, salvo los que siguen.
+- **A confirmar con Joaco:** si un precio simulado puede completar una receta incompleta (hoy sí, con la etiqueta "Simulado"). Y lo que ya estaba: las excepciones a las reglas de tableros, la excepción a la auditoría, el aviso de costo sin porcentaje y la planilla DEMO.
+- **Queda sin hacer:** los desplegables de materias primas y recetas no tienen búsqueda, y la lista de escenarios corta en 200, con aviso. Con un precio todavía en la cola, la diferencia puede ser engañosa hasta que se procese.
+- **Sin comprobar:** un celular físico, un escenario archivado en pantalla, la paginación real (más de 50 recetas) y la etiqueta "No se aplica". Dos cargas a la vez tampoco se probaron.
+- **Falta después:** retirar `core.test_documents` y la compuerta 2.3 con el Controller.
+
+## Antes: escalado (etapa 2.3, PR 3B; fusionado, PR #39)
 
 - **Qué se hizo** (ADR-0032): `/recetas/[id]/escalar`, con factor, cantidades, líneas para ajustar a mano, aviso de más tandas, costo proyectado e impresión. El editor de pasos pide equipo y capacidad.
 - **Pruebas (2026-11-04), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 191 de 191 ✅ · pgTAP 1.780 de 1.780 ✅ · Playwright 136 de 136 ✅ · formato ✅. Después hubo ajustes chicos: pasaron Vitest (192), `236` (48) y Playwright de `escalado` y `recetas`, sin otra corrida completa.

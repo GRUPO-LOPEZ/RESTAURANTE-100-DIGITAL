@@ -144,10 +144,43 @@ const days = z
   .regex(/^[0-9]{1,3}$/, "Escribí los días, por ejemplo 30.")
   .refine((v) => Number(v) >= 1 && Number(v) <= 365, "De 1 a 365 días.");
 
+// Un número como se escribe en la pantalla ("1.500", "2,5"), dentro de un rango. El límite de arriba incluye su valor.
+const amountBetween = (max: number, message: string) =>
+  z
+    .string({ message })
+    .trim()
+    .refine((v) => {
+      const n = parseAmount(v);
+      return n !== null && n > 0 && n <= max;
+    }, message);
+const scenarioPick = (message: string) => z.string({ message }).min(1, message).max(60, message);
+
 const repeatMatches = (v: { password: string; repeat: string }) => v.password === v.repeat;
 const repeatError = { message: "Las dos contraseñas no coinciden.", path: ["repeat"] };
 
 export const schemas = {
+  // Escenarios de costo (ADR-0032).
+  scenario: z.object({
+    name: z.string().trim().min(1, "Escribí el nombre.").max(120, "Hasta 120 caracteres."),
+    reason: reasonField,
+  }),
+  scenarioPrice: z.object({
+    ingredient: scenarioPick("Elegí una materia prima."),
+    amount: amountBetween(999_999_999, "Escribí un precio mayor que cero, por ejemplo 12.500."),
+    supplier: z.string().max(60).optional(),
+    reason: reasonField,
+  }),
+  scenarioYield: z.object({
+    ingredient: scenarioPick("Elegí una materia prima."),
+    cleaning: amountBetween(100, "Escribí un porcentaje de hasta 100, por ejemplo 80."),
+    cooking: amountBetween(10, "Escribí un factor mayor que cero y de hasta 10."),
+    reason: reasonField,
+  }),
+  scenarioQuantity: z.object({
+    line: scenarioPick("Elegí una línea."),
+    quantity: amountBetween(999_999_999, "Escribí una cantidad mayor que cero."),
+    reason: reasonField,
+  }),
   // Acciones con motivo: suspender, desactivar, liberar, quitar un rol, pedir revisión, publicar…
   reason: z.object({ reason: reasonField }),
   assignRole: z.object({

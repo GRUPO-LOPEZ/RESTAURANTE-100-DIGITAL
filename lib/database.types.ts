@@ -2892,6 +2892,124 @@ export type Database = {
           },
         ];
       };
+      cost_scenario_overrides: {
+        Row: {
+          cleaning_yield: number | null;
+          cooking_factor: number | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string | null;
+          kind: Database["costing"]["Enums"]["scenario_override_kind"];
+          quantity: number | null;
+          recipe_component_id: string | null;
+          restaurant_id: string;
+          scenario_id: string;
+          supplier_id: string | null;
+          unit_cost: number | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          cleaning_yield?: number | null;
+          cooking_factor?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id?: string | null;
+          kind: Database["costing"]["Enums"]["scenario_override_kind"];
+          quantity?: number | null;
+          recipe_component_id?: string | null;
+          restaurant_id: string;
+          scenario_id: string;
+          supplier_id?: string | null;
+          unit_cost?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          cleaning_yield?: number | null;
+          cooking_factor?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string | null;
+          kind?: Database["costing"]["Enums"]["scenario_override_kind"];
+          quantity?: number | null;
+          recipe_component_id?: string | null;
+          restaurant_id?: string;
+          scenario_id?: string;
+          supplier_id?: string | null;
+          unit_cost?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cost_scenario_overrides_scenario_fkey";
+            columns: ["scenario_id", "restaurant_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "cost_scenarios";
+            referencedColumns: ["id", "restaurant_id", "group_id"];
+          },
+        ];
+      };
+      cost_scenarios: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          restaurant_id: string;
+          status: Database["costing"]["Enums"]["scenario_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          name: string;
+          restaurant_id: string;
+          status?: Database["costing"]["Enums"]["scenario_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          name?: string;
+          restaurant_id?: string;
+          status?: Database["costing"]["Enums"]["scenario_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       price_records: {
         Row: {
           approval_request_id: string | null;
@@ -3306,6 +3424,7 @@ export type Database = {
     Functions: {
       apply_price: { Args: { p_request_id: string }; Returns: undefined };
       apply_price_direction: { Args: { p_request_id: string }; Returns: undefined };
+      archive_scenario: { Args: { p_reason: string; p_scenario_id: string }; Returns: undefined };
       check_reference: {
         Args: {
           p_req: Omit<
@@ -3314,6 +3433,10 @@ export type Database = {
           >;
         };
         Returns: undefined;
+      };
+      create_scenario: {
+        Args: { p_name: string; p_reason: string; p_restaurant_id: string };
+        Returns: string;
       };
       daily_refresh: { Args: { p_day?: string }; Returns: undefined };
       enqueue_price: { Args: { p_price_record_id: string }; Returns: undefined };
@@ -3534,9 +3657,35 @@ export type Database = {
         };
         Returns: undefined;
       };
+      remove_scenario_override: {
+        Args: { p_override_id: string; p_reason: string };
+        Returns: undefined;
+      };
       require_recipe_cost: {
         Args: { p_restaurant_id: string; p_version_id: string };
         Returns: undefined;
+      };
+      require_scenario: {
+        Args: { p_active?: boolean; p_scenario_id: string };
+        Returns: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          name: string;
+          restaurant_id: string;
+          status: Database["costing"]["Enums"]["scenario_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "cost_scenarios";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       resolve_price: {
         Args: { p_as_of?: string; p_ingredient_id: string; p_restaurant_id: string };
@@ -3638,6 +3787,84 @@ export type Database = {
           total_gross_cost: number;
         }[];
       };
+      scenario_changes: {
+        Args: { p_scenario_id: string };
+        Returns: {
+          applies: boolean;
+          cleaning_yield: number;
+          cooking_factor: number;
+          id: string;
+          item: string;
+          kind: string;
+          original_quantity: number;
+          quantity: number;
+          recipe: string;
+          supplier: string;
+          unit: string;
+          unit_cost: number;
+        }[];
+      };
+      scenario_ingredients: {
+        Args: { p_scenario_id: string };
+        Returns: {
+          id: string;
+          name: string;
+          unit: string;
+          unit_cost: number;
+        }[];
+      };
+      scenario_recipe_lines: {
+        Args: { p_recipe_id: string; p_scenario_id: string };
+        Returns: {
+          id: string;
+          item: string;
+          line_order: number;
+          quantity: number;
+          unit: string;
+        }[];
+      };
+      scenario_recipes: {
+        Args: { p_scenario_id: string };
+        Returns: {
+          id: string;
+          name: string;
+        }[];
+      };
+      scenario_result: {
+        Args: { p_limit?: number; p_offset?: number; p_scenario_id: string };
+        Returns: {
+          changed_rows: number;
+          cost_simulated: number;
+          cost_today: number;
+          difference: number;
+          difference_pct: number;
+          portion_simulated: number;
+          portion_today: number;
+          recipe: string;
+          recipe_id: string;
+          reliability: Database["costing"]["Enums"]["cost_reliability"];
+          top_drop: number;
+          top_drop_recipe: string;
+          top_rise: number;
+          top_rise_recipe: string;
+          total_rows: number;
+        }[];
+      };
+      set_scenario_override: {
+        Args: {
+          p_cleaning_yield?: number;
+          p_cooking_factor?: number;
+          p_ingredient_id?: string;
+          p_kind: string;
+          p_quantity?: number;
+          p_reason: string;
+          p_recipe_component_id?: string;
+          p_scenario_id: string;
+          p_supplier_id?: string;
+          p_unit_cost?: number;
+        };
+        Returns: undefined;
+      };
       store_recipe_cost: {
         Args: {
           p_group_id: string;
@@ -3697,6 +3924,8 @@ export type Database = {
         | "month_end";
       price_document: "invoice" | "no_invoice";
       price_source: "manual" | "test_value" | "excel_import" | "invoice";
+      scenario_override_kind: "price" | "yield" | "quantity";
+      scenario_status: "active" | "archived";
     };
     CompositeTypes: {
       recipe_cost_line: {
@@ -5998,6 +6227,8 @@ export const Constants = {
       ],
       price_document: ["invoice", "no_invoice"],
       price_source: ["manual", "test_value", "excel_import", "invoice"],
+      scenario_override_kind: ["price", "yield", "quantity"],
+      scenario_status: ["active", "archived"],
     },
   },
   imports: {

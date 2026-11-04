@@ -21,7 +21,7 @@ import {
   type Reliability,
 } from "@/lib/costs";
 import { first, formatDateTime } from "@/lib/data";
-import { requireMenu } from "@/lib/auth/session";
+import { getMenus, requireMenu } from "@/lib/auth/session";
 
 // Costos (ADR-0032): ¿cuánto cuesta cada receta en este local? Lee el costo guardado, que la cola
 // actualiza cada minuto.
@@ -41,7 +41,10 @@ export default function CostosPage({ searchParams }: PageProps<"/costos">) {
 async function Costs({ searchParams }: { searchParams: PageProps<"/costos">["searchParams"] }) {
   const session = await requireMenu("costs");
   const params = await searchParams;
-  const { places, place } = await resolveCostPlace(session.user_id, first(params.local));
+  const [{ places, place }, menus] = await Promise.all([
+    resolveCostPlace(session.user_id, first(params.local)),
+    getMenus(),
+  ]);
   if (places.length === 0) return <EmptyState title="No tenés locales donde ver costos." />;
 
   const search = cleanSearch(first(params.q));
@@ -94,10 +97,19 @@ async function Costs({ searchParams }: { searchParams: PageProps<"/costos">["sea
     </FiltersPanel>
   );
 
+  const scenarios = menus.scenarios ? (
+    <div>
+      <Button asChild variant="outline">
+        <Link href={`/costos/escenarios${place ? `?local=${place.id}` : ""}`}>Escenarios</Link>
+      </Button>
+    </div>
+  ) : null;
+
   if (!place)
     return (
       <>
         {filters}
+        {scenarios}
         <EmptyState title="Elegí un local para ver sus costos." />
       </>
     );
@@ -105,6 +117,7 @@ async function Costs({ searchParams }: { searchParams: PageProps<"/costos">["sea
   return (
     <>
       {filters}
+      {scenarios}
       <CostList
         placeId={place.id}
         placeName={place.name}
