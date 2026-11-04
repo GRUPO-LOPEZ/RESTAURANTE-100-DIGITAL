@@ -47,7 +47,7 @@ $$;
 -- ---------------------------------------------------------------------------
 create function pg_temp.business_schemas() returns text[] language sql as $$
   select array['core', 'org', 'audit', 'workflow', 'catalog', 'recipes', 'costing', 'purchasing',
-               'inventory', 'production', 'ai', 'reporting', 'imports']
+               'inventory', 'production', 'ai', 'reporting', 'imports', 'integration']
 $$;
 select is(
   (select array_agg(n.nspname || '.' || p.proname order by n.nspname || '.' || p.proname collate "C")

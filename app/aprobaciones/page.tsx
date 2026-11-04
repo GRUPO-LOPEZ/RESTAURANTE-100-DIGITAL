@@ -144,7 +144,7 @@ function Notices({ rows }: { rows: NoticeRow[] }) {
   return (
     <section aria-labelledby="apr-avisos" className="flex flex-col gap-4">
       <h2 id="apr-avisos" className="text-xl text-ink">
-        Avisos de recetas ({rows.length >= 20 ? "20 o más" : rows.length})
+        Avisos de recetas y costos ({rows.length >= 20 ? "20 o más" : rows.length})
       </h2>
       <ul className="flex flex-col gap-4">
         {rows.map((n) => (
@@ -152,7 +152,9 @@ function Notices({ rows }: { rows: NoticeRow[] }) {
             <Card className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-semibold text-ink">{n.title}</h3>
-                <Badge status="info">Cambió una preparación</Badge>
+                <Badge status="info">
+                  {n.kind === "recipe_cost_changed" ? "Cambió un costo" : "Cambió una preparación"}
+                </Badge>
               </div>
               <CardDescription>{formatDateTime(n.createdAt)}</CardDescription>
               {n.body ? <p className="text-base text-ink">{n.body}</p> : null}
@@ -161,7 +163,8 @@ function Notices({ rows }: { rows: NoticeRow[] }) {
                   href={n.link}
                   className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
                 >
-                  Ver la receta<span className="sr-only"> ({n.title})</span>
+                  {n.kind === "recipe_cost_changed" ? "Ver el costo" : "Ver la receta"}
+                  <span className="sr-only"> ({n.title})</span>
                 </Link>
               ) : null}
             </Card>

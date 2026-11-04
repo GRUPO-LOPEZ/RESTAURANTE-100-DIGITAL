@@ -416,7 +416,7 @@ select ok((select valid from seal_check), 'los sellos del registro de seguridad 
 -- ---------------------------------------------------------------------------
 create function pg_temp.business_schemas() returns text[] language sql as $$
   select array['core', 'org', 'audit', 'workflow', 'catalog', 'recipes', 'costing', 'purchasing',
-               'inventory', 'production', 'ai', 'reporting']
+               'inventory', 'production', 'ai', 'reporting', 'imports', 'integration']
 $$;
 select is(
   (select array_agg(n.nspname || '.' || c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace

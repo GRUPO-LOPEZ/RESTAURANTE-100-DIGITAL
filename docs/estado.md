@@ -2,7 +2,14 @@
 
 _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: pantallas de costos (rama `feat/costos-pantallas`, etapa 2.3, PR 2 de 3)
+## Al retomar: costos al día (rama `feat/costos-al-dia`, etapa 2.3, PR 3A)
+
+- **Qué se hizo** (ADR-0032): tarea diaria, foto de fin de mes, cierre de recálculos fallidos, aviso con impacto de costo e `integration_outbox`.
+- **Pruebas (2026-11-04), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 184 de 184 ✅ · pgTAP 1.734 de 1.734 ✅ · Playwright 130 de 130 ✅ · formato ✅. Después se ajustó una prueba de `235`, que pasó sola.
+- **Falta en esta etapa:** PR 3B (escalado) y PR 3C (escenarios), cada uno con su plan. Después, retirar `core.test_documents`.
+- **A confirmar con Joaco:** las excepciones a las reglas de tableros, la excepción a la auditoría en las fotos y la cola, y la planilla DEMO.
+
+## Antes: pantallas de costos (etapa 2.3, PR 2 de 3; fusionado, PR #37)
 
 - **Qué se hizo** (ADR-0032, sección PR 2): `/costos`, el detalle de una receta, el impacto de un precio, y el costo en la lista y la ficha de recetas.
 - **Pruebas (2026-11-04), desde una base recién creada:** lint y tipos ✅ · Vitest 183 de 183 ✅ · pgTAP 1.684 de 1.684 ✅ · Playwright 126 de 128 en la corrida completa. Las 2 que faltaron (Chef, celular y computadora) esperaban un texto viejo; corregido, `costos` pasó sola en los dos proyectos. Sin otra corrida completa después.

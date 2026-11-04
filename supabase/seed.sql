@@ -616,6 +616,12 @@ select group_id, id, 'brand', '00000000-0000-4000-8000-000000000101', current_da
        'Valor simbólico de prueba, de la marca'
   from catalog.purchase_products where code = 'DEMO-PROD-019';
 
+-- Un aviso de cambio de costo sin leer para el Controller (ADR-0032).
+insert into core.notifications (recipient_user_id, group_id, kind, title, body, link)
+values ('00000000-0000-4000-8000-000000000407', '00000000-0000-4000-8000-000000000001', 'recipe_cost_changed',
+        'Cambió el costo de «Salsa bolognesa»', '2 recetas en 1 de tus locales.',
+        '/costos/00000000-0000-4000-8000-000000001108?local=00000000-0000-4000-8000-000000000201');
+
 -- Los costos de las recetas: en la base los calcula la cola cada minuto.
 select costing.process_recalc_queue(10000);
 

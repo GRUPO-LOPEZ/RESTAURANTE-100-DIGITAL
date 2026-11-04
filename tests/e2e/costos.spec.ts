@@ -63,6 +63,21 @@ test("el Controller ve cuánto cuesta cada receta y qué la encarece", async ({ 
   await axe(page);
 });
 
+test("el Controller recibe el aviso de cambio de costo", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto("/aprobaciones");
+  await expect(page.getByRole("heading", { name: /Avisos de recetas y costos/ })).toBeVisible();
+  const card = page
+    .getByRole("listitem")
+    .filter({ hasText: "Cambió el costo de «Salsa bolognesa»" });
+  await expect(card).toContainText("2 recetas en 1 de tus locales.");
+  await expect(card.getByRole("link", { name: /Ver el costo/ })).toHaveAttribute(
+    "href",
+    `/costos/${RAVIOLES}?local=${PASTAS_CENTRO}`,
+  );
+  await axe(page);
+});
+
 test("el Gerente ve solo su local", async ({ page }) => {
   await login(page, "gerente@ejemplo.test", { mfa: true });
   // Aunque pida otro local en la dirección.
