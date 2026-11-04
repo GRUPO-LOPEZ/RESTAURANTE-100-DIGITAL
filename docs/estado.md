@@ -6,6 +6,8 @@ _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 
 - **Qué se hizo** (ADR-0032): tarea diaria, foto de fin de mes, cierre de recálculos fallidos, aviso con impacto de costo e `integration_outbox`.
 - **Pruebas (2026-11-04), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 184 de 184 ✅ · pgTAP 1.734 de 1.734 ✅ · Playwright 130 de 130 ✅ · formato ✅. Después se ajustó una prueba de `235`, que pasó sola.
+- **Al retomar (Joaco):** abrir el PR de `feat/costos-al-dia` contra `main` y mirar GitHub Actions. Después, armar el plan del PR 3B.
+- **Sin comprobar:** las dos tareas programadas disparándose a su hora. `ui-reviewer` no revisó este PR.
 - **Falta en esta etapa:** PR 3B (escalado) y PR 3C (escenarios), cada uno con su plan. Después, retirar `core.test_documents`.
 - **A confirmar con Joaco:** las excepciones a las reglas de tableros, la excepción a la auditoría en las fotos y la cola, y la planilla DEMO.
 
