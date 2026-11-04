@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(71);
+select plan(72);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -369,6 +369,12 @@ select is(pg_temp.msg(pg_temp.u(408), format($$select catalog.update_ingredient(
 
 -- Un producto cuyo contenido no se pasa a la unidad de uso ni siquiera se puede cargar: lo frena el catálogo
 -- (catalog.enforce_product_content, etapa 2.1 A). propose_price y el trigger de precios lo vuelven a controlar.
+
+-- Un precio aprobado es un evento para otros sistemas, sin importes.
+select ok(exists (select 1 from integration.integration_outbox o
+                   where o.event_type = 'price.approved' and o.payload ? 'purchase_product_id'
+                     and o.payload::text !~* '(price\"|amount|cost)'),
+  'aprobar un precio registra el evento, sin importes');
 
 select * from finish();
 rollback;

@@ -24,6 +24,8 @@ export const REASON_LABELS: Record<SnapshotReason, string> = {
   assignment: "Cambió dónde se usa",
   legal_entity_change: "Cambió la razón social",
   restaurant_reopened: "Se reabrió el local",
+  daily: "Actualización diaria",
+  month_end: "Cierre de mes",
 };
 
 // Qué le falta a una línea, en palabras de la cocina.

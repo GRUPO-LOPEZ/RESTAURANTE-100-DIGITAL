@@ -282,6 +282,7 @@ export async function getUnreadCount(): Promise<number> {
 // ADR-0026). Los de solicitudes ya se ven en la bandeja.
 export type NoticeRow = {
   id: string;
+  kind: "recipe_changed" | "recipe_cost_changed";
   title: string;
   body: string | null;
   link: string | null;
@@ -293,8 +294,8 @@ export async function getRecipeNotices(limit = 20): Promise<NoticeRow[]> {
   const { data, error } = await supabase
     .schema("core")
     .from("notifications")
-    .select("id, title, body, link, created_at")
-    .eq("kind", "recipe_changed")
+    .select("id, kind, title, body, link, created_at")
+    .in("kind", ["recipe_changed", "recipe_cost_changed"])
     .is("read_at", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -302,6 +303,7 @@ export async function getRecipeNotices(limit = 20): Promise<NoticeRow[]> {
   if (error) failed("los avisos");
   return data.map((n) => ({
     id: n.id,
+    kind: n.kind === "recipe_cost_changed" ? "recipe_cost_changed" : "recipe_changed",
     title: n.title,
     body: n.body,
     // Solo rutas internas, con la misma regla que el check de la base (revisión de seguridad).

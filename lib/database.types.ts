@@ -2813,7 +2813,7 @@ export type Database = {
     Enums: {
       account_status: "active" | "suspended" | "deactivated";
       actor_type: "user" | "service_account";
-      notification_kind: "approval_requested" | "recipe_changed";
+      notification_kind: "approval_requested" | "recipe_changed" | "recipe_cost_changed";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -2839,6 +2839,7 @@ export type Database = {
           reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
           recipe_ids: string[];
           restaurant_ids: string[] | null;
+          source_recipe_id: string | null;
           updated_at: string;
           updated_by: string | null;
         };
@@ -2858,6 +2859,7 @@ export type Database = {
           reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
           recipe_ids: string[];
           restaurant_ids?: string[] | null;
+          source_recipe_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -2876,6 +2878,7 @@ export type Database = {
           reason?: Database["costing"]["Enums"]["cost_snapshot_reason"];
           recipe_ids?: string[];
           restaurant_ids?: string[] | null;
+          source_recipe_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -3312,12 +3315,15 @@ export type Database = {
         };
         Returns: undefined;
       };
+      daily_refresh: { Args: { p_day?: string }; Returns: undefined };
+      enqueue_price: { Args: { p_price_record_id: string }; Returns: undefined };
       enqueue_recalc: {
         Args: {
           p_price_record_id?: string;
           p_reason: Database["costing"]["Enums"]["cost_snapshot_reason"];
           p_recipe_ids: string[];
           p_restaurant_ids: string[];
+          p_source_recipe_id?: string;
         };
         Returns: undefined;
       };
@@ -3369,6 +3375,8 @@ export type Database = {
         };
         Returns: undefined;
       };
+      month_end_snapshots: { Args: Record<PropertyKey, never>; Returns: undefined };
+      notify_cost_changed: { Args: { p_recipe_id: string }; Returns: undefined };
       package_amounts: {
         Args: {
           p_discount: number;
@@ -3676,7 +3684,9 @@ export type Database = {
         | "yield_change"
         | "assignment"
         | "legal_entity_change"
-        | "restaurant_reopened";
+        | "restaurant_reopened"
+        | "daily"
+        | "month_end";
       price_document: "invoice" | "no_invoice";
       price_source: "manual" | "test_value" | "excel_import" | "invoice";
     };
@@ -5950,7 +5960,7 @@ export const Constants = {
     Enums: {
       account_status: ["active", "suspended", "deactivated"],
       actor_type: ["user", "service_account"],
-      notification_kind: ["approval_requested", "recipe_changed"],
+      notification_kind: ["approval_requested", "recipe_changed", "recipe_cost_changed"],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
     },
@@ -5965,6 +5975,8 @@ export const Constants = {
         "assignment",
         "legal_entity_change",
         "restaurant_reopened",
+        "daily",
+        "month_end",
       ],
       price_document: ["invoice", "no_invoice"],
       price_source: ["manual", "test_value", "excel_import", "invoice"],

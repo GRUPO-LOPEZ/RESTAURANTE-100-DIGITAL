@@ -154,17 +154,30 @@ Migración `20261113120000_cost_screens.sql`.
 - **`security-auditor`:** apto. Resuelto: las funciones mostraban nombres de recetas que la persona ya no ve, y el estado de la cola contaba pedidos de otros locales.
 - **`ui-reviewer`:** resueltos los graves: fecha de los datos, tarjetas con estado y comparación, y errores que se veían como datos vacíos. También unidades en español y etiquetas.
 
+## PR 3A: costos al día (2026-11-04)
+
+Migración `20261114120000_costs_up_to_date.sql`.
+
+- **Tarea diaria (3:30 de la Argentina):** anota los precios que empiezan a valer, con hasta una semana de margen, y el recálculo de todas las recetas publicadas. Cubre "desactualizado", los cambios de plazos y de categoría, y las asignaciones que vencen.
+- **Foto de fin de mes (último día, 23:30 de la Argentina):** una foto de cada receta en cada local abierto, aunque nada haya cambiado, con los precios de ese mes. Si no corrió o falló, la tarea diaria la saca en la primera semana del mes siguiente, con los precios de ese día.
+- **Recálculos fallidos:** sin botón ni permiso nuevo. Si el recálculo completo del grupo sale bien, se cierran los fallidos anteriores, salvo una foto de fin de mes. El error queda guardado. Un fallido de un local cerrado se pone al día recién al reabrir.
+- **Aviso de cambio de costo:** `recipe_cost_changed`, una vez recalculada una publicación, a quien ve costos y recetas en esos locales. Dice cuántas recetas de sus locales cambiaron. **Sin importes ni porcentajes** (cambio contra el plan): el aviso es igual de útil, y un porcentaje mezclaría locales que la persona no ve, seguiría visible al perder el permiso y quedaría en la auditoría. El número se ve en `/costos`. Si nada cambió, no avisa, y si falla, no frena el recálculo.
+- **`integration.integration_outbox`:** `cost.changed`, `price.approved` y `recipe.published`, con ids y estados, sin importes. No se expone por la API y nadie la consume todavía. Como la cola, no pasa por la auditoría: repite cambios ya auditados, y hoy no se limpia.
+- **Pruebas:** `235_costs_up_to_date` (49).
+
 ## Riesgos y pendientes
 
 - **Los costos pueden tener hasta 1 minuto de demora.** Después de aprobar un precio, una pantalla puede mostrar el costo anterior. La pantalla del PR 2 lo tiene que aclarar.
-- **Precios con fecha futura y "desactualizado":** un precio que empieza mañana no anota nada. El paso del tiempo y cambiar los días de desactualizado (`update_price_settings`, `set_category_stale_days`, la categoría) tampoco. Los absorbe la tarea diaria del PR 3.
-- **Si un error se repite 3 veces,** ese pedido queda sin procesar. `/costos` avisa, pero todavía no hay cómo reintentarlo ni descartarlo: el aviso queda aunque el costo se haya arreglado después.
+- **Si un error se repite 3 veces,** ese pedido queda sin procesar. `/costos` avisa. El aviso se va cuando el recálculo diario sale bien; el de una foto de fin de mes, cuando sale otra foto.
 - **Casi todo puede salir "con estimaciones":** un precio heredado cuenta como estimación (caso 21). Si los precios se cargan a nivel grupo, cada local los hereda. Hay que mirarlo con datos reales.
 - **Las validaciones de publicación no siguen variantes.** El motor se protege (círculos y unidades), pero una variante mal armada se publica igual y queda incompleta. Conviene validarlo al publicar.
 - **`recipe_cost_current` no está en plural,** como pedía el plan de la Fase 2.
 - **Al impacto de un precio le puede faltar alguna receta** si otro recálculo lo tomó antes que su propio pedido (por ejemplo, si el pedido falló). Nunca atribuye de más. Es poco frecuente.
-- **La tarea diaria del PR 3 tiene que anotar el precio** (`p_price_record_id`) al procesar los de fecha futura; si no, su impacto queda vacío.
 - **Falta medir `price_impact` con `explain analyze`** en el escenario grande. La lista de un local sí está medida.
+- **Se puede perder un aviso:** si una publicación falla 3 veces y la cierra el recálculo diario, el costo queda bien pero el aviso no sale. Si falla el aviso mismo, solo queda en el log de la base.
+- **Dos publicaciones en la misma corrida** pueden mezclarse en el aviso: el nombre de una variante de un local puede llegarle a quien ve recetas en otro. Nunca lleva costos.
+- **La cola y los eventos no se limpian.** Se revisa con datos reales.
+- **Si el cron no corre,** los costos no se ponen al día y nada lo avisa, salvo la última actualización de `/costos`.
 - **Las fotos crecen** con cada cambio de precio: 1.200 filas y unas 11.000 líneas en el peor caso medido. Se revisa con datos reales.
 - **La historia de costos de un local nuevo:** quien entra hoy lee todas las fotos de totales de su local. Las líneas, solo de las versiones que ve.
 - **`core.audit_history`** destapa valores con `recipes.view_costs`, no con `prices.view`. Hoy no se explota (ADR-0029): ningún rol con `audit.view` deja de ver precios.

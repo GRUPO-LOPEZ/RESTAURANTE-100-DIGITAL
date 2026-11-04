@@ -1,7 +1,7 @@
 // Etiquetas y orden de las pantallas de costos (ADR-0032). La cuenta está en la base y se prueba con pgTAP.
 import { describe, expect, it } from "vitest";
 
-import { formatDifference, formatPercent, lineStatusLabel } from "@/lib/cost-labels";
+import { REASON_LABELS, formatDifference, formatPercent, lineStatusLabel } from "@/lib/cost-labels";
 import { pickCostPlace, sortCostLines, type CostLine } from "@/lib/costs";
 import { formatMoney, perBaseLabel } from "@/lib/money";
 
@@ -14,6 +14,13 @@ describe("qué le falta a una línea", () => {
 
   it("un estado desconocido nunca se ve en inglés", () => {
     expect(lineStatusLabel("otro_estado")).toBe("Falta un dato");
+  });
+});
+
+describe("por qué cambió un costo", () => {
+  it("los motivos automáticos también se leen en español", () => {
+    expect(REASON_LABELS.daily).toBe("Actualización diaria");
+    expect(REASON_LABELS.month_end).toBe("Cierre de mes");
   });
 });
 

@@ -162,7 +162,7 @@ select is(
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname in ('core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
-                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting')
+                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting', 'imports', 'integration')
       and (
         p.proacl is null
         or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0 and a.privilege_type = 'EXECUTE')
@@ -182,7 +182,7 @@ select is(
     join pg_namespace n on n.oid = p.pronamespace
     cross join unnest(array['anon']) as r
     where n.nspname in ('core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
-                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting')
+                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting', 'imports', 'integration')
       and has_function_privilege(r, p.oid, 'execute')
   ),
   0,
@@ -194,7 +194,7 @@ select is(
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname in ('core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
-                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting')
+                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting', 'imports', 'integration')
       and c.relkind in ('r', 'p', 'v', 'm')
       and has_table_privilege('authenticated', c.oid, 'insert,update,delete,truncate,references,trigger')
   ),
@@ -208,7 +208,7 @@ select is(
     join pg_namespace n on n.oid = c.relnamespace
     cross join unnest(array['anon', 'service_role']) as r
     where n.nspname in ('core', 'org', 'audit', 'workflow', 'catalog', 'recipes',
-                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting')
+                        'costing', 'purchasing', 'inventory', 'production', 'ai', 'reporting', 'imports', 'integration')
       and c.relkind in ('r', 'p', 'v', 'm', 'S')
       and (
         (c.relkind = 'S' and has_sequence_privilege(r, c.oid, 'usage,select,update'))
