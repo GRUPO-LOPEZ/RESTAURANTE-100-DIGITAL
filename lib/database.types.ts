@@ -3630,6 +3630,14 @@ export type Database = {
         }[];
       };
       restaurant_recipes: { Args: { p_restaurant_id: string }; Returns: string[] };
+      scaled_cost: {
+        Args: { p_factor: number; p_restaurant_id: string; p_version_id: string };
+        Returns: {
+          reliability: Database["costing"]["Enums"]["cost_reliability"];
+          total_cost: number;
+          total_gross_cost: number;
+        }[];
+      };
       store_recipe_cost: {
         Args: {
           p_group_id: string;
@@ -4953,6 +4961,8 @@ export type Database = {
           deleted_at: string | null;
           deleted_by: string | null;
           equipment: string | null;
+          equipment_capacity: number | null;
+          equipment_capacity_unit_id: string | null;
           group_id: string;
           id: string;
           instructions: string;
@@ -4976,6 +4986,8 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           equipment?: string | null;
+          equipment_capacity?: number | null;
+          equipment_capacity_unit_id?: string | null;
           group_id: string;
           id?: string;
           instructions: string;
@@ -4998,6 +5010,8 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           equipment?: string | null;
+          equipment_capacity?: number | null;
+          equipment_capacity_unit_id?: string | null;
           group_id?: string;
           id?: string;
           instructions?: string;
@@ -5382,6 +5396,10 @@ export type Database = {
           p_reason: string;
           p_version_id: string;
         };
+        Returns: Json;
+      };
+      scale_version: {
+        Args: { p_mode: string; p_target: number; p_unit?: string; p_version_id: string };
         Returns: Json;
       };
       search_subrecipes: {
