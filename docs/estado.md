@@ -10,6 +10,7 @@ _Última actualización: 2026-11-04. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **A confirmar con Joaco:** si un precio simulado puede completar una receta incompleta (hoy sí, con la etiqueta "Simulado"). Y lo que ya estaba: las excepciones a las reglas de tableros, la excepción a la auditoría, el aviso de costo sin porcentaje y la planilla DEMO.
 - **Queda sin hacer:** los desplegables de materias primas y recetas no tienen búsqueda, y la lista de escenarios corta en 200, con aviso. Con un precio todavía en la cola, la diferencia puede ser engañosa hasta que se procese.
 - **Sin comprobar:** un celular físico, un escenario archivado en pantalla, la paginación real (más de 50 recetas) y la etiqueta "No se aplica". Dos cargas a la vez tampoco se probaron.
+- **Al retomar (Joaco):** abrir el PR de `feat/costos-escenarios` contra `main`, con las capturas, y mirar GitHub Actions.
 - **Falta después:** retirar `core.test_documents` y la compuerta 2.3 con el Controller.
 
 ## Antes: escalado (etapa 2.3, PR 3B; fusionado, PR #39)
