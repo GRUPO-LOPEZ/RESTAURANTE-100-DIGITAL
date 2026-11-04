@@ -173,7 +173,7 @@ Migración `20261115120000_recipe_scaling.sql`.
 - **Escalar nunca cambia la versión:** `recipes.scale_version` solo lee. Tampoco guarda nada: el módulo de producción no existe, y una versión nueva se hace con el flujo de siempre.
 - **Las líneas "no escalar"** se muestran aparte y quedan como en la receta.
 - **`recipe_steps.equipment_capacity` y su unidad:** cuánto entra en el equipo de ese paso. La unidad es la del rendimiento al cargarla, y va guardada porque el rendimiento puede cambiar. No hay `batch_size`, como decía el plan de la Fase 2: el lote ya es el objetivo. Con eso sale el aviso de "más tandas", comparando contra el rendimiento terminado. Los tiempos no se multiplican.
-- **"1.500" son mil quinientos,** como se ve en pantalla (`parseAmount`). "2,5" y "2.5" son dos y medio. Lo demás se rechaza con un aviso.
+- **"1.500" son mil quinientos,** como se ve en pantalla (`parseAmount`; confirmado por Joaco el 2026-11-04). "2,5" y "2.5" son dos y medio. Lo demás se rechaza con un aviso.
 - **En la hoja impresa** no salen el costo, el menú ni el formulario, y sí la versión y la fecha.
 - **El editor de pasos** ahora pide equipo y capacidad.
 - **`costing.scaled_cost`:** el costo proyectado, con su confiabilidad, solo para quien ve costos. Cada línea por el factor, salvo las "no escalar". Las líneas "no escalar" de una preparación escalan con ella.
