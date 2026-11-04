@@ -23,7 +23,7 @@ export function AppShell({
 }) {
   return (
     <div className="flex min-h-full flex-col">
-      <header className="relative border-b border-line bg-surface">
+      <header className="relative border-b border-line bg-surface print:hidden">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-2 px-4 py-2">
           <Link
             href="/"
@@ -37,7 +37,7 @@ export function AppShell({
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 print:hidden">
           <h1 className="text-2xl text-ink">{title}</h1>
           {description ? <p className="text-base text-ink-muted">{description}</p> : null}
         </div>

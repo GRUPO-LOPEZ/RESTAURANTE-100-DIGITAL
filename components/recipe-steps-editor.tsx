@@ -12,7 +12,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { useUnsavedWarning } from "@/components/use-unsaved-warning";
 import type { ActionState } from "@/lib/auth/results";
 import { reasonField, recipeStepsSchema } from "@/lib/forms/schemas";
-import { STEP_KIND_LABELS, type StepKind } from "@/lib/recipe-format";
+import { LINE_UNITS, STEP_KIND_LABELS, type StepKind } from "@/lib/recipe-format";
 import type { RecipeStep } from "@/lib/recipes";
 
 type Step = {
@@ -21,6 +21,10 @@ type Step = {
   instructions: string;
   active_minutes: string;
   passive_minutes: string;
+  equipment: string;
+  equipment_capacity: string;
+  // La unidad de una capacidad ya cargada; vacía, la del rendimiento.
+  capacity_unit: string;
   // Las dependencias se guardan por clave interna, así sobreviven si se quita un paso de en medio.
   depends: number[];
 };
@@ -33,6 +37,9 @@ function payload(steps: Step[]) {
     instructions: s.instructions,
     active_minutes: s.active_minutes,
     passive_minutes: s.passive_minutes,
+    equipment: s.equipment,
+    equipment_capacity: s.equipment_capacity,
+    equipment_capacity_unit: s.capacity_unit,
     depends_on: s.depends
       .map((d) => position.get(d))
       .filter((n): n is number => typeof n === "number")
@@ -47,6 +54,10 @@ const fromInitial = (initial: RecipeStep[]): Step[] =>
     instructions: s.instructions,
     active_minutes: String(s.activeMinutes),
     passive_minutes: String(s.passiveMinutes),
+    equipment: s.equipment ?? "",
+    equipment_capacity:
+      s.equipmentCapacity === null ? "" : String(s.equipmentCapacity).replace(".", ","),
+    capacity_unit: s.equipmentCapacityUnit ?? "",
     depends: s.dependsOn,
   }));
 
@@ -58,11 +69,14 @@ export function RecipeStepsEditor({
   versionId,
   expectedUpdatedAt,
   initial,
+  yieldLabel,
 }: {
   recipeId: string;
   versionId: string;
   expectedUpdatedAt: string;
   initial: RecipeStep[];
+  // La unidad del rendimiento: en esa unidad se carga la capacidad del equipo.
+  yieldLabel?: string;
 }) {
   const prefix = useId();
   const [steps, setSteps] = useState<Step[]>(() => fromInitial(initial));
@@ -95,6 +109,9 @@ export function RecipeStepsEditor({
         key: nextKey,
         kind: "preparation",
         instructions: "",
+        equipment: "",
+        equipment_capacity: "",
+        capacity_unit: "",
         active_minutes: "0",
         passive_minutes: "0",
         // Por defecto espera al paso anterior: lo más común es una fila de pasos.
@@ -227,6 +244,37 @@ export function RecipeStepsEditor({
                       inputMode="numeric"
                       value={step.passive_minutes}
                       onChange={(e) => update(step.key, { passive_minutes: e.target.value })}
+                    />
+                  </Field>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    id={id(step.key, "equipment")}
+                    label="Equipo"
+                    hint="Opcional. Por ejemplo, horno."
+                    error={errors[id(step.key, "equipment")]}
+                  >
+                    <Input
+                      value={step.equipment}
+                      maxLength={120}
+                      onChange={(e) => update(step.key, { equipment: e.target.value })}
+                    />
+                  </Field>
+                  <Field
+                    id={id(step.key, "equipment_capacity")}
+                    label={`Capacidad del equipo (${LINE_UNITS.find((u) => u.code === step.capacity_unit)?.label ?? yieldLabel ?? "unidad del rendimiento"})`}
+                    hint={
+                      step.capacity_unit || yieldLabel
+                        ? "Opcional. Cuánto entra de una vez: avisa si hacen falta más tandas."
+                        : "Para cargarla, primero guardá el rendimiento de la receta."
+                    }
+                    error={errors[id(step.key, "equipment_capacity")]}
+                  >
+                    <Input
+                      inputMode="decimal"
+                      disabled={!step.capacity_unit && !yieldLabel}
+                      value={step.equipment_capacity}
+                      onChange={(e) => update(step.key, { equipment_capacity: e.target.value })}
                     />
                   </Field>
                 </div>

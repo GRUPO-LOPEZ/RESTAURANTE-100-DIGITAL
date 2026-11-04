@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseAmount } from "@/lib/money";
 
 // Esquemas de los formularios (ADR-0016): los mismos en el navegador (React Hook Form, antes de
 // enviar) y en las acciones de servidor (que validan igual, porque nunca se confía en la pantalla).
@@ -563,32 +564,45 @@ export const recipeLinesSchema = z
 
 export const recipeStepsSchema = z
   .array(
-    z.object({
-      kind: z.enum([
-        "preparation",
-        "cooking",
-        "resting",
-        "fermentation",
-        "cooling",
-        "regeneration",
-        "plating",
-        "other",
-      ]),
-      instructions: z
-        .string()
-        .trim()
-        .min(1, "Escribí qué se hace en el paso.")
-        .max(2000, "Hasta 2.000 caracteres."),
-      active_minutes: z
-        .string()
-        .trim()
-        .regex(/^[0-9]{1,5}$/, "Minutos: un número entero, por ejemplo 15."),
-      passive_minutes: z
-        .string()
-        .trim()
-        .regex(/^[0-9]{1,5}$/, "Minutos: un número entero, por ejemplo 15."),
-      depends_on: z.array(z.number().int().min(1).max(100)).max(99),
-    }),
+    z
+      .object({
+        kind: z.enum([
+          "preparation",
+          "cooking",
+          "resting",
+          "fermentation",
+          "cooling",
+          "regeneration",
+          "plating",
+          "other",
+        ]),
+        instructions: z
+          .string()
+          .trim()
+          .min(1, "Escribí qué se hace en el paso.")
+          .max(2000, "Hasta 2.000 caracteres."),
+        active_minutes: z
+          .string()
+          .trim()
+          .regex(/^[0-9]{1,5}$/, "Minutos: un número entero, por ejemplo 15."),
+        passive_minutes: z
+          .string()
+          .trim()
+          .regex(/^[0-9]{1,5}$/, "Minutos: un número entero, por ejemplo 15."),
+        equipment: z.string().trim().max(120, "Hasta 120 caracteres."),
+        equipment_capacity: z
+          .string()
+          .trim()
+          .refine((v) => v === "" || (parseAmount(v) ?? 0) >= 0.000001, {
+            message: "Escribí un número mayor que cero, como 5 o 2,5.",
+          }),
+        equipment_capacity_unit: z.string().max(20),
+        depends_on: z.array(z.number().int().min(1).max(100)).max(99),
+      })
+      .refine((s) => s.equipment_capacity === "" || s.equipment !== "", {
+        message: "Para cargar la capacidad, escribí el equipo.",
+        path: ["equipment"],
+      }),
   )
   .max(100, "Hasta 100 pasos.");
 

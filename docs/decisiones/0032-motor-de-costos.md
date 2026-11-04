@@ -165,6 +165,20 @@ Migración `20261114120000_costs_up_to_date.sql`.
 - **`integration.integration_outbox`:** `cost.changed`, `price.approved` y `recipe.published`, con ids y estados, sin importes. No se expone por la API y nadie la consume todavía. Como la cola, no pasa por la auditoría: repite cambios ya auditados, y hoy no se limpia.
 - **Pruebas:** `235_costs_up_to_date` (49).
 
+## PR 3B: escalado (2026-11-04)
+
+Migración `20261115120000_recipe_scaling.sql`.
+
+- **`/recetas/[id]/escalar`:** cuánto hace falta para un lote, por porciones o por la unidad del rendimiento. Lo ve cualquiera que vea la receta, también la cocina. Se puede imprimir.
+- **Escalar nunca cambia la versión:** `recipes.scale_version` solo lee. Tampoco guarda nada: el módulo de producción no existe, y una versión nueva se hace con el flujo de siempre.
+- **Las líneas "no escalar"** se muestran aparte y quedan como en la receta.
+- **`recipe_steps.equipment_capacity` y su unidad:** cuánto entra en el equipo de ese paso. La unidad es la del rendimiento al cargarla, y va guardada porque el rendimiento puede cambiar. No hay `batch_size`, como decía el plan de la Fase 2: el lote ya es el objetivo. Con eso sale el aviso de "más tandas", comparando contra el rendimiento terminado. Los tiempos no se multiplican.
+- **"1.500" son mil quinientos,** como se ve en pantalla (`parseAmount`; confirmado por Joaco el 2026-11-04). "2,5" y "2.5" son dos y medio. Lo demás se rechaza con un aviso.
+- **En la hoja impresa** no salen el costo, el menú ni el formulario, y sí la versión y la fecha.
+- **El editor de pasos** ahora pide equipo y capacidad.
+- **`costing.scaled_cost`:** el costo proyectado, con su confiabilidad, solo para quien ve costos. Cada línea por el factor, salvo las "no escalar". Las líneas "no escalar" de una preparación escalan con ella.
+- **Pruebas:** `236_recipe_scaling` (48), `tests/unit/scaling.test.ts` (8) y Playwright `escalado`.
+
 ## Riesgos y pendientes
 
 - **Los costos pueden tener hasta 1 minuto de demora.** Después de aprobar un precio, una pantalla puede mostrar el costo anterior. La pantalla del PR 2 lo tiene que aclarar.
@@ -178,6 +192,8 @@ Migración `20261114120000_costs_up_to_date.sql`.
 - **Dos publicaciones en la misma corrida** pueden mezclarse en el aviso: el nombre de una variante de un local puede llegarle a quien ve recetas en otro. Nunca lleva costos.
 - **La cola y los eventos no se limpian.** Se revisa con datos reales.
 - **Si el cron no corre,** los costos no se ponen al día y nada lo avisa, salvo la última actualización de `/costos`.
+- **La capacidad se carga receta por receta,** y las recetas publicadas no la tienen: hay que cargarla en una versión nueva. Un catálogo de equipos sería mejor, pero es otro módulo.
+- **El escalado es lineal:** condimentos y levaduras no siempre escalan igual. Para eso están las líneas "no escalar".
 - **Las fotos crecen** con cada cambio de precio: 1.200 filas y unas 11.000 líneas en el peor caso medido. Se revisa con datos reales.
 - **La historia de costos de un local nuevo:** quien entra hoy lee todas las fotos de totales de su local. Las líneas, solo de las versiones que ve.
 - **`core.audit_history`** destapa valores con `recipes.view_costs`, no con `prices.view`. Hoy no se explota (ADR-0029): ningún rol con `audit.view` deja de ver precios.

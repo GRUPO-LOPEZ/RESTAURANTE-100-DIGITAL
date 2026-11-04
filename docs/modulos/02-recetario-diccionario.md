@@ -674,28 +674,30 @@ Qué paso espera a cuál, para calcular el camino crítico. Misma versión y sin
 
 Procedimiento de una versión: pasos con sus tiempos. Solo cambian mientras la versión es borrador.
 
-| Columna             | Tipo                       | Nulo | Qué guarda                                                                                              |
-| ------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                     | no   | Identificador del paso.                                                                                 |
-| `group_id`          | `uuid`                     | no   | Grupo de la receta.                                                                                     |
-| `brand_id`          | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.                             |
-| `restaurant_id`     | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                                               |
-| `recipe_version_id` | `uuid`                     | no   | Versión a la que pertenece.                                                                             |
-| `step_number`       | `integer`                  | no   | Número del paso (1, 2, 3…).                                                                             |
-| `kind`              | `recipes.step_kind`        | no   | Tipo de paso: preparación, cocción, reposo, fermentación, enfriamiento, regeneración, emplatado u otro. |
-| `instructions`      | `text`                     | no   | Qué se hace en el paso.                                                                                 |
-| `active_minutes`    | `integer`                  | no   | Minutos con una persona trabajando.                                                                     |
-| `passive_minutes`   | `integer`                  | no   | Minutos de espera (cocción, reposo, fermentación) sin una persona encima.                               |
-| `workers`           | `smallint`                 | sí   | Cuántas personas hacen falta.                                                                           |
-| `sector`            | `text`                     | sí   | Sector de la cocina.                                                                                    |
-| `equipment`         | `text`                     | sí   | Equipo que se usa.                                                                                      |
-| `control_point`     | `text`                     | sí   | Punto de control o criterio de calidad del paso.                                                        |
-| `created_at`        | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                       |
-| `created_by`        | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                        |
-| `updated_at`        | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                      |
-| `updated_by`        | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                       |
-| `deleted_at`        | `timestamp with time zone` | sí   | Borrado lógico: al guardar los pasos de un borrador, los anteriores quedan borrados.                    |
-| `deleted_by`        | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                       |
+| Columna                      | Tipo                       | Nulo | Qué guarda                                                                                                         |
+| ---------------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------ |
+| `id`                         | `uuid`                     | no   | Identificador del paso.                                                                                            |
+| `group_id`                   | `uuid`                     | no   | Grupo de la receta.                                                                                                |
+| `brand_id`                   | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.                                        |
+| `restaurant_id`              | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                                                          |
+| `recipe_version_id`          | `uuid`                     | no   | Versión a la que pertenece.                                                                                        |
+| `step_number`                | `integer`                  | no   | Número del paso (1, 2, 3…).                                                                                        |
+| `kind`                       | `recipes.step_kind`        | no   | Tipo de paso: preparación, cocción, reposo, fermentación, enfriamiento, regeneración, emplatado u otro.            |
+| `instructions`               | `text`                     | no   | Qué se hace en el paso.                                                                                            |
+| `active_minutes`             | `integer`                  | no   | Minutos con una persona trabajando.                                                                                |
+| `passive_minutes`            | `integer`                  | no   | Minutos de espera (cocción, reposo, fermentación) sin una persona encima.                                          |
+| `workers`                    | `smallint`                 | sí   | Cuántas personas hacen falta.                                                                                      |
+| `sector`                     | `text`                     | sí   | Sector de la cocina.                                                                                               |
+| `equipment`                  | `text`                     | sí   | Equipo que se usa.                                                                                                 |
+| `control_point`              | `text`                     | sí   | Punto de control o criterio de calidad del paso.                                                                   |
+| `created_at`                 | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                  |
+| `created_by`                 | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                   |
+| `updated_at`                 | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                 |
+| `updated_by`                 | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                  |
+| `deleted_at`                 | `timestamp with time zone` | sí   | Borrado lógico: al guardar los pasos de un borrador, los anteriores quedan borrados.                               |
+| `deleted_by`                 | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                  |
+| `equipment_capacity`         | `numeric(18,6)`            | sí   | Cuánto entra en el equipo de este paso. Si el lote lo supera, hacen falta más tandas.                              |
+| `equipment_capacity_unit_id` | `uuid`                     | sí   | Unidad de la capacidad: la del rendimiento al cargarla. Va guardada porque el rendimiento puede cambiar de unidad. |
 
 ## `recipes.recipe_versions`
 

@@ -14,6 +14,7 @@ import {
   schemas,
 } from "@/lib/forms/schemas";
 import { PHOTO_MAX_BYTES, PHOTO_TYPES } from "@/lib/recipe-format";
+import { parseAmount } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del recetario (ADR-0023). Cada una llama a una función de la base, que controla el
@@ -166,6 +167,9 @@ export async function saveStepsAction(payload: z.input<typeof stepsPayload>): Pr
   const { data, error } = await supabase.schema("recipes").rpc("set_steps", {
     p_version_id: parsed.data.versionId,
     p_steps: parsed.data.steps.map((s) => ({
+      equipment: s.equipment,
+      equipment_capacity: s.equipment_capacity ? String(parseAmount(s.equipment_capacity)) : "",
+      equipment_capacity_unit: s.equipment_capacity_unit,
       kind: s.kind,
       instructions: s.instructions,
       active_minutes: Number(s.active_minutes),

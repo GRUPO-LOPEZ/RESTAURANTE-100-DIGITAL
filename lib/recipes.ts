@@ -272,6 +272,8 @@ export type RecipeStep = {
   activeMinutes: number;
   passiveMinutes: number;
   equipment: string | null;
+  equipmentCapacity: number | null;
+  equipmentCapacityUnit: string | null;
   controlPoint: string | null;
   dependsOn: number[];
 };
@@ -500,7 +502,7 @@ export async function getVersionContent(
       .schema("recipes")
       .from("recipe_steps")
       .select(
-        "id, step_number, kind, instructions, active_minutes, passive_minutes, equipment, control_point",
+        "id, step_number, kind, instructions, active_minutes, passive_minutes, equipment, equipment_capacity, equipment_capacity_unit_id, control_point",
       )
       .eq("recipe_version_id", versionId)
       .order("step_number"),
@@ -556,6 +558,8 @@ export async function getVersionContent(
       activeMinutes: s.active_minutes,
       passiveMinutes: s.passive_minutes,
       equipment: s.equipment,
+      equipmentCapacity: s.equipment_capacity === null ? null : Number(s.equipment_capacity),
+      equipmentCapacityUnit: unit.get(s.equipment_capacity_unit_id ?? "") ?? null,
       controlPoint: s.control_point,
       dependsOn: (deps.data ?? [])
         .filter((d) => d.step_id === s.id)

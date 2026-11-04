@@ -65,6 +65,11 @@ async function Kitchen({ params }: { params: PageProps<"/recetas/[id]/cocina">["
           Volver a la ficha
         </Link>
       ) : null}
+      {card ? (
+        <Link href={`/recetas/${id}/escalar`} className={linkClass}>
+          Escalar
+        </Link>
+      ) : null}
     </div>
   );
   if (!card) {

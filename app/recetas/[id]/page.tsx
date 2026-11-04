@@ -430,6 +430,14 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
             )}
           </Card>
 
+          {recipe.current ? (
+            <Link
+              href={`/recetas/${recipe.id}/escalar`}
+              className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+            >
+              Escalar
+            </Link>
+          ) : null}
           {cost && costPlace ? (
             <Card className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -506,6 +514,7 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
             </CardDescription>
             {editable ? (
               <RecipeStepsEditor
+                yieldLabel={LINE_UNITS.find((u) => u.code === version?.yieldUnit)?.label}
                 recipeId={recipe.id}
                 versionId={version.id}
                 expectedUpdatedAt={version.updatedAt}
