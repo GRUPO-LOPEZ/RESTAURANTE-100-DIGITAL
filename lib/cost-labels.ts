@@ -1,3 +1,4 @@
+import { formatMoney } from "@/lib/money";
 import type { BadgeStatus } from "@/components/ui/badge";
 import type { Database } from "@/lib/database.types";
 
@@ -8,12 +9,20 @@ export type Reliability = Database["costing"]["Enums"]["cost_reliability"];
 export type SnapshotReason = Database["costing"]["Enums"]["cost_snapshot_reason"];
 
 export const COSTS_PAGE = 50;
+export const SCENARIO_PAGE = 50;
 
 export const RELIABILITY: Record<Reliability, { label: string; status: BadgeStatus }> = {
   verified: { label: "Completo y verificado", status: "ok" },
   estimated: { label: "Con estimaciones", status: "info" },
   stale: { label: "Desactualizado", status: "warn" },
   incomplete: { label: "Incompleto", status: "bad" },
+};
+// Un costo simulado no se verifica: estas etiquetas dicen qué datos tuvo la simulación, nunca que es confiable.
+export const SCENARIO_RELIABILITY: Record<Reliability, { label: string; status: BadgeStatus }> = {
+  verified: { label: "Simulado, sin datos faltantes", status: "review" },
+  estimated: { label: "Simulado, con estimaciones", status: "review" },
+  stale: { label: "Simulado, con precios viejos", status: "warn" },
+  incomplete: { label: "Simulado, faltan datos", status: "bad" },
 };
 export const RELIABILITY_KEYS = Object.keys(RELIABILITY) as Reliability[];
 
@@ -54,6 +63,25 @@ export function formatDifference(value: number | null): string {
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toLocaleString("es-AR", { maximumFractionDigits: 2 })} %`;
 }
+
+// Una diferencia en plata, con su signo.
+export function formatMoneyDifference(value: number | null): string {
+  if (value === null) return "—";
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}${formatMoney(Math.abs(value))}`;
+}
+
+export type ScenarioRow = {
+  recipeId: string;
+  recipe: string;
+  today: number | null;
+  simulated: number | null;
+  difference: number | null;
+  differencePct: number | null;
+  portionToday: number | null;
+  portionSimulated: number | null;
+  reliability: Reliability;
+};
 
 export type CostRow = {
   recipeId: string;

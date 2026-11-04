@@ -1,9 +1,17 @@
 import { ChevronDown } from "lucide-react";
 
 // Una acción plegada (como en la ficha de una persona): el título se toca para abrir el formulario.
-export function Disclosure({ summary, children }: { summary: string; children: React.ReactNode }) {
+export function Disclosure({
+  summary,
+  open,
+  children,
+}: {
+  summary: string;
+  open?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <details className="group rounded-sm border border-line">
+    <details open={open} className="group rounded-sm border border-line">
       <summary className="flex min-h-touch cursor-pointer items-center justify-between gap-2 px-3 text-base font-medium text-primary underline-offset-4 hover:underline">
         {summary}
         <ChevronDown

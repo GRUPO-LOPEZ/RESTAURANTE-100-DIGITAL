@@ -179,6 +179,28 @@ Migración `20261115120000_recipe_scaling.sql`.
 - **`costing.scaled_cost`:** el costo proyectado, con su confiabilidad, solo para quien ve costos. Cada línea por el factor, salvo las "no escalar". Las líneas "no escalar" de una preparación escalan con ella.
 - **Pruebas:** `236_recipe_scaling` (48), `tests/unit/scaling.test.ts` (8) y Playwright `escalado`.
 
+## PR 3C: escenarios (2026-11-04)
+
+Migración `20261116120000_cost_scenarios.sql`.
+
+- **Un escenario es de un local** y guarda solo los cambios: precio, rendimiento y gramaje. El resultado se calcula al abrirlo, con los datos de hoy, y no se guarda. Así no se puede confundir con un costo oficial.
+- **Nunca toca lo oficial:** `costing.scenario_result` es `stable`, y Postgres rechaza una escritura directa desde una función así. Tampoco llama a ninguna que escriba. La prueba `237` compara el costo vigente, las fotos, la cola y los eventos antes y después.
+- **Un proveedor se simula como un precio.** El proveedor queda como referencia y no calcula nada: hacerlo de otra forma exigiría precios cargados de alguien a quien todavía no se le compra.
+- **El precio simulado es el que cuenta en ese local:** sin IVA, o con IVA si el local no lo descuenta. Reemplaza al costo sin IVA y al costo con IVA por igual, así que un escenario no simula el IVA.
+- **El precio se escribe por kg o por litro,** como se ve en costos, y se guarda por unidad de uso. La acción convierte con la unidad que dice la base, no con un dato del navegador.
+- **El motor** lee `yields` y `quantities` de `p_memo`. Sin esas claves da lo mismo que antes. La recursión las pasa a las preparaciones, también a las que la persona no ve.
+- **Un gramaje ajusta la cantidad congelada** en la misma proporción: no se vuelve a convertir con la densidad de hoy.
+- **Un gramaje de una versión vieja** queda en el escenario, con un aviso, y no se aplica.
+- **Las tarjetas** (mayor suba y mayor baja) miran todas las recetas, no solo las de la página.
+- **Quién lo usa:** `scenarios.manage` y `recipes.view_costs` en el local. Hoy, Dirección General, Director de Marca y Controller.
+- **Lo simulado nunca dice verificado:** un precio simulado no es verificable, aunque el motor marque la receta como completa. La pantalla usa etiquetas propias (`SCENARIO_RELIABILITY`), sin el estado verde.
+- **Un precio simulado completa una receta:** si a una receta le faltaba un precio y se simula, el resultado sale con costo. Es lo que se quiere saber.
+- **El local también va en cada cambio** (`restaurant_id`): la auditoría toma de ahí el alcance. Sin eso, quien audita un local no vería los cambios.
+- **Lo que la persona ya no ve se tapa** en `scenario_changes` ("No disponible"): el cambio queda, para poder quitarlo. Una línea solo se carga si la receta se ve.
+- **Cambio contra el plan:** no hay `owner_id`. El dueño es `created_by`, que ya pone la base.
+- **Medido** en `233`: 410 ms con las 300 recetas alcanzadas, y 534 ms con una materia prima que solo tienen los 270 platos. Las preparaciones que no cambian se calculan una sola vez, como en el recálculo. Se calcula entero en cada página, aunque muestre 50.
+- **Pruebas:** `237_cost_scenarios`, `233` (dos pruebas nuevas), `tests/unit/scenarios.test.ts` y Playwright `escenarios`.
+
 ## Riesgos y pendientes
 
 - **Los costos pueden tener hasta 1 minuto de demora.** Después de aprobar un precio, una pantalla puede mostrar el costo anterior. La pantalla del PR 2 lo tiene que aclarar.
@@ -198,6 +220,9 @@ Migración `20261115120000_recipe_scaling.sql`.
 - **La historia de costos de un local nuevo:** quien entra hoy lee todas las fotos de totales de su local. Las líneas, solo de las versiones que ve.
 - **`core.audit_history`** destapa valores con `recipes.view_costs`, no con `prices.view`. Hoy no se explota (ADR-0029): ningún rol con `audit.view` deja de ver precios.
 - **La cola no se limpia:** guarda los pedidos procesados. Se revisa con datos reales.
+- **Un escenario se calcula entero al abrirlo:** con muchas más recetas que las 300 medidas, puede tardar. Si pasa, se limita por página.
+- **El costo de hoy es el guardado, y el simulado se calcula al abrir:** con un precio nuevo todavía en la cola, un cambio sin efecto puede mostrar diferencia hasta que la cola lo procese (un minuto, o más si el pedido falló).
+- **Un rendimiento simulado alcanza solo a las líneas con limpieza o cocción.** Las demás recetas que usan esa materia prima aparecen con diferencia cero.
 - **Sin tope de trabajo en `recipe_cost`:** sin memo, repite las preparaciones. Con recetas normales no se nota; falta medirlo con datos reales.
 - **Quien tiene varios locales y ninguno elegido** no ve costos en `/recetas`: los ve en `/costos`.
 - **La bandeja de aprobaciones** oculta importes por nombre de clave: un Chef o un Jefe de Cocina con `approvals.view` ve el producto, el proveedor y el comprobante de una solicitud de precio. Coincide con la decisión 1, salvo el comprobante.

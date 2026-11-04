@@ -89,6 +89,7 @@ export const getMenus = cache(async () => {
     pricesPropose,
     pricesConfigure,
     costs,
+    scenarios,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -121,6 +122,8 @@ export const getMenus = cache(async () => {
     groupWide("prices.configure"),
     // Costos de recetas: en cualquier local (la base controla cuáles).
     check("recipes.view_costs"),
+    // Escenarios de costo: simular en algún local.
+    check("scenarios.manage"),
   ]);
   return {
     users,
@@ -151,6 +154,8 @@ export const getMenus = cache(async () => {
     // El panel de control: la estructura (org.manage) o la configuración de precios.
     panel: orgManage || pricesConfigure,
     costs,
+    // La base pide los dos permisos: sin ver costos, el menú no se muestra.
+    scenarios: scenarios && costs,
   };
 });
 
