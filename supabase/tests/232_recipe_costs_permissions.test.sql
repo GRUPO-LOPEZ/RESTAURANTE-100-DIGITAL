@@ -53,7 +53,7 @@ select is((select count(*) from pg_proc p join pg_namespace n on n.oid = p.prona
             where n.nspname = 'costing'
               and p.proname in ('recipe_totals_internal', 'recipe_line_costs_internal', 'refresh_recipes',
                                 'recipes_above', 'recipes_below', 'restaurant_recipes', 'recipes_using_ingredient', 'enqueue_restaurant', 'enqueue_recalc',
-                                'process_recalc_queue', 'fit',
+                                'process_recalc_queue', 'fit', 'visible_recipe_ids',
                                 'store_recipe_cost', 'totals_of_lines',
                                 'purchase_quantity', 'require_recipe_cost')
               and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute'))),

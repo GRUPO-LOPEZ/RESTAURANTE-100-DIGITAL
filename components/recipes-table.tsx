@@ -4,6 +4,9 @@ import Link from "next/link";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
+import { RELIABILITY, type Reliability } from "@/lib/cost-labels";
+import { formatMoney } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import { RECIPE_TYPE_LABELS } from "@/lib/recipe-format";
 import type { RecipeRow } from "@/lib/recipes";
 
@@ -67,13 +70,51 @@ const columns = column.columns([
   }),
 ]);
 
-// Lista de recetas. En el celular se muestra como tarjetas.
-export function RecipesTable({ rows }: { rows: RecipeRow[] }) {
-  const table = useTable({ features, columns, data: rows });
+type RecipeCost = { total: number | null; reliability: Reliability };
+
+function CostCell({ cost, label }: { cost?: RecipeCost; label?: string }) {
+  if (!cost)
+    return <span className="text-sm text-ink-muted">{label ? `${label}: s` : "S"}in costo</span>;
+  const r = RELIABILITY[cost.reliability];
+  return (
+    <span className="flex flex-col items-start gap-1">
+      <span className="text-ink tabular-nums">
+        {label ? `${label}: ` : ""}
+        {cost.total === null ? "sin costo" : formatMoney(cost.total)}
+      </span>
+      <Badge status={r.status}>{r.label}</Badge>
+    </span>
+  );
+}
+
+// Lista de recetas. En el celular se muestra como tarjetas. Con costs, suma el costo en ese local.
+export function RecipesTable({
+  rows,
+  costs,
+  costPlace,
+}: {
+  rows: RecipeRow[];
+  costs?: Record<string, RecipeCost>;
+  costPlace?: string;
+}) {
+  const withCost = costs
+    ? column.columns([
+        ...columns,
+        column.display({
+          id: "cost",
+          header: `Costo sin IVA en ${costPlace ?? "el local"}`,
+          cell: ({ row }) => <CostCell cost={costs[row.original.id]} />,
+        }),
+      ])
+    : columns;
+  const table = useTable({ features, columns: withCost, data: rows });
 
   return (
     <>
-      <ul className="flex flex-col gap-2 sm:hidden" aria-label="Recetas">
+      <ul
+        className={cn("flex flex-col gap-2", costs ? "lg:hidden" : "sm:hidden")}
+        aria-label="Recetas"
+      >
         {rows.map((row) => (
           <li
             key={row.id}
@@ -85,11 +126,21 @@ export function RecipesTable({ rows }: { rows: RecipeRow[] }) {
               {row.category ? ` · ${row.category}` : ""}
             </span>
             <StatusBadges row={row} />
+            {costs ? (
+              <CostCell
+                cost={costs[row.id]}
+                label={`Costo sin IVA en ${costPlace ?? "el local"}`}
+              />
+            ) : null}
           </li>
         ))}
       </ul>
-      <table className="hidden w-full border-collapse text-left sm:table">
-        <caption className="sr-only">Recetas, su tipo, dónde se usan, categoría y estado</caption>
+      <table
+        className={cn("hidden w-full border-collapse text-left", costs ? "lg:table" : "sm:table")}
+      >
+        <caption className="sr-only">
+          Recetas, su tipo, dónde se usan, categoría y estado{costs ? ", y su costo" : ""}
+        </caption>
         <thead>
           {table.getHeaderGroups().map((group) => (
             <tr key={group.id} className="border-b border-line">

@@ -23,6 +23,8 @@ import { RecipeStepsEditor } from "@/components/recipe-steps-editor";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { RELIABILITY, getLiveCost, resolveCostPlace } from "@/lib/costs";
+import { formatMoney } from "@/lib/money";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import { UUID, formatDateTime } from "@/lib/data";
@@ -51,7 +53,7 @@ import {
   type RecipeVersion,
   type VersionStatus,
 } from "@/lib/recipes";
-import { requireMenu } from "@/lib/auth/session";
+import { getMenus, requireMenu } from "@/lib/auth/session";
 
 // Ficha de una receta (secciones 13 y 14): por bloques, nunca un formulario interminable. Quien la
 // trabaja ve el borrador y lo edita; quien solo la ve va a la vista de cocina.
@@ -130,7 +132,7 @@ function Ids({ recipe, version }: { recipe: RecipeDetail; version?: RecipeVersio
 }
 
 async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"] }) {
-  await requireMenu("recipes");
+  const session = await requireMenu("recipes");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const recipe = await getRecipe(id);
@@ -165,6 +167,11 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
   const variantPlaces = recipe.can.variantPlaces.filter(
     (p) => !variants.some((v) => v.restaurantId === p.restaurantId),
   );
+  // El costo en el local, también de un borrador. El detalle está en /costos, que ve también quien no la trabaja.
+  const costPlace = (await getMenus()).costs
+    ? (await resolveCostPlace(session.user_id)).place
+    : null;
+  const cost = version && costPlace ? await getLiveCost(version.id, costPlace.id) : null;
   const unitLabel = (code: string | null) =>
     LINE_UNITS.find((u) => u.code === code)?.label ?? code ?? "";
 
@@ -423,6 +430,33 @@ async function Recipe({ params }: { params: PageProps<"/recetas/[id]">["params"]
             )}
           </Card>
 
+          {cost && costPlace ? (
+            <Card className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle>Costo en {costPlace.name}</CardTitle>
+                <Badge status={RELIABILITY[cost.reliability].status}>
+                  {RELIABILITY[cost.reliability].label}
+                </Badge>
+              </div>
+              <p className="text-base text-ink tabular-nums">
+                {cost.total === null && cost.gross === null
+                  ? "Sin costo todavía"
+                  : `${formatMoney(cost.total)} sin IVA · ${formatMoney(cost.gross)} con IVA`}
+                {cost.perPortion !== null ? ` · ${formatMoney(cost.perPortion)} por porción` : ""}
+              </p>
+              {version?.status !== "published" ? (
+                <CardDescription>
+                  Con los precios de hoy, si esta versión se publicara.
+                </CardDescription>
+              ) : null}
+              <Link
+                href={`/costos/${recipe.id}?local=${costPlace.id}`}
+                className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+              >
+                Ver el costo línea por línea
+              </Link>
+            </Card>
+          ) : null}
           <Card className="flex flex-col gap-4">
             <CardTitle>Componentes</CardTitle>
             {editable ? (

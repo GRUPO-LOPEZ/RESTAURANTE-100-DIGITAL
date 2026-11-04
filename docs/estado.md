@@ -2,7 +2,15 @@
 
 _Última actualización: 2026-11-03. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: motor de costos (rama `feat/costos-motor`, etapa 2.3, PR 1 de 3)
+## Al retomar: pantallas de costos (rama `feat/costos-pantallas`, etapa 2.3, PR 2 de 3)
+
+- **Qué se hizo** (ADR-0032, sección PR 2): `/costos`, el detalle de una receta, el impacto de un precio, y el costo en la lista y la ficha de recetas.
+- **Pruebas (2026-11-04), desde una base recién creada:** lint y tipos ✅ · Vitest 183 de 183 ✅ · pgTAP 1.684 de 1.684 ✅ · Playwright 126 de 128 en la corrida completa. Las 2 que faltaron (Chef, celular y computadora) esperaban un texto viejo; corregido, `costos` pasó sola en los dos proyectos. Sin otra corrida completa después.
+- **Cambios contra lo anotado:** `core.test_documents` se retira en un PR aparte, y el aviso con impacto de costo pasa al PR 3.
+- **A confirmar con Joaco:** las excepciones a las reglas de tableros (ADR-0032), la excepción a la auditoría en las fotos y la cola, y la planilla DEMO.
+- **Falta:** PR 3 (escalado, escenarios, tarea diaria, fin de mes, `integration_outbox`, aviso con impacto), PR de retiro de `core.test_documents`, reintentar o descartar recálculos fallidos.
+
+## Antes: motor de costos (etapa 2.3, PR 1 de 3; fusionado, PR #36)
 
 - **Qué se hizo** (ADR-0032): cada receta tiene costo en cada local, con y sin IVA, por porción y con su confiabilidad.
   - **Cantidades congeladas al publicar:** una densidad nueva ya no mueve una receta publicada.

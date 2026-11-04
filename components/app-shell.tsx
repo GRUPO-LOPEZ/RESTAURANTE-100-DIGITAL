@@ -59,6 +59,7 @@ async function SessionMenu() {
     { href: "/", label: "Inicio", show: true },
     { href: "/recetas", label: "Recetas", show: menus.recipes },
     { href: "/materias-primas", label: "Materias primas", show: menus.catalog },
+    { href: "/costos", label: "Costos", show: menus.costs },
     { href: "/usuarios", label: "Usuarios", show: menus.users },
     { href: "/aprobaciones", label: "Aprobaciones", count: unread, show: menus.approvals },
     { href: "/historial", label: "Historial", show: menus.audit },
