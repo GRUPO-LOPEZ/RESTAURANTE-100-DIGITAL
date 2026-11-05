@@ -137,6 +137,8 @@
 
 **El retiro de `core.test_documents` pasa a la 2.3.** El plan lo ponía en este PR, con la condición de que las pruebas 2, 3 y 7 de la Fase 1 ya pasaran sobre recetas reales. La prueba 2 ("el cocinero no ve costos") todavía no se puede pasar: las recetas no tienen costos hasta la 2.3. Si se retirara ahora, la Fase 1 perdería la prueba de que el cocinero no ve costos. Se retira cuando exista el costo de las recetas, con la prueba 2 reescrita sobre él.
 
+**Cerrado (2026-11-05):** migración `20261117120000_retire_test_documents.sql`. Las pruebas 2, 3 y 7 pasan sobre recetas reales en `238_fase1_recetas_reales`. Se borraron la tabla, la vista, las funciones y `/ensayo`, y los permisos se dieron de baja. Los eventos viejos siguen en `audit` con su módulo, y el historial los lee: por eso quedan las etiquetas del módulo. Borrar la tabla no deja un evento por documento: en el historial, el último estado de cada uno sigue siendo el que tenía.
+
 ## Lo que queda para después
 
 - **2.2 B:** subrecetas (con la regla de ciclos de hasta 10 niveles) y variantes. Según las respuestas de Soy (ADR-0024), un plato sigue siempre la versión vigente de su preparación, con avisos, y Pariggi es un proveedor externo como cualquier otro.

@@ -1,8 +1,18 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-04. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-05. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: escenarios (rama `feat/costos-escenarios`, etapa 2.3, PR 3C)
+## Al retomar: retiro del documento de ensayo (rama `chore/retirar-documento-ensayo`)
+
+- **Qué se hizo** (ADR-0023): se retiró `core.test_documents` y `/ensayo`. Las pruebas 2, 3 y 7 de la Fase 1 pasan sobre recetas reales en `238_fase1_recetas_reales`. La auditoría vieja queda.
+- **Pruebas (2026-11-05), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 201 de 201 ✅ · pgTAP 1.898 de 1.898 ✅ · Playwright 142 de 142 ✅ · formato ✅.
+- **Revisión:** `db-reviewer`, `security-auditor` y `ui-reviewer`. El grave (una prueba que no podía fallar, también en `170` y `190`) y los medios están corregidos. Sus correcciones no volvieron a revisión.
+- **Además:** el Inicio suma "Recetas": en el celular, el cocinero la tenía solo detrás del menú. La exportación del historial ya tiene prueba de que tapa los costos.
+- **Antes de aplicar en producción:** contar las solicitudes pendientes. Las de asignar un rol van a fallar con "los permisos del rol cambiaron" y hay que pedirlas de nuevo; las de cambiar `test_documents.*`, rechazarlas. Falla cerrado.
+- **Queda sin hacer:** `formatMoney` de `lib/data.ts` quedó sin uso.
+- **Falta después:** la etapa 2.5 (Inicio, `/calidad` y `/reportes`, que espera la decisión sobre el PDF) y la compuerta 2.3 con el Controller.
+
+## Antes: escenarios (etapa 2.3, PR 3C; fusionado, PR #40)
 
 - **Qué se hizo** (ADR-0032): `/costos/escenarios`. Se simula un precio (también de otro proveedor), un rendimiento o un gramaje en un local, y se ve cuánto cambia cada receta. Nunca toca lo oficial. Con esto se cierra el contenido de la etapa 2.3.
 - **Pruebas (2026-11-04), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 202 de 202 ✅ · pgTAP 1.883 de 1.883 ✅ · Playwright 141 de 142. La que faltó (`escenarios`, celular) la rompió la prueba nueva de anchos, que no volvía al tamaño original. Corregida, `escenarios` pasó sola, 6 de 6 en celular y computadora, sin otra corrida completa.
@@ -10,8 +20,6 @@ _Última actualización: 2026-11-04. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **A confirmar con Joaco:** si un precio simulado puede completar una receta incompleta (hoy sí, con la etiqueta "Simulado"). Y lo que ya estaba: las excepciones a las reglas de tableros, la excepción a la auditoría, el aviso de costo sin porcentaje y la planilla DEMO.
 - **Queda sin hacer:** los desplegables de materias primas y recetas no tienen búsqueda, y la lista de escenarios corta en 200, con aviso. Con un precio todavía en la cola, la diferencia puede ser engañosa hasta que se procese.
 - **Sin comprobar:** un celular físico, un escenario archivado en pantalla, la paginación real (más de 50 recetas) y la etiqueta "No se aplica". Dos cargas a la vez tampoco se probaron.
-- **Al retomar (Joaco):** abrir el PR de `feat/costos-escenarios` contra `main`, con las capturas, y mirar GitHub Actions.
-- **Falta después:** retirar `core.test_documents` y la compuerta 2.3 con el Controller.
 
 ## Antes: escalado (etapa 2.3, PR 3B; fusionado, PR #39)
 

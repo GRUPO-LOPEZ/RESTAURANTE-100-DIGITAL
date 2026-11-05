@@ -73,7 +73,6 @@ export const getMenus = cache(async () => {
     audit,
     auditExport,
     roles,
-    testDocuments,
     catalog,
     catalogManage,
     yieldsRecord,
@@ -97,7 +96,6 @@ export const getMenus = cache(async () => {
     check("audit.view"),
     check("audit.export"),
     check("permissions.manage"),
-    check("test_documents.view"),
     check("catalog.view"),
     groupWide("catalog.manage"),
     // Ensayos y propuestas de rendimiento: en su local o su marca (la base controla dónde).
@@ -132,7 +130,6 @@ export const getMenus = cache(async () => {
     audit,
     auditExport,
     roles,
-    testDocuments,
     catalog,
     catalogManage,
     yieldsRecord,

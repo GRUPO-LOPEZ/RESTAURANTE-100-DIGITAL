@@ -158,7 +158,7 @@ select is(pg_temp.q(pg_temp.u(409), $$select string_agg(c ->> 'ingredient', ', '
                                         from jsonb_array_elements(recipes.kitchen_card(pg_temp.rec('DEMO-PAS-05')) -> 'components') c
                                        where c ->> 'sub_recipe_id' is not null$$),
   'Salsa bolognesa, Salsa blanca', 'la ficha de cocina de la Lasaña muestra sus preparaciones, con su enlace');
-select is(pg_temp.q(pg_temp.u(409), $$select coalesce(recipes.kitchen_card(pg_temp.rec('DEMO-PAR-01'))::text, 'nada')$$), 'nada',
+select is(pg_temp.q(pg_temp.u(409), format('select coalesce(recipes.kitchen_card(%L)::text, ''nada'')', pg_temp.rec('DEMO-PAR-01'))), 'nada',
   'pero no ve una preparación de otra marca que no usa');
 
 -- ---------------------------------------------------------------------------

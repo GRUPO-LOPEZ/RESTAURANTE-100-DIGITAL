@@ -65,7 +65,6 @@ async function SessionMenu() {
     { href: "/historial", label: "Historial", show: menus.audit },
     { href: "/roles", label: "Roles y permisos", show: menus.roles },
     { href: "/configuracion", label: "Panel de control", show: menus.panel },
-    { href: "/ensayo", label: "Ensayo", show: menus.testDocuments },
     { href: "/mi-cuenta", label: "Mi cuenta", show: true },
   ];
   const links: NavLink[] = all

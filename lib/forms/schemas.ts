@@ -230,25 +230,6 @@ export const schemas = {
       message: "La contraseña nueva tiene que ser otra.",
       path: ["password"],
     }),
-  testDraft: z.object({
-    place: z.string().min(1, "Elegí dónde va."),
-    title: z.string().trim().min(1, "Escribí el título.").max(120, "Hasta 120 caracteres."),
-    content: z.string().trim().max(4000, "Hasta 4.000 caracteres.").optional(),
-    cost: z
-      .string()
-      .trim()
-      .regex(
-        /^$|^[0-9]{1,10}([.,][0-9]{1,4})?$/,
-        "Escribí el costo con números, por ejemplo 1520,50.",
-      )
-      .optional(),
-    reason: reasonField,
-  }),
-  // Corregir un documento publicado: el lugar y el título viajan ocultos.
-  testCorrection: z.object({
-    content: z.string().trim().max(4000, "Hasta 4.000 caracteres.").optional(),
-    reason: reasonField,
-  }),
   ingredient: z.object({
     code: catalogCode,
     name: catalogName,

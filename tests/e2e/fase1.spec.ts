@@ -22,7 +22,7 @@ test.describe("1. sin sesión no se consulta información privada", () => {
       "/aprobaciones",
       "/historial",
       "/roles",
-      "/ensayo",
+      "/recetas",
       "/mi-cuenta",
     ]) {
       await page.goto(path);

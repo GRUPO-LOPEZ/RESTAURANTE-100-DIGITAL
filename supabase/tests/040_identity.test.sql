@@ -50,7 +50,7 @@ select is(
 -- ---------------------------------------------------------------------------
 select is((select count(*)::int from core.roles where deleted_at is null), 10, 'hay 10 roles');
 -- Los del recetario (Fase 2) se fijan, uno por uno y rol por rol, en 140_catalog.
-select is((select count(*)::int from core.permissions where deleted_at is null and module <> 'test_documents'
+select is((select count(*)::int from core.permissions where deleted_at is null
              and module not in ('catalog', 'prices', 'yields', 'recipes', 'scenarios', 'imports', 'reports')), 18,
   'hay 18 permisos de la Fase 1 (los 14 de M4 más permissions.manage, security.view, org.archive y users.view_admin_details, ADR-0015)');
 select is(
@@ -66,9 +66,8 @@ create function pg_temp.perms(p_role text) returns text[] language sql as $$
   from core.role_permissions rp
   join core.roles r on r.id = rp.role_id and r.code = p_role
   join core.permissions p on p.id = rp.permission_id
-  -- Los permisos de ensayo (temporales) se prueban aparte, en 100_features, y los del recetario
-  -- (Fase 2), en 140_catalog.
-  where rp.deleted_at is null and p.module <> 'test_documents'
+  -- Los del recetario (Fase 2) se prueban aparte, en 140_catalog.
+  where rp.deleted_at is null
     and p.module not in ('catalog', 'prices', 'yields', 'recipes', 'scenarios', 'imports', 'reports')
 $$;
 create function pg_temp.has(p_role text, p_perm text) returns boolean language sql as $$

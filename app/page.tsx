@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ClipboardCheck, FileText, History, KeyRound, Users } from "lucide-react";
+import { BookOpen, ClipboardCheck, History, KeyRound, Users } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,13 @@ async function Home() {
   const [me, menus] = await Promise.all([getUser(session.user_id ?? ""), getMenus()]);
 
   const shortcuts = [
+    {
+      href: "/recetas",
+      label: "Recetas",
+      text: "Las recetas vigentes y su ficha de cocina.",
+      Icon: BookOpen,
+      show: menus.recipes,
+    },
     {
       href: "/usuarios",
       label: "Usuarios",
@@ -49,13 +56,6 @@ async function Home() {
       text: "Qué puede hacer cada rol.",
       Icon: KeyRound,
       show: menus.roles,
-    },
-    {
-      href: "/ensayo",
-      label: "Ensayo",
-      text: "Documentos de prueba de la Fase 1.",
-      Icon: FileText,
-      show: menus.testDocuments,
     },
   ].filter((s) => s.show);
 

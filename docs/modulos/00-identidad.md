@@ -93,7 +93,7 @@ Aprobada por Joaco el 2026-10-20 y ampliada el 2026-10-21 con los permisos del d
 
 ### Permisos de ensayo (solo Fase 1)
 
-La tabla de ensayo `core.test_documents` imita una receta para las pruebas 2, 3 y 7 y para la demo de cierre. Se borra al cerrar la Fase 1.
+La tabla de ensayo `core.test_documents` imitaba una receta para las pruebas 2, 3 y 7 y para la demo de cierre. **Retirada el 2026-11-05 (ADR-0023):** esas pruebas pasan sobre recetas reales y estos permisos están dados de baja.
 
 | Permiso                     | Lo tienen                                                                       |
 | --------------------------- | ------------------------------------------------------------------------------- |
@@ -106,28 +106,28 @@ La tabla de ensayo `core.test_documents` imita una receta para las pruebas 2, 3 
 
 _Lo que sigue no es texto de Soy: es el mapa de las pruebas, para controlarlas. Cada prueba lleva en su nombre el número de la tabla de arriba. pgTAP está en `supabase/tests/` y Playwright en `tests/e2e/`._
 
-| #   | Prueba                                                    | pgTAP                                                                   | Playwright (celular y computadora)                          |
-| --- | --------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 1   | Sin sesión no se consulta información privada             | `050_permissions` ("1. …")                                              | `fase1.spec.ts` ("1. sin sesión…")                          |
-| 2   | Cocinero abre la receta vigente pero no ve costos         | `100_features` ("2. …", `core.test_documents`), `060_roles_workflow`    | `admin.spec.ts` ("el cocinero ve el documento de ensayo…")  |
-| 3   | Jefe de cocina crea borrador pero no publica sin permiso  | `100_features` ("3. …"), `060_roles_workflow` ("3. …")                  | —                                                           |
-| 4   | Gerente no edita fuera de su restaurante                  | `050_permissions` ("4. …")                                              | —                                                           |
-| 5   | Dirección ve lo consolidado según permisos                | `050_permissions` ("5. …")                                              | —                                                           |
-| 6   | Un cambio registra usuario, fecha, campo y valores        | `020_audit`, `050_permissions` (roles de quien cambia)                  | —                                                           |
-| 7   | Una versión aprobada conserva su historia                 | `100_features` ("7. …"), `060_roles_workflow` ("7. …")                  | —                                                           |
-| 8   | Una cuenta desactivada pierde acceso                      | `080_accounts` ("8. …")                                                 | `fase1.spec.ts` ("8 y A5…")                                 |
-| 9   | Usuario con dos restaurantes opera solo en los suyos      | `050_permissions` ("9. …")                                              | —                                                           |
-| 10  | Una cuenta técnica no supera sus permisos                 | `050_permissions` ("10. …"), `090_alignment` ("10. …")                  | —                                                           |
-| 11  | Una operación rechazada queda registrada                  | `060_roles_workflow` ("11. …"), `100_features`, `110_screens` ("11. …") | —                                                           |
-| 12  | Una aprobación guarda identidad, fecha y decisión         | `060_roles_workflow` ("12. …")                                          | `admin.spec.ts` ("se pide un cambio de la matriz…")         |
-| 13  | No se puede alterar el historial con operaciones normales | `020_audit`, `050_permissions` ("A3. …")                                | —                                                           |
-| A1  | Nadie se da permisos ni roles a sí mismo                  | `060_roles_workflow` ("A1. …")                                          | —                                                           |
-| A2  | No se aprueba la propia solicitud                         | `060_roles_workflow` ("A2. …"), `080_accounts` ("A5. …")                | `fase1.spec.ts` ("8 y A5…")                                 |
-| A3  | Ni el superadmin altera `audit_events` desde la app       | `050_permissions` ("A3. …")                                             | —                                                           |
-| A4  | Revocar un rol corta el acceso en la consulta siguiente   | `050_permissions` ("A4. …")                                             | —                                                           |
-| A5  | Suspendido no entra; reactivado sí                        | `080_accounts`, `090_alignment`, `100_features` ("A5. …")               | `fase1.spec.ts` ("8 y A5…"), `admin.spec.ts` ("suspender…") |
-| A6  | Asignaciones con alcance incoherente rechazadas           | `040_identity`, `060_roles_workflow` ("A6. …")                          | —                                                           |
-| A7  | 5 intentos fallidos bloquean y queda registrado           | `080_accounts` ("A7. …")                                                | `fase1.spec.ts` ("A7. …")                                   |
-| A8  | Roles 1 a 4 y Controller no entran sin MFA                | `050_permissions` ("A8. …")                                             | `fase1.spec.ts` ("A8. …")                                   |
-| A9  | Todas las tablas tienen RLS (recorre el catálogo)         | `060_roles_workflow` ("A9. …")                                          | —                                                           |
-| A10 | Tablero de usuarios en menos de 300 ms con 500 personas   | `080_accounts`, `100_features`, `110_screens` ("A10. …")                | `fase1.spec.ts` ("tablero…", axe)                           |
+| #   | Prueba                                                    | pgTAP                                                                               | Playwright (celular y computadora)                          |
+| --- | --------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 1   | Sin sesión no se consulta información privada             | `050_permissions` ("1. …")                                                          | `fase1.spec.ts` ("1. sin sesión…")                          |
+| 2   | Cocinero abre la receta vigente pero no ve costos         | `238_fase1_recetas_reales` ("2. …"), `060_roles_workflow`                           | `admin.spec.ts` ("el cocinero ve la receta vigente…")       |
+| 3   | Jefe de cocina crea borrador pero no publica sin permiso  | `238_fase1_recetas_reales` ("3. …"), `060_roles_workflow` ("3. …")                  | —                                                           |
+| 4   | Gerente no edita fuera de su restaurante                  | `050_permissions` ("4. …")                                                          | —                                                           |
+| 5   | Dirección ve lo consolidado según permisos                | `050_permissions` ("5. …")                                                          | —                                                           |
+| 6   | Un cambio registra usuario, fecha, campo y valores        | `020_audit`, `050_permissions` (roles de quien cambia)                              | —                                                           |
+| 7   | Una versión aprobada conserva su historia                 | `238_fase1_recetas_reales` ("7. …"), `060_roles_workflow` ("7. …")                  | —                                                           |
+| 8   | Una cuenta desactivada pierde acceso                      | `080_accounts` ("8. …")                                                             | `fase1.spec.ts` ("8 y A5…")                                 |
+| 9   | Usuario con dos restaurantes opera solo en los suyos      | `050_permissions` ("9. …")                                                          | —                                                           |
+| 10  | Una cuenta técnica no supera sus permisos                 | `050_permissions` ("10. …"), `090_alignment` ("10. …")                              | —                                                           |
+| 11  | Una operación rechazada queda registrada                  | `060_roles_workflow` ("11. …"), `238_fase1_recetas_reales`, `110_screens` ("11. …") | —                                                           |
+| 12  | Una aprobación guarda identidad, fecha y decisión         | `060_roles_workflow` ("12. …")                                                      | `admin.spec.ts` ("se pide un cambio de la matriz…")         |
+| 13  | No se puede alterar el historial con operaciones normales | `020_audit`, `050_permissions` ("A3. …")                                            | —                                                           |
+| A1  | Nadie se da permisos ni roles a sí mismo                  | `060_roles_workflow` ("A1. …")                                                      | —                                                           |
+| A2  | No se aprueba la propia solicitud                         | `060_roles_workflow` ("A2. …"), `080_accounts` ("A5. …")                            | `fase1.spec.ts` ("8 y A5…")                                 |
+| A3  | Ni el superadmin altera `audit_events` desde la app       | `050_permissions` ("A3. …")                                                         | —                                                           |
+| A4  | Revocar un rol corta el acceso en la consulta siguiente   | `050_permissions` ("A4. …")                                                         | —                                                           |
+| A5  | Suspendido no entra; reactivado sí                        | `080_accounts`, `090_alignment`, `100_features` ("A5. …")                           | `fase1.spec.ts` ("8 y A5…"), `admin.spec.ts` ("suspender…") |
+| A6  | Asignaciones con alcance incoherente rechazadas           | `040_identity`, `060_roles_workflow` ("A6. …")                                      | —                                                           |
+| A7  | 5 intentos fallidos bloquean y queda registrado           | `080_accounts` ("A7. …")                                                            | `fase1.spec.ts` ("A7. …")                                   |
+| A8  | Roles 1 a 4 y Controller no entran sin MFA                | `050_permissions` ("A8. …")                                                         | `fase1.spec.ts` ("A8. …")                                   |
+| A9  | Todas las tablas tienen RLS (recorre el catálogo)         | `060_roles_workflow` ("A9. …")                                                      | —                                                           |
+| A10 | Tablero de usuarios en menos de 300 ms con 500 personas   | `080_accounts`, `100_features`, `110_screens` ("A10. …")                            | `fase1.spec.ts` ("tablero…", axe)                           |

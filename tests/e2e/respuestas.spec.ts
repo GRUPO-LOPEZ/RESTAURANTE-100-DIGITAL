@@ -1,6 +1,6 @@
 // Respuestas de Joaco a las preguntas abiertas de la Fase 1, en pantalla. ADR-0015: errores por
-// campo antes de enviar (React Hook Form), quién ve el último acceso y quién publica un documento de
-// ensayo. ADR-0017: la baja de alguien de Dirección con aprobación. En celular y computadora, con axe.
+// campo antes de enviar (React Hook Form), quién ve el último acceso y quién aprueba una receta que
+// otra persona mandó a revisión. ADR-0017: la baja de alguien de Dirección con aprobación. En celular y computadora, con axe.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -55,37 +55,56 @@ test("el último acceso lo ve quien administra a la persona, no el auditor", asy
   await logout(page);
 });
 
-test("quien mandó un documento a revisión no lo publica: lo publica otra persona", async ({
+test("quien mandó una receta a revisión no la aprueba: la aprueba otra persona", async ({
   page,
 }, testInfo) => {
   test.setTimeout(150_000);
-  // Un título único: el documento se crea de verdad en la base local.
-  const title = `Pesto ${testInfo.project.name} ${Date.now()}`;
-  const doc = () => page.getByRole("listitem").filter({ hasText: title });
+  // Una receta por proyecto: cada receta admite una sola versión abierta.
+  const name = testInfo.project.name === "celular" ? "Spaghetti al fileto" : "Ñoquis de papa";
 
   await login(page, "chef@ejemplo.test");
-  await page.goto("/ensayo");
-  await page.getByLabel("Dónde").selectOption({ label: "Toda la marca · Demo Pastas" });
-  await page.getByLabel("Título").fill(title);
-  await page.getByLabel("Contenido", { exact: true }).fill("Albahaca, piñones y aceite.");
-  await page.locator("#motivo-nuevo").fill("Receta nueva");
-  await page.getByRole("button", { name: "Crear el borrador" }).click();
-  await expect(doc()).toBeVisible();
+  await page.goto(`/recetas?q=${encodeURIComponent(name)}`);
+  await page.getByRole("link", { name }).first().click();
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  // La receta puede venir con una versión abierta (un reintento): se sigue con esa.
+  if ((await page.locator("summary", { hasText: "Retirar de revisión" }).count()) > 0) {
+    await openAction(page, "Retirar de revisión");
+    await page.locator('[id$="-motivo-retiro"]').fill("Reintento de la prueba");
+    await page.getByRole("button", { name: "Retirar" }).click();
+  }
+  if ((await page.locator("summary", { hasText: "Crear una versión nueva" }).count()) > 0) {
+    await openAction(page, "Crear una versión nueva");
+    await page.locator('[id$="-motivo-version"]').fill("Prueba de revisión");
+    await page.getByRole("button", { name: "Crear versión nueva" }).click();
+  }
+  await expect(page.getByText("Versión en preparación", { exact: false })).toBeVisible();
+  await openAction(page, "Pedir la revisión");
+  await page.locator('[id$="-motivo-revision"]').fill("Lista para revisar");
+  await page.getByRole("button", { name: "Pedir la revisión" }).click();
+  await expect(notice(page).filter({ hasText: "Está en revisión" })).toBeVisible();
+  await axe(page);
+  const recipe = page.url();
 
-  await doc().locator("summary", { hasText: "Pedir la revisión" }).click();
-  await doc().getByLabel("Motivo").fill("Lista para revisar");
-  await doc().locator("button[type=submit]", { hasText: "Pedir la revisión" }).click();
-  await expect(doc().getByText("Lo mandaste vos a revisión")).toBeVisible();
-  await expect(doc().locator("summary", { hasText: "Aprobar y publicar" })).toHaveCount(0);
+  await page.goto("/aprobaciones");
+  const request = () =>
+    page.getByRole("listitem").filter({ hasText: name }).filter({ hasText: "Pendiente" }).first();
+  await expect(request()).toBeVisible();
+  await expect(request().getByRole("button", { name: "Aprobar" })).toHaveCount(0);
+  await expect(request().getByText("La tiene que decidir otra persona con permiso.")).toBeVisible();
   await axe(page);
   await logout(page);
 
   await login(page, "director@ejemplo.test", { mfa: true });
-  await page.goto("/ensayo");
-  await doc().locator("summary", { hasText: "Aprobar y publicar" }).click();
-  await doc().getByLabel("Motivo").fill("Revisada");
-  await doc().locator("button[type=submit]", { hasText: "Aprobar y publicar" }).click();
-  await expect(doc().getByText("Vigente")).toBeVisible();
+  await page.goto("/aprobaciones");
+  await request().getByRole("button", { name: "Aprobar" }).click();
+  await expect(
+    page.getByRole("listitem").filter({ hasText: name }).first().getByText("Aprobada", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  // Aprobar es publicar: la versión nueva queda vigente.
+  await page.goto(recipe);
+  await expect(page.getByText(/Vigente v[2-9]/).first()).toBeVisible();
   await logout(page);
 });
 
