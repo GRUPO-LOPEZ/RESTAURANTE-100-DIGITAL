@@ -418,10 +418,13 @@ select is(pg_temp.internal(pg_temp.u(406), $$select core.can_see_costs(pg_temp.u
   'el Jefe de Cocina tampoco');
 select is(pg_temp.internal(pg_temp.u(404), $$select core.can_see_costs(pg_temp.u(1), pg_temp.u(101), pg_temp.u(201))::text$$), 'true',
   'el Gerente sí, en su local (respuesta 7 de Soy, ADR-0024)');
--- El historial de verdad (no solo la función): el costo del documento de ensayo del seed.
-select is(pg_temp.q(pg_temp.u(410), $$select new_values ->> 'cost' from core.audit_history(p_limit => 50, p_record_id => pg_temp.u(601))
-            where table_name = 'test_documents' and record_id = pg_temp.u(601) and action = 'insert'$$),
-  '1520.5000', 'el Auditor ve el costo en el historial (recipes.view_costs)');
+-- El historial de verdad (no solo la función): un precio del seed.
+create temporary table seed_price as
+  select id, package_price from costing.price_records where scope_type = 'group' and group_id = pg_temp.u(1) order by id limit 1;
+grant select on seed_price to authenticated;
+select is(pg_temp.q(pg_temp.u(410), format($$select new_values ->> 'package_price' from core.audit_history(p_limit => 50, p_record_id => %L)
+            where table_name = 'price_records' and action = 'insert'$$, (select id from seed_price)))::numeric,
+  (select package_price from seed_price), 'el Auditor ve el precio en el historial (recipes.view_costs)');
 do $$
 begin
   perform core.set_change_context('Prueba: sin permiso de costos', 'maintenance');
@@ -430,8 +433,8 @@ begin
      and permission_id = (select id from core.permissions where code = 'recipes.view_costs');
 end
 $$;
-select is(pg_temp.q(pg_temp.u(410), $$select new_values ->> 'cost' from core.audit_history(p_limit => 50, p_record_id => pg_temp.u(601))
-            where table_name = 'test_documents' and record_id = pg_temp.u(601) and action = 'insert'$$),
+select is(pg_temp.q(pg_temp.u(410), format($$select new_values ->> 'package_price' from core.audit_history(p_limit => 50, p_record_id => %L)
+            where table_name = 'price_records' and action = 'insert'$$, (select id from seed_price))),
   '[oculto]', 'sin recipes.view_costs, el historial lo muestra oculto');
 
 -- ---------------------------------------------------------------------------

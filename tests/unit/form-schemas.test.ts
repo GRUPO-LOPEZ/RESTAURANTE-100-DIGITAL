@@ -75,15 +75,6 @@ describe("esquemas de formularios", () => {
     });
   });
 
-  it("el costo de ensayo acepta coma o punto y hasta 4 decimales", () => {
-    const base = { place: "x", title: "Salsa", reason: "Nueva" };
-    expect(errorsOf("testDraft", { ...base, cost: "1520,50" })).toEqual({});
-    expect(errorsOf("testDraft", { ...base, cost: "" })).toEqual({});
-    expect(errorsOf("testDraft", { ...base, cost: "mil" })).toEqual({
-      cost: "Escribí el costo con números, por ejemplo 1520,50.",
-    });
-  });
-
   it("formValues deja solo los textos del formulario", () => {
     const data = new FormData();
     data.set("reason", "Motivo");

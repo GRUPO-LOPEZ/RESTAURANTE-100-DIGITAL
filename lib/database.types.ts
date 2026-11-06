@@ -1927,99 +1927,6 @@ export type Database = {
           },
         ];
       };
-      test_documents: {
-        Row: {
-          brand_id: string;
-          content: string | null;
-          cost: number | null;
-          created_at: string;
-          created_by: string | null;
-          currency: string;
-          deleted_at: string | null;
-          deleted_by: string | null;
-          document_key: string;
-          group_id: string;
-          id: string;
-          restaurant_id: string | null;
-          review_requested_by: string | null;
-          status: Database["core"]["Enums"]["version_status"];
-          title: string;
-          updated_at: string;
-          updated_by: string | null;
-          version_number: number;
-        };
-        ComputedFields: never;
-        Insert: {
-          brand_id: string;
-          content?: string | null;
-          cost?: number | null;
-          created_at?: string;
-          created_by?: string | null;
-          currency?: string;
-          deleted_at?: string | null;
-          deleted_by?: string | null;
-          document_key: string;
-          group_id: string;
-          id?: string;
-          restaurant_id?: string | null;
-          review_requested_by?: string | null;
-          status?: Database["core"]["Enums"]["version_status"];
-          title: string;
-          updated_at?: string;
-          updated_by?: string | null;
-          version_number: number;
-        };
-        Update: {
-          brand_id?: string;
-          content?: string | null;
-          cost?: number | null;
-          created_at?: string;
-          created_by?: string | null;
-          currency?: string;
-          deleted_at?: string | null;
-          deleted_by?: string | null;
-          document_key?: string;
-          group_id?: string;
-          id?: string;
-          restaurant_id?: string | null;
-          review_requested_by?: string | null;
-          status?: Database["core"]["Enums"]["version_status"];
-          title?: string;
-          updated_at?: string;
-          updated_by?: string | null;
-          version_number?: number;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "test_documents_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "actors";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "test_documents_deleted_by_fkey";
-            columns: ["deleted_by"];
-            isOneToOne: false;
-            referencedRelation: "actors";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "test_documents_review_requested_by_fkey";
-            columns: ["review_requested_by"];
-            isOneToOne: false;
-            referencedRelation: "user_profiles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "test_documents_updated_by_fkey";
-            columns: ["updated_by"];
-            isOneToOne: false;
-            referencedRelation: "actors";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       user_memberships: {
         Row: {
           brand_id: string | null;
@@ -2326,86 +2233,7 @@ export type Database = {
       };
     };
     Views: {
-      v_test_documents: {
-        Row: {
-          brand_id: string | null;
-          content: string | null;
-          cost: number | null;
-          created_at: string | null;
-          created_by: string | null;
-          currency: string | null;
-          document_key: string | null;
-          group_id: string | null;
-          id: string | null;
-          restaurant_id: string | null;
-          review_requested_by: string | null;
-          status: Database["core"]["Enums"]["version_status"] | null;
-          title: string | null;
-          updated_at: string | null;
-          updated_by: string | null;
-          version_number: number | null;
-        };
-        ComputedFields: never;
-        Insert: {
-          brand_id?: string | null;
-          content?: string | null;
-          cost?: never;
-          created_at?: string | null;
-          created_by?: string | null;
-          currency?: string | null;
-          document_key?: string | null;
-          group_id?: string | null;
-          id?: string | null;
-          restaurant_id?: string | null;
-          review_requested_by?: string | null;
-          status?: Database["core"]["Enums"]["version_status"] | null;
-          title?: string | null;
-          updated_at?: string | null;
-          updated_by?: string | null;
-          version_number?: number | null;
-        };
-        Update: {
-          brand_id?: string | null;
-          content?: string | null;
-          cost?: never;
-          created_at?: string | null;
-          created_by?: string | null;
-          currency?: string | null;
-          document_key?: string | null;
-          group_id?: string | null;
-          id?: string | null;
-          restaurant_id?: string | null;
-          review_requested_by?: string | null;
-          status?: Database["core"]["Enums"]["version_status"] | null;
-          title?: string | null;
-          updated_at?: string | null;
-          updated_by?: string | null;
-          version_number?: number | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "test_documents_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "actors";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "test_documents_review_requested_by_fkey";
-            columns: ["review_requested_by"];
-            isOneToOne: false;
-            referencedRelation: "user_profiles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "test_documents_updated_by_fkey";
-            columns: ["updated_by"];
-            isOneToOne: false;
-            referencedRelation: "actors";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
+      [_ in never]: never;
     };
     Functions: {
       actor_grants: {
@@ -2580,18 +2408,6 @@ export type Database = {
         };
         Returns: undefined;
       };
-      create_test_document_draft: {
-        Args: {
-          p_brand_id: string;
-          p_content?: string;
-          p_cost?: number;
-          p_document_key?: string;
-          p_reason: string;
-          p_restaurant_id?: string;
-          p_title: string;
-        };
-        Returns: Json;
-      };
       current_aal: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_id: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_subject: { Args: Record<PropertyKey, never>; Returns: string };
@@ -2703,7 +2519,6 @@ export type Database = {
       permitted_brand_ids: { Args: { p_permission: string }; Returns: string[] };
       permitted_group_ids: { Args: { p_permission: string }; Returns: string[] };
       permitted_restaurant_ids: { Args: { p_permission: string }; Returns: string[] };
-      publish_test_document: { Args: { p_id: string; p_reason: string }; Returns: Json };
       record_failed_login: {
         Args: { p_email: string; p_ip?: string; p_user_agent?: string };
         Returns: Json;
@@ -2723,7 +2538,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      request_test_document_review: { Args: { p_id: string; p_reason: string }; Returns: Json };
       revoke_role: { Args: { p_assignment_id: string; p_reason: string }; Returns: Json };
       role_holders: { Args: { p_role_id: string }; Returns: Json };
       role_permission_codes: { Args: { p_role_id: string }; Returns: string[] };

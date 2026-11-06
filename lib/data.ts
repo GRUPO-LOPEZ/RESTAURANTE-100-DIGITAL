@@ -459,58 +459,6 @@ export async function getActiveRestaurantId(userId: string | undefined): Promise
   return typeof data === "string" ? data : null;
 }
 
-// Documentos de ensayo (la vista ya oculta el costo a quien no lo puede ver).
-export type TestDocument = {
-  id: string;
-  brand_id: string;
-  restaurant_id: string | null;
-  document_key: string;
-  version_number: number;
-  title: string;
-  content: string | null;
-  cost: number | null;
-  currency: string;
-  status: "draft" | "in_review" | "approved" | "published" | "archived";
-  updated_at: string;
-  // Quien la mandó a revisión no la publica (ADR-0015, respuesta 1).
-  review_requested_by: string | null;
-};
-
-export async function getTestDocuments(): Promise<TestDocument[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("core")
-    .from("v_test_documents")
-    .select(
-      "id, brand_id, restaurant_id, document_key, version_number, title, content, cost, currency, status, updated_at, review_requested_by",
-    )
-    .neq("status", "archived")
-    .order("title")
-    .order("version_number", { ascending: false })
-    .limit(100);
-  if (error) failed("los documentos de ensayo");
-  return (data ?? []).flatMap((d) =>
-    d.id && d.brand_id && d.document_key && d.title && d.status && d.updated_at
-      ? [
-          {
-            id: d.id,
-            brand_id: d.brand_id,
-            restaurant_id: d.restaurant_id,
-            document_key: d.document_key,
-            version_number: d.version_number ?? 1,
-            title: d.title,
-            content: d.content,
-            cost: d.cost,
-            currency: d.currency ?? "ARS",
-            status: d.status,
-            updated_at: d.updated_at,
-            review_requested_by: d.review_requested_by,
-          },
-        ]
-      : [],
-  );
-}
-
 // Catálogo de roles y lugares visibles (para formularios y filtros).
 export async function getRoles(): Promise<{ code: string; name: string; level: number | null }[]> {
   const supabase = await createClient();

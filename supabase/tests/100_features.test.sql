@@ -1,11 +1,11 @@
 -- Fase 1 · Alineación con el documento de Soy (docs/fases/fase-1.md, ADR-0015), paso 2:
--- permisos nuevos, mis lugares, suspender, selector de local, avisos y la tabla de ensayo.
--- Pruebas obligatorias que cubre sobre la tabla de ensayo core.test_documents: 2, 3 y 7.
+-- permisos nuevos, mis lugares, suspender, selector de local y avisos.
+-- Las pruebas obligatorias 2, 3 y 7 pasaron a las recetas reales: 238_fase1_recetas_reales.
 -- Personas del seed: ver 050_permissions.
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(63);
+select plan(40);
 
 create function pg_temp.q(p_user uuid, p_sql text, p_aal text default 'aal2')
 returns text
@@ -48,13 +48,6 @@ begin
   return n;
 end
 $$;
-create function pg_temp.perms(p_role text) returns text[] language sql as $$
-  select coalesce(array_agg(p.code order by p.code), '{}')
-    from core.role_permissions rp
-    join core.roles r on r.id = rp.role_id and r.code = p_role
-    join core.permissions p on p.id = rp.permission_id and p.module = 'test_documents'
-   where rp.deleted_at is null
-$$;
 
 -- ---------------------------------------------------------------------------
 -- Permisos nuevos (sección 8)
@@ -63,11 +56,6 @@ select is((select array_agg(code order by code) from core.permissions where code
   array['org.archive', 'permissions.manage', 'security.view'], 'existen permissions.manage, security.view y org.archive');
 select ok(exists (select 1 from core.permissions where code = 'roles.assign') and exists (select 1 from core.permissions where code = 'org.transfer'),
   'roles.assign y org.transfer se quedan (decisión de Joaco: sumar sin quitar)');
-select is(pg_temp.perms('cook'), array['test_documents.view'], 'ensayo: el cocinero solo ve');
-select is(pg_temp.perms('head_chef'), array['test_documents.edit', 'test_documents.view'], 'ensayo: el jefe de cocina ve y edita');
-select is(pg_temp.perms('executive_chef'), array['test_documents.edit', 'test_documents.publish', 'test_documents.view'],
-  'ensayo: el chef ve, edita y publica');
-select is(pg_temp.perms('controller'), array['test_documents.view', 'test_documents.view_costs'], 'ensayo: controller ve y ve costos');
 select throws_ok($$select core.check_role_permission_change((select id from core.roles where code = 'general_management'), 'permissions.manage', true)$$,
   '23514', null, 'un rol que aprueba no puede recibir permissions.manage (separación de funciones)');
 select throws_ok($$select core.check_role_permission_change((select id from core.roles where code = 'superadmin'), 'permissions.manage', false)$$,
@@ -149,85 +137,6 @@ select is(pg_temp.q(pg_temp.u(405), 'select core.mark_notifications_read()::text
 select is(pg_temp.q(pg_temp.u(405), $$update core.notifications set read_at = null returning 'x'$$), 'ERROR 42501',
   'nadie edita los avisos directo');
 
--- ---------------------------------------------------------------------------
--- Tabla de ensayo: pruebas 2, 3 y 7 (sección 10)
--- ---------------------------------------------------------------------------
--- Un documento de la marca, publicado y con costo (cargado como lo haría el seed).
-do $$ begin perform core.set_change_context('Documento de ensayo de la prueba', 'seed'); end $$;
-insert into core.test_documents (id, group_id, brand_id, document_key, version_number, title, content, cost)
-values ('99999999-9999-9999-9999-999999999991', pg_temp.u(1), pg_temp.u(101), '99999999-9999-9999-9999-999999999990', 1,
-        'Salsa de tomate', 'Sofreír, agregar tomate y cocinar 40 minutos.', 1520.50);
-update core.test_documents set status = 'in_review' where id = '99999999-9999-9999-9999-999999999991';
-update core.test_documents set status = 'approved' where id = '99999999-9999-9999-9999-999999999991';
-update core.test_documents set status = 'published' where id = '99999999-9999-9999-9999-999999999991';
-
--- 2. El cocinero abre la receta vigente pero no ve costos.
-select is(pg_temp.q(pg_temp.u(409), $$select title || ' / ' || coalesce(cost::text, 'sin costo') from core.v_test_documents
-                                      where id = '99999999-9999-9999-9999-999999999991'$$),
-  'Salsa de tomate / sin costo', '2. el cocinero abre el documento vigente de su marca, sin el costo');
-select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from core.test_documents'), 'ERROR 42501',
-  '2. y no puede leer la tabla directo (ahí está el costo)');
-select is(pg_temp.q(pg_temp.u(407), $$select cost::text from core.v_test_documents where id = '99999999-9999-9999-9999-999999999991'$$),
-  '1520.5000', 'Controller sí ve el costo');
-select is(pg_temp.q(pg_temp.u(409), $$select count(*)::text from core.v_test_documents where brand_id = '00000000-0000-4000-8000-000000000102'$$),
-  '0', 'el cocinero no ve documentos de otra marca');
-
--- 3. El jefe de cocina crea un borrador pero no publica sin permiso.
-select is(pg_temp.r(pg_temp.u(406), $$core.create_test_document_draft('00000000-0000-4000-8000-000000000101', 'Ñoquis del 29', 'Receta nueva del local',
-            p_restaurant_id => '00000000-0000-4000-8000-000000000201', p_content => 'Papa, harina y huevo.', p_cost => 300)$$),
-  'applied', '3. el jefe de cocina crea un borrador en su local');
-select is(pg_temp.q(pg_temp.u(406), $$select status::text || '/' || coalesce(cost::text, 'sin costo') from core.v_test_documents where title = 'Ñoquis del 29'$$),
-  'draft/sin costo', '3. queda en borrador, y sin costo: quien no ve costos no los carga');
-select is(pg_temp.q(pg_temp.u(409), $$select count(*)::text from core.v_test_documents where title = 'Ñoquis del 29'$$), '0',
-  '3. el cocinero no ve borradores');
-select is(pg_temp.r(pg_temp.u(406), format('core.request_test_document_review(%L, %L)', (select id from core.test_documents where title = 'Ñoquis del 29'), 'Lista para revisar')),
-  'applied', '3. el jefe de cocina pide la revisión');
-select is(pg_temp.r(pg_temp.u(406), format('core.publish_test_document(%L, %L)', (select id from core.test_documents where title = 'Ñoquis del 29'), 'La publico yo')),
-  'denied', '3. pero no la puede publicar');
-set local role audit_owner;
-create temporary table publish_denied as
-  select count(*)::int as n from audit.authentication_security_events
-   where event_type = 'operation_denied' and operation = 'core.publish_test_document'
-     and actor_id = '00000000-0000-4000-8000-000000000406';
-reset role;
-select is((select n from publish_denied), 1, '11. el intento de publicar sin permiso queda en el registro de seguridad');
-select is(pg_temp.r(pg_temp.u(405), format('core.publish_test_document(%L, %L)', (select id from core.test_documents where title = 'Ñoquis del 29'), 'Aprobada por la chef')),
-  'applied', '3. la chef de la marca la publica');
-
--- 7. Una versión aprobada conserva su historia.
-select throws_ok($$update core.test_documents set content = 'Otra cosa' where id = '99999999-9999-9999-9999-999999999991'$$,
-  '42501', null, '7. una versión publicada no se modifica');
-select is(pg_temp.r(pg_temp.u(405), $$core.create_test_document_draft('00000000-0000-4000-8000-000000000101', 'Salsa de tomate', 'Más cocción',
-            p_content => 'Sofreír, agregar tomate y cocinar 45 minutos.', p_document_key => '99999999-9999-9999-9999-999999999990')$$),
-  'applied', '7. corregir es crear la versión 2 del mismo documento');
-select is(pg_temp.r(pg_temp.u(405), format('core.request_test_document_review(%L, %L)', (select id from core.test_documents
-            where document_key = '99999999-9999-9999-9999-999999999990' and version_number = 2), 'Revisión'))
-          -- Quien la mandó a revisión no la publica (respuesta 1 de Joaco): la publica la directora de marca.
-          || '/' || pg_temp.r(pg_temp.u(405), format('core.publish_test_document(%L, %L)', (select id from core.test_documents
-            where document_key = '99999999-9999-9999-9999-999999999990' and version_number = 2), 'La publico yo'))
-          || '/' || pg_temp.r(pg_temp.u(403), format('core.publish_test_document(%L, %L)', (select id from core.test_documents
-            where document_key = '99999999-9999-9999-9999-999999999990' and version_number = 2), 'Publicada')),
-  'applied/denied/applied', '7. la versión 2 se revisa, quien la mandó no la publica y otra persona sí');
-select ok((select bool_and(case version_number when 1 then status = 'archived' and content like '%40 minutos%' and cost = 1520.5
-                                               else status = 'published' and cost = 1520.5 end)
-             from core.test_documents where document_key = '99999999-9999-9999-9999-999999999990'),
-  '7. la versión 1 queda archivada con su contenido intacto, y la 2 hereda el costo');
-set local role audit_owner;
-create temporary table doc_history as
-  select string_agg(action::text, ',' order by sequence_number) as actions from audit.audit_events
-   where record_id = '99999999-9999-9999-9999-999999999991';
-reset role;
-select is((select actions from doc_history), 'insert,update,update,publish,update',
-  '7. la historia de la versión 1 queda completa: alta, revisión, aprobación, publicación y archivo');
-
--- Un borrador de toda la marca solo lo ve quien edita en toda la marca (revisión de base, G1).
-select is(pg_temp.r(pg_temp.u(405), $$core.create_test_document_draft('00000000-0000-4000-8000-000000000101', 'Masa madre', 'Receta nueva de la marca',
-            p_content => 'Harina y agua.')$$), 'applied', 'la chef crea un borrador de la marca');
-select is(pg_temp.q(pg_temp.u(405), $$select count(*)::text from core.v_test_documents where title = 'Masa madre'$$), '1',
-  'la chef ve su borrador de marca');
-select is(pg_temp.q(pg_temp.u(406), $$select count(*)::text from core.v_test_documents where title = 'Masa madre'$$), '0',
-  'el jefe de cocina de un local no ve borradores de toda la marca');
-
 -- Separación de funciones también por persona al cambiar la matriz (revisión de seguridad, M-C).
 insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data, aud, role)
 values ('66666666-6666-6666-6666-666666666666', 'doble@ejemplo.test', '{}', '{}', 'authenticated', 'authenticated');
@@ -247,9 +156,9 @@ select ok((select inserts >= 1 and updates = 0 from note_audit),
   'crear un aviso queda en la auditoría; marcarlo como leído no');
 select ok((select count(*) = 3 from pg_trigger where tgrelid = 'core.notifications'::regclass and not tgisinternal
              and tgname in ('set_control_columns', 'log_change', 'reject_truncate'))
-          and (select count(*) = 4 from pg_trigger where tgrelid = 'core.test_documents'::regclass and not tgisinternal
+          and (select count(*) = 4 from pg_trigger where tgrelid = 'recipes.recipe_versions'::regclass and not tgisinternal
                  and tgname in ('set_control_columns', 'enforce_version_rules', 'log_change', 'reject_truncate')),
-  'los avisos y los documentos de ensayo tienen sus triggers de control, auditoría y versiones');
+  'los avisos y las versiones de receta tienen sus triggers de control, auditoría y versiones');
 select throws_ok($$insert into core.notifications (recipient_user_id, group_id, kind, title, link)
                    values ('00000000-0000-4000-8000-000000000409', '00000000-0000-4000-8000-000000000001', 'approval_requested', 'X', '//otro-sitio.test')$$,
   '23514', null, 'el enlace de un aviso es siempre interno');

@@ -37,7 +37,6 @@ const MODULE_NAMES: Record<string, string> = {
   security: "Registro de seguridad",
   approvals: "Aprobaciones",
   workflows: "Tipos de aprobación",
-  test_documents: "Documentos de ensayo",
 };
 
 async function Matrix({ searchParams }: { searchParams: PageProps<"/roles">["searchParams"] }) {

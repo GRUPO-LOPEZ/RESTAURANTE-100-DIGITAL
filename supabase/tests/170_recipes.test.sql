@@ -132,7 +132,7 @@ select is(pg_temp.q(pg_temp.u(409), $$select jsonb_array_length(recipes.kitchen_
 select ok(pg_temp.q(pg_temp.u(409), $$select recipes.kitchen_card(pg_temp.rec('DEMO-SAL-02'))::text$$)
           !~* '(cost|price|precio|costo|currency|margin)',
   'caso 24: la ficha de cocina no trae ningún valor económico');
-select is(pg_temp.q(pg_temp.u(409), $$select coalesce(recipes.kitchen_card(pg_temp.rec('DEMO-PAR-01'))::text, 'nada')$$), 'nada',
+select is(pg_temp.q(pg_temp.u(409), format('select coalesce(recipes.kitchen_card(%L)::text, ''nada'')', pg_temp.rec('DEMO-PAR-01'))), 'nada',
   'una receta que no le corresponde no le devuelve nada');
 
 -- ---------------------------------------------------------------------------
@@ -306,7 +306,7 @@ select is(pg_temp.res(pg_temp.u(405), $$recipes.set_assignment(pg_temp.rec('DEMO
   'denied', 'la Chef de Pastas no asigna en un local de Parrilla (no tiene permiso ahí)');
 select is(pg_temp.res(pg_temp.u(405), $$recipes.set_assignment(pg_temp.rec('DEMO-GUA-02'), pg_temp.u(201), false, 'Ya no se usa')$$),
   'applied', 'deja de asignar una maestra a su local');
-select is(pg_temp.q(pg_temp.u(409), $$select coalesce(recipes.kitchen_card(pg_temp.rec('DEMO-GUA-02'))::text, 'nada')$$), 'nada',
+select is(pg_temp.q(pg_temp.u(409), format('select coalesce(recipes.kitchen_card(%L)::text, ''nada'')', pg_temp.rec('DEMO-GUA-02'))), 'nada',
   'y la cocina de ese local deja de verla');
 select is(pg_temp.res(pg_temp.u(405), $$recipes.archive_recipe(pg_temp.rec('DEMO-PAS-03'), 'Sale de la carta')$$), 'applied',
   'la Chef archiva una receta');

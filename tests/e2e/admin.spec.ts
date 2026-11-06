@@ -20,6 +20,9 @@ async function noHorizontalScroll(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
+const RAVIOLES = "00000000-0000-4000-8000-000000001108";
+const PASTAS_CENTRO = "00000000-0000-4000-8000-000000000201";
+
 function localRows(page: Page) {
   return page.getByRole("table", { name: "Personas por local" }).getByRole("rowheader");
 }
@@ -51,29 +54,27 @@ test.describe("quién ve qué", () => {
     await logout(page);
   });
 
-  test("el cocinero ve el documento de ensayo vigente sin el costo; Controller lo ve con costo", async ({
+  test("el cocinero ve la receta vigente sin el costo; Controller la ve con costo", async ({
     page,
   }) => {
     test.setTimeout(90_000);
     await login(page, "cocinero@ejemplo.test");
-    await (await menuLink(page, "Ensayo")).click();
-    const doc = page.getByRole("listitem").filter({ hasText: "Salsa de tomate de la casa" });
-    await expect(doc).toBeVisible();
-    await expect(doc.getByText("no lo podés ver con tu rol")).toBeVisible();
-    await expect(page.getByText("1520")).toHaveCount(0);
-    // El borrador del jefe de cocina no lo ve.
-    await expect(page.getByText("Ñoquis de papa")).toHaveCount(0);
+    // El Inicio le deja a mano sus recetas.
+    await expect(page.getByRole("main").getByRole("link", { name: /Recetas/ })).toBeVisible();
+    await (await menuLink(page, "Recetas")).click();
+    await expect(page.getByRole("link", { name: "Ravioles de ricota" }).first()).toBeVisible();
+    // El borrador no lo ve: se busca por su nombre, porque la lista va por páginas.
+    await page.goto("/recetas?q=Risotto");
+    await expect(page.getByText("Risotto de hongos")).toHaveCount(0);
+    await page.goto(`/recetas/${RAVIOLES}/cocina`);
+    await expect(page.getByRole("heading", { name: "Ravioles de ricota" })).toBeVisible();
+    await expect(page.locator("main")).not.toContainText(/\$|costo|precio/i);
     await axe(page);
     await logout(page);
 
     await login(page, "controller@ejemplo.test", { mfa: true });
-    await page.goto("/ensayo");
-    await expect(
-      page
-        .getByRole("listitem")
-        .filter({ hasText: "Salsa de tomate de la casa" })
-        .getByText(/1\.520,50/),
-    ).toBeVisible();
+    await page.goto(`/costos/${RAVIOLES}?local=${PASTAS_CENTRO}`);
+    await expect(page.locator('[data-slot="kpi"]').first()).toContainText("4.506,27");
     await logout(page);
   });
 });

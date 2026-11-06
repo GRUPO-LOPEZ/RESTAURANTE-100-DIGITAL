@@ -5,7 +5,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(43);
+select plan(36);
 
 create function pg_temp.q(p_user uuid, p_sql text, p_aal text default 'aal2')
 returns text
@@ -165,26 +165,6 @@ select ok((select bool_and(m.ends_at is null) and count(*) = 1
                            where user_id = '88888888-8888-8888-8888-888888888884' and restaurant_id = pg_temp.u(202)
                              and ends_at is null and deleted_at is null),
   '9. la persona pasa al local nuevo con su rol y su membresía, y la del local viejo termina');
-
--- ---------------------------------------------------------------------------
--- 1. Quien mandó a revisión no publica
--- ---------------------------------------------------------------------------
-select is(pg_temp.r(pg_temp.u(405), $$core.create_test_document_draft('00000000-0000-4000-8000-000000000101', 'Pesto', 'Receta nueva',
-            p_content => 'Albahaca, piñones y aceite.')$$), 'applied', '1. la chef crea un borrador');
-select is(pg_temp.r(pg_temp.u(405), format('core.request_test_document_review(%L, %L)', (select id from core.test_documents where title = 'Pesto'), 'Lista')),
-  'applied', '1. y lo manda a revisión');
-select is((select review_requested_by from core.test_documents where title = 'Pesto'), pg_temp.u(405),
-  '1. la base anota quién lo mandó a revisión');
-select is(pg_temp.q(pg_temp.u(403), $$select review_requested_by::text from core.v_test_documents where title = 'Pesto'$$),
-  pg_temp.u(405)::text, '1. y se ve en la vista');
-select is(pg_temp.r(pg_temp.u(405), format('core.publish_test_document(%L, %L)', (select id from core.test_documents where title = 'Pesto'), 'La publico')),
-  'denied', '1. la chef no publica lo que ella mandó a revisión');
-select ok(exists (select 1 from audit.authentication_security_events
-                   where event_type = 'operation_denied' and operation = 'core.publish_test_document' and actor_id = pg_temp.u(405)
-                     and reason like 'Lo mandaste vos a revisión%'),
-  '1. el rechazo queda en el registro de seguridad');
-select is(pg_temp.r(pg_temp.u(403), format('core.publish_test_document(%L, %L)', (select id from core.test_documents where title = 'Pesto'), 'Revisada')),
-  'applied', '1. la directora de marca sí lo publica');
 
 -- ---------------------------------------------------------------------------
 -- 2. El último acceso, quién invitó y los motivos: solo quien administra
