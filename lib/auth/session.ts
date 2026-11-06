@@ -153,6 +153,8 @@ export const getMenus = cache(async () => {
     costs,
     // La base pide los dos permisos: sin ver costos, el menú no se muestra.
     scenarios: scenarios && costs,
+    // Calidad de datos: la misma regla que costing.quality_allowed. El cocinero no entra.
+    quality: recipesDraft || costs || pricesView,
   };
 });
 

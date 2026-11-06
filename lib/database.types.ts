@@ -3253,6 +3253,35 @@ export type Database = {
         Returns: string;
       };
       daily_refresh: { Args: { p_day?: string }; Returns: undefined };
+      data_quality: {
+        Args: { p_restaurant_id: string };
+        Returns: {
+          done: number;
+          hidden: number;
+          indicator: string;
+          total: number;
+        }[];
+      };
+      data_quality_items: {
+        Args: { p_indicator: string; p_limit?: number; p_offset?: number; p_restaurant_id: string };
+        Returns: {
+          detail: string;
+          item: string;
+          item_id: string;
+          kind: string;
+          total_rows: number;
+        }[];
+      };
+      data_quality_places: {
+        Args: { p_limit?: number; p_offset?: number };
+        Returns: {
+          done: number;
+          indicator: string;
+          restaurant: string;
+          restaurant_id: string;
+          total: number;
+        }[];
+      };
       enqueue_price: { Args: { p_price_record_id: string }; Returns: undefined };
       enqueue_recalc: {
         Args: {
@@ -3389,6 +3418,26 @@ export type Database = {
       purchase_quantity: {
         Args: { p_base: number; p_basis: string; p_cleaning: number; p_cooking: number };
         Returns: number;
+      };
+      quality_allowed: { Args: { p_restaurant_id: string }; Returns: boolean };
+      quality_indicators: { Args: { p_restaurant_id: string }; Returns: string[] };
+      quality_items: {
+        Args: { p_restaurant_id: string };
+        Returns: {
+          detail: string;
+          indicator: string;
+          item: string;
+          item_id: string;
+          kind: string;
+          ok: boolean;
+        }[];
+      };
+      quality_places: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          id: string;
+          name: string;
+        }[];
       };
       recalc_status: {
         Args: Record<PropertyKey, never>;

@@ -625,4 +625,7 @@ select case when (d * 7 + n) % 9 = 0 then 'login_failed'::audit.security_event_t
    on p.k = n % 3;
 reset role;
 
+-- Las materias primas parecidas se calculan de noche: acá, para que se vean sin esperar.
+refresh materialized view reporting.mv_ingredient_twins;
+
 commit;

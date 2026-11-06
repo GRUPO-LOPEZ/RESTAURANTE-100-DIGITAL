@@ -1,6 +1,6 @@
 # Diccionario de datos — catalog, recipes, imports, costing
 
-> Generado desde los `comment on` de la base local el 2026-11-05 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-11-06 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
 ## `catalog.allergens`
 
