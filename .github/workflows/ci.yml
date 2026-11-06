@@ -18,7 +18,8 @@ jobs:
   pruebas:
     name: Lint, tipos, Vitest, pgTAP y Playwright
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Playwright corre con un solo proceso (comparten la base) y ya pasa los 35 minutos.
+    timeout-minutes: 90
     env:
       CI: true
     steps:

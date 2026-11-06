@@ -9,6 +9,7 @@ _Última actualización: 2026-11-05. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Revisión:** `db-reviewer`, `security-auditor` y `ui-reviewer`. El grave (una prueba que no podía fallar, también en `170` y `190`) y los medios están corregidos. Sus correcciones no volvieron a revisión.
 - **Además:** el Inicio suma "Recetas": en el celular, el cocinero la tenía solo detrás del menú. La exportación del historial ya tiene prueba de que tapa los costos.
 - **Antes de aplicar en producción:** contar las solicitudes pendientes. Las de asignar un rol van a fallar con "los permisos del rol cambiaron" y hay que pedirlas de nuevo; las de cambiar `test_documents.*`, rechazarlas. Falla cerrado.
+- **GitHub Actions:** la primera corrida del PR se cortó con 80 pruebas de Playwright en verde y ninguna fallada. El trabajo tenía un límite de 45 minutos: se subió a 90. Si sigue creciendo, repartir Playwright en varios trabajos.
 - **Queda sin hacer:** `formatMoney` de `lib/data.ts` quedó sin uso.
 - **Falta después:** la etapa 2.5 (Inicio, `/calidad` y `/reportes`, que espera la decisión sobre el PDF) y la compuerta 2.3 con el Controller.
 
