@@ -1,0 +1,101 @@
+// Calidad de datos (ADR-0033): qué mide cada indicador. Sin base de datos: lo usan pantallas y pruebas.
+export type QualityAxis = "cook" | "cost";
+
+export type QualityIndicator = {
+  key: string;
+  axis: QualityAxis;
+  // Lo que se cuenta como cumplido, y cómo se llama lo que falta.
+  label: string;
+  missing: string;
+  hint?: string;
+};
+
+export const QUALITY_INDICATORS: QualityIndicator[] = [
+  {
+    key: "recipe_approved",
+    axis: "cook",
+    label: "Recetas aprobadas",
+    missing: "Recetas sin aprobar",
+  },
+  {
+    key: "recipe_review",
+    axis: "cook",
+    label: "Recetas sin revisión pendiente",
+    missing: "Recetas pendientes de revisión",
+  },
+  {
+    key: "recipe_yield",
+    axis: "cook",
+    label: "Recetas con rendimiento",
+    missing: "Recetas sin rendimiento",
+  },
+  { key: "recipe_photo", axis: "cook", label: "Recetas con foto", missing: "Recetas sin foto" },
+  {
+    key: "recipe_components",
+    axis: "cook",
+    label: "Recetas con todos sus componentes activos",
+    missing: "Recetas con componentes inactivos",
+  },
+  {
+    key: "recipe_cost",
+    axis: "cost",
+    label: "Recetas con costo completo",
+    missing: "Recetas con costo incompleto",
+  },
+  {
+    key: "ingredient_price",
+    axis: "cost",
+    label: "Materias primas con precio",
+    missing: "Materias primas sin precio",
+  },
+  { key: "price_stale", axis: "cost", label: "Precios al día", missing: "Precios desactualizados" },
+  {
+    key: "ingredient_unit",
+    axis: "cost",
+    label: "Materias primas con unidad normalizada",
+    missing: "Materias primas sin unidad normalizada",
+    hint: "Tienen un producto de compra activo que se convierte a su unidad de uso.",
+  },
+  {
+    key: "ingredient_yield",
+    axis: "cost",
+    label: "Materias primas con rendimiento aprobado",
+    missing: "Materias primas sin rendimiento aprobado",
+  },
+  {
+    key: "ingredient_duplicate",
+    axis: "cost",
+    label: "Materias primas sin parecidos",
+    missing: "Materias primas posiblemente duplicadas",
+    hint: "Nombres o alias muy parecidos. Se revisa cada noche.",
+  },
+];
+
+export const QUALITY_AXES: { axis: QualityAxis; title: string; text: string }[] = [
+  { axis: "cook", title: "¿Listas para cocinar?", text: "Que la receta esté completa y aprobada." },
+  { axis: "cost", title: "¿El costo es confiable?", text: "Que sus precios y datos estén bien." },
+];
+
+// Las columnas de la comparación entre locales.
+export const QUALITY_COMPARE = [
+  "recipe_approved",
+  "recipe_cost",
+  "ingredient_price",
+  "price_stale",
+];
+
+export const QUALITY_PAGE = 50;
+// La base compara de a 20 locales: cada uno tarda.
+export const QUALITY_COMPARE_LIMIT = 20;
+
+export function qualityIndicator(key: string | undefined): QualityIndicator | undefined {
+  return QUALITY_INDICATORS.find((i) => i.key === key);
+}
+
+export function qualityPercent(done: number, total: number): number | null {
+  return total > 0 ? Math.round((done / total) * 100) : null;
+}
+
+export function qualityHref(kind: string, id: string): string {
+  return kind === "recipe" ? `/recetas/${id}` : `/materias-primas/${id}`;
+}

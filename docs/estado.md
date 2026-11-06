@@ -1,8 +1,20 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-05. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-06. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: retiro del documento de ensayo (rama `chore/retirar-documento-ensayo`)
+## Al retomar: calidad de datos (rama `feat/calidad-datos`, etapa 2.5, PR 1)
+
+- **Qué se hizo** (ADR-0033): `/calidad`. Once indicadores por local, en dos ejes, y cada uno abre la lista de lo que hay que corregir. Quien ve más de un local los compara.
+- **Pruebas (2026-11-06), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 209 de 209 ✅ · pgTAP 1.950 de 1.950 ✅ · Playwright 156 de 156 ✅ · formato ✅. Después cambiaron dos textos de pantalla, y `calidad` volvió a pasar sola.
+- **Revisión:** `db-reviewer`, `security-auditor` y `ui-reviewer`. Los graves están corregidos y los medios también, salvo los que siguen. Las correcciones no volvieron a revisión.
+- **Decisiones de Joaco:** se cuentan todas las recetas, aunque la persona no las vea, y cuentan también las sin publicar de la marca y del grupo (ADR-0033).
+- **Queda sin hacer:** "Reintentar" en `app/error.tsx` usa `reset()`, que en Next 16 no vuelve a traer los datos: pasa en toda la app. La tarea de la noche no avisa si falla. La comparación muestra 20 locales como máximo.
+- **Sin comprobar:** la tarea de la noche disparándose a su hora, un celular físico y los estados de carga y error en pantalla.
+- **A confirmar con Joaco:** las excepciones a las reglas de tableros de ADR-0033.
+- **A validar con el Controller:** las definiciones de ADR-0033 (costo completo, unidad normalizada, posible duplicado).
+- **Falta después:** PR 2, el tablero de Inicio. Después, `/reportes`, que espera la decisión del PDF.
+
+## Antes: retiro del documento de ensayo (fusionado, PR #41)
 
 - **Qué se hizo** (ADR-0023): se retiró `core.test_documents` y `/ensayo`. Las pruebas 2, 3 y 7 de la Fase 1 pasan sobre recetas reales en `238_fase1_recetas_reales`. La auditoría vieja queda.
 - **Pruebas (2026-11-05), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 201 de 201 ✅ · pgTAP 1.898 de 1.898 ✅ · Playwright 142 de 142 ✅ · formato ✅.
