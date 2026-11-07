@@ -3,20 +3,13 @@ import { NextResponse } from "next/server";
 
 import { UUID } from "@/lib/data";
 import { getImportIssues } from "@/lib/imports/jobs";
+import { csvCell as cell } from "@/lib/csv";
 import { createClient } from "@/lib/supabase/server";
 
 // Los problemas de una importación como CSV, para corregir el Excel (ADR-0027). Lee con la sesión
 // de la persona: la base solo devuelve los de una importación que ve. Sin precios.
 const LIMIT = 20_000;
 const PAGE = 1000;
-
-// Una celda de CSV. Lo que empieza con =, +, - o @ se antepone con ' para que una planilla no lo
-// ejecute como fórmula (el texto viene del Excel subido, que no es confiable).
-function cell(value: unknown): string {
-  let text = value === null || value === undefined ? "" : String(value);
-  if (/^[=+\-@\t\r\n＝＋－＠]/.test(text.trimStart())) text = `'${text}`;
-  return `"${text.replace(/"/g, '""')}"`;
-}
 
 export async function GET(
   request: NextRequest,

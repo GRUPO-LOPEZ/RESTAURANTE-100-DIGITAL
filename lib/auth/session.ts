@@ -89,6 +89,7 @@ export const getMenus = cache(async () => {
     pricesConfigure,
     costs,
     scenarios,
+    reports,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -122,6 +123,8 @@ export const getMenus = cache(async () => {
     check("recipes.view_costs"),
     // Escenarios de costo: simular en algún local.
     check("scenarios.manage"),
+    // Reportes: en algún local (la base controla cada reporte).
+    check("reports.export"),
   ]);
   return {
     users,
@@ -155,6 +158,7 @@ export const getMenus = cache(async () => {
     scenarios: scenarios && costs,
     // Calidad de datos: la misma regla que costing.quality_allowed. El cocinero no entra.
     quality: recipesDraft || costs || pricesView,
+    reports,
   };
 });
 

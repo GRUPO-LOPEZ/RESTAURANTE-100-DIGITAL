@@ -381,7 +381,8 @@ export type Database = {
         | "account_unsuspended"
         | "password_changed"
         | "mfa_enrolled"
-        | "audit_exported";
+        | "audit_exported"
+        | "report_exported";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -3352,6 +3353,17 @@ export type Database = {
         };
         Returns: undefined;
       };
+      log_report: {
+        Args: {
+          p_format: string;
+          p_from?: string;
+          p_report: string;
+          p_restaurant_id: string;
+          p_rows?: number;
+          p_to?: string;
+        };
+        Returns: undefined;
+      };
       month_end_snapshots: { Args: Record<PropertyKey, never>; Returns: undefined };
       notify_cost_changed: { Args: { p_recipe_id: string }; Returns: undefined };
       package_amounts: {
@@ -3535,10 +3547,108 @@ export type Database = {
         Args: { p_override_id: string; p_reason: string };
         Returns: undefined;
       };
+      report_cost_changes: {
+        Args: {
+          p_from: string;
+          p_limit?: number;
+          p_offset?: number;
+          p_restaurant_id: string;
+          p_to: string;
+        };
+        Returns: {
+          changed_on: string;
+          current_cost: number;
+          difference: number;
+          difference_pct: number;
+          in_use: boolean;
+          previous: number;
+          reason: string;
+          recipe: string;
+          recipe_id: string;
+          recipe_type: string;
+          total_rows: number;
+          version_number: number;
+        }[];
+      };
+      report_exports: {
+        Args: { p_limit?: number };
+        Returns: {
+          format: string;
+          occurred_at: string;
+          person: string;
+          report: string;
+          restaurant: string;
+          rows_count: number;
+        }[];
+      };
+      report_ingredients: {
+        Args: { p_limit?: number; p_offset?: number; p_restaurant_id: string };
+        Returns: {
+          category: string;
+          item_id: string;
+          name: string;
+          stale: boolean;
+          status: string;
+          total_rows: number;
+          unit: string;
+          unit_cost: number;
+          valid_from: string;
+        }[];
+      };
+      report_list: { Args: { p_restaurant_id: string }; Returns: string[] };
+      report_places: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          id: string;
+          name: string;
+        }[];
+      };
+      report_quality: {
+        Args: { p_limit?: number; p_offset?: number; p_restaurant_id: string };
+        Returns: {
+          detail: string;
+          indicator: string;
+          item: string;
+          item_id: string;
+          kind: string;
+          total_rows: number;
+        }[];
+      };
+      report_usage: {
+        Args: { p_limit?: number; p_offset?: number; p_restaurant_id: string };
+        Returns: {
+          component: string;
+          item_id: string;
+          kind: string;
+          quantity: number;
+          recipe: string;
+          recipe_id: string;
+          through: string;
+          total_rows: number;
+          unit: string;
+          version_number: number;
+        }[];
+      };
+      report_yields: {
+        Args: { p_limit?: number; p_offset?: number; p_restaurant_id: string };
+        Returns: {
+          approved_at: string;
+          cleaning_yield: number;
+          cooking_factor: number;
+          cut: string;
+          ingredient: string;
+          item_id: string;
+          process: string;
+          supplier: string;
+          total_rows: number;
+          waste: number;
+        }[];
+      };
       require_recipe_cost: {
         Args: { p_restaurant_id: string; p_version_id: string };
         Returns: undefined;
       };
+      require_report: { Args: { p_report: string; p_restaurant_id: string }; Returns: undefined };
       require_scenario: {
         Args: { p_active?: boolean; p_scenario_id: string };
         Returns: {
@@ -6057,6 +6167,7 @@ export const Constants = {
         "password_changed",
         "mfa_enrolled",
         "audit_exported",
+        "report_exported",
       ],
     },
   },
