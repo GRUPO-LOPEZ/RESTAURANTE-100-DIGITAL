@@ -1,8 +1,16 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-06. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-07. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: calidad de datos (rama `feat/calidad-datos`, etapa 2.5, PR 1)
+## Al retomar: tablero de Inicio (rama `feat/tablero-inicio`, etapa 2.5, PR 2)
+
+- **Qué se hizo** (ADR-0033): el Inicio responde "¿qué tan completo y confiable está nuestro recetario?", con 6 tarjetas, un gráfico, costos y actividad. El cocinero ve el Inicio de siempre.
+- **Pruebas (2026-11-07), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 211 de 211 ✅ · pgTAP 1.983 de 1.983 ✅ · Playwright 160 de 164. Las 4 que faltaron (`fase1` y `materias-primas`, en celular y computadora) las rompió el tablero: el saludo había dejado de mostrar los roles, y la prueba encontraba dos paneles de filtros. Corregidas, `fase1`, `materias-primas`, `inicio` y `cuenta` pasaron solas, 44 de 44, sin otra corrida completa.
+- **Revisión:** `db-reviewer`, `security-auditor` y `ui-reviewer`. Los graves y los medios están corregidos, salvo los dos selectores de local. Las correcciones no volvieron a revisión.
+- **Decidido sin consultar, a confirmar por Joaco:** "Costo por corregir" como nombre, y que una receta que recién tiene costo se muestre como "Ahora tiene costo".
+- **Falta después:** `/reportes`, que espera la decisión del PDF. Después, las compuertas con datos reales y el informe de cierre para Soy.
+
+## Antes: calidad de datos (etapa 2.5, PR 1; fusionado, PR #42)
 
 - **Qué se hizo** (ADR-0033): `/calidad`. Once indicadores por local, en dos ejes, y cada uno abre la lista de lo que hay que corregir. Quien ve más de un local los compara.
 - **Pruebas (2026-11-06), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 209 de 209 ✅ · pgTAP 1.950 de 1.950 ✅ · Playwright 156 de 156 ✅ · formato ✅. Después cambiaron dos textos de pantalla, y `calidad` volvió a pasar sola.

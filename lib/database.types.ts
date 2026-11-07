@@ -3311,6 +3311,17 @@ export type Database = {
         };
         Returns: boolean;
       };
+      home_board: {
+        Args: { p_restaurant_id: string };
+        Returns: {
+          amount: number;
+          detail: string;
+          item: string;
+          item_id: string;
+          kind: string;
+          section: string;
+        }[];
+      };
       ingredient_line_cost: {
         Args: {
           p_as_of?: string;

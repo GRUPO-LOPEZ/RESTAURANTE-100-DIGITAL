@@ -7,6 +7,7 @@ import {
   qualityHref,
   qualityIndicator,
   qualityPercent,
+  qualityTop,
 } from "@/lib/quality-labels";
 
 describe("los indicadores de calidad", () => {
@@ -47,6 +48,26 @@ describe("el porcentaje", () => {
 describe("la comparación", () => {
   it("va de a 20 locales, como la base", () => {
     expect(QUALITY_COMPARE_LIMIT).toBe(20);
+  });
+});
+
+describe("lo que más falta", () => {
+  const counts = [
+    { indicator: "recipe_photo", done: 1, total: 10 },
+    { indicator: "recipe_cost", done: 8, total: 10 },
+    { indicator: "recipe_approved", done: 10, total: 10 },
+    { indicator: "no_existe", done: 0, total: 99 },
+  ];
+
+  it("va de mayor a menor, y deja afuera lo completo y lo que no conoce", () => {
+    expect(qualityTop(counts, 3).map((c) => [c.key, c.count])).toEqual([
+      ["recipe_photo", 9],
+      ["recipe_cost", 2],
+    ]);
+  });
+
+  it("respeta el tope", () => {
+    expect(qualityTop(counts, 1)).toHaveLength(1);
   });
 });
 
