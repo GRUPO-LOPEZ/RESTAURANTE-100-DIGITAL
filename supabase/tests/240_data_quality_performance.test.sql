@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(7);
+select plan(9);
 
 create function pg_temp.u(p_n int) returns uuid language sql as $$
   select format('00000000-0000-4000-8000-%s', lpad(p_n::text, 12, '0'))::uuid
@@ -73,6 +73,11 @@ begin
   perform costing.refresh_recipes(array(select pg_temp.u(72000 + n) from generate_series(1, 300) n), null, 'publish');
 end
 $$;
+-- Un precio nuevo de la materia prima que usan todas: el tablero compara contra la foto anterior.
+insert into costing.price_records (group_id, purchase_product_id, scope_type, valid_from, package_price, document_type, source)
+values (pg_temp.u(1), pg_temp.u(71001), 'group', recipes.today(), 5000, 'no_invoice', 'test_value');
+select costing.process_recalc_queue(5000);
+analyze costing.recipe_cost_snapshots;
 create temporary table twin_start as select clock_timestamp() as t0;
 refresh materialized view reporting.mv_ingredient_twins;
 insert into timings select 'parecidos', extract(epoch from clock_timestamp() - t0) * 1000 from twin_start;
@@ -82,14 +87,28 @@ do $$
 declare
   t0 timestamptz;
   v bigint;
+  best numeric;
 begin
-  -- La primera lectura calienta el plan: se mide la segunda.
+  -- La primera lectura calienta el plan, y se toma la mejor de tres: se mide la consulta, no la carga de la máquina.
   perform count(*) from costing.data_quality('00000000-0000-4000-8000-000000000201');
-  t0 := clock_timestamp();
-  select max(total) into v from costing.data_quality('00000000-0000-4000-8000-000000000201');
-  insert into timings values ('local', extract(epoch from clock_timestamp() - t0) * 1000), ('materias', v);
+  best := null;
+  for i in 1..3 loop
+    t0 := clock_timestamp();
+    select max(total) into v from costing.data_quality('00000000-0000-4000-8000-000000000201');
+    best := least(best, extract(epoch from clock_timestamp() - t0) * 1000);
+  end loop;
+  insert into timings values ('local', best), ('materias', v);
   select total into v from costing.data_quality('00000000-0000-4000-8000-000000000201') where indicator = 'recipe_approved';
   insert into timings values ('recetas', v);
+  best := null;
+  for i in 1..3 loop
+    t0 := clock_timestamp();
+    perform count(*) from costing.home_board('00000000-0000-4000-8000-000000000201');
+    best := least(best, extract(epoch from clock_timestamp() - t0) * 1000);
+  end loop;
+  insert into timings values ('tablero', best);
+  select count(*) into v from costing.home_board('00000000-0000-4000-8000-000000000201') where section = 'price_affected';
+  insert into timings values ('afectadas', v);
   t0 := clock_timestamp();
   perform count(*) from costing.data_quality_items('00000000-0000-4000-8000-000000000201', 'recipe_photo', 50);
   insert into timings values ('lista', extract(epoch from clock_timestamp() - t0) * 1000);
@@ -100,12 +119,15 @@ end
 $$;
 reset role;
 select set_config('request.jwt.claims', '', true);
+select diag('Tablero: ' || (select round(ms) from timings where k = 'tablero') || ' ms.');
 select diag('Un local: ' || (select round(ms) from timings where k = 'local') || ' ms. Lista: ' || (select round(ms) from timings where k = 'lista')
             || ' ms. Todos los locales: ' || (select round(ms) from timings where k = 'locales') || ' ms. Parecidos, de noche: ' || (select round(ms) from timings where k = 'parecidos') || ' ms.');
 select cmp_ok((select ms from timings where k = 'materias'), '>=', 500::numeric, 'se mide con las 500 materias primas');
 select cmp_ok((select ms from timings where k = 'recetas'), '>=', 270::numeric, 'y con las recetas del local');
 select cmp_ok((select ms from timings where k = 'cuantos'), '>=', 4::numeric, 'y los 4 locales');
 select cmp_ok((select ms from timings where k = 'local'), '<', 300::numeric, 'los indicadores de un local, en menos de 300 ms');
+select cmp_ok((select ms from timings where k = 'afectadas'), '>=', 5::numeric, 'el tablero se mide con recetas afectadas por un precio');
+select cmp_ok((select ms from timings where k = 'tablero'), '<', 300::numeric, 'el tablero de Inicio, en menos de 300 ms');
 select cmp_ok((select ms from timings where k = 'lista'), '<', 300::numeric, 'una lista, en menos de 300 ms');
 select cmp_ok((select ms from timings where k = 'locales'), '<', 1200::numeric, 'y los 4 locales, en menos de 1,2 s');
 

@@ -3,23 +3,35 @@ import { Suspense } from "react";
 import { BookOpen, ClipboardCheck, History, KeyRound, Users } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
+import { HomeBoardView } from "@/components/home-board";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { getUser, scopeLabel } from "@/lib/data";
+import { pickCostPlace } from "@/lib/costs";
+import { first, getActiveRestaurantId, getUser, scopeLabel } from "@/lib/data";
 import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
+import { getQualityPlaces } from "@/lib/quality";
 
-export default function InicioPage() {
+export default function InicioPage({ searchParams }: PageProps<"/">) {
   return (
     <AppShell title="Inicio">
       <Suspense fallback={<Loading />}>
-        <Home />
+        <Home searchParams={searchParams} />
       </Suspense>
     </AppShell>
   );
 }
 
-async function Home() {
+async function Home({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
   const session = await requireOperable();
-  const [me, menus] = await Promise.all([getUser(session.user_id ?? ""), getMenus()]);
+  const [me, menus, params] = await Promise.all([
+    getUser(session.user_id ?? ""),
+    getMenus(),
+    searchParams,
+  ]);
+  // El tablero, para quien entra a la calidad de datos. El cocinero ve el Inicio de siempre.
+  const [places, activeId] = menus.quality
+    ? await Promise.all([getQualityPlaces(), getActiveRestaurantId(session.user_id)])
+    : [[], null];
+  const place = pickCostPlace(places, first(params.local), activeId);
 
   const shortcuts = [
     {
@@ -61,18 +73,32 @@ async function Home() {
 
   return (
     <>
-      <Card className="flex flex-col gap-2">
-        <CardTitle>Hola, {displayName(session)}</CardTitle>
-        <CardDescription>Estos son tus roles y dónde los tenés.</CardDescription>
-        <ul className="flex flex-col gap-1">
-          {(me?.roles ?? []).map((r) => (
-            <li key={r.assignment_id} className="text-base text-ink">
-              {r.role_name}{" "}
-              <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
+      {places.length > 0 ? (
+        <p className="text-base text-ink">
+          Hola, {displayName(session)}
+          <span className="text-ink-muted">
+            {(me?.roles ?? []).map(
+              (r) => ` · ${r.role_name}, ${scopeLabel(r.scope_type, r.scope_name)}`,
+            )}
+          </span>
+        </p>
+      ) : (
+        <Card className="flex flex-col gap-2">
+          <CardTitle>Hola, {displayName(session)}</CardTitle>
+          <CardDescription>Estos son tus roles y dónde los tenés.</CardDescription>
+          <ul className="flex flex-col gap-1">
+            {(me?.roles ?? []).map((r) => (
+              <li key={r.assignment_id} className="text-base text-ink">
+                {r.role_name}{" "}
+                <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {places.length > 0 ? (
+        <HomeBoardView places={places} place={place} approvals={menus.approvals} />
+      ) : null}
       {shortcuts.length > 0 ? (
         <nav aria-label="Accesos" className="grid gap-4 sm:grid-cols-3">
           {shortcuts.map(({ href, label, text, Icon }) => (

@@ -59,6 +59,8 @@ Con 300 recetas en 4 locales y 500 materias primas en familias de 10 nombres par
 - **Sin comparación contra el período anterior:** estos conteos no guardan historia.
 - **Sin gráfico en `/calidad`:** son listas para corregir. El gráfico va en el Inicio.
 - **Sin filtro de fecha:** se calcula con los datos de hoy.
+- **El tablero lee por funciones de `costing`, no de `reporting`:** necesita la sesión, y `reporting` no se expone por la API.
+- **Dos selectores de local:** el de arriba y el del tablero, igual que `/costos`. Conviene decidirlo para todas las pantallas.
 - **La comparación de locales pasa de 300 ms:** tarda cerca de 110 ms por local. Se carga aparte, sin frenar al local elegido, y va de a 20 locales.
 
 ## Riesgos
@@ -69,7 +71,23 @@ Con 300 recetas en 4 locales y 500 materias primas en familias de 10 nombres par
 - **Una revisión pendiente se ve aunque la versión no:** quien solo ve lo vigente sabe que una receta tiene una versión en revisión, sin su contenido.
 - **Precio en la cola:** los costos pueden ir un minuto atrás.
 - **Nombres muy repetidos:** los parecidos tardan más, pero corren de noche.
+- **El motivo de una foto lo pone la primera corrida:** si una publicación y un precio entran en el mismo minuto, la foto puede quedar como publicación y la receta no aparece en "afectadas".
+
+## PR 2: el tablero de Inicio
+
+Migración `20261119120000_home_board.sql`. `costing.home_board` suma lo que no es un indicador: preparaciones, lo más usado, la confiabilidad, lo más caro por porción, lo que más pesa y lo que cambió por un precio. Cada sección pide el permiso de su dato.
+
+- **Quién lo ve:** quien entra a `/calidad`. El cocinero ve el Inicio de siempre.
+- **El título sigue siendo "Inicio":** la pregunta de Soy va como título del tablero.
+- **6 tarjetas:** Soy pide 8 y la regla dice de 3 a 6. Materias primas y preparaciones van como detalle de "Recetas".
+- **Lo que más pesa** sale de las líneas directas de la última foto de cada receta, sin saber de ventas: es sobre las recetas, no sobre lo que se vende. Lo que entra por una preparación no se abre.
+- **Lo que cambió por un precio** compara cada foto de los últimos 30 días contra la anterior de la misma versión: un cambio de fórmula no se lee como un precio. Una receta que recién tiene costo, o que lo perdió, aparece con esa aclaración.
+- **Costo por corregir** es lo que le falta a "Recetas con costo completo": suma desactualizadas, incompletas y sin costo. Se llama así para no chocar con el estado "Incompleto" del gráfico. A validar con el Controller.
+- **La actividad es de todos los locales de la persona,** y lo dice. Las revisiones se limitan a recetas, precios, rendimientos y catálogo: una baja de personal no va en una pantalla de cocina.
+- **Una materia prima lleva su nombre:** lo más usado y lo que más pesa piden `catalog.view`.
+- **Si algo secundario falla, el Inicio sigue:** es la pantalla por la que entra todo el mundo.
+- **Medido** en `240`, con recetas afectadas por un precio: de 147 a 151 ms, el mejor de tres.
 
 ## Pruebas
 
-`239_data_quality` (cuenta a mano, listas y permisos), `240_data_quality_performance`, `tests/unit/quality.test.ts` y Playwright `calidad`.
+`239_data_quality` (cuenta a mano, listas y permisos), `240_data_quality_performance`, `241_home_board`, `tests/unit/quality.test.ts` y Playwright `calidad` e `inicio`.

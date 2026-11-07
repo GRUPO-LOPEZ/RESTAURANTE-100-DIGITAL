@@ -33,7 +33,8 @@ test("Compras busca por alias, crea una materia prima y la ve en su ficha", asyn
   await page.screenshot({ path: testInfo.outputPath("lista.png"), fullPage: true });
 
   // "muzz" es un alias de la mozzarella. En el celular los filtros empiezan plegados.
-  const filters = page.locator("summary", { hasText: "Filtros" });
+  // Next guarda oculta la pantalla anterior, que también puede tener filtros.
+  const filters = page.locator("summary:visible", { hasText: "Filtros" });
   if (!(await filters.evaluate((el) => (el.parentElement as HTMLDetailsElement).open)))
     await filters.click();
   await page.getByLabel("Buscar").fill("muzz");

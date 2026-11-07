@@ -40,7 +40,7 @@ export const QUALITY_INDICATORS: QualityIndicator[] = [
     key: "recipe_cost",
     axis: "cost",
     label: "Recetas con costo completo",
-    missing: "Recetas con costo incompleto",
+    missing: "Recetas con costo por corregir",
   },
   {
     key: "ingredient_price",
@@ -94,6 +94,23 @@ export function qualityIndicator(key: string | undefined): QualityIndicator | un
 
 export function qualityPercent(done: number, total: number): number | null {
   return total > 0 ? Math.round((done / total) * 100) : null;
+}
+
+// Lo que más falta corregir, de mayor a menor.
+export function qualityTop(
+  counts: { indicator: string; done: number; total: number }[],
+  limit: number,
+): { key: string; label: string; count: number }[] {
+  return counts
+    .flatMap((c) => {
+      const indicator = qualityIndicator(c.indicator);
+      const count = c.total - c.done;
+      return indicator && count > 0
+        ? [{ key: indicator.key, label: indicator.missing, count }]
+        : [];
+    })
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"))
+    .slice(0, limit);
 }
 
 export function qualityHref(kind: string, id: string): string {
