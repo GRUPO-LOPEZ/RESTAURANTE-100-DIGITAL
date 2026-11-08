@@ -1,5 +1,7 @@
+import type { BadgeStatus } from "@/components/ui/badge";
 // Los reportes (ADR-0034): qué son y cómo se muestra cada columna. Sin base de datos: lo usan pantallas y pruebas.
-export type ReportKey = "ingredients" | "yields" | "usage" | "cost_changes" | "quality";
+export type ReportKey =
+  "ingredients" | "yields" | "usage" | "cost_changes" | "quality" | "recipe_card" | "cost_card";
 export type ColumnKind = "text" | "money" | "unit_cost" | "number" | "percent" | "date";
 export type ReportColumn = { key: string; label: string; kind: ColumnKind };
 export type ReportValue = string | number | null;
@@ -10,6 +12,8 @@ export type ReportDefinition = {
   title: string;
   text: string;
   period?: boolean;
+  // Una ficha es de una receta: primero se elige cuál.
+  recipe?: boolean;
   empty: string;
   columns: ReportColumn[];
 };
@@ -87,6 +91,36 @@ export const REPORTS: ReportDefinition[] = [
       { key: "item", label: "Registro", kind: "text" },
       { key: "detail", label: "Detalle", kind: "text" },
       { key: "action", label: "Qué hacer", kind: "text" },
+    ],
+  },
+
+  {
+    key: "recipe_card",
+    title: "Ficha técnica",
+    text: "Ingredientes, cantidades, rendimiento, procedimiento, fotos y versión de una receta.",
+    recipe: true,
+    empty: "Esta receta no tiene una versión vigente.",
+    columns: [
+      { key: "item", label: "Ingrediente o preparación", kind: "text" },
+      { key: "quantity", label: "Cantidad", kind: "number" },
+      { key: "unit", label: "Unidad", kind: "text" },
+      { key: "basis", label: "Se mide", kind: "text" },
+      { key: "notes", label: "Notas", kind: "text" },
+    ],
+  },
+  {
+    key: "cost_card",
+    title: "Ficha de costeo",
+    text: "Costo por línea, preparaciones, total, unitario, participación y estado de una receta.",
+    recipe: true,
+    empty: "Esta receta no tiene costo en este local.",
+    columns: [
+      { key: "item", label: "Ingrediente o preparación", kind: "text" },
+      { key: "quantity", label: "Cantidad", kind: "number" },
+      { key: "unit", label: "Unidad", kind: "text" },
+      { key: "cost", label: "Costo sin IVA", kind: "money" },
+      { key: "share", label: "Participación (%)", kind: "number" },
+      { key: "state", label: "Estado", kind: "text" },
     ],
   },
 ];
@@ -203,4 +237,35 @@ export function reportPeriod(
   start.setUTCDate(start.getUTCDate() - 30);
   const begin = validDay(from) ?? start.toISOString().slice(0, 10);
   return begin <= end ? { from: begin, to: end } : { from: end, to: begin };
+}
+
+// Los alérgenos de la ficha técnica: en pantalla van marcados y en el archivo, en el encabezado.
+export type ReportAlert = { text: string; status: BadgeStatus };
+
+// Los alérgenos como en la vista de cocina: primero lo que contiene, después lo que puede contener y lo no verificado.
+export function allergenAlerts(allergens: { name: string; status: string }[]): ReportAlert[] {
+  if (allergens.length === 0) {
+    return [{ text: "No hay alérgenos cargados en el catálogo", status: "info" }];
+  }
+  const names = (status: string) => allergens.filter((a) => a.status === status).map((a) => a.name);
+  const alerts: ReportAlert[] = [
+    ...names("contains").map((n) => ({ text: `Contiene ${n}`, status: "bad" as const })),
+    ...names("may_contain").map((n) => ({
+      text: `Puede contener ${n} (trazas)`,
+      status: "warn" as const,
+    })),
+  ];
+  const unverified = names("not_verified");
+  if (unverified.length > 0) {
+    alerts.push({ text: `Sin verificar: ${unverified.join(", ")}`, status: "warn" });
+  }
+  if (alerts.length === 0) {
+    alerts.push({ text: "Todo verificado: no contiene ningún alérgeno de la lista", status: "ok" });
+  }
+  return alerts;
+}
+
+// En el Excel y el CSV, los alérgenos van en una línea del encabezado.
+export function allergenLine(alerts: ReportAlert[] | undefined): string[] {
+  return alerts?.length ? [`Alérgenos: ${alerts.map((a) => a.text).join(" · ")}`] : [];
 }

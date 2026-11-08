@@ -12,11 +12,13 @@ export function ReportPrintButton({
   local,
   rows,
   fileName,
+  recipe,
 }: {
   report: string;
   local: string;
   rows: number;
   fileName: string;
+  recipe?: string;
 }) {
   const [failed, setFailed] = useState(false);
   const [pending, start] = useTransition();
@@ -29,7 +31,7 @@ export function ReportPrintButton({
         onClick={() => {
           if (pending) return;
           start(async () => {
-            const logged = await logReportPrint(report, local, rows).catch(() => false);
+            const logged = await logReportPrint(report, local, rows, recipe).catch(() => false);
             setFailed(!logged);
             if (!logged) return;
             // El navegador propone el título de la página como nombre del PDF.

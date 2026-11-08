@@ -184,10 +184,10 @@ select is(pg_temp.q(pg_temp.u(407), format($$select status from costing.report_i
 create function pg_temp.list(p_user int, p_rest int default 201) returns text language sql as $$
   select pg_temp.q(pg_temp.u(p_user), format('select coalesce(string_agg(x, '','' order by x), ''nada'') from costing.report_list(%L) x', pg_temp.u(p_rest)))
 $$;
-select is(pg_temp.list(407), 'cost_changes,ingredients,quality,usage,yields', 'el Controller saca los cinco');
-select is(pg_temp.list(410), 'cost_changes,ingredients,quality,usage,yields', 'el Auditor también');
-select is(pg_temp.list(404), 'cost_changes,ingredients,quality,usage,yields', 'y el Gerente, en su local');
-select is(pg_temp.list(405), 'cost_changes,quality,usage,yields', 'la Chef, sin precios');
+select is(pg_temp.list(407), 'cost_card,cost_changes,ingredients,quality,recipe_card,usage,yields', 'el Controller saca los siete');
+select is(pg_temp.list(410), 'cost_card,cost_changes,ingredients,quality,recipe_card,usage,yields', 'el Auditor también');
+select is(pg_temp.list(404), 'cost_card,cost_changes,ingredients,quality,recipe_card,usage,yields', 'y el Gerente, en su local');
+select is(pg_temp.list(405), 'cost_card,cost_changes,quality,recipe_card,usage,yields', 'la Chef, sin precios');
 select is(pg_temp.list(406), 'nada', 'el Jefe de Cocina no');
 select is(pg_temp.list(408), 'nada', 'Compras no');
 select is(pg_temp.list(409), 'nada', 'la Cocinera no');
@@ -222,7 +222,7 @@ select ok(pg_temp.q(pg_temp.u(408), format($$select costing.log_report('ingredie
 
 -- Un rol ajustado desde el panel.
 select pg_temp.without('controller', 'prices.view');
-select is(pg_temp.list(407), 'cost_changes,quality,usage,yields', 'sin ver precios no sale el reporte de materias primas');
+select is(pg_temp.list(407), 'cost_card,cost_changes,quality,recipe_card,usage,yields', 'sin ver precios no sale el reporte de materias primas');
 select pg_temp.without('controller', 'reports.export');
 select is(pg_temp.list(407), 'nada', 'sin reports.export no sale ninguno');
 

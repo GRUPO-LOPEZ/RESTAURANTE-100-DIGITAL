@@ -1,4 +1,6 @@
 // Reportes (ADR-0034): sacar la información en PDF, Excel y CSV. En celular y computadora, con axe.
+import { readFile } from "node:fs/promises";
+
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -21,6 +23,9 @@ async function noOverflow(page: Page) {
 }
 
 const PASTAS_CENTRO = "00000000-0000-4000-8000-000000000201";
+const RAVIOLES = "00000000-0000-4000-8000-000000001108";
+// Vacío a la parrilla (DEMO-PAR-02): de otra marca; el Controller la ve, pero no es del local de Pastas.
+const VACIO = "00000000-0000-4000-8000-000000001113";
 
 test("el Controller saca un reporte en Excel, en CSV y en PDF", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
@@ -116,6 +121,68 @@ test("quien ve el registro de seguridad ve las exportaciones", async ({ page }) 
     "Rendimientos en CSV",
   );
   await axe(page);
+});
+
+test("la ficha técnica y la de costeo de una receta", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto(`/reportes?local=${PASTAS_CENTRO}`);
+  await page
+    .getByRole("navigation", { name: "Reportes" })
+    .getByRole("link", { name: /Ficha técnica/ })
+    .click();
+  await expect(page.getByText("¿De qué receta?")).toBeVisible();
+  await page.getByLabel("Buscar", { exact: true }).fill("raviol");
+  await page.getByRole("button", { name: "Buscar" }).click();
+  await page
+    .getByRole("list", { name: "Recetas" })
+    .getByRole("link", { name: /Ravioles de ricota/ })
+    .click();
+  await expect(page.getByRole("list", { name: "De qué receta es" })).toContainText(
+    "Ravioles de ricota",
+  );
+  await expect(page.getByRole("list", { name: "Paso a paso" })).toBeVisible();
+  // Los alérgenos, siempre: es lo primero que se mira en la mesada.
+  await expect(
+    page.getByRole("list", { name: "Alérgenos" }).getByRole("listitem").first(),
+  ).toBeVisible();
+  // La ficha técnica nunca trae un importe.
+  await expect(page.locator("main")).not.toContainText(/\$\s?\d/);
+  await expect(page.getByRole("button", { name: "Imprimir o guardar como PDF" })).toBeVisible();
+  await axe(page);
+  await noOverflow(page);
+  const csv = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Bajar en CSV" }).click();
+  const file = await csv;
+  expect(file.suggestedFilename()).toMatch(/^reporte-recipe_card-.*\.csv$/);
+  // El archivo también lleva los alérgenos, en el encabezado.
+  const text = await readFile(await file.path(), "utf8");
+  expect(text).toContain("Alérgenos:");
+
+  // Una receta de otra marca, pedida a mano, no sale a nombre de este local.
+  await page.goto(`/reportes/recipe_card?local=${PASTAS_CENTRO}&receta=${VACIO}`);
+  await expect(page.getByText("No encontramos esta página")).toBeVisible();
+  const other = await page.request.get(
+    `/reportes/recipe_card/exportar?local=${PASTAS_CENTRO}&receta=${VACIO}&formato=csv`,
+    { maxRedirects: 0 },
+  );
+  expect(other.status()).toBe(404);
+
+  // Una búsqueda sin resultados lo dice, y propone otra cosa.
+  await page.goto(`/reportes/recipe_card?local=${PASTAS_CENTRO}&buscar=zzzz`);
+  await expect(
+    page.getByText("No encontramos recetas vigentes con ese nombre o código."),
+  ).toBeVisible();
+  // Sin acentos también la encuentra.
+  await page.goto(`/reportes/recipe_card?local=${PASTAS_CENTRO}&buscar=noquis`);
+  await expect(page.getByRole("list", { name: "Recetas" })).toContainText("Ñoquis");
+
+  await page.goto(`/reportes/cost_card?local=${PASTAS_CENTRO}&receta=${RAVIOLES}`);
+  await expect(page.getByRole("list", { name: "De qué receta es" })).toContainText("Total sin IVA");
+  await expect(
+    page.locator("table:visible, ul[aria-label='Filas de Ficha de costeo']:visible").first(),
+  ).toContainText("Salsa bolognesa");
+  await axe(page);
+  await noOverflow(page);
 });
 
 test("la Chef no saca el reporte de precios", async ({ page }) => {

@@ -162,6 +162,8 @@ export type CostLine = {
   gross: number | null;
   share: number | null;
   missing: string | null;
+  // Si la línea es una preparación (otra receta) y no una materia prima.
+  preparation?: boolean;
 };
 
 // De la que más pesa a la que menos; lo que falta, primero: es lo que hay que resolver.
@@ -194,6 +196,7 @@ export async function getCostLines(versionId: string, restaurantId: string): Pro
       gross: num(l.line_gross_cost),
       share: num(l.share_pct),
       missing: lineStatusLabel(l.status),
+      preparation: l.sub_recipe_id !== null,
     })),
   );
 }

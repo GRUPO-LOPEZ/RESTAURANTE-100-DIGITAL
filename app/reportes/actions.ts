@@ -12,10 +12,13 @@ export async function logReportPrint(
   reportKey: string,
   restaurantId: string,
   rows: number,
+  recipeId?: string,
 ): Promise<boolean> {
   const report = reportDefinition(reportKey);
   const place = uuid.safeParse(restaurantId);
   const count = z.number().int().min(0).safeParse(rows);
-  if (!report || !place.success || !count.success) return false;
-  return logReport(report.key, place.data, "pdf", count.data);
+  const recipe = uuid.optional().safeParse(recipeId);
+  if (!report || !place.success || !count.success || !recipe.success) return false;
+  // Una ficha es de una receta: la base controla que sea del local.
+  return logReport(report.key, place.data, "pdf", count.data, undefined, recipe.data);
 }
