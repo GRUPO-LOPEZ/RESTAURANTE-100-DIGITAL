@@ -61,6 +61,7 @@ async function SessionMenu() {
     { href: "/materias-primas", label: "Materias primas", show: menus.catalog },
     { href: "/costos", label: "Costos", show: menus.costs },
     { href: "/calidad", label: "Calidad", show: menus.quality },
+    { href: "/reportes", label: "Reportes", show: menus.reports },
     { href: "/usuarios", label: "Usuarios", show: menus.users },
     { href: "/aprobaciones", label: "Aprobaciones", count: unread, show: menus.approvals },
     { href: "/historial", label: "Historial", show: menus.audit },

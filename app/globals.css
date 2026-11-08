@@ -107,6 +107,12 @@
   --color-ring: var(--color-primary);
 }
 
+/* Lo que se imprime: A4 con márgenes propios, para no depender de cada navegador. */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
 @layer base {
   * {
     @apply border-line outline-primary/50;

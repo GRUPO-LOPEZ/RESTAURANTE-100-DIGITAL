@@ -9,6 +9,7 @@ import {
   UUID,
   formatDateTime,
 } from "@/lib/data";
+import { csvCell as cell } from "@/lib/csv";
 import { createClient } from "@/lib/supabase/server";
 
 // Exportar el historial (sección 9) como CSV, con los mismos filtros que la pantalla y en
@@ -38,14 +39,6 @@ function date(value: string | null, end = false): string | undefined {
 
 function uuid(value: string | null): string | undefined {
   return value && UUID.test(value) ? value : undefined;
-}
-
-// Una celda de CSV. Lo que empieza con =, +, - o @ se antepone con ' para que una planilla no
-// lo ejecute como fórmula.
-function cell(value: unknown): string {
-  let text = value === null || value === undefined ? "" : String(value);
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return `"${text.replace(/"/g, '""')}"`;
 }
 
 const HEADER = [

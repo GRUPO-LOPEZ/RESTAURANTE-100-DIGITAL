@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(9);
+select plan(11);
 
 create function pg_temp.u(p_n int) returns uuid language sql as $$
   select format('00000000-0000-4000-8000-%s', lpad(p_n::text, 12, '0'))::uuid
@@ -109,6 +109,13 @@ begin
   insert into timings values ('tablero', best);
   select count(*) into v from costing.home_board('00000000-0000-4000-8000-000000000201') where section = 'price_affected';
   insert into timings values ('afectadas', v);
+  best := null;
+  for i in 1..3 loop
+    t0 := clock_timestamp();
+    select count(*) into v from costing.report_usage('00000000-0000-4000-8000-000000000201', 50);
+    best := least(best, extract(epoch from clock_timestamp() - t0) * 1000);
+  end loop;
+  insert into timings values ('reporte', best), ('reporte_filas', v);
   t0 := clock_timestamp();
   perform count(*) from costing.data_quality_items('00000000-0000-4000-8000-000000000201', 'recipe_photo', 50);
   insert into timings values ('lista', extract(epoch from clock_timestamp() - t0) * 1000);
@@ -119,7 +126,7 @@ end
 $$;
 reset role;
 select set_config('request.jwt.claims', '', true);
-select diag('Tablero: ' || (select round(ms) from timings where k = 'tablero') || ' ms.');
+select diag('Tablero: ' || (select round(ms) from timings where k = 'tablero') || ' ms. Reporte: ' || (select round(ms) from timings where k = 'reporte') || ' ms.');
 select diag('Un local: ' || (select round(ms) from timings where k = 'local') || ' ms. Lista: ' || (select round(ms) from timings where k = 'lista')
             || ' ms. Todos los locales: ' || (select round(ms) from timings where k = 'locales') || ' ms. Parecidos, de noche: ' || (select round(ms) from timings where k = 'parecidos') || ' ms.');
 select cmp_ok((select ms from timings where k = 'materias'), '>=', 500::numeric, 'se mide con las 500 materias primas');
@@ -127,6 +134,8 @@ select cmp_ok((select ms from timings where k = 'recetas'), '>=', 270::numeric, 
 select cmp_ok((select ms from timings where k = 'cuantos'), '>=', 4::numeric, 'y los 4 locales');
 select cmp_ok((select ms from timings where k = 'local'), '<', 300::numeric, 'los indicadores de un local, en menos de 300 ms');
 select cmp_ok((select ms from timings where k = 'afectadas'), '>=', 5::numeric, 'el tablero se mide con recetas afectadas por un precio');
+select cmp_ok((select ms from timings where k = 'reporte_filas'), '=', 50::numeric, 'un reporte trae su página');
+select cmp_ok((select ms from timings where k = 'reporte'), '<', 300::numeric, 'en menos de 300 ms');
 select cmp_ok((select ms from timings where k = 'tablero'), '<', 300::numeric, 'el tablero de Inicio, en menos de 300 ms');
 select cmp_ok((select ms from timings where k = 'lista'), '<', 300::numeric, 'una lista, en menos de 300 ms');
 select cmp_ok((select ms from timings where k = 'locales'), '<', 1200::numeric, 'y los 4 locales, en menos de 1,2 s');

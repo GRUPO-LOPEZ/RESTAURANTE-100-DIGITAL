@@ -1,0 +1,151 @@
+// Reportes (ADR-0034): sacar la información en PDF, Excel y CSV. En celular y computadora, con axe.
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+
+import { login } from "./helpers";
+
+test.describe.configure({ timeout: 90_000 });
+
+async function axe(page: Page) {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(results.violations).toEqual([]);
+}
+
+async function noOverflow(page: Page) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+}
+
+const PASTAS_CENTRO = "00000000-0000-4000-8000-000000000201";
+
+test("el Controller saca un reporte en Excel, en CSV y en PDF", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto(`/reportes?local=${PASTAS_CENTRO}`);
+  await expect(page.getByRole("heading", { name: "¿Qué reporte necesitás?" })).toBeVisible();
+  const list = page.getByRole("navigation", { name: "Reportes" });
+  for (const title of [
+    "Materias primas",
+    "Rendimientos",
+    "Dónde se usa",
+    "Cambios de costo",
+    "Calidad de datos",
+  ]) {
+    await expect(list.getByRole("link", { name: new RegExp(title) })).toBeVisible();
+  }
+  await axe(page);
+  await noOverflow(page);
+
+  await list.getByRole("link", { name: /Materias primas/ }).click();
+  await expect(page.getByRole("heading", { name: "Materias primas" })).toBeVisible();
+  await expect(page.getByText(/Demo Pastas Centro · Datos del/).first()).toBeVisible();
+  await axe(page);
+  await noOverflow(page);
+  const size = page.viewportSize();
+  for (const width of [360, 640, 768, 1024]) {
+    await page.setViewportSize({ width, height: 900 });
+    await noOverflow(page);
+  }
+  if (size) await page.setViewportSize(size);
+
+  const excel = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Bajar en Excel" }).click();
+  expect((await excel).suggestedFilename()).toMatch(/^reporte-ingredients-.*\.xlsx$/);
+
+  const csv = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Bajar en CSV" }).click();
+  expect((await csv).suggestedFilename()).toMatch(/^reporte-ingredients-.*\.csv$/);
+
+  // La vista para imprimir trae todas las filas, sin paginar.
+  await page.getByRole("link", { name: "Preparar para imprimir o PDF" }).click();
+  await expect(page).toHaveURL(/imprimir=1/);
+  // Imprimir: se anota y abre el diálogo del navegador, que acá se reemplaza.
+  await page.evaluate(() => {
+    window.print = () => {
+      document.body.dataset.printed = "si";
+    };
+  });
+  await page.getByRole("button", { name: "Imprimir o guardar como PDF" }).click();
+  await expect(page.locator("body")).toHaveAttribute("data-printed", "si");
+  await axe(page);
+
+  // Al imprimir no salen el menú ni los botones, y sale la tabla aunque sea un celular.
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByRole("button", { name: "Imprimir o guardar como PDF" })).toBeHidden();
+  await expect(page.locator("table").first()).toBeVisible();
+  // Cada hoja dice de qué es: el encabezado se repite.
+  await expect(page.locator("thead").first()).toContainText(
+    /Grupo LF · Materias primas · Demo Pastas Centro/,
+  );
+});
+
+test("cambios de costo se pide por período", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto(`/reportes/cost_changes?local=${PASTAS_CENTRO}`);
+  await expect(page.getByRole("heading", { name: "Cambios de costo" })).toBeVisible();
+  await expect(page.getByLabel("Desde")).toBeVisible();
+  await page.getByLabel("Desde").fill("2020-01-01");
+  await page.getByLabel("Hasta").fill("2020-01-31");
+  await page.getByRole("button", { name: "Ver" }).click();
+  await expect(page.getByText("No hubo cambios de costo en este período.")).toBeVisible();
+  await axe(page);
+});
+
+test("un reporte largo va por páginas, y para imprimir trae todo", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto(`/reportes/usage?local=${PASTAS_CENTRO}`);
+  await expect(page.getByText(/Página 1 de \d+/)).toBeVisible();
+  await page.getByRole("link", { name: "Siguiente" }).click();
+  await expect(page.getByText(/Página 2 de \d+/)).toBeVisible();
+  await page.goto(`/reportes/usage?local=${PASTAS_CENTRO}&imprimir=1`);
+  await expect(page.getByRole("button", { name: "Imprimir o guardar como PDF" })).toBeVisible();
+  await expect(page.getByText(/Página \d+ de/)).toHaveCount(0);
+});
+
+test("quien ve el registro de seguridad ve las exportaciones", async ({ page }) => {
+  await login(page, "auditor@ejemplo.test");
+  const download = await page.request.get(
+    `/reportes/yields/exportar?local=${PASTAS_CENTRO}&formato=csv`,
+  );
+  expect(download.ok()).toBe(true);
+  await page.goto(`/reportes?local=${PASTAS_CENTRO}`);
+  await expect(page.getByRole("list", { name: "Últimas exportaciones" })).toContainText(
+    "Rendimientos en CSV",
+  );
+  await axe(page);
+});
+
+test("la Chef no saca el reporte de precios", async ({ page }) => {
+  await login(page, "chef@ejemplo.test");
+  await page.goto(`/reportes?local=${PASTAS_CENTRO}`);
+  const list = page.getByRole("navigation", { name: "Reportes" });
+  await expect(list.getByRole("link", { name: /Rendimientos/ })).toBeVisible();
+  await expect(list.getByRole("link", { name: /Materias primas/ })).toHaveCount(0);
+  await page.goto(`/reportes/ingredients?local=${PASTAS_CENTRO}`);
+  await expect(page.getByText("No encontramos esta página")).toBeVisible();
+  const download = await page.request.get(
+    `/reportes/ingredients/exportar?local=${PASTAS_CENTRO}&formato=csv`,
+    { maxRedirects: 0 },
+  );
+  expect(download.status()).not.toBe(200);
+});
+
+test("Compras no tiene reportes", async ({ page }) => {
+  await login(page, "compras@ejemplo.test");
+  await expect(page.getByRole("link", { name: "Reportes", exact: true })).toHaveCount(0);
+  await page.goto("/reportes");
+  await expect(page).not.toHaveURL(/reportes/);
+});
+
+test("un formato o un reporte que no existe no abre nada", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  const format = await page.request.get(
+    `/reportes/ingredients/exportar?local=${PASTAS_CENTRO}&formato=doc`,
+  );
+  expect(format.status()).toBe(404);
+  await page.goto(`/reportes/no_existe?local=${PASTAS_CENTRO}`);
+  await expect(page.getByText("No encontramos esta página")).toBeVisible();
+});

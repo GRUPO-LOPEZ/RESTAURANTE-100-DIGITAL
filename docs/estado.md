@@ -2,7 +2,17 @@
 
 _Última actualización: 2026-11-07. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: tablero de Inicio (rama `feat/tablero-inicio`, etapa 2.5, PR 2)
+## Al retomar: reportes (rama `feat/reportes`, etapa 2.5)
+
+- **Qué se hizo** (ADR-0034): `/reportes`, con cinco reportes en PDF, Excel y CSV: materias primas, rendimientos, dónde se usa, cambios de costo y calidad de datos. Lo que se exporta queda en el registro de seguridad.
+- **Pruebas (2026-11-07), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 231 de 231 ✅ · pgTAP 2.036 de 2.036 ✅ · Playwright 178 de 178 ✅ · formato ✅.
+- **Revisión:** `db-reviewer`, `security-auditor` y `ui-reviewer`. Los graves están corregidos y casi todos los medios también. Las correcciones no volvieron a revisión.
+- **Decisiones de Joaco:** el PDF sale de la impresión del navegador; "Cambios de costo" muestra lo que pasó en el período, aunque la receta ya no se use; una versión nueva aparece marcada como "Cambió la receta" (ADR-0034).
+- **Queda sin hacer:** medir "Cambios de costo" con años de historia, poner un tope a `log_report`, y la vuelta en texto plano cuando se pierde el permiso con la pantalla abierta.
+- **Sin comprobar:** una impresora real, Safari en iPhone (`window.print` después de esperar al registro) y un CSV abierto en un Excel argentino de verdad.
+- **Falta después:** las dos fichas por receta (técnica y de costeo), y las compuertas con datos reales y el informe de cierre para Soy.
+
+## Antes: tablero de Inicio (etapa 2.5, PR 2; fusionado, PR #43)
 
 - **Qué se hizo** (ADR-0033): el Inicio responde "¿qué tan completo y confiable está nuestro recetario?", con 6 tarjetas, un gráfico, costos y actividad. El cocinero ve el Inicio de siempre.
 - **Pruebas (2026-11-07), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 211 de 211 ✅ · pgTAP 1.983 de 1.983 ✅ · Playwright 160 de 164. Las 4 que faltaron (`fase1` y `materias-primas`, en celular y computadora) las rompió el tablero: el saludo había dejado de mostrar los roles, y la prueba encontraba dos paneles de filtros. Corregidas, `fase1`, `materias-primas`, `inicio` y `cuenta` pasaron solas, 44 de 44, sin otra corrida completa.
