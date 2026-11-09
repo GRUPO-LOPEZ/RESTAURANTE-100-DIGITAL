@@ -3,6 +3,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+// 44 px en el celular (táctil); 40 px en la computadora (ADR-0036).
+function minHeight(project: string): number {
+  return project === "celular" ? 44 : 40;
+}
+
 test.describe("pantalla de ingreso", () => {
   test("está en español y con el título correcto", async ({ page }) => {
     await page.goto("/ingresar");
@@ -14,7 +19,7 @@ test.describe("pantalla de ingreso", () => {
   test("usa la paleta y la tipografía del prompt maestro", async ({ page }) => {
     await page.goto("/ingresar");
     const body = page.locator("body");
-    await expect(body).toHaveCSS("background-color", "rgb(250, 250, 249)"); // #FAFAF9
+    await expect(body).toHaveCSS("background-color", "rgb(247, 248, 250)"); // #F7F8FA (ADR-0036)
     await expect(body).toHaveCSS("color", "rgb(31, 41, 55)"); // #1F2937
     await expect(body).toHaveCSS("font-size", "16px");
     const fontFamily = await body.evaluate((el) => getComputedStyle(el).fontFamily);
@@ -37,14 +42,13 @@ test.describe("pantalla de ingreso", () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 
-  test("el botón principal mide al menos 44 px y tiene foco visible con teclado", async ({
-    page,
-  }) => {
+  // Alturas (ADR-0036): 44 px táctil en el celular; de 36 a 40 px en la computadora.
+  test("el botón principal tiene su altura y foco visible con teclado", async ({ page }, info) => {
     await page.goto("/ingresar");
     const button = page.getByRole("button", { name: "Ingresar" });
     const box = await button.boundingBox();
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
-    await expect(button).toHaveCSS("background-color", "rgb(79, 109, 154)"); // #4F6D9A
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(minHeight(info.project.name));
+    await expect(button).toHaveCSS("background-color", "rgb(74, 111, 184)"); // #4A6FB8
 
     // Orden con el teclado: contraseña → "Recordar mi sesión" → Ingresar.
     await page.getByLabel("Contraseña").focus();
@@ -53,15 +57,17 @@ test.describe("pantalla de ingreso", () => {
     await page.keyboard.press("Tab");
     await expect(button).toBeFocused();
     await expect(button).toHaveCSS("outline-style", "solid");
-    await expect(button).toHaveCSS("outline-color", "rgb(79, 109, 154)");
+    await expect(button).toHaveCSS("outline-color", "rgb(74, 111, 184)");
   });
 
-  test("los campos tienen etiqueta visible y miden al menos 44 px", async ({ page }) => {
+  test("los campos tienen etiqueta visible y su altura", async ({ page }, info) => {
     await page.goto("/ingresar");
     for (const label of ["Correo", "Contraseña"]) {
       const input = page.getByLabel(label);
       await expect(input).toBeVisible();
-      expect((await input.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+      expect((await input.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(
+        minHeight(info.project.name),
+      );
     }
   });
 });

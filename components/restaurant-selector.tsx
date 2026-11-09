@@ -37,7 +37,7 @@ export function RestaurantSelector({
   return (
     <form
       action={formAction}
-      className="order-last flex w-full flex-wrap items-center gap-2 sm:order-none sm:w-auto"
+      className="order-last flex w-full flex-wrap items-center gap-2 desk:order-none desk:w-auto desk:flex-nowrap"
     >
       <label htmlFor={selectId} className="text-sm font-medium text-ink">
         Local
@@ -47,7 +47,7 @@ export function RestaurantSelector({
         name="restaurant"
         aria-label="Local activo"
         defaultValue={value ?? ""}
-        className="min-h-touch min-w-0 flex-1 rounded-sm border border-line bg-surface px-2 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:max-w-56 sm:flex-none"
+        className="min-h-touch min-w-0 flex-1 rounded-sm border border-line bg-surface px-2 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary desk:min-h-control desk:w-48 desk:flex-none desk:text-sm"
       >
         <option value="">Todos mis locales</option>
         {options.map((o) => (
@@ -59,7 +59,7 @@ export function RestaurantSelector({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-touch rounded-sm border border-line bg-surface px-3 text-base font-medium text-ink hover:bg-line/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
+        className="min-h-touch rounded-sm border border-line bg-surface px-3 text-base font-medium text-ink hover:bg-line/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50 desk:min-h-control desk:text-sm"
       >
         {pending ? "Cambiando…" : "Cambiar"}
       </button>

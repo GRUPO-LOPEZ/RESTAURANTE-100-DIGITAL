@@ -23,7 +23,7 @@ Sos el arquitecto y desarrollador principal. Trabajás con **Joaco** (operador t
 
 ## Negocio
 
-Grupo multimarca en Buenos Aires: Grupo (Grupo LF) → Marca (RAGU, Padella, Nonnos) → Restaurante (RAGU Parque Leloir). Tiene que crecer a muchas marcas y locales sin rediseñar. Usuarios: dirección, directores de marca, gerentes, chefs, jefes de cocina, controller, compras, cocineros, auditores. **Celular primero:** muchos lo usan en la cocina con las manos ocupadas.
+Grupo multimarca en Buenos Aires: Grupo (Grupo LF) → Marca (RAGU, Padella, Nonnos) → Restaurante (RAGU Parque Leloir). Tiene que crecer a muchas marcas y locales sin rediseñar. Usuarios: dirección, directores de marca, gerentes, chefs, jefes de cocina, controller, compras, cocineros, auditores. **Computadora para operar, celular para supervisar** (ADR-0036): la carga y la edición se diseñan para 1440 a 1920 px; el celular sirve para KPIs, alertas, aprobaciones y fichas, y en la cocina se usa con las manos ocupadas.
 Marcas por ahora: Trattoria Padella, Ragú Bodegón y Casa Nonnos (ADR-0026). Las marcas, locales y razones sociales reales se cargan con Soy desde el panel de control (ADR-0030). Otros negocios del grupo (vinos, consultoría): no por ahora (ADR-0030).
 Orden de módulos: identidad y auditoría → organización → materias primas y proveedores → recetario → costos → compras → inventario → producción → administración → tableros y agentes de IA.
 

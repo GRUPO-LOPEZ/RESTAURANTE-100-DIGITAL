@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const control =
-  "min-h-touch w-full rounded-sm border border-line bg-surface px-3 text-base text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary aria-invalid:border-bad-ink disabled:opacity-50";
+  "min-h-touch w-full rounded-sm border border-line desk:min-h-control bg-surface px-3 text-base text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary aria-invalid:border-bad-ink disabled:opacity-50";
 
 function Input({ className, ...props }: React.ComponentProps<"input">) {
   return <input data-slot="input" className={cn(control, className)} {...props} />;

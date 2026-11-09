@@ -2,12 +2,12 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-// Tarjeta plana: fondo blanco, borde fino de 1 px, radio de 12 px, sin sombras fuertes (design.md).
+// Tarjeta plana: fondo blanco, borde fino de 1 px, radio de 10 px, sin sombras (design.md).
 function Card({ className, ...props }: React.ComponentProps<"section">) {
   return (
     <section
       data-slot="card"
-      className={cn("rounded-lg border border-line bg-surface p-4 sm:p-6", className)}
+      className={cn("rounded-md border border-line bg-surface p-4 desk:p-6", className)}
       {...props}
     />
   );

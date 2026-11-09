@@ -132,40 +132,47 @@ async function Compare({ total }: { total: number }) {
           </li>
         ))}
       </ul>
-      <table className="hidden w-full border-collapse text-left lg:table">
-        <caption className="sr-only">Porcentaje de cada indicador en cada local</caption>
-        <thead>
-          <tr className="border-b border-line">
-            <th scope="col" className="px-3 py-2 text-sm font-medium text-ink-muted">
-              Local
-            </th>
-            {columns.map((c) => (
-              <th key={c.key} scope="col" className="px-3 py-2 text-sm font-medium text-ink-muted">
-                {c.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {places.map((p) => (
-            <tr key={p.id} className="border-b border-line last:border-0">
-              <th scope="row" className="px-3 py-2 font-medium">
-                <Link
-                  href={`/calidad?local=${p.id}`}
-                  className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
-                >
-                  {p.name}
-                </Link>
+      {/* Con scroll propio: con la barra lateral el contenido es más angosto que la ventana (ADR-0036). */}
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full border-collapse text-left">
+          <caption className="sr-only">Porcentaje de cada indicador en cada local</caption>
+          <thead>
+            <tr className="border-b border-line">
+              <th scope="col" className="px-3 py-2 text-sm font-medium text-ink-muted">
+                Local
               </th>
               {columns.map((c) => (
-                <td key={c.key} className="px-3 py-2 text-ink tabular-nums">
-                  {compareCell(p, c.key)}
-                </td>
+                <th
+                  key={c.key}
+                  scope="col"
+                  className="px-3 py-2 text-sm font-medium text-ink-muted"
+                >
+                  {c.label}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {places.map((p) => (
+              <tr key={p.id} className="border-b border-line last:border-0">
+                <th scope="row" className="px-3 py-2 font-medium">
+                  <Link
+                    href={`/calidad?local=${p.id}`}
+                    className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
+                  >
+                    {p.name}
+                  </Link>
+                </th>
+                {columns.map((c) => (
+                  <td key={c.key} className="px-3 py-2 text-ink tabular-nums">
+                    {compareCell(p, c.key)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {total > places.length ? (
         <p className="text-sm text-ink-muted">
           Se comparan los primeros {QUALITY_COMPARE_LIMIT} de {total} locales. Los demás se eligen
