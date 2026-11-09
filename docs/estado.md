@@ -1,8 +1,17 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-08. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-09. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: fichas por receta (rama `feat/fichas`, etapa 2.5)
+## Al retomar: aviso de rendimiento (rama `feat/aviso-rendimiento`, agregados chicos de la Fase 2)
+
+- **Qué se hizo** (ADR-0035): si un ensayo de rendimiento se desvía del estándar que usa el costo más que un umbral (10 % de fábrica), llega un aviso en /aprobaciones a quien tiene `yields.alerts` en ese local: Chef, Controller, Director de marca y Dirección General. El umbral se cambia en /configuracion/precios. La ficha de la materia prima marca cuando el promedio de los ensayos pasa el umbral.
+- **Decisiones de Joaco (2026-11-09):** umbral de 10 %; permiso nuevo; lo cambia quien tiene `prices.configure`; también lo tienen el Director y Dirección (nadie da un permiso que no tiene); se compara contra el estándar del costo.
+- **Pruebas (2026-11-09):** db reset desde cero; lint y tipos; Vitest 238; pgTAP 2.108 en 45 archivos (244_yield_alerts con 40), con una salvedad: en la corrida completa, la prueba de rendimiento 175 dio 475 ms en «la Cocinera cuenta sus recetas» (tope 300 ms); la rama no toca recetas, antes había pasado y corrida sola pasó 3 de 3. Playwright 184 de 184 en celular y computadora, con axe. Capturas del aviso, la ficha y la configuración.
+- **Revisores:** db-reviewer, security-auditor y ui-reviewer sin graves. Corregidos: el estándar del costo, las pruebas de corte y de proveedor, que cambiar el umbral no pise el resto (`costing.update_yield_alert`), `catalog.view` para recibir el aviso, el texto del aviso en palabras de cocina y la etiqueta en celulares angostos.
+- **Para Joaco:** el Controller figura como «nunca gramajes», pero puede leer los gramos de los ensayos desde la 2.1 B. Si eso no va, se cierra en un PR aparte.
+- **Falta después:** `recipes.approve_costs`, huecos de recetas, aprobación en varios pasos (Chef → Compras → Gerente, con su plan), las compuertas con datos reales y el informe de cierre para Soy.
+
+## Antes: fichas por receta (etapa 2.5; fusionado, PR #45)
 
 - **Qué se hizo** (ADR-0034): ficha técnica y ficha de costeo de una receta, en PDF, Excel y CSV. Con esto están los siete reportes de la sección 18, y queda construido lo que pide Soy para la Fase 2.
 - **Pruebas (2026-11-08, todas en verde):** db reset desde cero; lint y tipos; Vitest 235; pgTAP 2.068 en 44 archivos (243_recipe_cards con 32); Playwright 180 en celular y computadora, con axe. Capturas de las dos fichas en celular, computadora y papel.

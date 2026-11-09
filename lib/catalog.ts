@@ -353,6 +353,17 @@ export async function getYieldSummary(ingredientId: string): Promise<YieldRow[]>
   }));
 }
 
+// El umbral del aviso de rendimiento del grupo de esa materia prima (ADR-0035). Vacío si no se ve. Es solo para marcar
+// el desvío en la ficha: si no se puede leer, la ficha se muestra igual, sin la marca.
+export async function getYieldAlertThreshold(ingredientId: string): Promise<number | null> {
+  const client = await createClient();
+  const { data, error } = await client
+    .schema("catalog")
+    .rpc("yield_alert_threshold", { p_ingredient_id: ingredientId });
+  if (error || data === null) return null;
+  return Number(data);
+}
+
 export async function getYieldProcesses(): Promise<{ id: string; name: string }[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

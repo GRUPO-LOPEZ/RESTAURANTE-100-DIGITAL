@@ -5,6 +5,17 @@ import { parseAmount } from "@/lib/money";
 // enviar) y en las acciones de servidor (que validan igual, porque nunca se confía en la pantalla).
 // Validan lo que escribe la persona; los ids ocultos los valida cada acción.
 
+// Un porcentaje de más de 0 a 100, con hasta dos decimales y coma o punto.
+const percentField = (example: string) =>
+  z
+    .string({ message: "Escribí el porcentaje." })
+    .trim()
+    .regex(/^[0-9]{1,3}([.,][0-9]{1,2})?$/, `Escribí un porcentaje, por ejemplo ${example}.`)
+    .refine((v) => {
+      const n = Number(v.replace(",", "."));
+      return n > 0 && n <= 100;
+    }, "De más de 0 a 100.");
+
 export const reasonField = z
   .string()
   .trim()
@@ -524,16 +535,14 @@ export const schemas = {
         });
     }),
   priceSettings: z.object({
-    approval_variation_pct: z
-      .string({ message: "Escribí el porcentaje." })
-      .trim()
-      .regex(/^[0-9]{1,3}([.,][0-9]{1,2})?$/, "Escribí un porcentaje, por ejemplo 15.")
-      .refine((v) => {
-        const n = Number(v.replace(",", "."));
-        return n > 0 && n <= 100;
-      }, "De más de 0 a 100."),
+    approval_variation_pct: percentField("15"),
     stale_days: days,
     lookback_days: days,
+    reason: reasonField,
+  }),
+  // Aviso de rendimiento (ADR-0035): el desvío de un ensayo contra el estándar que dispara el aviso.
+  yieldAlert: z.object({
+    yield_alert_pct: percentField("10"),
     reason: reasonField,
   }),
   categoryStaleDays: z.object({

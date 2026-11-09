@@ -103,9 +103,9 @@ select ok(pg_temp.q(pg_temp.u(408), format('select costing.update_price_settings
 -- La función vieja (sin días) ya no existe; la nueva la ejecuta solo quien inició sesión.
 select hasnt_function('costing', 'update_price_settings', array['uuid', 'numeric', 'integer', 'text'],
   'no queda la versión anterior de update_price_settings');
-select function_privs_are('costing', 'update_price_settings', array['uuid', 'numeric', 'integer', 'text', 'integer'],
+select function_privs_are('costing', 'update_price_settings', array['uuid', 'numeric', 'integer', 'text', 'integer', 'numeric'],
   'anon', array[]::text[], 'anon no la ejecuta');
-select function_privs_are('costing', 'update_price_settings', array['uuid', 'numeric', 'integer', 'text', 'integer'],
+select function_privs_are('costing', 'update_price_settings', array['uuid', 'numeric', 'integer', 'text', 'integer', 'numeric'],
   'authenticated', array['EXECUTE'], 'authenticated la ejecuta (la función pide el permiso)');
 
 -- Con 3 días, hace 3 días valía el mismo precio que hoy (el de hace 5): no hay una segunda comparación.

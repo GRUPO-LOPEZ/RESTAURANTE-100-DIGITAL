@@ -138,13 +138,19 @@ function BeforeAfter({ row, roleNames }: { row: InboxRow; roleNames: Record<stri
   );
 }
 
+const NOTICE_LABELS: Record<NoticeRow["kind"], { badge: string; link: string }> = {
+  recipe_changed: { badge: "Cambió una preparación", link: "Ver la receta" },
+  recipe_cost_changed: { badge: "Cambió un costo", link: "Ver el costo" },
+  yield_deviation: { badge: "Rendimiento desviado", link: "Ver la materia prima" },
+};
+
 // Avisos de cambios de recetas: qué cambió y el enlace a la receta. Se marcan como leídos con el
 // botón de arriba, junto con los de solicitudes.
 function Notices({ rows }: { rows: NoticeRow[] }) {
   return (
     <section aria-labelledby="apr-avisos" className="flex flex-col gap-4">
       <h2 id="apr-avisos" className="text-xl text-ink">
-        Avisos de recetas y costos ({rows.length >= 20 ? "20 o más" : rows.length})
+        Avisos de recetas, costos y rendimientos ({rows.length >= 20 ? "20 o más" : rows.length})
       </h2>
       <ul className="flex flex-col gap-4">
         {rows.map((n) => (
@@ -152,8 +158,8 @@ function Notices({ rows }: { rows: NoticeRow[] }) {
             <Card className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-semibold text-ink">{n.title}</h3>
-                <Badge status="info">
-                  {n.kind === "recipe_cost_changed" ? "Cambió un costo" : "Cambió una preparación"}
+                <Badge status={n.kind === "yield_deviation" ? "warn" : "info"}>
+                  {NOTICE_LABELS[n.kind].badge}
                 </Badge>
               </div>
               <CardDescription>{formatDateTime(n.createdAt)}</CardDescription>
@@ -163,7 +169,7 @@ function Notices({ rows }: { rows: NoticeRow[] }) {
                   href={n.link}
                   className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
                 >
-                  {n.kind === "recipe_cost_changed" ? "Ver el costo" : "Ver la receta"}
+                  {NOTICE_LABELS[n.kind].link}
                   <span className="sr-only"> ({n.title})</span>
                 </Link>
               ) : null}

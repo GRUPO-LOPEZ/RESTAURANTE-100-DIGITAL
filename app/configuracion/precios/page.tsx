@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { setCategoryStaleDaysAction, updatePriceSettingsAction } from "@/app/configuracion/actions";
+import {
+  setCategoryStaleDaysAction,
+  updatePriceSettingsAction,
+  updateYieldAlertAction,
+} from "@/app/configuracion/actions";
 import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Disclosure } from "@/components/disclosure";
@@ -139,6 +143,45 @@ async function PriceSettingsPanel() {
               />
             </div>
             <Reason id="precios-motivo" />
+          </ActionForm>
+        </Disclosure>
+      </Card>
+
+      <Card className="flex flex-col gap-4">
+        <CardTitle>Aviso de rendimiento</CardTitle>
+        <CardDescription>
+          Si un ensayo de rendimiento se desvía del estándar más que este porcentaje, en limpieza o
+          en cocción, avisa a quienes tienen el permiso de avisos de rendimiento en ese local (hoy:
+          Chef, Controller, Dirección de marca y Dirección General). Por ejemplo, con 10 % y un
+          estándar de 80 %, avisa por debajo de 72 % o por encima de 88 %.
+        </CardDescription>
+        <dl className="grid gap-2 text-base">
+          <div className="flex flex-col">
+            <dt className="text-sm text-ink-muted">Avisa con un desvío de</dt>
+            <dd className="text-ink tabular-nums">
+              Más de {settings.yieldAlertPct.toLocaleString("es-AR")} %
+            </dd>
+          </div>
+        </dl>
+        <Disclosure summary="Cambiar el aviso de rendimiento">
+          <ActionForm
+            action={updateYieldAlertAction}
+            schema="yieldAlert"
+            submitLabel="Guardar el aviso"
+          >
+            <input type="hidden" name="groupId" value={groupId} />
+            <div className="max-w-xs">
+              <FormInput
+                id="rendimiento-umbral"
+                label="Desvío (%)"
+                hint="Por ejemplo, 10."
+                name="yield_alert_pct"
+                required
+                inputMode="decimal"
+                defaultValue={String(settings.yieldAlertPct).replace(".", ",")}
+              />
+            </div>
+            <Reason id="rendimiento-motivo" />
           </ActionForm>
         </Disclosure>
       </Card>

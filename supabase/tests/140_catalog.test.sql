@@ -138,29 +138,29 @@ select is((select site_type::text from org.restaurants where id = pg_temp.u(201)
 -- Matriz de permisos del recetario (sección 17 y decisión de Joaco del 2026-10-28)
 -- ---------------------------------------------------------------------------
 select is((select count(*)::int from core.permissions
-            where module in ('catalog', 'prices', 'yields', 'recipes', 'scenarios', 'imports', 'reports')), 20,
-  'hay 20 permisos del recetario (prices.configure llegó con la 2.1 C, ADR-0029)');
+            where module in ('catalog', 'prices', 'yields', 'recipes', 'scenarios', 'imports', 'reports')), 21,
+  'hay 21 permisos del recetario (prices.configure llegó con la 2.1 C, ADR-0029; yields.alerts, con el aviso de rendimiento, ADR-0035)');
 select is(pg_temp.perms('superadmin'), pg_temp.sorted(array['catalog.view', 'catalog.manage', 'prices.view', 'prices.propose',
   'imports.run', 'recipes.view', 'recipes.view_costs', 'recipes.draft', 'recipes.review', 'yields.record', 'reports.export']),
   'Superadministrador: los de quienes puede suspender (Gerente, Jefe de Cocina, Cocinero, Compras y Auditor)');
 select is(pg_temp.perms('general_management'), pg_temp.sorted(array['catalog.view', 'prices.view', 'prices.approve', 'prices.configure',
   'recipes.view', 'recipes.view_costs', 'recipes.approve', 'recipes.publish', 'recipes.archive', 'recipes.assign',
-  'scenarios.manage', 'imports.approve', 'reports.export']), 'Dirección General: ver con costos, aprobar, exportar y configurar los precios');
+  'scenarios.manage', 'imports.approve', 'reports.export', 'yields.alerts']), 'Dirección General: ver con costos, aprobar, exportar y configurar los precios');
 select is(pg_temp.perms('brand_director'), pg_temp.sorted(array['catalog.view', 'prices.view', 'recipes.view',
   'recipes.view_costs', 'recipes.draft', 'recipes.review', 'recipes.approve', 'recipes.publish', 'recipes.archive',
-  'recipes.assign', 'yields.record', 'yields.approve', 'scenarios.manage', 'imports.run', 'imports.approve',
+  'recipes.assign', 'yields.record', 'yields.approve', 'yields.alerts', 'scenarios.manage', 'imports.run', 'imports.approve',
   'reports.export']), 'Director de Marca: su marca, con lo del Chef y el Gerente');
 select is(pg_temp.perms('restaurant_manager'), pg_temp.sorted(array['catalog.view', 'prices.view', 'recipes.view',
   'recipes.view_costs', 'recipes.draft', 'recipes.review', 'yields.record', 'reports.export']),
   'Gerente: su local y lo del Jefe de Cocina, con los costos y precios de su local (respuesta 7 de Soy, ADR-0024)');
-select is(pg_temp.perms('executive_chef'), pg_temp.sorted(array['catalog.view', 'yields.record', 'yields.approve',
+select is(pg_temp.perms('executive_chef'), pg_temp.sorted(array['catalog.view', 'yields.record', 'yields.approve', 'yields.alerts',
   'recipes.view', 'recipes.view_costs', 'recipes.draft', 'recipes.review', 'recipes.approve', 'recipes.publish',
   'recipes.archive', 'recipes.assign', 'imports.run', 'imports.approve', 'reports.export']),
   'Chef Ejecutivo: recetas y rendimientos, nunca precios');
 select is(pg_temp.perms('head_chef'), pg_temp.sorted(array['catalog.view', 'yields.record', 'recipes.view',
   'recipes.draft', 'recipes.review']), 'Jefe de Cocina: borradores, revisión y ensayos, sin costos');
 select is(pg_temp.perms('controller'), pg_temp.sorted(array['catalog.view', 'prices.view', 'prices.approve',
-  'recipes.view', 'recipes.view_costs', 'scenarios.manage', 'imports.approve', 'reports.export']),
+  'recipes.view', 'recipes.view_costs', 'scenarios.manage', 'imports.approve', 'reports.export', 'yields.alerts']),
   'Controller: costos y aprobar precios, nunca gramajes');
 select is(pg_temp.perms('purchasing'), pg_temp.sorted(array['catalog.view', 'catalog.manage', 'prices.view',
   'prices.propose', 'recipes.view', 'imports.run']), 'Compras: catálogo y proponer precios, nunca aprobarlos');
