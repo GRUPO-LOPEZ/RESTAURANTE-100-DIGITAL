@@ -89,46 +89,49 @@ function ReportTable({
           </li>
         ))}
       </ul>
-      <table className="hidden w-full border-collapse text-left lg:table print:table">
-        <caption className="sr-only">{title}</caption>
-        <thead>
-          {/* El encabezado de la tabla se repite en cada hoja: así una hoja suelta dice qué es. */}
-          <tr className="hidden print:table-row">
-            <th
-              colSpan={columns.length}
-              scope="colgroup"
-              className="pb-2 text-sm font-normal text-ink-muted"
-            >
-              {heading}
-            </th>
-          </tr>
-          <tr className="border-b border-line">
-            {columns.map((c) => (
+      {/* Con scroll propio: con la barra lateral el contenido es más angosto que la ventana (ADR-0036). */}
+      <div className="hidden overflow-x-auto lg:block print:block print:overflow-visible">
+        <table className="w-full border-collapse text-left">
+          <caption className="sr-only">{title}</caption>
+          <thead>
+            {/* El encabezado de la tabla se repite en cada hoja: así una hoja suelta dice qué es. */}
+            <tr className="hidden print:table-row">
               <th
-                key={c.key}
-                scope="col"
-                className={`px-3 py-2 text-sm font-medium text-ink-muted print:px-1 print:py-1 ${align(c)}`}
+                colSpan={columns.length}
+                scope="colgroup"
+                className="pb-2 text-sm font-normal text-ink-muted"
               >
-                {c.label}
+                {heading}
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i} className="border-b border-line last:border-0 print:break-inside-avoid">
-              {columns.map((c, n) => (
-                <td
+            </tr>
+            <tr className="border-b border-line">
+              {columns.map((c) => (
+                <th
                   key={c.key}
-                  className={`px-3 py-2 text-ink print:px-1 print:py-1 print:text-sm ${align(c)}`}
+                  scope="col"
+                  className={`px-3 py-2 text-sm font-medium text-ink-muted print:px-1 print:py-1 ${align(c)}`}
                 >
-                  {n === 0 ? first(row, c) : cell(row, c)}
-                </td>
+                  {c.label}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i} className="border-b border-line last:border-0 print:break-inside-avoid">
+                {columns.map((c, n) => (
+                  <td
+                    key={c.key}
+                    className={`px-3 py-2 text-ink print:px-1 print:py-1 print:text-sm ${align(c)}`}
+                  >
+                    {n === 0 ? first(row, c) : cell(row, c)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

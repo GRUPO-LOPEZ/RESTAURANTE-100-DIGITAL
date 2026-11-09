@@ -7,6 +7,18 @@ const twMerge = extendTailwindMerge({
   extend: {
     theme: {
       text: ["kpi"],
+      // Alturas y anchos propios (ADR-0036): sin esto, "min-h-touch" y "desk:min-h-control-sm" no se reconocen
+      // como la misma propiedad y quedan las dos clases.
+      spacing: [
+        "touch",
+        "control",
+        "control-sm",
+        "sidebar",
+        "sidebar-collapsed",
+        "topbar",
+        "gutter",
+        "gutter-wide",
+      ],
     },
   },
 });

@@ -1,7 +1,7 @@
 /*
- * Sistema de diseño de Grupo LF (prompt maestro, sección 7; reglas en .claude/rules/design.md).
- * Este archivo es la ÚNICA fuente de colores, tipografía y formas.
- * Ver docs/decisiones/0002-tailwind-4-tokens.md.
+ * Grupo LF Design System (prompt maestro, sección 7; rediseño de ADR-0036; reglas en .claude/rules/design.md).
+ * Este archivo es la ÚNICA fuente de colores, tipografía, espacios y formas: ningún módulo define los suyos.
+ * Ver docs/decisiones/0002-tailwind-4-tokens.md y 0036-rediseno-de-la-interfaz.md.
  */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -12,40 +12,50 @@
   --color-*: initial;
 
   /* Paleta base */
-  --color-app: #fafaf9; /* fondo de la app */
-  --color-surface: #ffffff; /* tarjetas y paneles */
-  --color-line: #e7e5e4; /* bordes y divisores */
+  --color-app: #f7f8fa; /* fondo general */
+  --color-surface: #ffffff; /* tarjetas, tablas y paneles */
+  --color-line: #e5e7eb; /* bordes de 1 px */
   --color-ink: #1f2937; /* texto principal */
-  --color-ink-muted: #6b7280; /* texto secundario */
-  --color-primary: #4f6d9a; /* acción principal */
+  --color-ink-muted: #6b7280; /* texto secundario y etiquetas */
+  --color-primary: #4a6fb8; /* botón principal y enlaces */
+  --color-primary-hover: #3d5e9f;
   --color-primary-ink: #ffffff; /* texto sobre la acción principal */
 
-  /* Estados: fondo pastel + texto oscuro del mismo tono */
-  --color-ok: #d1fae5; /* bien, aprobado, en meta */
-  --color-ok-ink: #065f46;
-  --color-warn: #fef3c7; /* atención, pendiente */
+  /* Barra lateral (azul pizarra) */
+  --color-nav: #22304a;
+  --color-nav-ink: #d6deec;
+  --color-nav-active: #eaf0fb;
+  --color-nav-active-ink: #2f4f8f;
+
+  /* Estados: fondo pastel + texto oscuro del mismo tono, siempre con una palabra (nunca solo color) */
+  --color-ok: #dcfce7; /* al día */
+  --color-ok-ink: #166534;
+  --color-warn: #fef3c7; /* atención */
   --color-warn-ink: #92400e;
-  --color-bad: #ffe4e6; /* problema, rechazado */
-  --color-bad-ink: #9f1239;
-  --color-info: #e0f2fe; /* información */
-  --color-info-ink: #075985;
+  --color-bad: #fee2e2; /* crítico */
+  --color-bad-ink: #991b1b;
+  --color-info: #dbeafe; /* información */
+  --color-info-ink: #1e40af;
+  --color-none: #f1f2f4; /* sin datos o no aplicable */
+  --color-none-ink: #4b5563;
+  /* Estados de versión (decisión de Joaco, 2026-11-09: se conservan). */
   --color-review: #ede9fe; /* en revisión */
   --color-review-ink: #5b21b6;
   --color-draft: #ffedd5; /* borrador */
   --color-draft-ink: #9a3412;
 
-  /* Series de gráficos (máximo 4 por gráfico, siempre con etiqueta) */
-  --color-chart-1: #93c5fd;
-  --color-chart-2: #86efac;
-  --color-chart-3: #fcd34d;
-  --color-chart-4: #fda4af;
-  --color-chart-5: #c4b5fd;
+  /* Series de gráficos (máximo 4 por gráfico, siempre con etiqueta). Nunca colores de estado como decoración. */
+  --color-chart-1: #93b4e8;
+  --color-chart-2: #9ed9b8;
+  --color-chart-3: #f4a9a0;
+  --color-chart-4: #c4b5fd;
+  --color-chart-5: #f6d59a;
   --color-chart-6: #fdba74;
   /* Tonos fuertes, solo para barras, líneas y puntos de gráficos: llegan a 3:1 sobre el fondo
      (WCAG 1.4.11). Nunca para fondos, estados ni texto (ADR-0015, respuesta 4). */
   --color-chart-strong-1: #2563eb;
   --color-chart-strong-2: #16a34a;
-  --color-chart-strong-3: #d97706;
+  --color-chart-strong-3: #b45309; /* ámbar más oscuro: sobre el fondo nuevo, el anterior no llegaba a 3:1 */
   --color-chart-strong-4: #e11d48;
   --color-chart-strong-5: #7c3aed;
   --color-chart-strong-6: #ea580c;
@@ -60,30 +70,44 @@
   --font-weight-normal: 400;
   --font-weight-medium: 500; /* etiquetas */
   --font-weight-semibold: 600; /* títulos */
+  --text-xs: 0.75rem; /* 12 px: el mínimo en cualquier texto */
+  --text-xs--line-height: 1rem;
   --text-sm: 0.875rem; /* 14 px texto chico */
   --text-sm--line-height: 1.25rem;
   --text-base: 1rem; /* 16 px texto base */
   --text-base--line-height: 1.5rem;
   --text-xl: 1.25rem; /* 20 px subtítulos */
   --text-xl--line-height: 1.75rem;
-  --text-2xl: 1.5rem; /* 24 px títulos */
-  --text-2xl--line-height: 2rem;
+  --text-2xl: 1.75rem; /* 28 px títulos de pantalla */
+  --text-2xl--line-height: 2.25rem;
   --text-kpi: 2rem; /* 32 px números de KPI */
   --text-kpi--line-height: 2.5rem;
 
-  /* Formas: grilla de 8 px, radios de 8 a 12 px */
-  --spacing: 0.25rem; /* unidades de 4 px: usar múltiplos pares (p-2 = 8 px, p-4 = 16 px...) */
+  /* Formas: espacios en múltiplos de 4 px; radio de 10 px en tarjetas y 8 px en controles */
+  --spacing: 0.25rem; /* unidades de 4 px */
   --radius-*: initial;
-  --radius-sm: 0.5rem; /* 8 px */
-  --radius-md: 0.625rem; /* 10 px */
+  --radius-sm: 0.5rem; /* 8 px: controles */
+  --radius-md: 0.625rem; /* 10 px: tarjetas */
   --radius-lg: 0.75rem; /* 12 px */
 
   /* Sin sombras fuertes */
   --shadow-*: initial;
   --shadow-sm: 0 1px 2px 0 rgb(31 41 55 / 0.04);
 
-  /* Altura mínima táctil */
+  /* Alturas: 36 a 40 px en la computadora, 44 px táctil en el celular */
   --spacing-touch: 2.75rem; /* 44 px */
+  --spacing-control: 2.5rem; /* 40 px */
+  --spacing-control-sm: 2.25rem; /* 36 px */
+  /* Layout global */
+  --spacing-sidebar: 15rem; /* 240 px expandida */
+  --spacing-sidebar-collapsed: 4.25rem; /* 68 px solo íconos */
+  --spacing-topbar: 4rem; /* 64 px */
+  --spacing-gutter: 2rem; /* 32 px de margen lateral */
+  --spacing-gutter-wide: 2.8125rem; /* 45 px desde 1700 px */
+
+  /* Cortes: "desk" desde 800 px (barra lateral; debajo, barra inferior del celular); "wide" desde 1700 px. */
+  --breakpoint-desk: 50rem;
+  --breakpoint-wide: 106.25rem;
 }
 
 /* Nombres que usan los componentes de shadcn/ui, apuntando a la paleta de arriba. */
@@ -105,6 +129,22 @@
   --color-border: var(--color-line);
   --color-input: var(--color-line);
   --color-ring: var(--color-primary);
+}
+
+/* Layout global (ADR-0036): el área principal deja lugar a la barra lateral fija, expandida o contraída.
+   La barra lateral marca su estado con data-sidebar; en el celular y en papel no hay barra lateral. */
+@media (width >= 50rem) {
+  .lf-main {
+    padding-left: var(--spacing-sidebar);
+  }
+  html:has([data-sidebar="collapsed"]) .lf-main {
+    padding-left: var(--spacing-sidebar-collapsed);
+  }
+}
+@media print {
+  .lf-main {
+    padding-left: 0;
+  }
 }
 
 /* Lo que se imprime: A4 con márgenes propios, para no depender de cada navegador. */

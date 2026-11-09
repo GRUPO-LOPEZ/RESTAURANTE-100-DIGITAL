@@ -38,6 +38,13 @@ const PAIRS: [texto: string, fondo: string][] = [
   ["info-ink", "info"],
   ["review-ink", "review"],
   ["draft-ink", "draft"],
+  ["none-ink", "none"],
+  // Barra lateral y botón principal al pasar el mouse (ADR-0036).
+  ["nav-ink", "nav"],
+  ["nav-active-ink", "nav-active"],
+  // El logo y el contorno de foco de la barra lateral usan nav-active sobre nav.
+  ["nav-active", "nav"],
+  ["primary-ink", "primary-hover"],
 ];
 
 describe("contraste de la paleta (WCAG AA)", () => {
@@ -58,10 +65,13 @@ describe("contraste de la paleta (WCAG AA)", () => {
     expect(contrast(token(`chart-strong-${n}`), token(bg))).toBeGreaterThanOrEqual(3);
   });
 
+  // Los del prompt de rediseño (ADR-0036).
   it("los colores son los del prompt maestro", () => {
-    expect(token("app").toUpperCase()).toBe("#FAFAF9");
+    expect(token("app").toUpperCase()).toBe("#F7F8FA");
     expect(token("ink").toUpperCase()).toBe("#1F2937");
-    expect(token("primary").toUpperCase()).toBe("#4F6D9A");
+    expect(token("primary").toUpperCase()).toBe("#4A6FB8");
+    expect(token("nav").toUpperCase()).toBe("#22304A");
+    expect(token("none").toUpperCase()).toBe("#F1F2F4");
   });
 
   it("el color del navegador (themeColor) es el fondo de la app", () => {

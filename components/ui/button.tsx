@@ -4,14 +4,14 @@ import { Slot } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
-// Todos los tamaños respetan el mínimo táctil de 44 px (design.md, "Celular primero").
+// Alturas (ADR-0036): 44 px táctil en el celular; en la computadora, 40 px (default) o 36 px (sm).
 const buttonVariants = cva(
-  "inline-flex min-h-touch shrink-0 items-center justify-center gap-2 rounded-sm border border-transparent px-4 text-base font-medium whitespace-nowrap transition-colors select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-bad-ink [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "inline-flex min-h-touch shrink-0 items-center justify-center gap-2 rounded-sm border border-transparent px-4 text-base font-medium whitespace-nowrap transition-colors select-none desk:min-h-control focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-bad-ink [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
-        // El hover subraya en lugar de aclarar el fondo: aclararlo baja el contraste por debajo de AA.
-        default: "bg-primary text-primary-ink underline-offset-4 hover:underline",
+        // El hover oscurece (primary-hover): aclarar el fondo bajaría el contraste por debajo de AA.
+        default: "bg-primary text-primary-ink hover:bg-primary-hover",
         outline: "border-line bg-surface text-ink hover:bg-line/50",
         ghost: "text-ink hover:bg-line/50",
         destructive: "bg-bad text-bad-ink underline-offset-4 hover:underline",
@@ -19,8 +19,9 @@ const buttonVariants = cva(
       },
       size: {
         default: "",
+        sm: "px-3 text-sm desk:min-h-control-sm",
         wide: "w-full",
-        icon: "w-touch px-0",
+        icon: "w-touch px-0 desk:w-control",
       },
     },
     defaultVariants: {

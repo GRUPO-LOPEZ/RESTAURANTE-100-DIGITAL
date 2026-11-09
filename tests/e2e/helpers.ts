@@ -68,7 +68,8 @@ export async function logout(page: Page) {
 export async function menuLink(page: Page, name: string) {
   // El encabezado llega en streaming, después del resto de la página: primero se lo espera.
   await page.getByRole("button", { name: /^Salir/ }).waitFor();
-  const toggle = page.locator("summary", { hasText: "Menú" });
+  // Visible: Next guarda ocultas las pantallas anteriores, cada una con su menú.
+  const toggle = page.locator("summary:visible", { hasText: "Menú" });
   if (await toggle.isVisible()) {
     const open = await toggle.evaluate((el) => (el.parentElement as HTMLDetailsElement).open);
     if (!open) await toggle.click();

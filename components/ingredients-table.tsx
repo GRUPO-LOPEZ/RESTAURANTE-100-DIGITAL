@@ -74,35 +74,38 @@ export function IngredientsTable({ rows }: { rows: IngredientRow[] }) {
           </li>
         ))}
       </ul>
-      <table className="hidden w-full border-collapse text-left sm:table">
-        <caption className="sr-only">Materias primas, su categoría, unidad y estado</caption>
-        <thead>
-          {table.getHeaderGroups().map((group) => (
-            <tr key={group.id} className="border-b border-line">
-              {group.headers.map((header) => (
-                <th
-                  key={header.id}
-                  scope="col"
-                  className="px-3 py-2 text-sm font-medium text-ink-muted"
-                >
-                  {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="border-b border-line align-top last:border-0">
-              {row.getAllCells().map((cell) => (
-                <td key={cell.id} className="px-3 py-3">
-                  <table.FlexRender cell={cell} />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Con scroll propio: con la barra lateral el contenido es más angosto que la ventana (ADR-0036). */}
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full border-collapse text-left">
+          <caption className="sr-only">Materias primas, su categoría, unidad y estado</caption>
+          <thead>
+            {table.getHeaderGroups().map((group) => (
+              <tr key={group.id} className="border-b border-line">
+                {group.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    scope="col"
+                    className="px-3 py-2 text-sm font-medium text-ink-muted"
+                  >
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id} className="border-b border-line align-top last:border-0">
+                {row.getAllCells().map((cell) => (
+                  <td key={cell.id} className="px-3 py-3">
+                    <table.FlexRender cell={cell} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

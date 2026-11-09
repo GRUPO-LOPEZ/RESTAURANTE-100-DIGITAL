@@ -16,6 +16,8 @@ const badgeVariants = cva(
         warn: "bg-warn text-warn-ink",
         bad: "bg-bad text-bad-ink",
         info: "bg-info text-info-ink",
+        // Sin datos o no aplicable (ADR-0036): nunca un estado positivo cuando no hay datos.
+        none: "bg-none text-none-ink",
         review: "bg-review text-review-ink",
         draft: "bg-draft text-draft-ink",
       },
