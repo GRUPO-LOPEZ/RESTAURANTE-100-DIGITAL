@@ -1,8 +1,16 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-07. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-08. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: reportes (rama `feat/reportes`, etapa 2.5)
+## Al retomar: fichas por receta (rama `feat/fichas`, etapa 2.5)
+
+- **Qué se hizo** (ADR-0034): ficha técnica y ficha de costeo de una receta, en PDF, Excel y CSV. Con esto están los siete reportes de la sección 18, y queda construido lo que pide Soy para la Fase 2.
+- **Pruebas (2026-11-08, todas en verde):** db reset desde cero; lint y tipos; Vitest 235; pgTAP 2.068 en 44 archivos (243_recipe_cards con 32); Playwright 180 en celular y computadora, con axe. Capturas de las dos fichas en celular, computadora y papel.
+- **Revisores:** db-reviewer y security-auditor sin graves. Se corrigieron las medias: la base controla que la receta sea del local (`costing.require_report_recipe`), el registro guarda la receta, y las pruebas que no podían fallar ahora pueden. ui-reviewer marcó un grave (la ficha técnica sin alérgenos): corregido, en pantalla, papel, Excel y CSV.
+- **Quedó afuera:** la lista compacta de la ficha técnica en celular (hoy son tarjetas, una por ingrediente) y que /reportes muestre la receta en "Últimas exportaciones" (el registro ya la guarda).
+- **Falta después:** los agregados chicos (aviso de rendimiento, `recipes.approve_costs`, huecos de recetas, aprobación en varios pasos), las compuertas con datos reales y el informe de cierre para Soy.
+
+## Antes: reportes (etapa 2.5; fusionado, PR #44)
 
 - **Qué se hizo** (ADR-0034): `/reportes`, con cinco reportes en PDF, Excel y CSV: materias primas, rendimientos, dónde se usa, cambios de costo y calidad de datos. Lo que se exporta queda en el registro de seguridad.
 - **Pruebas (2026-11-07), `npm run test` completo desde una base recién creada:** lint y tipos ✅ · Vitest 231 de 231 ✅ · pgTAP 2.036 de 2.036 ✅ · Playwright 178 de 178 ✅ · formato ✅.

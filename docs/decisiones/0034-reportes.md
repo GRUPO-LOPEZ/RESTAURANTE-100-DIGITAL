@@ -48,6 +48,20 @@ La sección 18 del documento de Soy pide siete reportes en PDF, Excel y CSV, con
 - **Cambios de costo con años de historia** no está medido: `240` mide con pocas fotos.
 - **Una receta que vuelve a un local** se compara contra su última foto, de hace meses.
 
+## Las fichas por receta (2026-11-08)
+
+Migración `20261121120000_recipe_cards.sql`. Con esto están los siete reportes de la sección 18.
+
+- **Ficha técnica:** alérgenos, ingredientes, cantidades, cómo se mide cada uno, rendimiento, peso por porción, tiempos, paso a paso (con el orden entre pasos), fotos, presentación, conservación, versión y desde cuándo rige. Sale de `recipes.kitchen_card`, así que nunca trae un importe. Pide `recipes.view`.
+- **Ficha de costeo:** costo de cada línea (preparaciones incluidas), total con y sin IVA, por porción, participación y estado. Sale de `costing.recipe_cost_lines`. Pide `recipes.view` y `recipes.view_costs`.
+- **Primero se elige la receta,** entre las vigentes del local que la persona ve (`costing.report_recipes`). Se busca por nombre o código, sin importar acentos ni mayúsculas.
+- **Los alérgenos van siempre:** en pantalla, marcados como en la vista de cocina, y en Excel y CSV en una línea del encabezado. Un papel que va a la mesada sin alérgenos es un riesgo.
+- **Una ficha entra entera:** se imprime tal como se ve, sin el paso "Preparar para imprimir".
+- **Excel y CSV llevan la tabla de líneas** y, en el encabezado, la receta, la versión y el total. El paso a paso y las fotos van solo en pantalla y en papel.
+- **Las fotos** salen con el enlace firmado de Storage, de diez minutos.
+- **La base controla que la receta sea del local** (`costing.require_report_recipe`): el permiso del reporte y que la receta sea una vigente del local. Sin esto, alguien que ve recetas de otra marca podría sacar su ficha a nombre de este local. La pantalla y la exportación la llaman antes de armar la ficha.
+- **El registro dice de qué receta es la ficha:** `log_report` suma la receta, la exige en las fichas y la vuelve a controlar contra el local.
+
 ## Pruebas
 
-`242_reports`, `240_data_quality_performance`, `tests/unit/reports.test.ts` y Playwright `reportes`.
+`242_reports`, `243_recipe_cards`, `240_data_quality_performance`, `tests/unit/reports.test.ts` y Playwright `reportes`.

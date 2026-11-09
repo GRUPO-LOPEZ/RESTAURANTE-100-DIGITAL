@@ -4,7 +4,13 @@ import { csvCell, csvNumber, safeText } from "@/lib/csv";
 import { formatValue, type ReportDefinition, type ReportRow } from "@/lib/report-labels";
 
 // Los archivos de un reporte. Solo en el servidor: el navegador no carga ExcelJS (ADR-0027).
-export type ReportHeader = { place: string; generated: string; period?: string; note?: string };
+export type ReportHeader = {
+  place: string;
+  generated: string;
+  period?: string;
+  note?: string;
+  summary?: string[];
+};
 
 // Excel en español abre un CSV separado por punto y coma, y los números llevan coma decimal.
 const SEPARATOR = ";";
@@ -14,6 +20,7 @@ function headerLines(report: ReportDefinition, header: ReportHeader): string[] {
     report.title,
     `Local: ${header.place}`,
     `Fecha de los datos: ${header.generated}`,
+    ...(header.summary ?? []),
     ...(header.period ? [`Período: ${header.period}`] : []),
     ...(header.note ? [header.note] : []),
   ];

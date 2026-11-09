@@ -5,6 +5,7 @@ import { UUID, formatDate, formatDateTime } from "@/lib/data";
 import { reportCsv, reportXlsx } from "@/lib/report-files";
 import {
   REPORT_EXPORT_LIMIT,
+  allergenLine,
   argentinaDay,
   reportDefinition,
   reportFileName,
@@ -42,6 +43,11 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/reportes/[re
   back.searchParams.set("aviso", "no-se-pudo");
   const now = new Date();
   const period = reportPeriod(p.get("desde") ?? undefined, p.get("hasta") ?? undefined, now);
+  const recipe = p.get("receta");
+  if (report.recipe && (!recipe || !UUID.test(recipe))) {
+    return new NextResponse("No encontrado", { status: 404 });
+  }
+  if (report.recipe && recipe) back.searchParams.set("receta", recipe);
   if (report.period) {
     back.searchParams.set("desde", period.from);
     back.searchParams.set("hasta", period.to);
@@ -49,7 +55,11 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/reportes/[re
   try {
     const [places, result] = await Promise.all([
       getReportPlaces(),
-      getReportRows(report.key, { restaurantId: local, ...period }),
+      getReportRows(report.key, {
+        restaurantId: local,
+        ...period,
+        recipeId: report.recipe ? (recipe ?? undefined) : undefined,
+      }),
     ]);
     const place = places.find((x) => x.id === local);
     if (!place || !result) return new NextResponse("No encontrado", { status: 404 });
@@ -60,6 +70,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/reportes/[re
       format,
       result.rows.length,
       report.period ? period : undefined,
+      report.recipe ? (recipe ?? undefined) : undefined,
     );
     if (!logged) {
       return NextResponse.redirect(back);
@@ -68,6 +79,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/reportes/[re
       place: place.name,
       generated: formatDateTime(now.toISOString()),
       period: report.period ? `${formatDate(period.from)} a ${formatDate(period.to)}` : undefined,
+      summary: result.summary ? [...result.summary, ...allergenLine(result.alerts)] : undefined,
       note:
         result.total > result.rows.length
           ? `Se exportan las primeras ${REPORT_EXPORT_LIMIT.toLocaleString("es-AR")} de ${result.total.toLocaleString("es-AR")} filas.`

@@ -3357,6 +3357,7 @@ export type Database = {
         Args: {
           p_format: string;
           p_from?: string;
+          p_recipe_id?: string;
           p_report: string;
           p_restaurant_id: string;
           p_rows?: number;
@@ -3614,6 +3615,17 @@ export type Database = {
           total_rows: number;
         }[];
       };
+      report_recipe_ids: { Args: { p_restaurant_id: string }; Returns: string[] };
+      report_recipes: {
+        Args: { p_limit?: number; p_offset?: number; p_restaurant_id: string; p_search?: string };
+        Returns: {
+          code: string;
+          name: string;
+          recipe_id: string;
+          recipe_type: string;
+          total_rows: number;
+        }[];
+      };
       report_usage: {
         Args: { p_limit?: number; p_offset?: number; p_restaurant_id: string };
         Returns: {
@@ -3649,6 +3661,10 @@ export type Database = {
         Returns: undefined;
       };
       require_report: { Args: { p_report: string; p_restaurant_id: string }; Returns: undefined };
+      require_report_recipe: {
+        Args: { p_recipe_id: string; p_report: string; p_restaurant_id: string };
+        Returns: undefined;
+      };
       require_scenario: {
         Args: { p_active?: boolean; p_scenario_id: string };
         Returns: {
@@ -3834,6 +3850,7 @@ export type Database = {
           total_rows: number;
         }[];
       };
+      search_text: { Args: { p_text: string }; Returns: string };
       set_scenario_override: {
         Args: {
           p_cleaning_yield?: number;

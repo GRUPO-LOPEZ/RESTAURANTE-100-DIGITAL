@@ -1,6 +1,6 @@
 # Diccionario de datos — core, org, audit, workflow, ai
 
-> Generado desde los `comment on` de la base local el 2026-11-07 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-11-08 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
 ## `ai.integration_permissions`
 

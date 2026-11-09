@@ -5,6 +5,8 @@ import { csvCell, csvNumber, safeText } from "@/lib/csv";
 import { reportCsv, reportXlsx } from "@/lib/report-files";
 import {
   REPORTS,
+  allergenAlerts,
+  allergenLine,
   argentinaDay,
   cookingEffect,
   formatValue,
@@ -139,9 +141,46 @@ describe("la cocción", () => {
   });
 });
 
+describe("los alérgenos de la ficha técnica", () => {
+  it("primero lo que contiene, después las trazas y lo no verificado", () => {
+    const alerts = allergenAlerts([
+      { name: "Huevo", status: "may_contain" },
+      { name: "Gluten", status: "contains" },
+      { name: "Leche", status: "not_verified" },
+      { name: "Soja", status: "not_verified" },
+      { name: "Maní", status: "free_verified" },
+    ]);
+    expect(alerts).toEqual([
+      { text: "Contiene Gluten", status: "bad" },
+      { text: "Puede contener Huevo (trazas)", status: "warn" },
+      { text: "Sin verificar: Leche, Soja", status: "warn" },
+    ]);
+    expect(allergenLine(alerts)).toEqual([
+      "Alérgenos: Contiene Gluten · Puede contener Huevo (trazas) · Sin verificar: Leche, Soja",
+    ]);
+  });
+
+  it("dice si no hay alérgenos cargados o si todo está verificado", () => {
+    expect(allergenAlerts([])).toEqual([
+      { text: "No hay alérgenos cargados en el catálogo", status: "info" },
+    ]);
+    expect(allergenAlerts([{ name: "Maní", status: "free_verified" }])).toEqual([
+      { text: "Todo verificado: no contiene ningún alérgeno de la lista", status: "ok" },
+    ]);
+  });
+
+  it("un reporte sin alérgenos no suma líneas al encabezado", () => {
+    expect(allergenLine(undefined)).toEqual([]);
+  });
+});
+
 describe("los reportes", () => {
-  it("son cinco, sin repetir", () => {
-    expect(new Set(REPORTS.map((r) => r.key)).size).toBe(5);
+  it("son siete, sin repetir", () => {
+    expect(new Set(REPORTS.map((r) => r.key)).size).toBe(7);
+  });
+
+  it("las dos fichas se piden por receta", () => {
+    expect(REPORTS.filter((r) => r.recipe).map((r) => r.key)).toEqual(["recipe_card", "cost_card"]);
   });
 
   it("el nombre del archivo no lleva acentos ni espacios", () => {
