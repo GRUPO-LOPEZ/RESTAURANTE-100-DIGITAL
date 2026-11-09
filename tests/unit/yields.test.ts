@@ -5,10 +5,12 @@ import { fieldErrors, schemas } from "@/lib/forms/schemas";
 import {
   cleaningDifference,
   describeCooking,
+  exceedsYieldAlert,
   formatCleaning,
   measuredCleaning,
   measuredCooking,
   parseDecimal,
+  yieldDeviationPct,
 } from "@/lib/yields";
 
 // Por las dudas, cualquier espacio se compara como espacio común.
@@ -130,5 +132,34 @@ describe("formulario de propuesta de estándar", () => {
     const parsed = schemas.yieldProposal.safeParse({ ...noLoss, declared_no_loss: true });
     expect(parsed.success).toBe(true);
     expect(errorsOf("yieldProposal", { ...noLoss, declared_no_loss: "on" })).toEqual({});
+  });
+});
+
+describe("el aviso de rendimiento (ADR-0035)", () => {
+  it("mide el desvío relativo contra el estándar", () => {
+    // Limpieza de 68 % contra 80 %: 0,68 / 0,80 = 0,85.
+    expect(yieldDeviationPct(0.68, 0.8)).toBeCloseTo(-15, 9);
+    // Cocción: factor 3 contra 2,5 = 1,2.
+    expect(yieldDeviationPct(3, 2.5)).toBeCloseTo(20, 9);
+  });
+
+  it("avisa solo si pasa el umbral, no si llega justo", () => {
+    expect(exceedsYieldAlert(0.68, 0.8, 10)).toBe(true);
+    expect(exceedsYieldAlert(0.76, 0.8, 10)).toBe(false);
+    // 0,72 contra 0,80 es justo −10 %: con decimales de por medio, sigue sin avisar.
+    expect(exceedsYieldAlert(0.72, 0.8, 10)).toBe(false);
+    expect(exceedsYieldAlert(3, 2.5, 20)).toBe(false);
+    expect(exceedsYieldAlert(3, 2.5, 19.99)).toBe(true);
+  });
+
+  it("el umbral se carga con coma o punto, de más de 0 a 100", () => {
+    const ok = (v: string) =>
+      schemas.yieldAlert.safeParse({ yield_alert_pct: v, reason: "Inflación del mes" }).success;
+    expect(ok("10")).toBe(true);
+    expect(ok("2,5")).toBe(true);
+    expect(ok("0")).toBe(false);
+    expect(ok("150")).toBe(false);
+    expect(ok("diez")).toBe(false);
+    expect(schemas.yieldAlert.safeParse({ yield_alert_pct: "10", reason: "" }).success).toBe(false);
   });
 });

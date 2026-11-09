@@ -186,6 +186,8 @@ export type PriceSettings = {
   approvalVariationPct: number;
   staleDays: number;
   lookbackDays: number;
+  // Umbral del aviso de rendimiento (ADR-0035): desvío de un ensayo contra el estándar, en %.
+  yieldAlertPct: number;
 };
 
 export async function getPriceSettings(groupId: string): Promise<PriceSettings> {
@@ -193,7 +195,7 @@ export async function getPriceSettings(groupId: string): Promise<PriceSettings> 
   const { data, error } = await supabase
     .schema("costing")
     .from("price_settings")
-    .select("approval_variation_pct, stale_days, lookback_days")
+    .select("approval_variation_pct, stale_days, lookback_days, yield_alert_pct")
     .eq("group_id", groupId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -203,5 +205,6 @@ export async function getPriceSettings(groupId: string): Promise<PriceSettings> 
     approvalVariationPct: data ? Number(data.approval_variation_pct) : 15,
     staleDays: data?.stale_days ?? 30,
     lookbackDays: data?.lookback_days ?? 30,
+    yieldAlertPct: data ? Number(data.yield_alert_pct) : 10,
   };
 }

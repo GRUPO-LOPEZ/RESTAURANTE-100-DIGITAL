@@ -1,6 +1,6 @@
 # Diccionario de datos — catalog, recipes, imports, costing
 
-> Generado desde los `comment on` de la base local el 2026-11-08 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-11-09 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
 ## `catalog.allergens`
 
@@ -383,19 +383,20 @@ Precios de compra aprobados, para siempre: un precio nuevo es un registro nuevo 
 
 Configuración de precios de cada grupo. Sin fila, valen los valores por defecto (15 % y 30 días). La cambia solo Dirección General (prices.configure).
 
-| Columna                  | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                                        |
-| ------------------------ | -------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                     | `uuid`                     | no   | Identificador.                                                                                                                                                                                                    |
-| `group_id`               | `uuid`                     | no   | Grupo al que se aplica. Una fila por grupo.                                                                                                                                                                       |
-| `approval_variation_pct` | `numeric(5,2)`             | no   | Si un precio sube o baja más que este porcentaje contra el costo que se usa hoy para esa materia prima en ese lugar (por unidad de uso, con o sin IVA), después del Controller aprueba también Dirección General. |
-| `stale_days`             | `integer`                  | no   | Días desde la vigencia para marcar un precio como desactualizado (si su categoría no dice otro plazo).                                                                                                            |
-| `created_at`             | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                                                 |
-| `created_by`             | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                                                                                                  |
-| `updated_at`             | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                                                                                                                                   |
-| `updated_by`             | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                                                                                 |
-| `deleted_at`             | `timestamp with time zone` | sí   | Baja lógica. Nunca se borra.                                                                                                                                                                                      |
-| `deleted_by`             | `uuid`                     | sí   | Quién la dio de baja (lo pone la base).                                                                                                                                                                           |
-| `lookback_days`          | `integer`                  | no   | Días hacia atrás contra los que también se compara un precio nuevo (subas en escalones). Vale la variación más grande entre la de hoy y la de hace estos días.                                                    |
+| Columna                  | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                                                  |
+| ------------------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                     | `uuid`                     | no   | Identificador.                                                                                                                                                                                                              |
+| `group_id`               | `uuid`                     | no   | Grupo al que se aplica. Una fila por grupo.                                                                                                                                                                                 |
+| `approval_variation_pct` | `numeric(5,2)`             | no   | Si un precio sube o baja más que este porcentaje contra el costo que se usa hoy para esa materia prima en ese lugar (por unidad de uso, con o sin IVA), después del Controller aprueba también Dirección General.           |
+| `stale_days`             | `integer`                  | no   | Días desde la vigencia para marcar un precio como desactualizado (si su categoría no dice otro plazo).                                                                                                                      |
+| `created_at`             | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                                                           |
+| `created_by`             | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                                                                                                            |
+| `updated_at`             | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                                                                                                                                             |
+| `updated_by`             | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                                                                                           |
+| `deleted_at`             | `timestamp with time zone` | sí   | Baja lógica. Nunca se borra.                                                                                                                                                                                                |
+| `deleted_by`             | `uuid`                     | sí   | Quién la dio de baja (lo pone la base).                                                                                                                                                                                     |
+| `lookback_days`          | `integer`                  | no   | Días hacia atrás contra los que también se compara un precio nuevo (subas en escalones). Vale la variación más grande entre la de hoy y la de hace estos días.                                                              |
+| `yield_alert_pct`        | `numeric(5,2)`             | no   | Si un ensayo de rendimiento se desvía del estándar aprobado más que este porcentaje (en limpieza o en cocción), se avisa a quien tiene yields.alerts en ese local. Se carga a mano (por ejemplo, con la inflación del mes). |
 
 ## `costing.recipe_cost_current`
 

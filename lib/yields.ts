@@ -33,6 +33,21 @@ export function measuredCooking(before?: number, after?: number): number | undef
   return before && after && before > 0 ? after / before : undefined;
 }
 
+// Desvío relativo contra el estándar, en %: 0,68 contra 0,80 es −15. Es el que usa el aviso de rendimiento
+// (ADR-0035), igual que catalog.yield_deviation en la base.
+export function yieldDeviationPct(measured: number, standard: number): number {
+  return (measured / standard - 1) * 100;
+}
+
+// Si un desvío pasa el umbral. Justo en el umbral no avisa ("más que el umbral").
+export function exceedsYieldAlert(
+  measured: number,
+  standard: number,
+  thresholdPct: number,
+): boolean {
+  return Math.abs(yieldDeviationPct(measured, standard)) > thresholdPct + 1e-9;
+}
+
 // Diferencia del promedio de ensayos contra el estándar, dicha para la cocina:
 // "3,0 puntos menos que el estándar", "1,5 puntos más que el estándar" o "igual al estándar".
 export function cleaningDifference(measured: number, standard: number): string {

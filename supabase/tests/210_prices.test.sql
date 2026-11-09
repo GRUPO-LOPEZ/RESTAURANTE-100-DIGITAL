@@ -127,7 +127,7 @@ select is(pg_temp.msg(pg_temp.u(408), format('select costing.update_price_settin
 select is(pg_temp.msg(pg_temp.u(407), format('select costing.update_price_settings(%L, 10, 20, ''Prueba'')', pg_temp.u(1))),
   'No tenés permiso para cambiar la configuración de precios.', 'el Controller tampoco');
 select is(pg_temp.msg(pg_temp.u(402), format('select costing.update_price_settings(%L, 0, 20, ''Prueba'')', pg_temp.u(1))),
-  'El porcentaje va de más de 0 a 100, y los días de 1 a 365.', 'un porcentaje fuera de rango se rechaza');
+  'Los porcentajes van de más de 0 a 100, y los días de 1 a 365.', 'un porcentaje fuera de rango se rechaza');
 select is(pg_temp.msg(pg_temp.u(402), format('select costing.update_price_settings(%L, 8, 45, ''Más control'')', pg_temp.u(1))),
   'sin error', 'Dirección General la cambia');
 select is(pg_temp.msg(pg_temp.u(402), format('select costing.update_price_settings(%L, 10, 40, ''Otra vez'')', pg_temp.u(1))),

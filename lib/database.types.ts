@@ -1319,6 +1319,7 @@ export type Database = {
         Args: { p_code: string; p_group_id: string; p_name: string; p_reason: string };
         Returns: string;
       };
+      group_yield_alert_pct: { Args: { p_group_id: string }; Returns: number };
       ingredient_group: { Args: { p_ingredient_id: string }; Returns: string };
       ingredient_usage: {
         Args: { p_ingredient_id: string };
@@ -1334,6 +1335,7 @@ export type Database = {
         Args: { p_content_unit_id: string; p_ingredient_id: string };
         Returns: string;
       };
+      notify_yield_deviation: { Args: { p_test_id: string }; Returns: undefined };
       process_usage: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -1461,6 +1463,18 @@ export type Database = {
       update_supplier: {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
+      };
+      yield_alert_threshold: { Args: { p_ingredient_id: string }; Returns: number };
+      yield_deviation: {
+        Args: { p_test_id: string };
+        Returns: {
+          cleaning_pct: number;
+          cooking_pct: number;
+          measured_cleaning: number;
+          measured_cooking: number;
+          standard_cleaning: number;
+          standard_cooking: number;
+        }[];
       };
       yield_process_group: { Args: { p_process_id: string }; Returns: string };
       yield_summary: {
@@ -2628,7 +2642,8 @@ export type Database = {
     Enums: {
       account_status: "active" | "suspended" | "deactivated";
       actor_type: "user" | "service_account";
-      notification_kind: "approval_requested" | "recipe_changed" | "recipe_cost_changed";
+      notification_kind:
+        "approval_requested" | "recipe_changed" | "recipe_cost_changed" | "yield_deviation";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -2935,6 +2950,7 @@ export type Database = {
           stale_days: number;
           updated_at: string;
           updated_by: string | null;
+          yield_alert_pct: number;
         };
         ComputedFields: never;
         Insert: {
@@ -2949,6 +2965,7 @@ export type Database = {
           stale_days?: number;
           updated_at?: string;
           updated_by?: string | null;
+          yield_alert_pct?: number;
         };
         Update: {
           approval_variation_pct?: number;
@@ -2962,6 +2979,7 @@ export type Database = {
           stale_days?: number;
           updated_at?: string;
           updated_by?: string | null;
+          yield_alert_pct?: number;
         };
         Relationships: [];
       };
@@ -3898,7 +3916,12 @@ export type Database = {
           p_lookback_days?: number;
           p_reason: string;
           p_stale_days: number;
+          p_yield_alert_pct?: number;
         };
+        Returns: undefined;
+      };
+      update_yield_alert: {
+        Args: { p_group_id: string; p_reason: string; p_yield_alert_pct: number };
         Returns: undefined;
       };
       valid_from_floor: {
@@ -6209,7 +6232,12 @@ export const Constants = {
     Enums: {
       account_status: ["active", "suspended", "deactivated"],
       actor_type: ["user", "service_account"],
-      notification_kind: ["approval_requested", "recipe_changed", "recipe_cost_changed"],
+      notification_kind: [
+        "approval_requested",
+        "recipe_changed",
+        "recipe_cost_changed",
+        "yield_deviation",
+      ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
     },

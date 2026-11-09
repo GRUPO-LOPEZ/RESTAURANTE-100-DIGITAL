@@ -300,6 +300,25 @@ export async function updatePriceSettingsAction(
   return done(error, "Configuración de precios guardada.", ["/configuracion/precios"]);
 }
 
+// El umbral del aviso de rendimiento (ADR-0035): va en la misma configuración del grupo. Se manda solo el umbral: la
+// base deja el resto como está, así no pisa lo que otra persona guardó al mismo tiempo.
+export async function updateYieldAlertAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.yieldAlert.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const group = uuid.safeParse(formData.get("groupId"));
+  if (!group.success) return { status: "bad", message: "Falta el grupo." };
+  const supabase = await createClient();
+  const { error } = await supabase.schema("costing").rpc("update_yield_alert", {
+    p_group_id: group.data,
+    p_yield_alert_pct: Number(fields.data.yield_alert_pct.replace(",", ".")),
+    p_reason: fields.data.reason,
+  });
+  return done(error, "Aviso de rendimiento guardado.", ["/configuracion/precios"]);
+}
+
 export async function setCategoryStaleDaysAction(
   _prev: ActionState,
   formData: FormData,

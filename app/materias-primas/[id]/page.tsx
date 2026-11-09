@@ -30,6 +30,7 @@ import {
   getYieldProcesses,
   getYieldRestaurants,
   getIngredientUsage,
+  getYieldAlertThreshold,
   getYieldSummary,
   type AllergenStatus,
   type IngredientDetail,
@@ -38,7 +39,12 @@ import {
 } from "@/lib/catalog";
 import { UUID, formatDate } from "@/lib/data";
 import { getMenus, requireMenu } from "@/lib/auth/session";
-import { cleaningDifference, describeCooking, formatCleaning } from "@/lib/yields";
+import {
+  cleaningDifference,
+  describeCooking,
+  exceedsYieldAlert,
+  formatCleaning,
+} from "@/lib/yields";
 
 export default function MateriaPrimaPage({ params }: PageProps<"/materias-primas/[id]">) {
   return (
@@ -106,11 +112,12 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
   const [categories, units, suppliers] = canManage
     ? await Promise.all([getCategories(), getUnits(), getSuppliers()])
     : [[], [], []];
-  const [yieldRows, processes, yieldRestaurants, usage] = await Promise.all([
+  const [yieldRows, processes, yieldRestaurants, usage, yieldAlert] = await Promise.all([
     getYieldSummary(ingredient.id),
     canRecordYields ? getYieldProcesses() : Promise.resolve([]),
     canRecordYields ? getYieldRestaurants() : Promise.resolve([]),
     getIngredientUsage(ingredient.id),
+    getYieldAlertThreshold(ingredient.id),
   ]);
 
   return (
@@ -227,6 +234,7 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
       <Yields
         ingredient={ingredient}
         rows={yieldRows}
+        alertPct={yieldAlert}
         canRecord={canRecordYields}
         processes={processes}
         restaurants={yieldRestaurants}
@@ -625,7 +633,21 @@ function YieldStandard({ row }: { row: YieldRow }) {
   );
 }
 
-function YieldTests({ row }: { row: YieldRow }) {
+// Si el promedio de los ensayos se desvía del estándar más que el umbral del aviso de rendimiento (ADR-0035).
+function deviates(row: YieldRow, alertPct: number | null): boolean {
+  if (alertPct === null) return false;
+  const cleaning =
+    row.measuredCleaning !== null &&
+    row.standardCleaning !== null &&
+    exceedsYieldAlert(row.measuredCleaning, row.standardCleaning, alertPct);
+  const cooking =
+    row.measuredCooking !== null &&
+    row.standardCooking !== null &&
+    exceedsYieldAlert(row.measuredCooking, row.standardCooking, alertPct);
+  return cleaning || cooking;
+}
+
+function YieldTests({ row, alertPct }: { row: YieldRow; alertPct: number | null }) {
   if (row.tests === 0) return <span className="text-sm text-ink-muted">Sin ensayos.</span>;
   const parts = [row.tests === 1 ? "1 ensayo" : `${row.tests} ensayos`];
   if (row.measuredCleaning !== null) {
@@ -638,12 +660,22 @@ function YieldTests({ row }: { row: YieldRow }) {
   }
   if (row.measuredCooking !== null) parts.push(describeCooking(row.measuredCooking));
   if (row.lastTestedOn) parts.push(`último el ${formatDate(row.lastTestedOn)}`);
-  return <span className="text-sm text-ink-muted tabular-nums">{parts.join(" · ")}</span>;
+  return (
+    <span className="flex flex-col items-start gap-1">
+      <span className="text-sm text-ink-muted tabular-nums">{parts.join(" · ")}</span>
+      {deviates(row, alertPct) ? (
+        <Badge status="warn" className="whitespace-normal">
+          El promedio se desvía más del {alertPct?.toLocaleString("es-AR")} % del estándar
+        </Badge>
+      ) : null}
+    </span>
+  );
 }
 
 function Yields({
   ingredient,
   rows,
+  alertPct,
   canRecord,
   processes,
   restaurants,
@@ -651,6 +683,7 @@ function Yields({
 }: {
   ingredient: IngredientDetail;
   rows: YieldRow[];
+  alertPct: number | null;
   canRecord: boolean;
   processes: { id: string; name: string }[];
   restaurants: { id: string; name: string }[];
@@ -689,7 +722,7 @@ function Yields({
                 ) : null}
               </div>
               <YieldStandard row={r} />
-              <YieldTests row={r} />
+              <YieldTests row={r} alertPct={alertPct} />
             </li>
           ))}
         </ul>

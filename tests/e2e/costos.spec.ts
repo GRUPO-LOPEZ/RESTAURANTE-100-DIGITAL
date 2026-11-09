@@ -66,7 +66,9 @@ test("el Controller ve cuánto cuesta cada receta y qué la encarece", async ({ 
 test("el Controller recibe el aviso de cambio de costo", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto("/aprobaciones");
-  await expect(page.getByRole("heading", { name: /Avisos de recetas y costos/ })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Avisos de recetas, costos y rendimientos/ }),
+  ).toBeVisible();
   const card = page
     .getByRole("listitem")
     .filter({ hasText: "Cambió el costo de «Salsa bolognesa»" });
