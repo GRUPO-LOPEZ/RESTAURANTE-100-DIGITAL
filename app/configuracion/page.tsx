@@ -5,6 +5,7 @@ import { Building2, ChevronRight, FileText, Settings, ShieldCheck, Tag, Users } 
 import { AppShell, Loading } from "@/components/app-shell";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
+import { EmptyState } from "@/components/ui/states";
 import { getRestaurants } from "@/lib/org";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 
@@ -56,6 +57,13 @@ async function Panel() {
   const menus = await getMenus();
   const restaurants = menus.orgManageGroup ? await getRestaurants() : [];
   const withoutEntity = restaurants.filter((r) => !r.legalEntityId).length;
+  const nothing =
+    !menus.orgManage &&
+    !menus.pricesConfigure &&
+    !menus.users &&
+    !menus.roles &&
+    !menus.catalogSettings;
+  if (nothing) return <EmptyState title="Por ahora no tenés nada para administrar acá." />;
   return (
     <>
       {withoutEntity > 0 ? (
@@ -71,75 +79,78 @@ async function Panel() {
           </Link>
         </Notice>
       ) : null}
-      {menus.orgManage ? (
-        <Card className="flex flex-col gap-4">
-          <CardTitle>Estructura del grupo</CardTitle>
-          <CardDescription>
-            Lo que se carga una vez y usan todas las pantallas. Cada cambio pide un motivo y queda
-            en el historial.
-          </CardDescription>
-          <ul className="flex flex-col gap-2">
-            <Entry
-              href="/configuracion/marcas"
-              title="Marcas y locales"
-              description="Altas, datos, tipo y estado de cada marca y local, y las áreas de cada local."
-              Icon={Building2}
-            />
-            {menus.orgManageGroup ? (
+      {/* Los grupos de accesos, en grilla: en la computadora entran lado a lado (ADR-0036). */}
+      <div className="grid items-start gap-4 desk:grid-cols-2 wide:grid-cols-3">
+        {menus.orgManage ? (
+          <Card className="flex flex-col gap-4">
+            <CardTitle>Estructura del grupo</CardTitle>
+            <CardDescription>
+              Lo que se carga una vez y usan todas las pantallas. Cada cambio pide un motivo y queda
+              en el historial.
+            </CardDescription>
+            <ul className="flex flex-col gap-2">
               <Entry
-                href="/configuracion/razones-sociales"
-                title="Razones sociales"
-                description="Las sociedades con su CUIT y su condición frente al IVA, y qué locales usa cada una."
-                Icon={FileText}
+                href="/configuracion/marcas"
+                title="Marcas y locales"
+                description="Altas, datos, tipo y estado de cada marca y local, y las áreas de cada local."
+                Icon={Building2}
               />
-            ) : null}
-          </ul>
-        </Card>
-      ) : null}
-      {menus.pricesConfigure ? (
-        <Card className="flex flex-col gap-4">
-          <CardTitle>Precios</CardTitle>
-          <ul className="flex flex-col gap-2">
-            <Entry
-              href="/configuracion/precios"
-              title="Configuración de precios"
-              description="Desde qué variación aprueba también Dirección, contra cuántos días atrás se compara y cuándo un precio está desactualizado."
-              Icon={Tag}
-            />
-          </ul>
-        </Card>
-      ) : null}
-      {menus.users || menus.roles || menus.catalogSettings ? (
-        <Card className="flex flex-col gap-4">
-          <CardTitle>Personas y listas</CardTitle>
-          <ul className="flex flex-col gap-2">
-            {menus.users ? (
+              {menus.orgManageGroup ? (
+                <Entry
+                  href="/configuracion/razones-sociales"
+                  title="Razones sociales"
+                  description="Las sociedades con su CUIT y su condición frente al IVA, y qué locales usa cada una."
+                  Icon={FileText}
+                />
+              ) : null}
+            </ul>
+          </Card>
+        ) : null}
+        {menus.pricesConfigure ? (
+          <Card className="flex flex-col gap-4">
+            <CardTitle>Precios</CardTitle>
+            <ul className="flex flex-col gap-2">
               <Entry
-                href="/usuarios"
-                title="Usuarios"
-                description="Invitar personas, darles un rol y un lugar, suspender o dar de baja."
-                Icon={Users}
+                href="/configuracion/precios"
+                title="Configuración de precios"
+                description="Desde qué variación aprueba también Dirección, contra cuántos días atrás se compara y cuándo un precio está desactualizado."
+                Icon={Tag}
               />
-            ) : null}
-            {menus.roles ? (
-              <Entry
-                href="/roles"
-                title="Roles y permisos"
-                description="Qué puede hacer cada rol. Los cambios pasan por aprobación."
-                Icon={ShieldCheck}
-              />
-            ) : null}
-            {menus.catalogSettings ? (
-              <Entry
-                href="/materias-primas/configuracion"
-                title="Configuración del catálogo"
-                description="Categorías de materias primas y de recetas, y procesos de rendimiento."
-                Icon={Settings}
-              />
-            ) : null}
-          </ul>
-        </Card>
-      ) : null}
+            </ul>
+          </Card>
+        ) : null}
+        {menus.users || menus.roles || menus.catalogSettings ? (
+          <Card className="flex flex-col gap-4">
+            <CardTitle>Personas y listas</CardTitle>
+            <ul className="flex flex-col gap-2">
+              {menus.users ? (
+                <Entry
+                  href="/usuarios"
+                  title="Usuarios"
+                  description="Invitar personas, darles un rol y un lugar, suspender o dar de baja."
+                  Icon={Users}
+                />
+              ) : null}
+              {menus.roles ? (
+                <Entry
+                  href="/roles"
+                  title="Roles y permisos"
+                  description="Qué puede hacer cada rol. Los cambios pasan por aprobación."
+                  Icon={ShieldCheck}
+                />
+              ) : null}
+              {menus.catalogSettings ? (
+                <Entry
+                  href="/materias-primas/configuracion"
+                  title="Configuración del catálogo"
+                  description="Categorías de materias primas y de recetas, y procesos de rendimiento."
+                  Icon={Settings}
+                />
+              ) : null}
+            </ul>
+          </Card>
+        ) : null}
+      </div>
     </>
   );
 }

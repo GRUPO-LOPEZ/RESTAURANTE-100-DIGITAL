@@ -8,6 +8,7 @@ import { AppShell, Loading } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/field";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { FormTextarea } from "@/components/ui/form";
 import { EmptyState } from "@/components/ui/kpi";
 import { first, formatDateTime, getBrandsAndRestaurants, getPermissionMatrix } from "@/lib/data";
@@ -59,29 +60,22 @@ async function Matrix({ searchParams }: { searchParams: PageProps<"/roles">["sea
 
   return (
     <>
-      <Card>
-        <form method="get" className="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <Field id="rol" label="Rol" className="sm:w-80">
-            <Select name="rol" defaultValue={role.code}>
-              {matrix.roles.map((r) => (
-                <option key={r.code} value={r.code}>
-                  {r.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <button
-            type="submit"
-            className="min-h-touch rounded-sm border border-line bg-surface px-4 text-base font-medium text-ink hover:bg-line/50"
-          >
-            Ver sus permisos
-          </button>
-        </form>
-      </Card>
+      {/* El rol se elige y se aplica solo (ADR-0036); queda en la dirección (?rol=). */}
+      <FilterBar label="Elegir un rol">
+        <Field id="rol" label="Rol" className="w-full desk:w-80">
+          <Select name="rol" defaultValue={role.code}>
+            {matrix.roles.map((r) => (
+              <option key={r.code} value={r.code}>
+                {r.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </FilterBar>
 
       <section aria-labelledby="permisos-del-rol" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 id="permisos-del-rol" className="text-xl text-ink">
+          <h2 id="permisos-del-rol" className="text-xl font-semibold text-ink">
             {role.name}
           </h2>
           {role.requires_mfa ? <Badge status="info">Usa doble verificación</Badge> : null}

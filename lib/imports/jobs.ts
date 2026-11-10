@@ -102,9 +102,11 @@ export type ImportJobRow = {
 
 export async function getImportJobs(
   page: number,
+  // Filas por página (rediseño, ADR-0036: 15 de entrada, como todos los listados).
+  size: number = IMPORT_JOBS_PAGE,
 ): Promise<{ rows: ImportJobRow[]; total: number }> {
   const supabase = await createClient();
-  const from = page * IMPORT_JOBS_PAGE;
+  const from = page * size;
   const [jobs, brands] = await Promise.all([
     supabase
       .schema("imports")
@@ -112,7 +114,7 @@ export async function getImportJobs(
       .select("id, file_name, brand_id, code_prefix, status, created_at", { count: "exact" })
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
-      .range(from, from + IMPORT_JOBS_PAGE - 1),
+      .range(from, from + size - 1),
     supabase.schema("org").from("brands").select("id, name"),
   ]);
   if (jobs.error || brands.error) failed("las importaciones");

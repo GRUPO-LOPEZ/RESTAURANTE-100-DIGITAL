@@ -1,20 +1,24 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowLeft, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/kpi";
-import { first, formatDateTime } from "@/lib/data";
+import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { Pagination } from "@/components/ui/pagination";
+import { EmptyState } from "@/components/ui/states";
+import { formatDateTime } from "@/lib/data";
 import {
-  IMPORT_JOBS_PAGE,
   JOB_STATUS_BADGE,
   JOB_STATUS_LABELS,
   getImportJobs,
+  type ImportJobRow,
 } from "@/lib/imports/jobs";
+import { listHref, parseList, plainParams } from "@/lib/list-params";
 import { getMenus, requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Importaciones del recetario (ADR-0027): ¿qué Excel se subieron y en qué paso están?
 export default function ImportacionesPage({ searchParams }: PageProps<"/recetas/importar">) {
@@ -49,91 +53,91 @@ async function Actions() {
   );
 }
 
+const PATH = "/recetas/importar";
+
+const COLUMNS: DataColumn<ImportJobRow>[] = [
+  {
+    key: "file",
+    header: "Archivo",
+    mobile: "title",
+    cell: (j) => (
+      <Link
+        href={`/recetas/importar/${j.id}`}
+        className="inline-flex min-h-touch items-center font-medium break-all text-primary underline-offset-4 hover:underline desk:min-h-0"
+      >
+        {j.fileName}
+      </Link>
+    ),
+  },
+  { key: "brand", header: "Marca", cell: (j) => j.brandName },
+  {
+    key: "prefix",
+    header: "Prefijo",
+    cell: (j) => <span className="tabular-nums">{j.prefix}</span>,
+  },
+  {
+    key: "created",
+    header: "Subida",
+    cell: (j) => (
+      <span className="whitespace-nowrap tabular-nums">{formatDateTime(j.createdAt)}</span>
+    ),
+  },
+  {
+    key: "status",
+    header: "Estado",
+    mobile: "status",
+    cell: (j) => <Badge status={JOB_STATUS_BADGE[j.status]}>{JOB_STATUS_LABELS[j.status]}</Badge>,
+  },
+];
+
 async function Jobs({
   searchParams,
 }: {
   searchParams: PageProps<"/recetas/importar">["searchParams"];
 }) {
   await requireMenu("imports");
-  const params = await searchParams;
-  const page = Math.max(
-    0,
-    Math.min(Number.parseInt(first(params.pagina) ?? "1", 10) - 1 || 0, 1000),
-  );
-  const [{ rows, total }, menus] = await Promise.all([getImportJobs(page), getMenus()]);
-  const pages = Math.max(1, Math.ceil(total / IMPORT_JOBS_PAGE));
+  const raw = await searchParams;
+  const params = plainParams(raw);
+  // Página y filas por página como en todos los listados (15 de entrada; 10, 25 o 50).
+  const list = parseList(raw, []);
+  const [{ rows, total }, menus] = await Promise.all([
+    getImportJobs(list.page - 1, list.size),
+    getMenus(),
+  ]);
 
   return (
     <>
-      <Link
-        href="/recetas"
-        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Volver a recetas
-      </Link>
+      <BackLink href="/recetas">Volver a recetas</BackLink>
       <Card className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="tabular-nums">
-            {total === 1 ? "1 importación" : `${total.toLocaleString("es-AR")} importaciones`}
-          </CardTitle>
-        </div>
-        {rows.length === 0 ? (
-          <EmptyState
-            title={total > 0 ? "Esa página no existe." : "Todavía no se importó ningún recetario."}
-          >
-            {total > 0 ? (
-              <Link
-                href="/recetas/importar"
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                Ir a la primera página
-              </Link>
-            ) : menus.importsRun ? (
-              "Subí el primero con «Importar recetario»."
-            ) : (
-              "Los suben los chefs y los directores de marca."
-            )}
+        <CardTitle className="tabular-nums">
+          {total === 1 ? "1 importación" : `${total.toLocaleString("es-AR")} importaciones`}
+        </CardTitle>
+        {rows.length === 0 && total > 0 ? (
+          <EmptyState title="Esa página no existe.">
+            <Link
+              href={listHref(PATH, params, { pagina: undefined })}
+              className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline"
+            >
+              Ir a la primera página
+            </Link>
           </EmptyState>
         ) : (
-          <ul aria-label="Importaciones" className="flex flex-col divide-y divide-line">
-            {rows.map((j) => (
-              <li
-                key={j.id}
-                className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:gap-4"
-              >
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <Link
-                    href={`/recetas/importar/${j.id}`}
-                    className="inline-flex min-h-touch items-center text-base font-medium break-all text-primary underline-offset-4 hover:underline"
-                  >
-                    {j.fileName}
-                  </Link>
-                  <span className="text-sm text-ink-muted tabular-nums">
-                    {j.brandName} · prefijo {j.prefix} · {formatDateTime(j.createdAt)}
-                  </span>
-                </div>
-                <Badge status={JOB_STATUS_BADGE[j.status]}>{JOB_STATUS_LABELS[j.status]}</Badge>
-              </li>
-            ))}
-          </ul>
+          <DataTable
+            caption="Importaciones"
+            columns={COLUMNS}
+            rows={rows}
+            rowKey={(j) => j.id}
+            empty={
+              <EmptyState title="Todavía no se importó ningún recetario.">
+                {menus.importsRun
+                  ? "Subí el primero con «Importar recetario»."
+                  : "Los suben los chefs y los directores de marca."}
+              </EmptyState>
+            }
+          />
         )}
-        {pages > 1 ? (
-          <nav aria-label="Páginas" className="flex flex-wrap items-center gap-2">
-            {page > 0 ? (
-              <Button asChild variant="outline">
-                <Link href={`/recetas/importar?pagina=${page}`}>Anterior</Link>
-              </Button>
-            ) : null}
-            <span className="text-sm text-ink-muted tabular-nums">
-              Página {page + 1} de {pages}
-            </span>
-            {page + 1 < pages ? (
-              <Button asChild variant="outline">
-                <Link href={`/recetas/importar?pagina=${page + 2}`}>Siguiente</Link>
-              </Button>
-            ) : null}
-          </nav>
+        {total > 0 ? (
+          <Pagination list={list} total={total} shown={rows.length} path={PATH} params={params} />
         ) : null}
       </Card>
     </>

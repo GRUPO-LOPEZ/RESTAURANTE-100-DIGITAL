@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
+import { BackLink } from "@/components/back-link";
 import { PlacePrompt } from "@/components/place-prompt";
 import { RecipeCardExtras } from "@/components/recipe-card-extras";
 import { ReportPrintButton } from "@/components/report-print-button";
@@ -217,19 +218,6 @@ async function RecipePicker({
         ) : null}
       </Card>
     </>
-  );
-}
-
-// "← Volver", igual que en las fichas (ADR-0036). No sale en el papel.
-function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control print:hidden"
-    >
-      <ArrowLeft aria-hidden="true" className="size-4" />
-      {children}
-    </Link>
   );
 }
 

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 
 import { inviteAction } from "@/app/usuarios/actions";
@@ -8,6 +7,7 @@ import { Card, CardDescription } from "@/components/ui/card";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { getPlaces, getRoles } from "@/lib/data";
 import { requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 export default function InvitarPage() {
   return (
@@ -27,13 +27,8 @@ async function InviteForm() {
   const [roles, places] = await Promise.all([getRoles(), getPlaces()]);
   return (
     <>
-      <Link
-        href="/usuarios"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-      >
-        Volver a usuarios
-      </Link>
-      <Card className="flex flex-col gap-4">
+      <BackLink href="/usuarios">Volver a usuarios</BackLink>
+      <Card className="flex max-w-3xl flex-col gap-4">
         <CardDescription>
           Solo podés invitar a los lugares y con los roles que tus permisos permiten.
         </CardDescription>

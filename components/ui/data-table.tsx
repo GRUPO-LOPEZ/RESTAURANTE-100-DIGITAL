@@ -87,7 +87,13 @@ function DataTable<T>({
           </li>
         ))}
       </ul>
-      <div className="hidden overflow-x-auto rounded-md border border-line bg-surface desk:block print:block">
+      {/* Si la tabla es más ancha que el lugar, se desplaza de costado: también con el teclado (WCAG 2.1.1). */}
+      <div
+        role="region"
+        aria-label={`${caption} (tabla)`}
+        tabIndex={0}
+        className="hidden overflow-x-auto rounded-md border border-line bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary desk:block print:block"
+      >
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">{caption}</caption>
           <thead>

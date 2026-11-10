@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 
 import {
@@ -16,6 +15,7 @@ import { Notice } from "@/components/ui/notice";
 import { getPriceSettings } from "@/lib/prices";
 import { createClient } from "@/lib/supabase/server";
 import { requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Configuración de precios del grupo (ADR-0029; respuestas 6 y 8 de Soy, ADR-0030): desde qué variación
 // aprueba también Dirección, contra cuántos días atrás se compara y cuándo un precio está desactualizado.
@@ -77,12 +77,7 @@ async function PriceSettingsPanel() {
 
   return (
     <>
-      <Link
-        href="/configuracion"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-      >
-        Volver al panel de control
-      </Link>
+      <BackLink href="/configuracion">Volver al panel de control</BackLink>
       <Card className="flex flex-col gap-4">
         <CardTitle>Aprobación de precios</CardTitle>
         <CardDescription>

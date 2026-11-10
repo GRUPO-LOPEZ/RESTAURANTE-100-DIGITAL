@@ -6,11 +6,14 @@ import { cn } from "@/lib/utils";
 // Mismo lugar para los botones en todo el sistema. Los títulos no compiten con los números.
 function PageHeader({
   title,
+  heading,
   description,
   actions,
   className,
 }: {
   title: string;
+  // Lo que dice el h1 si no es el título (una ficha: el nombre del registro, que llega después).
+  heading?: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
@@ -24,7 +27,7 @@ function PageHeader({
       )}
     >
       <div className="flex min-w-0 flex-col gap-1">
-        <h1 className="text-2xl text-ink">{title}</h1>
+        <h1 className="text-2xl [overflow-wrap:anywhere] text-ink">{heading ?? title}</h1>
         {description ? <p className="text-base text-ink-muted">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

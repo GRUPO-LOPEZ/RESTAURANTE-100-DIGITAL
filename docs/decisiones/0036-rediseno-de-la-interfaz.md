@@ -84,3 +84,21 @@ Sin migraciones ni cambios de permisos, fórmulas o aprobaciones: todo se resuel
 - **`FilterBar`:** sin JavaScript conserva lo demás de la dirección (local, pestaña, orden); al aplicar un filtro saca el aviso de una acción anterior; una fecha escrita con el teclado espera a que se termine de escribir.
 - **Modal de alta:** al cerrarse, el foco vuelve al botón que lo abrió (WCAG 2.4.3), y el botón avisa que abre un diálogo. No usa el disparador de Radix: abriría el modal también con Ctrl+clic, que tiene que abrir la página en otra pestaña.
 - **`ProgressBar` decorativa** (`decorative`): dentro de un enlace que ya dice el número, se oculta a los lectores de pantalla para que el nombre del enlace no repita todo.
+
+## Adenda: PR 4, administración y cierre del rediseño (2026-11-10)
+
+Sin migraciones ni cambios de permisos o de lógica. Con este PR quedan migradas todas las pantallas.
+
+- **Local en Usuarios e Historial** (decisión de Joaco, 2026-11-10): se saca el filtro de local propio y se usa el selector de arriba. Con «Todos mis locales» se ve todo el alcance de la persona (no pide elegir, como Costos). La Marca queda como filtro de la barra solo cuando arriba está «Todos». Un `?local=` de la dirección se sigue aceptando; si no está en el alcance, la pantalla lo dice.
+- **Paginación con cursor** (decisión de Joaco, 2026-11-10): Personas e Historial no tienen total ni páginas (la base trae «los siguientes N»; contar todo el historial es caro). `CursorPagination` tiene el aspecto de `Pagination`: cuántas filas se ven, filas por página, «Volver al principio» y «Siguientes» o «Más antiguos». Sus columnas no se ordenan: el orden lo fija la base.
+- **Usuarios:** el tablero con filtros que se aplican solos, KPIs que nunca dan un estado positivo sin datos y que llevan a sus registros, tablas comunes y los 5 últimos cambios críticos con «Ver todos» al Historial (con el mismo período y módulo). La lista de personas con pestañas de estado. La ficha en pestañas (Datos y cuenta · Roles · Actividad), con el nombre como título.
+- **Historial** en tabla, con el antes y el después de cada cambio en la última columna.
+- **Aprobaciones sin pestañas:** pendientes, avisos y resueltas siguen en una sola página, así el resultado de una decisión se ve en la tarjeta resuelta. «Marcar avisos como leídos» va en el encabezado.
+- **Roles:** el rol se aplica al elegirlo. **Mi cuenta** en pestañas (Mis datos · Contraseña y doble verificación · Sesiones). **Panel de control:** los grupos en grilla.
+- **Pendientes de los PR anteriores:**
+  - «Salir» del celular va dentro de «Menú», con Mi cuenta (design.md). El encabezado pasó a `z-40`: el menú abierto queda por encima de la barra inferior, que antes tapaba su final.
+  - El título (h1) de las fichas de receta, materia prima y persona es el nombre del registro; la ruta de arriba conserva el tipo. `AppShell` y `PageHeader` suman la prop `heading`, y cada ficha lee el registro una sola vez por pedido (`cache` de React).
+  - Importaciones con `DataTable` y paginación común.
+  - Todos los «← Volver» usan `BackLink`.
+- **`DataTable`:** cuando la tabla es más ancha que su lugar, la zona con scroll se puede recorrer con el teclado (región con nombre, `tabIndex=0`; axe `scrollable-region-focusable`).
+- **Se borran** `FiltersPanel` y la tabla vieja de personas (`users-table`). TanStack Table ya no se usa en ninguna pantalla (la tabla común ordena y pagina en el servidor): **sale del stack** por decisión de Joaco (2026-11-10). La tabla de la sección 3 del prompt maestro queda reemplazada por esta decisión.

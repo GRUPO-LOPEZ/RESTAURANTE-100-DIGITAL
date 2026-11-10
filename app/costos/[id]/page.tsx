@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -23,6 +22,7 @@ import { formatMoney, perBaseLabel } from "@/lib/money";
 import { LINE_UNITS, formatQuantity } from "@/lib/recipe-format";
 import { getRecipe } from "@/lib/recipes";
 import { requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // El costo de una receta en un local (ADR-0032): ¿qué la encarece? Es una pantalla propia porque quien
 // no trabaja la receta (Gerente, Controller) la ve como en la cocina, y esa vista no lleva costos.
@@ -47,15 +47,7 @@ function backHref(volver: string | undefined, placeId?: string): string {
 }
 
 function Back({ href }: { href: string }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
-    >
-      <ArrowLeft aria-hidden="true" className="size-4" />
-      Volver a costos
-    </Link>
-  );
+  return <BackLink href={href}>Volver a costos</BackLink>;
 }
 
 async function RecipeCost({

@@ -29,7 +29,7 @@ Orden de módulos: identidad y auditoría → organización → materias primas 
 
 ## Stack (no agregar tecnologías sin justificarlo por escrito y sin aprobación de Joaco)
 
-Supabase (PostgreSQL, Auth, Storage, Edge Functions) · Next.js 16 App Router + TypeScript strict · Tailwind CSS 4 + shadcn/ui · TanStack Table + Recharts · React Hook Form + Zod · TanStack Query · Vitest, Playwright + axe, pgTAP · GitHub Actions · Vercel.
+Supabase (PostgreSQL, Auth, Storage, Edge Functions) · Next.js 16 App Router + TypeScript strict · Tailwind CSS 4 + shadcn/ui · Recharts · React Hook Form + Zod · TanStack Query · Vitest, Playwright + axe, pgTAP · GitHub Actions · Vercel.
 
 - TypeScript strict, **sin `any`**.
 - Tipos de la base **generados** con `npm run db:types`. Nunca a mano.

@@ -3,7 +3,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
-import { PASSWORD, fillLogin, login, logout, menuLink, notice } from "./helpers";
+import { PASSWORD, fillLogin, login, logout, menuLink, notice, openSection } from "./helpers";
 
 const MAILPIT = "http://127.0.0.1:54324";
 
@@ -127,8 +127,13 @@ test.describe("recuperar la contraseña y mi cuenta", () => {
     // Mi cuenta: datos, contraseña, doble verificación y sesiones.
     await (await menuLink(page, "Mi cuenta")).click();
     await expect(page.getByRole("heading", { level: 1, name: "Mi cuenta" })).toBeVisible();
+    // Mi cuenta va por pestañas (rediseño, ADR-0036): datos, seguridad y sesiones.
+    await openSection(page, "Sesiones", "mi cuenta");
+    await expect(page).toHaveURL(/seccion=sesiones/);
     await expect(page.getByText("Esta sesión")).toBeVisible();
     await axe(page);
+    await openSection(page, "Contraseña y doble verificación", "mi cuenta");
+    await expect(page.getByRole("heading", { name: "Doble verificación" })).toBeVisible();
     await page.getByLabel("Contraseña actual").fill("no-es-la-mia-123");
     await page.getByLabel("Contraseña nueva", { exact: true }).fill(second);
     await page.getByLabel("Repetí la contraseña nueva").fill(second);
@@ -154,8 +159,8 @@ test.describe("recuperar la contraseña y mi cuenta", () => {
     const otherPage = await other.newPage();
     await login(otherPage, "compras@ejemplo.test");
     await login(page, "compras@ejemplo.test");
-    await page.goto("/mi-cuenta");
-    await page.getByRole("button", { name: /^Cerrar las otras/ }).click();
+    await page.goto("/mi-cuenta?seccion=sesiones");
+    await page.getByRole("button", { name: /^Cerrar (la otra sesión|las otras)/ }).click();
     // Ya no quedan otras sesiones en la lista.
     await expect(page.getByText("No tenés otras sesiones abiertas.")).toBeVisible();
     // El otro dispositivo pierde el acceso en la consulta siguiente (la base mira la sesión).
@@ -181,12 +186,11 @@ test.describe("selector de local", () => {
     await expect(page.getByLabel("Local activo")).toHaveValue(
       "00000000-0000-4000-8000-000000000202",
     );
+    // La lista de personas usa el local de arriba (el selector es único y global, ADR-0036): lo dice el título.
     await page.goto("/usuarios/lista");
-    await expect(page.getByLabel("Local", { exact: true })).toHaveValue(
-      "00000000-0000-4000-8000-000000000202",
-    );
-    // El resumen de los filtros lo dice (en el celular, los filtros empiezan plegados).
-    await expect(page.locator("summary", { hasText: "el que elegiste arriba" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Personas de Demo Pastas Norte" }),
+    ).toBeVisible();
     // Vuelve a "todos" para no afectar a otras pruebas.
     await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
     await page.getByRole("button", { name: "Cambiar" }).click();

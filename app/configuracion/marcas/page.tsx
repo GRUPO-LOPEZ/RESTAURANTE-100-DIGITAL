@@ -11,6 +11,7 @@ import { FormInput, FormTextarea } from "@/components/ui/form";
 import { EmptyState } from "@/components/ui/kpi";
 import { BRAND_STATUS_LABELS, getBrands, getOrgPermissions } from "@/lib/org";
 import { requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Marcas del grupo (ADR-0031): ¿qué marcas hay y cuántos locales tiene cada una? Una marca nueva la da
 // de alta quien administra todo el grupo.
@@ -31,12 +32,7 @@ async function Brands() {
   const groupId = permissions.groups[0];
   return (
     <>
-      <Link
-        href="/configuracion"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-      >
-        Volver al panel de control
-      </Link>
+      <BackLink href="/configuracion">Volver al panel de control</BackLink>
       <Card className="flex flex-col gap-4">
         <CardTitle className="tabular-nums">
           {brands.length === 1 ? "1 marca" : `${brands.length} marcas`}

@@ -24,11 +24,14 @@ import { SIDEBAR_COOKIE, mobileItems, navGroups } from "@/lib/nav";
 // Lo que lee la sesión va detrás de Suspense (Cache Components): el resto se arma de antemano.
 export function AppShell({
   title,
+  heading,
   description,
   actions,
   children,
 }: {
   title: string;
+  // El h1 de una ficha: el nombre del registro (el título queda en la ruta de navegación).
+  heading?: React.ReactNode;
   description?: string;
   // La acción principal de la pantalla, a la derecha del título (mismo lugar en todo el sistema).
   actions?: React.ReactNode;
@@ -40,7 +43,7 @@ export function AppShell({
         <SessionSidebar />
       </Suspense>
       <div className="lf-main flex min-h-full flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-line bg-surface print:hidden">
+        <header className="sticky top-0 z-40 border-b border-line bg-surface print:hidden">
           <div className="relative flex min-h-topbar flex-wrap items-center gap-2 px-4 py-2 desk:flex-nowrap desk:px-gutter desk:py-0 wide:px-gutter-wide">
             <Link
               href="/"
@@ -66,7 +69,7 @@ export function AppShell({
           </div>
         </header>
         <main className="flex w-full flex-1 flex-col gap-6 px-4 pt-6 pb-24 desk:px-gutter desk:pb-8 wide:px-gutter-wide print:p-0">
-          <PageHeader title={title} description={description} actions={actions} />
+          <PageHeader title={title} heading={heading} description={description} actions={actions} />
           {children}
         </main>
       </div>
@@ -117,14 +120,25 @@ async function SessionTopbar() {
   const person = displayName(session);
   return (
     <>
-      {/* Celular: "Menú" y "Salir" arriba; el selector de local, a todo el ancho debajo. */}
-      <MobileMenu groups={navGroups(menus, unread)} search={search} />
-      <form action={signOut} className="desk:hidden">
-        <Button type="submit" variant="ghost" aria-label={`Salir (${person})`}>
-          <LogOut aria-hidden="true" />
-          Salir
-        </Button>
-      </form>
+      {/* Celular: "Menú" arriba, con Mi cuenta y "Salir" adentro (design.md); el selector de local, a todo
+          el ancho debajo. */}
+      <MobileMenu
+        groups={navGroups(menus, unread)}
+        search={search}
+        signOut={
+          <form action={signOut}>
+            <Button
+              type="submit"
+              variant="ghost"
+              aria-label={`Salir (${person})`}
+              className="w-full justify-start gap-3 px-3 text-base font-normal"
+            >
+              <LogOut aria-hidden="true" className="size-5" />
+              Salir
+            </Button>
+          </form>
+        }
+      />
       {scopes.length > 1 ? (
         <RestaurantSelector
           value={scopes.some((s) => s.restaurant_id === activeId) ? activeId : null}

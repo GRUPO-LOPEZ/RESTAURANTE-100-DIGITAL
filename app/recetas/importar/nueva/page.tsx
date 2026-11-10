@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 
 import { AppShell, Loading } from "@/components/app-shell";
@@ -7,6 +6,7 @@ import { Card, CardDescription } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/kpi";
 import { getImportBrands } from "@/lib/imports/jobs";
 import { requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Leer un Excel grande lleva su tiempo: la acción de servidor de esta pantalla tiene hasta 60 s.
 export const maxDuration = 60;
@@ -29,12 +29,7 @@ async function NewImport() {
   const brands = await getImportBrands();
   return (
     <>
-      <Link
-        href="/recetas/importar"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-      >
-        Volver a importaciones
-      </Link>
+      <BackLink href="/recetas/importar">Volver a importaciones</BackLink>
       <Card className="flex flex-col gap-4">
         <CardDescription>
           Nada se crea al subir: primero ves una vista previa con lo que se crea, lo que ya existe y

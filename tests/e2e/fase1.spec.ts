@@ -118,7 +118,7 @@ test.describe("8 y A5. una cuenta desactivada pierde el acceso; reactivada vuelv
       .getByRole("link", { name: /Prueba Baja/ })
       .first()
       .click();
-    await expect(page.getByRole("heading", { level: 2, name: /Prueba Baja/ })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Prueba Baja/ })).toBeVisible();
     await openAction(page, "Desactivar…");
     await page.getByLabel("Motivo para desactivar").fill("Prueba automática: baja temporal");
     await page.getByRole("button", { name: "Desactivar la cuenta" }).click();

@@ -10,6 +10,7 @@ import { formatDifference, getPriceImpact, type ImpactRow } from "@/lib/costs";
 import { formatDate, formatDateTime, uuidOrUndefined } from "@/lib/data";
 import { formatMoney } from "@/lib/money";
 import { requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // El impacto de un precio (ADR-0032): ¿a qué platos les pegó? Sale de las fotos de costo.
 export default function ImpactoPage({ params }: PageProps<"/costos/impacto/[id]">) {
@@ -41,12 +42,7 @@ async function Impact({ params }: { params: PageProps<"/costos/impacto/[id]">["p
 
   return (
     <>
-      <Link
-        href="/costos"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-      >
-        Volver a costos
-      </Link>
+      <BackLink href="/costos">Volver a costos</BackLink>
       {rows.length === 0 ? (
         <EmptyState title="Todavía no hay impacto para mostrar.">
           Los costos se actualizan en un minuto. Tampoco aparece nada si el precio empieza más

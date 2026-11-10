@@ -10,8 +10,17 @@ import { isCurrent, type NavGroup, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 // Celular (menos de 800 px, ADR-0036). "Menú" abre la navegación completa debajo de la barra superior;
-// al cambiar de pantalla se cierra, y Escape la cierra y devuelve el foco al botón.
-export function MobileMenu({ groups, search }: { groups: NavGroup[]; search: boolean }) {
+// al cambiar de pantalla se cierra, y Escape la cierra y devuelve el foco al botón. Abajo de todo, Mi cuenta y
+// "Salir" (signOut: el formulario lo arma el servidor, con su acción).
+export function MobileMenu({
+  groups,
+  search,
+  signOut,
+}: {
+  groups: NavGroup[];
+  search: boolean;
+  signOut: React.ReactNode;
+}) {
   const pathname = usePathname();
   const menu = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -31,7 +40,7 @@ export function MobileMenu({ groups, search }: { groups: NavGroup[]; search: boo
         <Menu aria-hidden="true" className="size-5" />
         Menú
       </summary>
-      <div className="absolute inset-x-0 top-full z-40 max-h-[calc(100dvh-8rem)] overflow-y-auto border-b border-line bg-surface px-4 py-3">
+      <div className="absolute inset-x-0 top-full z-40 max-h-[calc(100dvh-10rem)] overflow-y-auto border-b border-line bg-surface px-4 py-3">
         {search ? (
           <form
             action="/buscar"
@@ -83,6 +92,7 @@ export function MobileMenu({ groups, search }: { groups: NavGroup[]; search: boo
                 Mi cuenta
               </Link>
             </li>
+            <li>{signOut}</li>
           </ul>
         </nav>
       </div>
