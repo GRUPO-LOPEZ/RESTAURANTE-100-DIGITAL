@@ -88,3 +88,12 @@ export async function openAction(page: Page, summary: string) {
 export function notice(page: Page) {
   return page.locator('[data-slot="notice"]');
 }
+
+// Una pestaña de la ficha de receta (rediseño, ADR-0036). La pestaña queda en la dirección (?seccion=).
+export async function openSection(page: Page, name: string) {
+  const tab = page
+    .getByRole("navigation", { name: "Secciones de la receta" })
+    .getByRole("link", { name, exact: true });
+  await tab.click();
+  await expect(tab).toHaveAttribute("aria-current", "page");
+}

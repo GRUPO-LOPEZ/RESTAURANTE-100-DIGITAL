@@ -160,8 +160,18 @@ export type RecipesFilter = {
   // "variant": las variantes de local (recetas de local hechas a partir de una maestra).
   scope?: RecipeScope | "variant";
   categoryId?: string;
+  // Pestañas del rediseño (ADR-0036): con versión vigente, o con una versión abierta (borrador o en revisión).
+  status?: "current" | "attention";
+  // Página desde 0 y filas por página (si no se dice, las de siempre).
   page: number;
+  size?: number;
+  // Orden por columna: "name", "code" o "type"; desc invierte.
+  sort?: (typeof RECIPE_SORT_KEYS)[number];
+  desc?: boolean;
 };
+
+export const RECIPE_SORT_KEYS = ["name", "code", "type"] as const;
+const SORT_COLUMN = { name: "name", code: "code", type: "recipe_type" } as const;
 
 export type RecipeRow = {
   id: string;
@@ -196,17 +206,27 @@ export async function getRecipes(
   filter: RecipesFilter,
 ): Promise<{ rows: RecipeRow[]; total: number }> {
   const supabase = await createClient();
+  const size = filter.size ?? RECIPES_PAGE;
+  // Con una pestaña de estado, solo las recetas que tienen una versión en ese estado (la base filtra por RLS).
+  const statuses: VersionStatus[] | null =
+    filter.status === "current"
+      ? ["published"]
+      : filter.status === "attention"
+        ? ["draft", "in_review"]
+        : null;
   let query = supabase
     .schema("recipes")
     .from("recipes")
     .select(
-      "id, code, name, recipe_type, scope_type, group_id, brand_id, restaurant_id, category_id, is_active, variant_of_recipe_id",
-      {
-        count: "exact",
-      },
+      "id, code, name, recipe_type, scope_type, group_id, brand_id, restaurant_id, category_id, is_active, variant_of_recipe_id, recipe_versions(status)",
+      { count: "exact" },
     )
-    .order("name")
-    .range(filter.page * RECIPES_PAGE, (filter.page + 1) * RECIPES_PAGE - 1);
+    .order(SORT_COLUMN[filter.sort ?? "name"], { ascending: !filter.desc })
+    .order("id")
+    .range(filter.page * size, (filter.page + 1) * size - 1);
+  // PostgREST: se filtran las versiones embebidas y se dejan solo las recetas que tienen alguna.
+  if (statuses)
+    query = query.in("recipe_versions.status", statuses).not("recipe_versions", "is", null);
   if (filter.type) query = query.eq("recipe_type", filter.type);
   if (filter.scope === "variant") query = query.not("variant_of_recipe_id", "is", null);
   else if (filter.scope) query = query.eq("scope_type", filter.scope);

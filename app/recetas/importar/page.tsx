@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Upload } from "lucide-react";
+import { ArrowLeft, Upload } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -22,11 +22,30 @@ export default function ImportacionesPage({ searchParams }: PageProps<"/recetas/
     <AppShell
       title="Importaciones"
       description="Los recetarios de Excel que se subieron y en qué paso está cada uno."
+      actions={
+        <Suspense fallback={null}>
+          <Actions />
+        </Suspense>
+      }
     >
       <Suspense fallback={<Loading />}>
         <Jobs searchParams={searchParams} />
       </Suspense>
     </AppShell>
+  );
+}
+
+// La acción principal, a la derecha del título (ADR-0036).
+async function Actions() {
+  const menus = await getMenus();
+  if (!menus.importsRun) return null;
+  return (
+    <Button asChild>
+      <Link href="/recetas/importar/nueva">
+        <Upload aria-hidden="true" />
+        Importar recetario
+      </Link>
+    </Button>
   );
 }
 
@@ -48,8 +67,9 @@ async function Jobs({
     <>
       <Link
         href="/recetas"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
       >
+        <ArrowLeft aria-hidden="true" className="size-4" />
         Volver a recetas
       </Link>
       <Card className="flex flex-col gap-4">
@@ -57,14 +77,6 @@ async function Jobs({
           <CardTitle className="tabular-nums">
             {total === 1 ? "1 importación" : `${total.toLocaleString("es-AR")} importaciones`}
           </CardTitle>
-          {menus.importsRun ? (
-            <Button asChild>
-              <Link href="/recetas/importar/nueva">
-                <Upload aria-hidden="true" />
-                Importar recetario
-              </Link>
-            </Button>
-          ) : null}
         </div>
         {rows.length === 0 ? (
           <EmptyState

@@ -4,19 +4,47 @@ import { BookOpen, ClipboardCheck, History, KeyRound, Users } from "lucide-react
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { HomeBoardView } from "@/components/home-board";
+import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { pickCostPlace } from "@/lib/costs";
 import { first, getActiveRestaurantId, getUser, scopeLabel } from "@/lib/data";
 import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
 import { getQualityPlaces } from "@/lib/quality";
 
+// Inicio (panel del rediseño, ADR-0036): entender el estado del recetario en 5 segundos.
 export default function InicioPage({ searchParams }: PageProps<"/">) {
   return (
-    <AppShell title="Inicio">
+    <AppShell
+      title="Inicio"
+      actions={
+        <Suspense fallback={null}>
+          <Actions searchParams={searchParams} />
+        </Suspense>
+      }
+    >
       <Suspense fallback={<Loading />}>
         <Home searchParams={searchParams} />
       </Suspense>
     </AppShell>
+  );
+}
+
+// La acción principal: ir a lo que falta corregir en el local elegido.
+async function Actions({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+  const session = await requireOperable();
+  const menus = await getMenus();
+  if (!menus.quality) return null;
+  const [places, activeId, params] = await Promise.all([
+    getQualityPlaces(),
+    getActiveRestaurantId(session.user_id),
+    searchParams,
+  ]);
+  const place = pickCostPlace(places, first(params.local), activeId);
+  if (!place) return null;
+  return (
+    <Button asChild>
+      <Link href={`/calidad?local=${place.id}`}>Ver qué falta corregir</Link>
+    </Button>
   );
 }
 
@@ -105,7 +133,7 @@ async function Home({ searchParams }: { searchParams: PageProps<"/">["searchPara
             <Link
               key={href}
               href={href}
-              className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-4 hover:bg-line/50"
+              className="flex flex-col gap-2 rounded-md border border-line bg-surface p-4 hover:border-primary"
             >
               <span className="flex items-center gap-2 text-xl font-semibold text-ink">
                 <Icon aria-hidden="true" className="size-5" />

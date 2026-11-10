@@ -90,19 +90,35 @@ function toRow(r: RawCostRow): CostRow {
   };
 }
 
+// Las claves de orden que entiende la base (costing.restaurant_costs): la pantalla las usa como columnas.
+export const COST_SORT_KEYS = [
+  "name",
+  "code",
+  "total",
+  "portion",
+  "reliability",
+  "updated",
+] as const;
+
 export async function getRestaurantCosts(filter: {
   restaurantId: string;
   search?: string;
   reliability?: Reliability;
+  // Página desde 0 y filas por página (si no se dice, las de siempre).
   page: number;
+  size?: number;
+  // Una de COST_SORT_KEYS, con "-" para invertir. La base valida la lista.
+  order?: string;
 }): Promise<{ rows: CostRow[]; total: number }> {
   const supabase = await createClient();
+  const size = filter.size ?? COSTS_PAGE;
   const { data, error } = await supabase.schema("costing").rpc("restaurant_costs", {
     p_restaurant_id: filter.restaurantId,
     p_search: filter.search,
     p_reliability: filter.reliability,
-    p_limit: COSTS_PAGE,
-    p_offset: filter.page * COSTS_PAGE,
+    p_limit: size,
+    p_offset: filter.page * size,
+    p_order: filter.order,
   });
   if (error) throw new Error("No pudimos cargar los costos.");
   return { rows: data.map(toRow), total: Number(data[0]?.total_rows ?? 0) };

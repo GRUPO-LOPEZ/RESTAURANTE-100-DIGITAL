@@ -47,3 +47,16 @@ Hasta ahora:
 ## Restricciones
 
 El rediseño no modifica la base, la autenticación, los permisos, los alcances, la lógica de negocio, las fórmulas, el versionado, las aprobaciones ni la auditoría. La interfaz muestra solo lo autorizado, y la seguridad real sigue en la base.
+
+## Adenda: PR 2, Inicio, Recetas y Costos (2026-11-09)
+
+- **Orden por columna en Costos:** `costing.restaurant_costs` suma `p_order`, con una lista cerrada de órdenes y sin SQL dinámico (migración `20261123120000_restaurant_costs_order.sql`, autorizada por Joaco). La lista se pagina en la base, así que ordenar en la pantalla ordenaría solo la página visible. Es solo de lectura: no cambian permisos, datos ni fórmulas. Un cambio chico: el orden por nombre ya no separa mayúsculas de minúsculas.
+- **Recetas:**
+  - el orden (nombre, código y tipo) y las pestañas de estado (Vigentes y Requieren atención) se resuelven en la consulta de PostgREST, con la sesión de la persona, sin tocar la base;
+  - la ficha va en 9 pestañas, con la sección en la dirección (`?seccion=`);
+  - las acciones y los formularios son los mismos que antes: solo cambia dónde están.
+- **«Crítico» gana sobre «Desactualizado»** cuando un dato vencido además es crítico (Joaco, 2026-11-09).
+- **El selector de local único:** Inicio, Costos y Escenarios ya no tienen el suyo. Con «Todos mis locales», la pantalla pide elegir uno y ofrece los enlaces.
+- **Cambios sin guardar:** los editores de ingredientes y pasos llevan una barra Guardar / Cancelar fija abajo. El aviso de cambios sin guardar también salta al cambiar de pestaña. `ActionForm` lo ofrece con `warnUnsaved`, y por ahora lo usan los dos formularios de la ficha.
+- **Volver sin perder filtros:** las fichas de costo y de receta vuelven a la lista con sus filtros y su página (`?volver=`). Solo se acepta la lista del mismo módulo.
+- **Una prueba arreglada por la causa:** `234_cost_screens` usaba `current_date` (UTC) y el motor usa la fecha de la Argentina. Entre las 21 y las 24 fallaba sin que nada estuviera mal. Ahora usa `recipes.today()`.

@@ -3,7 +3,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, notice, openAction } from "./helpers";
+import { login, notice, openAction, openSection } from "./helpers";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -86,6 +86,7 @@ test("el Chef ve el costo proyectado y carga la capacidad en un borrador", async
   await page.locator("#rec-alta-motivo").fill("Receta de prueba automática");
   await page.getByRole("button", { name: "Crear receta" }).click();
   await expect(page).toHaveURL(/recetas.[0-9a-f-]{36}/);
+  await openSection(page, "Rendimientos");
   await openAction(page, "Rendimiento, descripción y presentación");
   await page.locator('[id$="-rinde"]').fill("2");
   await page.locator('[id$="-rinde-unidad"]').selectOption("kg");
@@ -93,11 +94,12 @@ test("el Chef ve el costo proyectado y carga la capacidad en un borrador", async
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(notice(page).filter({ hasText: "Borrador guardado" })).toBeVisible();
   await page.reload();
+  await openSection(page, "Procedimiento");
   await page.getByRole("button", { name: "Agregar un paso" }).click();
   await page.getByLabel("Qué se hace").fill("Hornear");
   await page.getByLabel("Equipo", { exact: true }).fill("Horno");
   await page.getByLabel(/Capacidad del equipo/).fill("5");
-  await page.getByLabel("Motivo de los cambios").nth(1).fill("Prueba automática");
+  await page.getByLabel("Motivo de los cambios").first().fill("Prueba automática");
   await page.getByRole("button", { name: "Guardar pasos" }).click();
   await expect(notice(page).filter({ hasText: "Pasos guardados (1)" })).toBeVisible();
   await page.reload();

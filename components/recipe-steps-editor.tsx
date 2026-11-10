@@ -326,9 +326,28 @@ export function RecipeStepsEditor({
         <Textarea value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
       </Field>
       <FormNotice state={state} />
-      <Button type="button" onClick={save} disabled={pending} className="w-full sm:w-auto">
-        {pending ? "Guardando…" : "Guardar pasos"}
-      </Button>
+      <div className="sticky bottom-[calc(var(--spacing-bottom-nav)+env(safe-area-inset-bottom))] z-10 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-line bg-surface px-4 py-3 desk:bottom-0 desk:-mx-6 desk:px-6">
+        {/* Siempre en la página, para que el lector de pantalla anuncie el cambio (WCAG 4.1.3). */}
+        <span className="mr-auto text-sm text-warn-ink" role="status">
+          {dirty ? "Hay cambios sin guardar." : ""}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={pending || !dirty}
+          onClick={() => {
+            setSteps(fromInitial(initial));
+            setState({});
+            setReason("");
+            setErrors({});
+          }}
+        >
+          Cancelar
+        </Button>
+        <Button type="button" onClick={save} disabled={pending}>
+          {pending ? "Guardando…" : "Guardar pasos"}
+        </Button>
+      </div>
     </div>
   );
 }

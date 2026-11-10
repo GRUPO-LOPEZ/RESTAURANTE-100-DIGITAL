@@ -4,7 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, notice, openAction } from "./helpers";
+import { login, logout, notice, openAction, openSection } from "./helpers";
 
 const COOK = "/usuarios/00000000-0000-4000-8000-000000000409";
 
@@ -64,9 +64,11 @@ test("quien mandó una receta a revisión no la aprueba: la aprueba otra persona
 
   await login(page, "chef@ejemplo.test");
   await page.goto(`/recetas?q=${encodeURIComponent(name)}`);
-  await page.getByRole("link", { name }).first().click();
+  // Exacto: el filtro aplicado también es un enlace (para quitarlo) y lleva el nombre buscado.
+  await page.getByRole("link", { name, exact: true }).first().click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   // La receta puede venir con una versión abierta (un reintento): se sigue con esa.
+  await openSection(page, "Versiones y aprobaciones");
   if ((await page.locator("summary", { hasText: "Retirar de revisión" }).count()) > 0) {
     await openAction(page, "Retirar de revisión");
     await page.locator('[id$="-motivo-retiro"]').fill("Reintento de la prueba");
@@ -77,7 +79,9 @@ test("quien mandó una receta a revisión no la aprueba: la aprueba otra persona
     await page.locator('[id$="-motivo-version"]').fill("Prueba de revisión");
     await page.getByRole("button", { name: "Crear versión nueva" }).click();
   }
+  await openSection(page, "Rendimientos");
   await expect(page.getByText("Versión en preparación", { exact: false })).toBeVisible();
+  await openSection(page, "Versiones y aprobaciones");
   await openAction(page, "Pedir la revisión");
   await page.locator('[id$="-motivo-revision"]').fill("Lista para revisar");
   await page.getByRole("button", { name: "Pedir la revisión" }).click();

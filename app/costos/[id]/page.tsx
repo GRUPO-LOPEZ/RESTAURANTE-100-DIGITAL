@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -38,12 +39,20 @@ export default function CostoRecetaPage({ params, searchParams }: PageProps<"/co
   );
 }
 
-function Back({ placeId }: { placeId?: string }) {
+// "← Volver" a la lista, con sus filtros y su página (ADR-0036). ?volver= solo se acepta si es la lista de
+// costos de esta misma aplicación: nunca otro sitio.
+function backHref(volver: string | undefined, placeId?: string): string {
+  if (volver && /^\/costos(\?|$)/.test(volver)) return volver;
+  return placeId ? `/costos?local=${placeId}` : "/costos";
+}
+
+function Back({ href }: { href: string }) {
   return (
     <Link
-      href={placeId ? `/costos?local=${placeId}` : "/costos"}
-      className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+      href={href}
+      className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
     >
+      <ArrowLeft aria-hidden="true" className="size-4" />
       Volver a costos
     </Link>
   );
@@ -59,11 +68,13 @@ async function RecipeCost({
   const session = await requireMenu("costs");
   const { id } = await params;
   if (!uuidOrUndefined(id)) notFound();
-  const { place } = await resolveCostPlace(session.user_id, first((await searchParams).local));
+  const query = await searchParams;
+  const { place } = await resolveCostPlace(session.user_id, first(query.local));
+  const volver = first(query.volver);
   if (!place)
     return (
       <>
-        <Back />
+        <Back href={backHref(volver)} />
         <EmptyState title="Elegí un local para ver este costo." />
       </>
     );
@@ -71,7 +82,7 @@ async function RecipeCost({
   if (!row)
     return (
       <>
-        <Back placeId={place.id} />
+        <Back href={backHref(volver, place.id)} />
         <EmptyState title={`Esta receta no tiene costo en ${place.name}.`}>
           El local no la usa, o la acaban de asignar: los costos se actualizan en un minuto.
         </EmptyState>
@@ -87,7 +98,7 @@ async function RecipeCost({
   if (!live)
     return (
       <>
-        <Back placeId={place.id} />
+        <Back href={backHref(volver, place.id)} />
         <EmptyState title={`Esta receta no tiene costo en ${place.name}.`}>
           El local ya no la usa, o no la podés ver.
         </EmptyState>
@@ -103,7 +114,7 @@ async function RecipeCost({
 
   return (
     <>
-      <Back placeId={place.id} />
+      <Back href={backHref(volver, place.id)} />
       <Card className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle>{row.name}</CardTitle>
@@ -128,7 +139,7 @@ async function RecipeCost({
             : `A ${missing} líneas les falta un dato: el total queda vacío hasta resolverlo.`}
         </Notice>
       ) : null}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 desk:grid-cols-4">
         <Kpi
           label="Costo sin IVA"
           value={cost.total === null ? "Sin costo" : formatMoney(cost.total)}
