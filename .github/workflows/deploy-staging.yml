@@ -17,6 +17,10 @@ on:
         description: "Cargar las personas y datos de prueba (solo si la base está vacía)"
         type: boolean
         default: false
+      load_test_admin:
+        description: "Crear el superadministrador de prueba, SIN doble verificación (temporal, ADR-0037)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -145,6 +149,23 @@ jobs:
             exit 1
           fi
           psql -X --no-password -f supabase/staging/demo-data.sql "$STAGING_DB_URL"
+
+      # Temporal (ADR-0037): un superadministrador de prueba sin doble verificación, para testear. El script
+      # se niega a correr si no está el grupo ficticio de prueba. La contraseña sale de un secreto propio.
+      - name: Crear el superadministrador de prueba
+        if: github.event_name == 'workflow_dispatch' && inputs.load_test_admin
+        env:
+          STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
+          TEST_ADMIN_PASSWORD: ${{ secrets.STAGING_TEST_ADMIN_PASSWORD }}
+        run: |
+          value="$TEST_ADMIN_PASSWORD"
+          if [ ${#value} -lt 16 ] || ! [[ "$value" =~ [A-Za-z] ]] || ! [[ "$value" =~ [0-9] ]]; then
+            echo "::error::STAGING_TEST_ADMIN_PASSWORD tiene que tener al menos 16 caracteres, con letras y números."
+            exit 1
+          fi
+          psql -X --no-password -f supabase/dev/test-superadmin.sql "$STAGING_DB_URL"
 
   app:
     name: App en Vercel

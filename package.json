@@ -21,6 +21,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local --schema public,core,org,audit,workflow,catalog,recipes,imports,costing > lib/database.types.ts && prettier --write lib/database.types.ts",
+    "db:test-admin": "docker exec -i -e TEST_ADMIN_PASSWORD=Demo-Local-2026! supabase_db_grupo-lf psql -X -q -U postgres -d postgres -f - < supabase/dev/test-superadmin.sql",
     "db:dictionary": "node scripts/data-dictionary.mjs && node scripts/data-dictionary.mjs catalog,recipes,imports,costing docs/modulos/02-recetario-diccionario.md && prettier --write docs/modulos/diccionario-datos.md docs/modulos/02-recetario-diccionario.md"
   },
   "dependencies": {
