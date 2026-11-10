@@ -3,7 +3,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, notice, openAction } from "./helpers";
+import { login, logout, notice, openAction, openSection } from "./helpers";
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page })
@@ -16,6 +16,7 @@ async function openIngredient(page: Page, name: string) {
   await page.goto(`/materias-primas?q=${encodeURIComponent(name)}`);
   await page.getByRole("link", { name, exact: true }).first().click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  await openSection(page, "Rendimientos", "materia prima");
 }
 
 test("el Jefe de Cocina registra un ensayo y el estándar no cambia", async ({ page }) => {

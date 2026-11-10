@@ -2,7 +2,20 @@
 
 _Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: rediseño de la interfaz, PR 2 de 4 (rama `feat/rediseno-ui-2-inicio-recetas-costos`)
+## Al retomar: rediseño de la interfaz, PR 3 de 4 (rama `feat/rediseno-ui-3-materias-reportes-calidad`)
+
+- **Qué se hizo** (ADR-0036, adenda del PR 3; sin cambios en la base):
+  - **Materias primas:** lista con filtros que se aplican solos, pestañas de estado, orden por nombre o código y 15 por página; alta en un modal (el mismo formulario de `/materias-primas/nueva`); ficha en 6 pestañas (`?seccion=`) con «← Volver» que conserva los filtros.
+  - **Reportes:** sin selector de local propio (usa el de arriba y, con «Todos mis locales», pide uno); período y búsqueda de receta que se aplican solos; paginación común; exportaciones en tabla. La tabla del reporte sigue propia por la impresión (encabezado repetido en cada hoja).
+  - **Calidad:** panel con «Requiere atención», 4 tarjetas con `Metric` (las mismas de Inicio, ahora en `components/quality-board.tsx`), barras de avance y comparación entre locales en tabla; la lista de un indicador con tabla, paginación y «Ir» directo a la pestaña donde se corrige.
+  - El aviso de rendimiento desviado abre la ficha en «Rendimientos» (`lib/notices.ts`).
+- **Pruebas (2026-11-10, todas en verde):** db reset desde cero; lint, tipos y formato; Vitest 262; pgTAP 2.133 en 46 archivos; Playwright 210 de 210 en celular y computadora, con axe. Pruebas nuevas: orden, paginación y pestañas de Materias primas; pestañas de la ficha y volver con filtros; foco del modal; Reportes y Calidad con el local de arriba (también cambiándolo con un reporte o una lista abiertos). Capturas en 1440, 1600, 1920, tablet y celular.
+- **Revisores:** security-auditor apto, sin graves ni medios. ui-reviewer: 1 grave (cambiar el local arriba con un reporte o una lista de Calidad abiertos daba «no encontrado») y 4 medios (foco al cerrar el modal, nombre de los enlaces de Calidad, la comparación que tumbaba la pantalla, filtros sin JavaScript), todos corregidos y probados, más varios menores.
+- **Quedó para después (menores de la revisión):** la fila de 4 tarjetas aprieta entre 800 y 1200 px (también en Inicio); una pista de que hay más pestañas en el celular (también en Recetas); el aviso de alérgenos sin validar armado a mano; si fallan las «Últimas exportaciones», la tarjeta desaparece sin aviso; quien propone precios sin `catalogManage` ve vacío el desplegable de proveedor (ya pasaba antes).
+- **Para Joaco:** Reportes y Calidad pasan de 50 a 15 filas por página, como el resto (se puede elegir 10, 25 o 50).
+- **Sigue:** PR 4, Aprobaciones, Usuarios, Historial, Roles, Mi cuenta y Panel de control.
+
+## Antes: rediseño, PR 2 de 4 (fusionado, PR #48)
 
 - **Qué se hizo** (ADR-0036, adenda del PR 2):
   - **Inicio** como panel: aviso «Requiere atención», 4 KPIs, comparación entre locales y tareas pendientes.
@@ -14,7 +27,6 @@ _Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Revisores:** db-reviewer, security-auditor y ui-reviewer sin graves. Corregido: la prueba del orden ahora puede fallar de verdad (25 aserciones, las 12 combinaciones); la pestaña Costos sin versión; volver sin perder filtros; la barra fija arriba de la barra inferior del celular; el aviso de cambios sin guardar en los formularios de la ficha; nombres, «—» cuando falta un dato, página máxima 1.000.
 - **Arreglado de paso:** `234_cost_screens` fallaba entre las 21 y las 24 de la Argentina (usaba la fecha UTC). Ahora usa `recipes.today()`.
 - **Quedó para después:** el título de la ficha dice «Receta» y no el nombre (el nombre está en el encabezado de la tarjeta); la lista de Importaciones todavía sin la tabla nueva (va con el PR 4).
-- **Sigue:** PR 3, Materias primas, Reportes y Calidad.
 
 ## Antes: rediseño, PR 1 de 4 (fusionado, PR #47)
 

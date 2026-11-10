@@ -23,8 +23,9 @@ async function noHorizontalScroll(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
+// La ficha, en la pestaña «Precios y compra» (rediseño, ADR-0036).
 const ingredient = (n: number) =>
-  `/materias-primas/00000000-0000-4000-8000-${String(800 + n).padStart(12, "0")}`;
+  `/materias-primas/00000000-0000-4000-8000-${String(800 + n).padStart(12, "0")}?seccion=compra`;
 
 async function propose(page: Page, price: string) {
   await page.locator("summary", { hasText: "Proponer precio" }).click();

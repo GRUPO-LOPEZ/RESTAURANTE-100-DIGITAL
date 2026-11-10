@@ -46,6 +46,8 @@ function FilterBar({
       else next.delete(key);
     }
     next.delete("pagina");
+    // Un aviso de una acción anterior ("no se pudo preparar el archivo") no sigue al cambiar un filtro.
+    next.delete("aviso");
     const query = next.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }, [params, pathname, router]);
@@ -67,12 +69,22 @@ function FilterBar({
           if (timer.current) clearTimeout(timer.current);
           // Al escribir, espera a que la persona termine. Un select espera un poco también: en Windows cada
           // flecha del teclado lo cambia, y no conviene recargar la lista en cada una.
+          // Una fecha escrita con el teclado cambia en cada parte (el año pasa por 0002, 0020...): también espera.
           const typing =
-            target instanceof HTMLInputElement && ["text", "search"].includes(target.type);
+            target instanceof HTMLInputElement && ["text", "search", "date"].includes(target.type);
           timer.current = setTimeout(apply, typing ? 400 : 300);
         }}
       >
         {children}
+        {/* Sin JavaScript, el formulario manda solo sus controles: lo demás de la dirección (el local, la
+            pestaña, el orden) va oculto, después de los controles, así la pantalla lee primero el valor nuevo. */}
+        {scripted
+          ? null
+          : [...params.entries()]
+              .filter(([key]) => key !== "pagina" && key !== "aviso")
+              .map(([key, value]) => (
+                <input key={`${key}=${value}`} type="hidden" name={key} value={value} />
+              ))}
         {scripted ? null : (
           <button
             type="submit"

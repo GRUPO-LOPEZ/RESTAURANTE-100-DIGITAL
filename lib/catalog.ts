@@ -96,8 +96,15 @@ export type IngredientsFilter = {
   search?: string;
   categoryId?: string;
   status?: "active" | "inactive";
+  // Página desde 0 y filas por página (si no se dice, las de siempre).
   page: number;
+  size?: number;
+  // Orden por columna (rediseño, ADR-0036): "name" o "code"; desc invierte.
+  sort?: (typeof INGREDIENT_SORT_KEYS)[number];
+  desc?: boolean;
 };
+
+export const INGREDIENT_SORT_KEYS = ["name", "code"] as const;
 
 export type IngredientRow = {
   id: string;
@@ -127,8 +134,12 @@ export async function getIngredients(
     .schema("catalog")
     .from("ingredients")
     .select("id, code, name, category_id, recipe_unit_id, is_active", { count: "exact" })
-    .order("name")
-    .range(filter.page * INGREDIENTS_PAGE, (filter.page + 1) * INGREDIENTS_PAGE - 1);
+    .order(filter.sort ?? "name", { ascending: !filter.desc })
+    .order("id")
+    .range(
+      filter.page * (filter.size ?? INGREDIENTS_PAGE),
+      (filter.page + 1) * (filter.size ?? INGREDIENTS_PAGE) - 1,
+    );
   if (filter.categoryId) query = query.eq("category_id", filter.categoryId);
   if (filter.status) query = query.eq("is_active", filter.status === "active");
   if (filter.search) {

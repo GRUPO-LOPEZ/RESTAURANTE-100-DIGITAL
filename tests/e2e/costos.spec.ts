@@ -147,7 +147,7 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
     testInfo.project.name === "celular" ? [uuid(808), "9000"] : [uuid(843), "45000"];
 
   await login(page, "compras@ejemplo.test");
-  await page.goto(`/materias-primas/${ingredient}`);
+  await page.goto(`/materias-primas/${ingredient}?seccion=compra`);
   await page.locator("summary", { hasText: "Proponer precio" }).click();
   await page.locator("#precio-producto").selectOption({ index: 1 });
   await page.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
@@ -167,7 +167,7 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
   await request.getByRole("button", { name: "Aprobar" }).click();
   await expect(page.getByRole("heading", { name: /Resueltas/ })).toBeVisible();
 
-  await page.goto(`/materias-primas/${ingredient}`);
+  await page.goto(`/materias-primas/${ingredient}?seccion=compra`);
   await page
     .getByRole("link", { name: /Ver el impacto/ })
     .first()

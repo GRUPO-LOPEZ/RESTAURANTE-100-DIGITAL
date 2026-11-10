@@ -2,6 +2,7 @@ import { IngredientPrices } from "@/components/ingredient-prices";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import {
   createProductAction,
@@ -20,6 +21,7 @@ import { Disclosure } from "@/components/disclosure";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
+import { Tabs } from "@/components/ui/tabs";
 import {
   ALLERGEN_STATUS_LABELS,
   SOURCE_LABELS,
@@ -37,7 +39,7 @@ import {
   type IngredientUsage,
   type YieldRow,
 } from "@/lib/catalog";
-import { UUID, formatDate } from "@/lib/data";
+import { UUID, first, formatDate } from "@/lib/data";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 import {
   cleaningDifference,
@@ -46,15 +48,31 @@ import {
   formatCleaning,
 } from "@/lib/yields";
 
-export default function MateriaPrimaPage({ params }: PageProps<"/materias-primas/[id]">) {
+// Ficha de una materia prima (sección 18; ficha por pestañas del rediseño, ADR-0036). La pestaña va en la
+// dirección (?seccion=), así se puede volver o compartir.
+export default function MateriaPrimaPage({
+  params,
+  searchParams,
+}: PageProps<"/materias-primas/[id]">) {
   return (
     <AppShell title="Materia prima" description="Cómo se compra, cómo se mide y sus alérgenos.">
       <Suspense fallback={<Loading />}>
-        <Ingredient params={params} />
+        <Ingredient params={params} searchParams={searchParams} />
       </Suspense>
     </AppShell>
   );
 }
+
+// Las pestañas de la ficha. "Precios y compra" junta el precio vigente y cómo se compra.
+const SECTIONS = [
+  { key: "datos", label: "Datos generales" },
+  { key: "compra", label: "Precios y compra" },
+  { key: "rendimientos", label: "Rendimientos" },
+  { key: "conversiones", label: "Conversiones" },
+  { key: "alergenos", label: "Alérgenos" },
+  { key: "uso", label: "Dónde se usa" },
+] as const;
+type Section = (typeof SECTIONS)[number]["key"];
 
 function Reason({ id, label = "Motivo" }: { id: string; label?: string }) {
   return (
@@ -101,128 +119,190 @@ function SourceOptions() {
   );
 }
 
-async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]">["params"] }) {
+async function Ingredient({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/materias-primas/[id]">["params"];
+  searchParams: PageProps<"/materias-primas/[id]">["searchParams"];
+}) {
   await requireMenu("catalog");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [ingredient, menus] = await Promise.all([getIngredient(id), getMenus()]);
+  const [ingredient, menus, query] = await Promise.all([
+    getIngredient(id),
+    getMenus(),
+    searchParams,
+  ]);
   if (!ingredient) notFound();
   const canManage = menus.catalogManage;
   const canRecordYields = menus.yieldsRecord;
-  const [categories, units, suppliers] = canManage
-    ? await Promise.all([getCategories(), getUnits(), getSuppliers()])
-    : [[], [], []];
-  const [yieldRows, processes, yieldRestaurants, usage, yieldAlert] = await Promise.all([
-    getYieldSummary(ingredient.id),
-    canRecordYields ? getYieldProcesses() : Promise.resolve([]),
-    canRecordYields ? getYieldRestaurants() : Promise.resolve([]),
-    getIngredientUsage(ingredient.id),
-    getYieldAlertThreshold(ingredient.id),
+
+  const wanted = first(query.seccion);
+  const section: Section = SECTIONS.find((t) => t.key === wanted)?.key ?? "datos";
+  const show = (key: Section) => section === key;
+  // "← Volver" a la lista con sus filtros y su página: solo la lista de materias primas de esta aplicación.
+  const volver = first(query.volver);
+  const back = volver && /^\/materias-primas(\?|$)/.test(volver) ? volver : "/materias-primas";
+  // Las pestañas conservan el "volver" a la lista.
+  const tabHref = (key: Section) => {
+    const q = new URLSearchParams();
+    if (key !== "datos") q.set("seccion", key);
+    if (back !== "/materias-primas") q.set("volver", back);
+    return q.size ? `/materias-primas/${ingredient.id}?${q}` : `/materias-primas/${ingredient.id}`;
+  };
+
+  // Cada pestaña consulta solo lo que muestra.
+  const none = Promise.resolve([]);
+  const [categories, units, suppliers] = await Promise.all([
+    canManage && show("datos") ? getCategories() : none,
+    canManage && show("compra") ? getUnits() : none,
+    canManage && show("compra") ? getSuppliers() : none,
+  ]);
+  const [yieldRows, processes, yieldRestaurants, yieldAlert, usage] = await Promise.all([
+    show("rendimientos") ? getYieldSummary(ingredient.id) : none,
+    canRecordYields && show("rendimientos") ? getYieldProcesses() : none,
+    canRecordYields && show("rendimientos") ? getYieldRestaurants() : none,
+    show("rendimientos") ? getYieldAlertThreshold(ingredient.id) : Promise.resolve(null),
+    show("uso") ? getIngredientUsage(ingredient.id) : none,
   ]);
 
   return (
     <>
       <Link
-        href="/materias-primas"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+        href={back}
+        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
       >
+        <ArrowLeft aria-hidden="true" className="size-4" />
         Volver a materias primas
       </Link>
 
-      <Card className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="flex flex-col">
-            <CardTitle>{ingredient.name}</CardTitle>
-            <span className="text-sm text-ink-muted tabular-nums">{ingredient.code}</span>
+      {/* Encabezado: siempre a la vista, en todas las pestañas. */}
+      <Card className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col">
+            <CardTitle className="[overflow-wrap:anywhere]">{ingredient.name}</CardTitle>
+            <span className="text-sm text-ink-muted tabular-nums">
+              {ingredient.code}
+              {ingredient.category ? ` · ${ingredient.category}` : ""}
+            </span>
           </div>
-          {ingredient.isActive ? <Badge status="ok">Activa</Badge> : <Badge>Desactivada</Badge>}
+          {ingredient.isActive ? (
+            <Badge status="ok">Activa</Badge>
+          ) : (
+            <Badge status="none">Desactivada</Badge>
+          )}
         </div>
-        <dl className="flex flex-col gap-2">
-          <Row label="Categoría" value={ingredient.category} />
-          <Row label="Se usa en recetas en" value={ingredient.unit} />
-          <Row label="Se compra en" value={ingredient.purchaseUnit} />
-          <Row
-            label="Otros nombres"
-            value={ingredient.aliases.length > 0 ? ingredient.aliases.join(", ") : null}
-          />
-          <Row label="Observaciones" value={ingredient.notes} />
-        </dl>
-        {canManage ? (
-          <div className="flex flex-col gap-2">
-            <Disclosure summary="Editar datos">
-              <ActionForm
-                action={updateIngredientAction}
-                schema="ingredientEdit"
-                submitLabel="Guardar"
-              >
-                <input type="hidden" name="ingredientId" value={ingredient.id} />
-                <FormInput
-                  id="mp-name"
-                  label="Nombre"
-                  name="name"
-                  required
-                  maxLength={120}
-                  defaultValue={ingredient.name}
-                />
-                <FormSelect
-                  id="mp-category_id"
-                  label="Categoría"
-                  name="category_id"
-                  required
-                  defaultValue={ingredient.categoryId}
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </FormSelect>
-                <FormTextarea
-                  id="mp-notes"
-                  label="Observaciones"
-                  name="notes"
-                  maxLength={1000}
-                  defaultValue={ingredient.notes ?? ""}
-                />
-                <Reason id="mp-motivo-datos" />
-              </ActionForm>
-            </Disclosure>
-            <Disclosure summary="Cambiar los otros nombres">
-              <ActionForm action={setAliasesAction} schema="aliases" submitLabel="Guardar nombres">
-                <input type="hidden" name="ingredientId" value={ingredient.id} />
-                <FormTextarea
-                  id="mp-aliases"
-                  label="Otros nombres"
-                  hint="Uno por línea o separados por coma. Sirven para buscar e importar sin duplicar."
-                  name="aliases"
-                  maxLength={1000}
-                  defaultValue={ingredient.aliases.join("\n")}
-                />
-                <Reason id="mp-motivo-alias" />
-              </ActionForm>
-            </Disclosure>
-            <Disclosure summary={ingredient.isActive ? "Desactivar" : "Volver a activar"}>
-              <ActionForm
-                action={setActiveAction}
-                schema="reason"
-                submitLabel={ingredient.isActive ? "Desactivar" : "Activar"}
-                variant={ingredient.isActive ? "destructive" : "default"}
-              >
-                <input type="hidden" name="ingredientId" value={ingredient.id} />
-                <input type="hidden" name="active" value={ingredient.isActive ? "false" : "true"} />
-                <p className="text-base text-ink">
-                  {ingredient.isActive
-                    ? "No se borra nada: deja de ofrecerse para recetas nuevas y su historia queda."
-                    : "Vuelve a ofrecerse para recetas nuevas."}
-                </p>
-                <Reason id="mp-motivo-activa" />
-              </ActionForm>
-            </Disclosure>
-          </div>
-        ) : null}
       </Card>
 
-      {menus.pricesView ? (
+      <Tabs
+        label="Secciones de la materia prima"
+        items={SECTIONS.map((t) => ({
+          href: tabHref(t.key),
+          // Quien no ve precios encuentra ahí solo cómo se compra.
+          label: t.key === "compra" && !menus.pricesView ? "Cómo se compra" : t.label,
+          current: show(t.key),
+        }))}
+      />
+
+      {show("datos") ? (
+        <Card className="flex flex-col gap-4">
+          <CardTitle>Datos generales</CardTitle>
+          <dl className="flex flex-col gap-2">
+            <Row label="Categoría" value={ingredient.category} />
+            <Row label="Se usa en recetas en" value={ingredient.unit} />
+            <Row label="Se compra en" value={ingredient.purchaseUnit} />
+            <Row
+              label="Otros nombres"
+              value={ingredient.aliases.length > 0 ? ingredient.aliases.join(", ") : null}
+            />
+            <Row label="Observaciones" value={ingredient.notes} />
+          </dl>
+          {canManage ? (
+            <div className="flex flex-col gap-2">
+              <Disclosure summary="Editar datos">
+                <ActionForm
+                  action={updateIngredientAction}
+                  schema="ingredientEdit"
+                  submitLabel="Guardar"
+                >
+                  <input type="hidden" name="ingredientId" value={ingredient.id} />
+                  <FormInput
+                    id="mp-name"
+                    label="Nombre"
+                    name="name"
+                    required
+                    maxLength={120}
+                    defaultValue={ingredient.name}
+                  />
+                  <FormSelect
+                    id="mp-category_id"
+                    label="Categoría"
+                    name="category_id"
+                    required
+                    defaultValue={ingredient.categoryId}
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </FormSelect>
+                  <FormTextarea
+                    id="mp-notes"
+                    label="Observaciones"
+                    name="notes"
+                    maxLength={1000}
+                    defaultValue={ingredient.notes ?? ""}
+                  />
+                  <Reason id="mp-motivo-datos" />
+                </ActionForm>
+              </Disclosure>
+              <Disclosure summary="Cambiar los otros nombres">
+                <ActionForm
+                  action={setAliasesAction}
+                  schema="aliases"
+                  submitLabel="Guardar nombres"
+                >
+                  <input type="hidden" name="ingredientId" value={ingredient.id} />
+                  <FormTextarea
+                    id="mp-aliases"
+                    label="Otros nombres"
+                    hint="Uno por línea o separados por coma. Sirven para buscar e importar sin duplicar."
+                    name="aliases"
+                    maxLength={1000}
+                    defaultValue={ingredient.aliases.join("\n")}
+                  />
+                  <Reason id="mp-motivo-alias" />
+                </ActionForm>
+              </Disclosure>
+              <Disclosure summary={ingredient.isActive ? "Desactivar" : "Volver a activar"}>
+                <ActionForm
+                  action={setActiveAction}
+                  schema="reason"
+                  submitLabel={ingredient.isActive ? "Desactivar" : "Activar"}
+                  variant={ingredient.isActive ? "destructive" : "default"}
+                >
+                  <input type="hidden" name="ingredientId" value={ingredient.id} />
+                  <input
+                    type="hidden"
+                    name="active"
+                    value={ingredient.isActive ? "false" : "true"}
+                  />
+                  <p className="text-base text-ink">
+                    {ingredient.isActive
+                      ? "No se borra nada: deja de ofrecerse para recetas nuevas y su historia queda."
+                      : "Vuelve a ofrecerse para recetas nuevas."}
+                  </p>
+                  <Reason id="mp-motivo-activa" />
+                </ActionForm>
+              </Disclosure>
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {show("compra") && menus.pricesView ? (
         <IngredientPrices
           ingredient={ingredient}
           canPropose={menus.pricesPropose}
@@ -230,19 +310,28 @@ async function Ingredient({ params }: { params: PageProps<"/materias-primas/[id]
           suppliers={suppliers}
         />
       ) : null}
-      <Products ingredient={ingredient} canManage={canManage} units={units} suppliers={suppliers} />
-      <Yields
-        ingredient={ingredient}
-        rows={yieldRows}
-        alertPct={yieldAlert}
-        canRecord={canRecordYields}
-        processes={processes}
-        restaurants={yieldRestaurants}
-        canManageProcesses={menus.yieldsApprove}
-      />
-      <Conversions ingredient={ingredient} canManage={canManage} />
-      <Allergens ingredient={ingredient} canManage={canManage} />
-      <Usage rows={usage} canOpen={menus.recipes} />
+      {show("compra") ? (
+        <Products
+          ingredient={ingredient}
+          canManage={canManage}
+          units={units}
+          suppliers={suppliers}
+        />
+      ) : null}
+      {show("rendimientos") ? (
+        <Yields
+          ingredient={ingredient}
+          rows={yieldRows}
+          alertPct={yieldAlert}
+          canRecord={canRecordYields}
+          processes={processes}
+          restaurants={yieldRestaurants}
+          canManageProcesses={menus.yieldsApprove}
+        />
+      ) : null}
+      {show("conversiones") ? <Conversions ingredient={ingredient} canManage={canManage} /> : null}
+      {show("alergenos") ? <Allergens ingredient={ingredient} canManage={canManage} /> : null}
+      {show("uso") ? <Usage rows={usage} canOpen={menus.recipes} /> : null}
     </>
   );
 }

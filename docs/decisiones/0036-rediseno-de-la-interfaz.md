@@ -60,3 +60,27 @@ El rediseño no modifica la base, la autenticación, los permisos, los alcances,
 - **Cambios sin guardar:** los editores de ingredientes y pasos llevan una barra Guardar / Cancelar fija abajo. El aviso de cambios sin guardar también salta al cambiar de pestaña. `ActionForm` lo ofrece con `warnUnsaved`, y por ahora lo usan los dos formularios de la ficha.
 - **Volver sin perder filtros:** las fichas de costo y de receta vuelven a la lista con sus filtros y su página (`?volver=`). Solo se acepta la lista del mismo módulo.
 - **Una prueba arreglada por la causa:** `234_cost_screens` usaba `current_date` (UTC) y el motor usa la fecha de la Argentina. Entre las 21 y las 24 fallaba sin que nada estuviera mal. Ahora usa `recipes.today()`.
+
+## Adenda: PR 3, Materias primas, Reportes y Calidad (2026-11-10)
+
+Sin migraciones ni cambios de permisos, fórmulas o aprobaciones: todo se resuelve en la interfaz y en las lecturas que ya existían, con la sesión de la persona.
+
+- **Materias primas (listado tipo C):**
+  - barra de filtros que se aplica sola (buscar y categoría), con etiquetas para quitar cada filtro;
+  - pestañas de estado (Todas · Activas · Desactivadas) sobre el filtro que ya existía;
+  - tabla ordenable por nombre y por código, con el orden en la consulta de PostgREST (`getIngredients`), así ordena todas las materias primas y no solo la página;
+  - paginación de 15 filas (10, 25, 50);
+  - «Nueva materia prima» se abre en un modal corto, con el mismo formulario que `/materias-primas/nueva`, que sigue como página para quien entra sin JavaScript o abre el enlace en otra pestaña. El modal (`CreateModal`) es el mismo de «Nueva receta».
+- **Ficha de materia prima:** 6 pestañas con la sección en la dirección (`?seccion=`): Datos generales · Precios y compra · Rendimientos · Conversiones · Alérgenos · Dónde se usa. El encabezado (nombre, código, categoría y estado) queda siempre a la vista. Cada pestaña consulta solo lo que muestra. «← Volver» regresa a la lista con sus filtros, y solo acepta la lista de materias primas.
+- **Los enlaces llevan a la pestaña donde se corrige:**
+  - el «Ir» de cada registro en Calidad abre la ficha en su pestaña (por ejemplo, una receta sin foto abre «Fotos»; una materia prima sin precio, «Precios y compra»);
+  - el aviso de rendimiento desviado abre «Rendimientos». El enlace lo guarda la base sin pestaña, y la interfaz se la agrega al leerlo (`lib/notices.ts`), con la misma regla de solo rutas internas.
+- **Reportes:** sin selector de local propio; usa el de la barra de arriba y, con «Todos mis locales», pide uno. El período y la búsqueda de receta se aplican solos. Las «Últimas exportaciones» van en tabla.
+  - **La tabla del reporte no pasa a `DataTable`:** al imprimir repite en cada hoja de qué reporte, local y fecha es, algo que la tabla común no hace. Se queda con su componente, con el mismo corte a celular (800 px) y la paginación común. Imprimir sigue trayendo todas las filas.
+- **Calidad (panel tipo A):** sin selector propio. Lleva el aviso «Requiere atención», 4 tarjetas con `Metric` (lo que falta, nunca «Completo» sin datos), los dos ejes con barras de avance, y «Cómo está cada local» en tabla. El aviso y las tarjetas son los mismos componentes de Inicio (`components/quality-board.tsx`).
+- **Paginación de 15 en Reportes y Calidad:** antes eran 50 por página. Ahora siguen la regla común (15, con 10, 25 o 50 a elección).
+- **`FiltersPanel`** ya no se usa en estos tres módulos. Queda solo en Historial y Usuarios, que se migran en el PR 4.
+- **Cambiar el local arriba con un reporte o una lista de Calidad abiertos** (revisión de diseño del PR 3): el selector saca `?local=` de la dirección, y esas dos pantallas daban «no encontrado». Ahora usan el local activo cuando la dirección no trae uno y, con «Todos mis locales», lo piden. Una ficha de receta que no es del local nuevo vuelve a «¿De qué receta?».
+- **`FilterBar`:** sin JavaScript conserva lo demás de la dirección (local, pestaña, orden); al aplicar un filtro saca el aviso de una acción anterior; una fecha escrita con el teclado espera a que se termine de escribir.
+- **Modal de alta:** al cerrarse, el foco vuelve al botón que lo abrió (WCAG 2.4.3), y el botón avisa que abre un diálogo. No usa el disparador de Radix: abriría el modal también con Ctrl+clic, que tiene que abrir la página en otra pestaña.
+- **`ProgressBar` decorativa** (`decorative`): dentro de un enlace que ya dice el número, se oculta a los lectores de pantalla para que el nombre del enlace no repita todo.

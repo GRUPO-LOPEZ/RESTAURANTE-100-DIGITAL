@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import {
   archiveCategoryAction,
@@ -105,8 +106,9 @@ async function Settings({
     <>
       <Link
         href="/materias-primas"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
       >
+        <ArrowLeft aria-hidden="true" className="size-4" />
         Volver a materias primas
       </Link>
       {archived ? <FlashNotice>{archived}</FlashNotice> : null}

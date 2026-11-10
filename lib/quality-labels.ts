@@ -113,6 +113,23 @@ export function qualityTop(
     .slice(0, limit);
 }
 
-export function qualityHref(kind: string, id: string): string {
-  return kind === "recipe" ? `/recetas/${id}` : `/materias-primas/${id}`;
+// En qué pestaña de la ficha se corrige cada indicador (fichas por pestañas, ADR-0036). Sin pestaña: la de
+// datos generales.
+const QUALITY_SECTION: Record<string, string> = {
+  recipe_approved: "versiones",
+  recipe_review: "versiones",
+  recipe_yield: "rendimientos",
+  recipe_photo: "fotos",
+  recipe_components: "ingredientes",
+  recipe_cost: "costos",
+  ingredient_price: "compra",
+  price_stale: "compra",
+  ingredient_unit: "compra",
+  ingredient_yield: "rendimientos",
+};
+
+export function qualityHref(kind: string, id: string, indicator?: string): string {
+  const base = kind === "recipe" ? `/recetas/${id}` : `/materias-primas/${id}`;
+  const section = indicator ? QUALITY_SECTION[indicator] : undefined;
+  return section ? `${base}?seccion=${section}` : base;
 }

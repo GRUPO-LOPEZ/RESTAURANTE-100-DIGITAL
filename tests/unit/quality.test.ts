@@ -76,4 +76,18 @@ describe("el botón Ir", () => {
     expect(qualityHref("recipe", "x")).toBe("/recetas/x");
     expect(qualityHref("ingredient", "x")).toBe("/materias-primas/x");
   });
+
+  it("abre la ficha en la pestaña donde se corrige", () => {
+    expect(qualityHref("recipe", "x", "recipe_photo")).toBe("/recetas/x?seccion=fotos");
+    expect(qualityHref("recipe", "x", "recipe_review")).toBe("/recetas/x?seccion=versiones");
+    expect(qualityHref("ingredient", "x", "ingredient_price")).toBe(
+      "/materias-primas/x?seccion=compra",
+    );
+    expect(qualityHref("ingredient", "x", "ingredient_yield")).toBe(
+      "/materias-primas/x?seccion=rendimientos",
+    );
+    // Un duplicado se corrige en los datos generales; un indicador desconocido, también.
+    expect(qualityHref("ingredient", "x", "ingredient_duplicate")).toBe("/materias-primas/x");
+    expect(qualityHref("recipe", "x", "no_existe")).toBe("/recetas/x");
+  });
 });

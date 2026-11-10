@@ -31,6 +31,9 @@ test("el Controller abre un indicador y llega a la ficha", async ({ page }) => {
   await expect(page.getByRole("list", { name: "¿Listas para cocinar?" })).toBeVisible();
   await expect(page.getByRole("list", { name: "¿El costo es confiable?" })).toBeVisible();
   await expect(page.getByText("Cómo está cada local")).toBeVisible();
+  // Panel del rediseño (ADR-0036): 4 tarjetas arriba, sin selector de local propio.
+  await expect(page.locator('[data-slot="kpi"]')).toHaveCount(4);
+  await expect(page.getByRole("main").getByRole("combobox")).toHaveCount(0);
   await axe(page);
   await noOverflow(page);
   const size = page.viewportSize();
@@ -43,8 +46,11 @@ test("el Controller abre un indicador y llega a la ficha", async ({ page }) => {
   await page.getByRole("link", { name: /^Recetas con foto/ }).click();
   await expect(page.getByRole("heading", { name: "Recetas sin foto" })).toBeVisible();
   await expect(page.getByText(/^Demo Pastas Centro: \d+ para revisar/)).toBeVisible();
-  const list = page.getByRole("list", { name: "Recetas sin foto" });
-  await expect(list.getByRole("listitem").first()).toBeVisible();
+  // Una tabla en la computadora y tarjetas en el celular (ADR-0036).
+  const list = page
+    .getByRole("table", { name: "Recetas sin foto" })
+    .or(page.getByRole("list", { name: "Recetas sin foto" }));
+  await expect(list).toBeVisible();
   await axe(page);
   await noOverflow(page);
 
@@ -52,7 +58,8 @@ test("el Controller abre un indicador y llega a la ficha", async ({ page }) => {
     .getByRole("link", { name: /^Ir a / })
     .first()
     .click();
-  await expect(page).toHaveURL(/\/recetas\/[0-9a-f-]{36}/);
+  // «Ir» abre la ficha en la pestaña donde se corrige: la de fotos.
+  await expect(page).toHaveURL(/\/recetas\/[0-9a-f-]{36}\?seccion=fotos/);
 });
 
 test("quien no ve borradores los cuenta, sin ver sus nombres", async ({ page }) => {
@@ -66,8 +73,13 @@ test("quien no ve borradores los cuenta, sin ver sus nombres", async ({ page }) 
 test("sin elegir local, se compara y se elige", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto("/calidad");
-  await expect(page.getByText("Tocá un local para ver qué falta.")).toBeVisible();
-  await page.getByRole("link", { name: "Demo Pastas Centro" }).first().click();
+  // Con «Todos mis locales» en la barra de arriba, la pantalla pide uno.
+  await expect(page.getByText("Elegí un local para ver qué falta.")).toBeVisible();
+  await page
+    .getByRole("list", { name: "Tus locales" })
+    .getByRole("link", { name: "Demo Pastas Centro" })
+    .click();
+  await expect(page).toHaveURL(/local=/);
   await expect(page.getByRole("list", { name: "¿Listas para cocinar?" })).toBeVisible();
 });
 
@@ -104,4 +116,25 @@ test("un indicador que no existe no abre nada", async ({ page }) => {
   await page.goto(`/calidad/no_existe?local=${PASTAS_CENTRO}`);
   await expect(page.getByRole("heading", { name: "Qué hay que corregir" })).toHaveCount(0);
   await expect(page.getByText("No encontramos esta página")).toBeVisible();
+});
+
+// Cambiar el local arriba, con una lista abierta, muestra la misma lista del otro local (el selector saca
+// ?local= de la dirección). Con «Todos mis locales», pide uno (revisión de diseño del PR 3).
+test("el selector de arriba cambia el local de un indicador abierto", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto(`/calidad/recipe_photo?local=${PASTAS_CENTRO}`);
+  await expect(page.getByText(/^Demo Pastas Centro: \d+ para revisar/)).toBeVisible();
+  try {
+    await page.getByLabel("Local activo").selectOption({ label: "Demo Pastas Norte · PASTAS" });
+    await page.getByRole("button", { name: "Cambiar" }).click();
+    await expect(page).not.toHaveURL(/local=/, { timeout: 20_000 });
+    await expect(page.getByText(/^Demo Pastas Norte: \d+ para revisar/)).toBeVisible();
+  } finally {
+    await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
+    await page.getByRole("button", { name: "Cambiar" }).click();
+  }
+  await expect(page.getByText("Elegí un local para ver qué falta.")).toBeVisible({
+    timeout: 20_000,
+  });
+  await axe(page);
 });

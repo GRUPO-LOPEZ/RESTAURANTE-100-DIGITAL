@@ -1,20 +1,27 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
+import { PlacePrompt } from "@/components/place-prompt";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/kpi";
+import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Notice } from "@/components/ui/notice";
+import { Pagination } from "@/components/ui/pagination";
+import { EmptyState } from "@/components/ui/states";
 import { requireMenu } from "@/lib/auth/session";
-import { first, uuidOrUndefined } from "@/lib/data";
-import { getQuality, getQualityItems, getQualityPlaces } from "@/lib/quality";
-import { QUALITY_PAGE, qualityHref, qualityIndicator } from "@/lib/quality-labels";
+import { pickCostPlace } from "@/lib/costs";
+import { first, getActiveRestaurantId, uuidOrUndefined } from "@/lib/data";
+import { parseList, plainParams } from "@/lib/list-params";
+import { getQuality, getQualityItems, getQualityPlaces, type QualityItem } from "@/lib/quality";
+import { qualityHref, qualityIndicator } from "@/lib/quality-labels";
 
 type Props = PageProps<"/calidad/[indicador]">;
 
-// Lo que hay que corregir en un indicador, con un botón para ir directo a cada registro.
+// Lo que hay que corregir en un indicador (listado del rediseño, ADR-0036), con un botón para ir directo a la
+// pestaña de la ficha donde se corrige cada registro.
 export default function IndicadorPage({ params, searchParams }: Props) {
   return (
     <AppShell title="Qué hay que corregir">
@@ -26,18 +33,36 @@ export default function IndicadorPage({ params, searchParams }: Props) {
 }
 
 async function Items({ params, searchParams }: Pick<Props, "params" | "searchParams">) {
-  await requireMenu("quality");
+  const session = await requireMenu("quality");
   const [{ indicador }, query] = await Promise.all([params, searchParams]);
   const indicator = qualityIndicator(indicador);
-  const local = uuidOrUndefined(first(query.local));
-  if (!indicator || !local) notFound();
+  if (!indicator) notFound();
+  // El local de la dirección o, si no viene (el selector de arriba lo saca al cambiar de local), el activo.
+  // Con «Todos mis locales», se pide uno (ADR-0036).
+  let local = uuidOrUndefined(first(query.local));
+  if (!local) {
+    const [places, activeId] = await Promise.all([
+      getQualityPlaces(),
+      getActiveRestaurantId(session.user_id),
+    ]);
+    const active = pickCostPlace(places, undefined, activeId);
+    if (!active) {
+      if (places.length === 0) return <EmptyState title="No tenés locales para revisar." />;
+      return (
+        <PlacePrompt
+          title="Elegí un local para ver qué falta."
+          places={places}
+          path={`/calidad/${indicator.key}`}
+        />
+      );
+    }
+    local = active.id;
+  }
 
-  const page = Math.max(
-    0,
-    Math.min(Number.parseInt(first(query.pagina) ?? "1", 10) - 1 || 0, 1000),
-  );
+  // Página y filas por página como en todos los listados (15 de entrada; 10, 25 o 50).
+  const list = parseList(query, []);
   const [result, counts, places] = await Promise.all([
-    getQualityItems(local, indicator.key, page),
+    getQualityItems(local, indicator.key, list.page - 1, list.size),
     getQuality(local),
     getQualityPlaces(),
   ]);
@@ -45,70 +70,88 @@ async function Items({ params, searchParams }: Pick<Props, "params" | "searchPar
   if (!result || !counts || !place) notFound();
   // Lo que falta y la persona no puede ver: se cuenta, sin nombres.
   const hidden = counts.find((c) => c.indicator === indicator.key)?.hidden ?? 0;
-  const back = `/calidad?local=${local}`;
+  const path = `/calidad/${indicator.key}`;
   // Una página que ya no existe (se corrigieron datos desde el enlace) vuelve a la primera.
-  if (page > 0 && result.items.length === 0) redirect(`/calidad/${indicator.key}?local=${local}`);
-  const pages = Math.max(1, Math.ceil(result.total / QUALITY_PAGE));
-  const pageLink = (n: number) => `/calidad/${indicator.key}?local=${local}&pagina=${n + 1}`;
+  if (list.page > 1 && result.items.length === 0) redirect(`${path}?local=${local}`);
+
+  const columns: DataColumn<QualityItem>[] = [
+    {
+      key: "item",
+      header: indicator.missing,
+      mobile: "title",
+      cell: (item) => <span className="[overflow-wrap:anywhere] text-ink">{item.item}</span>,
+    },
+    {
+      key: "detail",
+      header: "Detalle",
+      cell: (item) => (
+        <span className="text-sm [overflow-wrap:anywhere] text-ink-muted">
+          {item.detail ?? "—"}
+        </span>
+      ),
+    },
+    {
+      key: "go",
+      header: "Acción",
+      align: "right",
+      mobile: "action",
+      cell: (item) => (
+        <Button asChild variant="outline">
+          <Link
+            href={qualityHref(item.kind, item.id, indicator.key)}
+            aria-label={`Ir a ${item.item}`}
+          >
+            Ir
+          </Link>
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <Card className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <CardTitle>{indicator.missing}</CardTitle>
-        <CardDescription>
-          {place.name}: {result.total + hidden} para revisar.
-        </CardDescription>
-        <Link
-          href={back}
-          className="inline-flex min-h-touch w-fit items-center text-base text-primary underline-offset-4 hover:underline"
-        >
-          Volver a la calidad de datos
-        </Link>
-      </div>
-      {result.items.length === 0 && hidden === 0 ? (
-        <EmptyState title="No queda nada por corregir acá." />
-      ) : result.items.length === 0 ? null : (
-        <ul className="flex flex-col divide-y divide-line" aria-label={indicator.missing}>
-          {result.items.map((item) => (
-            <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span className="flex min-w-0 flex-col [overflow-wrap:anywhere]">
-                <span className="text-base text-ink">{item.item}</span>
-                {item.detail ? <span className="text-sm text-ink-muted">{item.detail}</span> : null}
-              </span>
-              <Button asChild variant="outline">
-                <Link href={qualityHref(item.kind, item.id)} aria-label={`Ir a ${item.item}`}>
-                  Ir
-                </Link>
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {hidden > 0 ? (
-        <Notice status="info">
-          {result.items.length > 0 ? "Y " : "Hay "}
-          {hidden === 1
-            ? "1 receta que no podés ver: todavía no está publicada."
-            : `${hidden} recetas que no podés ver: todavía no están publicadas.`}
-        </Notice>
-      ) : null}
-      {pages > 1 ? (
-        <nav aria-label="Páginas" className="flex flex-wrap items-center gap-2">
-          {page > 0 ? (
-            <Button asChild variant="outline">
-              <Link href={pageLink(page - 1)}>Anterior</Link>
-            </Button>
-          ) : null}
-          <span className="text-sm text-ink-muted tabular-nums">
-            Página {page + 1} de {pages}
-          </span>
-          {page + 1 < pages ? (
-            <Button asChild variant="outline">
-              <Link href={pageLink(page + 1)}>Siguiente</Link>
-            </Button>
-          ) : null}
-        </nav>
-      ) : null}
-    </Card>
+    <>
+      <Link
+        href={`/calidad?local=${local}`}
+        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        Volver a la calidad de datos
+      </Link>
+      <Card className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <CardTitle>{indicator.missing}</CardTitle>
+          <CardDescription>
+            {place.name}: {result.total + hidden} para revisar.
+          </CardDescription>
+        </div>
+        {result.items.length === 0 && hidden === 0 ? (
+          <EmptyState title="No queda nada por corregir acá." />
+        ) : result.items.length === 0 ? null : (
+          <DataTable
+            caption={indicator.missing}
+            columns={columns}
+            rows={result.items}
+            rowKey={(item) => `${item.kind}-${item.id}`}
+          />
+        )}
+        {hidden > 0 ? (
+          <Notice status="info">
+            {result.items.length > 0 ? "Y " : "Hay "}
+            {hidden === 1
+              ? "1 receta que no podés ver: todavía no está publicada."
+              : `${hidden} recetas que no podés ver: todavía no están publicadas.`}
+          </Notice>
+        ) : null}
+        {result.total > 0 ? (
+          <Pagination
+            list={list}
+            total={result.total}
+            shown={result.items.length}
+            path={path}
+            params={plainParams(query)}
+          />
+        ) : null}
+      </Card>
+    </>
   );
 }

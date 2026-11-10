@@ -1,21 +1,32 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import { ArrowLeft, Download, Printer } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
+import { PlacePrompt } from "@/components/place-prompt";
 import { RecipeCardExtras } from "@/components/recipe-card-extras";
 import { ReportPrintButton } from "@/components/report-print-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/field";
-import { EmptyState } from "@/components/ui/kpi";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { Notice } from "@/components/ui/notice";
+import { Pagination } from "@/components/ui/pagination";
+import { EmptyState } from "@/components/ui/states";
 import { requireMenu } from "@/lib/auth/session";
-import { first, formatDate, formatDateTime, uuidOrUndefined } from "@/lib/data";
+import { pickCostPlace } from "@/lib/costs";
+import {
+  first,
+  formatDate,
+  formatDateTime,
+  getActiveRestaurantId,
+  uuidOrUndefined,
+} from "@/lib/data";
+import { parseList, plainParams } from "@/lib/list-params";
 import {
   REPORT_EXPORT_LIMIT,
-  REPORT_PAGE,
   argentinaDay,
   formatValue,
   reportDefinition,
@@ -28,7 +39,8 @@ import { getReportPage, getReportPlaces, getReportRecipes, getReportRows } from 
 
 type Props = PageProps<"/reportes/[reporte]">;
 
-// Un reporte: en pantalla va por páginas, y sale entero en Excel o CSV.
+// Un reporte (ADR-0034; rediseño, ADR-0036): en pantalla va por páginas, y sale entero en Excel o CSV. La
+// tabla es propia y no la DataTable común: al imprimir repite en cada hoja de qué reporte, local y fecha es.
 export default function ReportePage({ params, searchParams }: Props) {
   return (
     <AppShell title="Reporte">
@@ -68,11 +80,11 @@ function ReportTable({
   return (
     <>
       <ul
-        className="grid gap-2 sm:grid-cols-2 lg:hidden print:hidden"
+        className="grid gap-2 sm:grid-cols-2 desk:hidden print:hidden"
         aria-label={`Filas de ${title}`}
       >
         {rows.map((row, i) => (
-          <li key={i} className="flex flex-col gap-1 rounded-lg border border-line p-4">
+          <li key={i} className="flex flex-col gap-1 rounded-md border border-line p-4">
             {columns.map((c, n) => (
               <span
                 key={c.key}
@@ -90,7 +102,7 @@ function ReportTable({
         ))}
       </ul>
       {/* Con scroll propio: con la barra lateral el contenido es más angosto que la ventana (ADR-0036). */}
-      <div className="hidden overflow-x-auto lg:block print:block print:overflow-visible">
+      <div className="hidden overflow-x-auto desk:block print:block print:overflow-visible">
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">{title}</caption>
           <thead>
@@ -150,79 +162,104 @@ async function RecipePicker({
 }) {
   const { recipes, total } = await getReportRecipes(local, search?.slice(0, 100));
   return (
-    <Card className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>¿De qué receta?</CardDescription>
-        <Link
-          href={`/reportes?local=${local}`}
-          className="inline-flex min-h-touch w-fit items-center text-base text-primary underline-offset-4 hover:underline"
-        >
-          Volver a los reportes
-        </Link>
-      </div>
-      <form
-        method="get"
-        role="search"
-        aria-label="Buscar una receta"
-        className="grid gap-4 sm:grid-cols-3 sm:items-end"
-      >
-        <input type="hidden" name="local" value={local} />
-        <Field id="ficha-buscar" label="Buscar">
-          <Input
-            type="search"
-            name="buscar"
-            enterKeyHint="search"
-            maxLength={100}
-            defaultValue={search ?? ""}
-            placeholder="Nombre o código"
-          />
-        </Field>
-        <Button type="submit">Buscar</Button>
-      </form>
-      {recipes.length === 0 ? (
-        <EmptyState
-          title={
-            search?.trim()
-              ? "No encontramos recetas vigentes con ese nombre o código."
-              : "Este local todavía no tiene recetas vigentes."
-          }
-        >
-          {search?.trim() ? "Probá con otra palabra, o con parte del código." : null}
-        </EmptyState>
-      ) : (
-        <ul className="flex flex-col divide-y divide-line" aria-label="Recetas">
-          {recipes.map((r) => (
-            <li key={r.id}>
-              <Link
-                href={`/reportes/${reportKey}?local=${local}&receta=${r.id}`}
-                className="flex min-h-touch items-center justify-between gap-4 py-2 underline-offset-4 hover:underline"
-              >
-                <span className="text-base [overflow-wrap:anywhere] text-primary">{r.name}</span>
-                <span className="shrink-0 text-sm text-ink-muted tabular-nums">
-                  {r.code} · {r.type}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-      {total > recipes.length ? (
-        <p className="text-sm text-ink-muted">
-          Se muestran {recipes.length} de {total}. Buscá por nombre o código para encontrar la que
-          falta.
-        </p>
-      ) : null}
-    </Card>
+    <>
+      <BackLink href={`/reportes?local=${local}`}>Volver a los reportes</BackLink>
+      <Card className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>¿De qué receta?</CardDescription>
+        </div>
+        {/* Se aplica sola al dejar de escribir (ADR-0036); conserva el local de la dirección. */}
+        <FilterBar label="Buscar una receta">
+          <Field id="ficha-buscar" label="Buscar" className="w-full desk:w-72">
+            <Input
+              type="search"
+              name="buscar"
+              enterKeyHint="search"
+              maxLength={100}
+              defaultValue={search ?? ""}
+              placeholder="Nombre o código"
+            />
+          </Field>
+        </FilterBar>
+        {recipes.length === 0 ? (
+          <EmptyState
+            title={
+              search?.trim()
+                ? "No encontramos recetas vigentes con ese nombre o código."
+                : "Este local todavía no tiene recetas vigentes."
+            }
+          >
+            {search?.trim() ? "Probá con otra palabra, o con parte del código." : null}
+          </EmptyState>
+        ) : (
+          <ul className="flex flex-col divide-y divide-line" aria-label="Recetas">
+            {recipes.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/reportes/${reportKey}?local=${local}&receta=${r.id}`}
+                  className="flex min-h-touch items-center justify-between gap-4 py-2 underline-offset-4 hover:underline"
+                >
+                  <span className="text-base [overflow-wrap:anywhere] text-primary">{r.name}</span>
+                  <span className="shrink-0 text-sm text-ink-muted tabular-nums">
+                    {r.code} · {r.type}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {total > recipes.length ? (
+          <p className="text-sm text-ink-muted">
+            Se muestran {recipes.length} de {total}. Buscá por nombre o código para encontrar la que
+            falta.
+          </p>
+        ) : null}
+      </Card>
+    </>
+  );
+}
+
+// "← Volver", igual que en las fichas (ADR-0036). No sale en el papel.
+function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control print:hidden"
+    >
+      <ArrowLeft aria-hidden="true" className="size-4" />
+      {children}
+    </Link>
   );
 }
 
 async function Report({ params, searchParams }: Pick<Props, "params" | "searchParams">) {
-  await requireMenu("reports");
+  const session = await requireMenu("reports");
   const [{ reporte }, query] = await Promise.all([params, searchParams]);
   const report = reportDefinition(reporte);
-  const local = uuidOrUndefined(first(query.local));
-  if (!report || !local) notFound();
+  if (!report) notFound();
+  // El local de la dirección o, si no viene (el selector de arriba lo saca al cambiar de local), el activo.
+  // Con «Todos mis locales», se pide uno (ADR-0036).
+  const requested = uuidOrUndefined(first(query.local));
+  let local = requested;
+  if (!local) {
+    const [places, activeId] = await Promise.all([
+      getReportPlaces(),
+      getActiveRestaurantId(session.user_id),
+    ]);
+    const active = pickCostPlace(places, undefined, activeId);
+    if (!active) {
+      if (places.length === 0) return <EmptyState title="No tenés locales para sacar reportes." />;
+      return (
+        <PlacePrompt
+          title="Elegí un local para ver este reporte."
+          places={places}
+          path={`/reportes/${report.key}`}
+        />
+      );
+    }
+    local = active.id;
+  }
   const recipe = report.recipe ? uuidOrUndefined(first(query.receta)) : undefined;
   if (report.recipe && !recipe) {
     return (
@@ -235,10 +272,9 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
     );
   }
 
-  const page = Math.max(
-    0,
-    Math.min(Number.parseInt(first(query.pagina) ?? "1", 10) - 1 || 0, 10_000),
-  );
+  // Página y filas por página como en todos los listados (15 de entrada; 10, 25 o 50).
+  const list = parseList(query, []);
+  const page = list.page - 1;
   const now = new Date();
   const period = reportPeriod(first(query.desde), first(query.hasta), now);
   // La vista para imprimir trae todas las filas: un papel no se pagina con un botón.
@@ -249,10 +285,13 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
     getReportPlaces(),
     printing
       ? getReportRows(report.key, filter)
-      : getReportPage(report.key, filter, REPORT_PAGE, page * REPORT_PAGE),
+      : getReportPage(report.key, filter, list.size, page * list.size),
   ]);
   const place = places.find((p) => p.id === local);
-  if (!place || !result) notFound();
+  if (!place) notFound();
+  // Una ficha de una receta que no es del local nuevo (se cambió el local arriba): se elige otra receta.
+  if (!result && recipe && !requested) redirect(`/reportes/${report.key}?local=${local}`);
+  if (!result) notFound();
   const filters = report.period
     ? `&desde=${period.from}&hasta=${period.to}`
     : recipe
@@ -261,7 +300,11 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
   const here = `/reportes/${report.key}?local=${local}${filters}`;
   // Una página que ya no existe (un enlace viejo) vuelve a la primera.
   if (page > 0 && result.rows.length === 0) redirect(here);
-  const pages = printing ? 1 : Math.max(1, Math.ceil(result.total / REPORT_PAGE));
+  const pages = printing ? 1 : Math.max(1, Math.ceil(result.total / list.size));
+  // Los enlaces de la paginación conservan local, período y filas; nunca el aviso de un error anterior.
+  const kept = Object.fromEntries(
+    Object.entries(plainParams(query)).filter(([k]) => k !== "aviso" && k !== "imprimir"),
+  );
   const generated = formatDateTime(now.toISOString());
   const range = report.period
     ? ` · Del ${formatDate(period.from)} al ${formatDate(period.to)}`
@@ -273,6 +316,11 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
 
   return (
     <>
+      <BackLink
+        href={recipe ? `/reportes/${report.key}?local=${local}` : `/reportes?local=${local}`}
+      >
+        {recipe ? "Elegir otra receta" : "Volver a los reportes"}
+      </BackLink>
       {first(query.aviso) === "no-se-pudo" ? (
         <div className="print:hidden">
           <Notice status="bad">No pudimos preparar el archivo. Probá de nuevo.</Notice>
@@ -314,12 +362,6 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
               </ul>
             </div>
           ) : null}
-          <Link
-            href={recipe ? `/reportes/${report.key}?local=${local}` : `/reportes?local=${local}`}
-            className="inline-flex min-h-touch w-fit items-center text-base text-primary underline-offset-4 hover:underline print:hidden"
-          >
-            {recipe ? "Elegir otra receta" : "Volver a los reportes"}
-          </Link>
           {report.key === "recipe_card" && recipe ? (
             <Link
               href={`/recetas/${recipe}/cocina`}
@@ -330,20 +372,15 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
           ) : null}
         </div>
         {report.period ? (
-          <form
-            method="get"
-            className="grid gap-4 sm:grid-cols-3 sm:items-end print:hidden"
-            aria-label="Elegir el período"
-          >
-            <input type="hidden" name="local" value={local} />
-            <Field id="reporte-desde" label="Desde">
+          // El período es un filtro más: se aplica solo al cambiar una fecha y conserva el local (ADR-0036).
+          <FilterBar label="Elegir el período">
+            <Field id="reporte-desde" label="Desde" className="w-full sm:w-48">
               <Input type="date" name="desde" defaultValue={period.from} />
             </Field>
-            <Field id="reporte-hasta" label="Hasta">
+            <Field id="reporte-hasta" label="Hasta" className="w-full sm:w-48">
               <Input type="date" name="hasta" defaultValue={period.to} />
             </Field>
-            <Button type="submit">Ver</Button>
-          </form>
+          </FilterBar>
         ) : null}
         <div className="flex flex-wrap items-start gap-2 print:hidden">
           {printing ? (
@@ -356,16 +393,21 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
             />
           ) : (
             <Button asChild variant="outline">
-              <Link href={`${here}&imprimir=1`}>Preparar para imprimir o PDF</Link>
+              <Link href={`${here}&imprimir=1`}>
+                <Printer aria-hidden="true" />
+                Preparar para imprimir o PDF
+              </Link>
             </Button>
           )}
           <Button asChild variant="outline">
             <a href={`/reportes/${report.key}/exportar?local=${local}${filters}&formato=xlsx`}>
+              <Download aria-hidden="true" />
               Bajar en Excel
             </a>
           </Button>
           <Button asChild variant="outline">
             <a href={`/reportes/${report.key}/exportar?local=${local}${filters}&formato=csv`}>
+              <Download aria-hidden="true" />
               Bajar en CSV
             </a>
           </Button>
@@ -378,8 +420,8 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
         ) : null}
         {!printing && pages > 1 ? (
           <p className="hidden text-sm text-ink-muted print:block">
-            Filas {page * REPORT_PAGE + 1} a {page * REPORT_PAGE + result.rows.length} de{" "}
-            {result.total}. Esta hoja no trae el reporte completo.
+            Filas {page * list.size + 1} a {page * list.size + result.rows.length} de {result.total}
+            . Esta hoja no trae el reporte completo.
           </p>
         ) : null}
         {result.rows.length === 0 ? (
@@ -395,22 +437,16 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
         {report.key === "recipe_card" && recipe && summary ? (
           <RecipeCardExtras recipeId={recipe} />
         ) : null}
-        {pages > 1 ? (
-          <nav aria-label="Páginas" className="flex flex-wrap items-center gap-2 print:hidden">
-            {page > 0 ? (
-              <Button asChild variant="outline">
-                <Link href={`${here}&pagina=${page}`}>Anterior</Link>
-              </Button>
-            ) : null}
-            <span className="text-sm text-ink-muted tabular-nums">
-              Página {page + 1} de {pages}
-            </span>
-            {page + 1 < pages ? (
-              <Button asChild variant="outline">
-                <Link href={`${here}&pagina=${page + 2}`}>Siguiente</Link>
-              </Button>
-            ) : null}
-          </nav>
+        {!printing && result.total > 0 ? (
+          <div className="print:hidden">
+            <Pagination
+              list={list}
+              total={result.total}
+              shown={result.rows.length}
+              path={`/reportes/${report.key}`}
+              params={kept}
+            />
+          </div>
         ) : null}
       </Card>
     </>
