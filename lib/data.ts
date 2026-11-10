@@ -327,10 +327,14 @@ export type HistoryFilter = {
 
 export const HISTORY_PAGE = 50;
 
-export async function getHistory(filter: HistoryFilter): Promise<HistoryRow[]> {
+// limit: cuántos cambios traer (el Historial pide uno de más para saber si hay más antiguos).
+export async function getHistory(
+  filter: HistoryFilter,
+  limit: number = HISTORY_PAGE,
+): Promise<HistoryRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.schema("core").rpc("audit_history", {
-    p_limit: HISTORY_PAGE,
+    p_limit: limit,
     p_before: filter.before,
     p_record_id: filter.recordId,
     p_from: filter.from,

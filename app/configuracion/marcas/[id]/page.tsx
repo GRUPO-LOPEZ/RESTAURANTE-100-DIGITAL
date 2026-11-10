@@ -23,6 +23,7 @@ import {
   type UnitStatus,
 } from "@/lib/org";
 import { requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Una marca (ADR-0031): sus datos y sus locales. El nombre lo cambia quien administra la marca; el
 // código y el estado, quien administra todo el grupo. Un local nuevo lo crea quien administra la marca.
@@ -52,12 +53,7 @@ async function Brand({ params }: { params: PageProps<"/configuracion/marcas/[id]
 
   return (
     <>
-      <Link
-        href="/configuracion/marcas"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-      >
-        Volver a marcas
-      </Link>
+      <BackLink href="/configuracion/marcas">Volver a marcas</BackLink>
       <Card className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle>{brand.name}</CardTitle>

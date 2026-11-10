@@ -33,6 +33,7 @@ import {
   type RowKind,
 } from "@/lib/imports/jobs";
 import { getMenus, requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Vista previa de una importación (ADR-0027): ¿qué se va a crear y qué hay que corregir? Nunca
 // muestra precios: los guarda la base aparte y esta pantalla no los lee.
@@ -101,12 +102,7 @@ async function Preview({
 
   return (
     <>
-      <Link
-        href="/recetas/importar"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-      >
-        Volver a importaciones
-      </Link>
+      <BackLink href="/recetas/importar">Volver a importaciones</BackLink>
 
       <Card className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">

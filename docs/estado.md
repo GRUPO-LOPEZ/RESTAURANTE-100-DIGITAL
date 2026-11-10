@@ -2,7 +2,22 @@
 
 _Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: rediseño de la interfaz, PR 3 de 4 (rama `feat/rediseno-ui-3-materias-reportes-calidad`)
+## Al retomar: rediseño de la interfaz, PR 4 de 4 (rama `feat/rediseno-ui-4-administracion`)
+
+- **Qué se hizo** (ADR-0036, adenda del PR 4; sin cambios en la base). Con este PR **termina el rediseño**: todas las pantallas usan el sistema nuevo.
+  - **Usuarios:** tablero con 4 tarjetas confiables (cada una lleva a sus registros; «Sin permiso» y «Sin comparación» cuando corresponde), tablas por local y por rol, y cambios críticos con «Ver todos» al Historial. Lista de personas con filtros que se aplican solos, pestañas de estado, tabla y paginación con cursor. Ficha en pestañas (Datos y cuenta, Roles, Actividad), con el nombre como título y «← Volver a personas» que conserva los filtros. Invitar con ancho limitado.
+  - **Historial:** filtros que se aplican solos (fechas, persona, módulo, marca y registro), tabla y paginación con cursor («Más antiguos»), exportar en la tarjeta.
+  - **Aprobaciones** sin pestañas (pendientes, avisos y resueltas en la misma página, para que el aviso de una decisión se vea en la tarjeta resuelta), con «Marcar avisos como leídos» arriba. **Roles:** el rol se elige con un filtro que se aplica solo. **Mi cuenta** en pestañas (Mis datos, Contraseña y doble verificación, Sesiones) con aviso de cambios sin guardar. **Panel de control** en grilla, con aviso si no hay nada para administrar.
+  - **Pendientes de los PR anteriores, cerrados:** «Salir» del celular dentro de «Menú»; el título de las fichas de receta y de materia prima es el nombre del registro; Importaciones con la tabla y la paginación nuevas; un único «← Volver» (`components/back-link.tsx`) en todas las pantallas; se borraron `FiltersPanel` y `UsersTable`.
+  - **Arreglado de paso:** la barra inferior del celular tapaba el final del menú; las tablas anchas con scroll no se podían recorrer con teclado (axe).
+- **Decisiones de Joaco (2026-11-10):** el local de Usuarios e Historial es el de arriba, y «Todos mis locales» muestra todo el alcance (la Marca aparece como filtro solo en ese caso); paginación con cursor con el estilo nuevo, sin total ni número de página y sin ordenar columnas (el orden lo fija la base).
+- **Pruebas (2026-11-10, todas en verde):** db reset desde cero; lint, tipos y formato; Vitest 265; pgTAP 2.133 en 46 archivos; Playwright 217 de 217 en celular y computadora, con axe. Pruebas nuevas: cursor, pestañas y local de arriba en Personas; pestañas de la ficha y «Volver a personas»; cursor y local en Historial; «Salir» dentro de «Menú» en el celular. Capturas en 1440, 1600, 1920, tablet y celular.
+- **Revisores:** security-auditor apto, sin graves ni medios; los 4 menores corregidos (el título y los botones del encabezado repiten el control de permisos; un local fuera del alcance se dice; un cursor a medias vuelve al principio; Mi cuenta confirma la sesión antes de leer). ui-reviewer: los 5 medios corregidos (tarjetas que decían «Operando» con 0, tarjetas sin enlace, título de la ficha de persona, enlace al Historial que forzaba «todos», «la otra sesión» en singular) y casi todos los menores.
+- **Quedó para después (menores):** una parada de teclado de más en las tablas que no se desplazan (el precio de cumplir axe en las que sí); el selector de persona del Historial lista hasta 100 (falta un buscador); los cambios críticos se ven como tarjetas en el tablero y como tabla en el Historial; la fila de 4 tarjetas aprieta entre 800 y 1200 px (también en Inicio y Calidad); en el celular, la pestaña «Sesiones» de Mi cuenta queda cortada en el borde (la misma pista de «hay más pestañas» que falta en Recetas).
+- **Para Joaco:** TanStack Table ya no se usa en ninguna pantalla (la tabla común ordena en el servidor). ¿Se saca la dependencia? Está en el stack de CLAUDE.md, por eso no la saqué sin preguntar.
+- **Sigue:** volver a la Fase 2 (pendientes de «Antes: aviso de rendimiento»).
+
+## Antes: rediseño, PR 3 de 4 (fusionado, PR #51)
 
 - **Qué se hizo** (ADR-0036, adenda del PR 3; sin cambios en la base):
   - **Materias primas:** lista con filtros que se aplican solos, pestañas de estado, orden por nombre o código y 15 por página; alta en un modal (el mismo formulario de `/materias-primas/nueva`); ficha en 6 pestañas (`?seccion=`) con «← Volver» que conserva los filtros.
@@ -13,7 +28,7 @@ _Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Revisores:** security-auditor apto, sin graves ni medios. ui-reviewer: 1 grave (cambiar el local arriba con un reporte o una lista de Calidad abiertos daba «no encontrado») y 4 medios (foco al cerrar el modal, nombre de los enlaces de Calidad, la comparación que tumbaba la pantalla, filtros sin JavaScript), todos corregidos y probados, más varios menores.
 - **Quedó para después (menores de la revisión):** la fila de 4 tarjetas aprieta entre 800 y 1200 px (también en Inicio); una pista de que hay más pestañas en el celular (también en Recetas); el aviso de alérgenos sin validar armado a mano; si fallan las «Últimas exportaciones», la tarjeta desaparece sin aviso; quien propone precios sin `catalogManage` ve vacío el desplegable de proveedor (ya pasaba antes).
 - **Para Joaco:** Reportes y Calidad pasan de 50 a 15 filas por página, como el resto (se puede elegir 10, 25 o 50).
-- **Sigue:** PR 4, Aprobaciones, Usuarios, Historial, Roles, Mi cuenta y Panel de control.
+- **Siguió:** PR 4, Aprobaciones, Usuarios, Historial, Roles, Mi cuenta y Panel de control.
 
 ## Antes: superadministrador de prueba sin MFA (TEMPORAL; fusionado, PR #49)
 

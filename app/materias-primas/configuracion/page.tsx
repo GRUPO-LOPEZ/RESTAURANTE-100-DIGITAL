@@ -1,6 +1,4 @@
-import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowLeft } from "lucide-react";
 
 import {
   archiveCategoryAction,
@@ -31,6 +29,7 @@ import {
 } from "@/lib/catalog";
 import { getRecipeSettingsCategories } from "@/lib/recipes";
 import { getMenus, requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Configuración del catálogo (ADR-0022): las listas que se eligen al cargar materias primas. Las
 // define el grupo; nada viene fijo. La base controla quién puede y que no se dé de baja algo en uso.
@@ -104,13 +103,7 @@ async function Settings({
   ]);
   return (
     <>
-      <Link
-        href="/materias-primas"
-        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Volver a materias primas
-      </Link>
+      <BackLink href="/materias-primas">Volver a materias primas</BackLink>
       {archived ? <FlashNotice>{archived}</FlashNotice> : null}
       {categoryGroup ? (
         <Categories kind={INGREDIENT_CATEGORIES} groupId={categoryGroup} categories={categories} />

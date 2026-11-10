@@ -1,8 +1,7 @@
 import { IngredientPrices } from "@/components/ingredient-prices";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import { ArrowLeft } from "lucide-react";
+import { Suspense, cache } from "react";
 
 import {
   createProductAction,
@@ -47,6 +46,7 @@ import {
   exceedsYieldAlert,
   formatCleaning,
 } from "@/lib/yields";
+import { BackLink } from "@/components/back-link";
 
 // Ficha de una materia prima (sección 18; ficha por pestañas del rediseño, ADR-0036). La pestaña va en la
 // dirección (?seccion=), así se puede volver o compartir.
@@ -55,12 +55,35 @@ export default function MateriaPrimaPage({
   searchParams,
 }: PageProps<"/materias-primas/[id]">) {
   return (
-    <AppShell title="Materia prima" description="Cómo se compra, cómo se mide y sus alérgenos.">
+    <AppShell
+      title="Materia prima"
+      heading={
+        <Suspense fallback="Materia prima">
+          <IngredientName params={params} />
+        </Suspense>
+      }
+      description="Cómo se compra, cómo se mide y sus alérgenos."
+    >
       <Suspense fallback={<Loading />}>
         <Ingredient params={params} searchParams={searchParams} />
       </Suspense>
     </AppShell>
   );
+}
+
+// Una sola lectura por pedido: la usan el título y la ficha.
+const ingredientById = cache(getIngredient);
+
+// El h1 de la ficha es el nombre de la materia prima (rediseño, ADR-0036); la ruta de arriba dice "Materia prima".
+async function IngredientName({
+  params,
+}: {
+  params: PageProps<"/materias-primas/[id]">["params"];
+}) {
+  await requireMenu("catalog");
+  const { id } = await params;
+  if (!UUID.test(id)) return "Materia prima";
+  return (await ingredientById(id))?.name ?? "Materia prima";
 }
 
 // Las pestañas de la ficha. "Precios y compra" junta el precio vigente y cómo se compra.
@@ -130,7 +153,7 @@ async function Ingredient({
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const [ingredient, menus, query] = await Promise.all([
-    getIngredient(id),
+    ingredientById(id),
     getMenus(),
     searchParams,
   ]);
@@ -169,20 +192,14 @@ async function Ingredient({
 
   return (
     <>
-      <Link
-        href={back}
-        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Volver a materias primas
-      </Link>
+      <BackLink href={back}>Volver a materias primas</BackLink>
 
       {/* Encabezado: siempre a la vista, en todas las pestañas. */}
       <Card className="flex flex-col gap-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col">
-            <CardTitle className="[overflow-wrap:anywhere]">{ingredient.name}</CardTitle>
-            <span className="text-sm text-ink-muted tabular-nums">
+            {/* El nombre ya es el título de la pantalla: acá van sus datos. */}
+            <span className="text-base text-ink tabular-nums">
               {ingredient.code}
               {ingredient.category ? ` · ${ingredient.category}` : ""}
             </span>

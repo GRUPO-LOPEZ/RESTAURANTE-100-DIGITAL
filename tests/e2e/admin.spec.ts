@@ -23,8 +23,20 @@ async function noHorizontalScroll(page: Page) {
 const RAVIOLES = "00000000-0000-4000-8000-000000001108";
 const PASTAS_CENTRO = "00000000-0000-4000-8000-000000000201";
 
+// Una tabla en la computadora y tarjetas en el celular (rediseño, ADR-0036): solo las visibles.
 function localRows(page: Page) {
-  return page.getByRole("table", { name: "Personas por local" }).getByRole("rowheader");
+  return page
+    .getByRole("table", { name: "Personas por local" })
+    .locator("tbody tr:visible")
+    .or(page.getByRole("list", { name: "Personas por local" }).getByRole("listitem"));
+}
+
+// Los cambios del Historial, en tabla o en tarjetas.
+function historyEntries(page: Page) {
+  return page
+    .getByRole("table", { name: "Historial de cambios" })
+    .getByRole("row")
+    .or(page.getByRole("list", { name: "Historial de cambios" }).getByRole("listitem"));
 }
 
 test.describe("quién ve qué", () => {
@@ -93,8 +105,9 @@ test.describe("aprobaciones e historial", () => {
 
     await login(page, "superadmin@ejemplo.test", { mfa: true });
     await (await menuLink(page, "Roles y permisos")).click();
-    await page.getByLabel("Rol").selectOption(roleCode);
-    await page.getByRole("button", { name: "Ver sus permisos" }).click();
+    // El rol se aplica solo al elegirlo (rediseño, ADR-0036).
+    await page.getByLabel("Rol", { exact: true }).selectOption(roleCode);
+    await expect(page).toHaveURL(new RegExp(`rol=${roleCode}`));
     await expect(page.getByRole("heading", { level: 2, name: roleName })).toBeVisible();
     await axe(page);
     const row = page.getByRole("listitem").filter({ hasText: permission });
@@ -133,15 +146,10 @@ test.describe("aprobaciones e historial", () => {
     // En el historial figuran las dos personas, con fecha y motivo.
     await page.goto("/historial?modulo=approvals&local=todos");
     await expect(
-      page
-        .getByRole("listitem")
-        .filter({ hasText: reason })
-        .filter({ hasText: "Sofía Admin" })
-        .first(),
+      historyEntries(page).filter({ hasText: reason }).filter({ hasText: "Sofía Admin" }).first(),
     ).toBeVisible();
     await expect(
-      page
-        .getByRole("listitem")
+      historyEntries(page)
         .filter({ hasText: "Aprobación" })
         .filter({ hasText: "Delia Dirección" })
         .first(),
@@ -178,7 +186,7 @@ test.describe("cuentas", () => {
       .getByRole("link", { name: /Prueba Pausa/ })
       .first()
       .click();
-    await expect(page.getByRole("heading", { level: 2, name: /Prueba Pausa/ })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Prueba Pausa/ })).toBeVisible();
     await expect(page.getByText("Último acceso")).toBeVisible();
     await axe(page);
     await openAction(page, "Suspender…");
@@ -206,5 +214,121 @@ test.describe("cuentas", () => {
 
     await login(page, email);
     await logout(page);
+  });
+});
+
+// Rediseño, PR 4 (ADR-0036; decisiones de Joaco del 2026-11-10): local de la barra de arriba («Todos mis
+// locales» = todo el alcance), paginación con cursor, fichas por pestañas y «Salir» dentro de «Menú».
+test.describe("administración con el sistema nuevo", () => {
+  test("Personas: el local de arriba, las pestañas de estado y la paginación con cursor", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await login(page, "direccion@ejemplo.test", { mfa: true });
+    // Con «Todos mis locales», todo el alcance, y la marca como filtro.
+    await page.goto("/usuarios/lista?filas=10");
+    await expect(page.getByRole("heading", { name: "Personas de todo tu alcance" })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("combobox", { name: "Marca" })).toBeVisible();
+    await expect(
+      page.getByRole("status").filter({ hasText: /^Mostrando 10 personas$/ }),
+    ).toBeVisible();
+    await axe(page);
+    await noHorizontalScroll(page);
+    // La tanda siguiente, y de vuelta al principio.
+    await page
+      .getByRole("navigation", { name: "Páginas" })
+      .getByRole("link", { name: "Siguientes" })
+      .click();
+    await expect(page).toHaveURL(/despues_id=/);
+    await expect(
+      page.getByRole("status").filter({ hasText: /^Mostrando 10 personas siguientes$/ }),
+    ).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Páginas" })
+      .getByRole("link", { name: "Volver al principio" })
+      .click();
+    await expect(page).not.toHaveURL(/despues_id=/);
+    await expect(page).toHaveURL(/filas=10/);
+    // Una pestaña de estado.
+    const tabs = page.getByRole("navigation", { name: "Estado de las cuentas" });
+    await tabs.getByRole("link", { name: "Activas", exact: true }).click();
+    await expect(page).toHaveURL(/estado=active/);
+    await expect(tabs.getByRole("link", { name: "Activas", exact: true })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    // Con un local, sus personas, sin el filtro de marca.
+    await page.goto(`/usuarios/lista?local=${PASTAS_CENTRO}`);
+    await expect(
+      page.getByRole("heading", { name: "Personas de Demo Pastas Centro" }),
+    ).toBeVisible();
+    await expect(page.getByRole("main").getByRole("combobox", { name: "Marca" })).toHaveCount(0);
+    await logout(page);
+  });
+
+  test("la ficha de una persona va por pestañas y vuelve a la lista con sus filtros", async ({
+    page,
+  }) => {
+    // Ingreso con doble verificación y varias pantallas: el mismo margen que las otras pruebas de Dirección.
+    test.setTimeout(90_000);
+    await login(page, "direccion@ejemplo.test", { mfa: true });
+    await page.goto("/usuarios/lista?q=compras&local=todos");
+    await page
+      .getByRole("link", { name: /Compras/ })
+      .first()
+      .click();
+    await expect(page.getByRole("navigation", { name: "Secciones de la persona" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Datos", exact: true })).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Secciones de la persona" })
+      .getByRole("link", { name: "Roles", exact: true })
+      .click();
+    await expect(page).toHaveURL(/seccion=roles/);
+    await expect(page.getByRole("heading", { name: "Roles", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Datos", exact: true })).toHaveCount(0);
+    await axe(page);
+    await page.getByRole("link", { name: "Volver a personas" }).click();
+    await expect(page).toHaveURL(/q=compras/);
+    await logout(page);
+  });
+
+  test("Historial: el local de arriba y los cambios más antiguos", async ({ page }) => {
+    test.setTimeout(120_000);
+    await login(page, "auditor@ejemplo.test");
+    await page.goto("/historial?filas=10&local=todos");
+    await expect(page.getByRole("heading", { name: "Cambios en todo tu alcance" })).toBeVisible();
+    await expect(
+      page.getByRole("status").filter({ hasText: /^Mostrando 10 cambios$/ }),
+    ).toBeVisible();
+    await axe(page);
+    await noHorizontalScroll(page);
+    await page
+      .getByRole("navigation", { name: "Páginas" })
+      .getByRole("link", { name: "Más antiguos" })
+      .click();
+    await expect(page).toHaveURL(/antes=\d+/);
+    await expect(historyEntries(page).first()).toBeVisible();
+    await page.goto(`/historial?local=${PASTAS_CENTRO}`);
+    await expect(
+      page.getByRole("heading", { name: "Cambios en Demo Pastas Centro" }),
+    ).toBeVisible();
+    await expect(page.getByRole("main").getByRole("combobox", { name: "Marca" })).toHaveCount(0);
+    await logout(page);
+  });
+
+  test("en el celular, «Salir» está dentro de «Menú»", async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "celular",
+      "Solo en el celular: en la computadora va en la barra lateral.",
+    );
+    await login(page, "compras@ejemplo.test");
+    await expect(page.getByRole("button", { name: /^Salir/ })).toHaveCount(0);
+    await page.locator("summary:visible", { hasText: "Menú" }).click();
+    const menu = page.getByRole("navigation", { name: "Menú principal" });
+    await expect(menu.getByRole("link", { name: "Mi cuenta" })).toBeVisible();
+    await expect(menu.getByRole("button", { name: /^Salir/ })).toBeVisible();
+    await axe(page);
+    await menu.getByRole("button", { name: /^Salir/ }).click();
+    await expect(page).toHaveURL(/\/ingresar$/);
   });
 });

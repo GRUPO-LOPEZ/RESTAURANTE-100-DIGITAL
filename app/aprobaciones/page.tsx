@@ -33,11 +33,16 @@ const STATUS: Record<InboxRow["status"], { label: string; status: BadgeStatus }>
 };
 
 // Bandeja de aprobaciones (sección 9): las pendientes con el antes y el después, aprobar o
-// rechazar con motivo, y las resueltas recientemente. Arriba, los avisos de cambios de recetas
+// rechazar con motivo, y las resueltas recientemente. Entre las dos, los avisos de cambios de recetas
 // (una preparación que cambió y que usan platos de la persona; ADR-0026).
 export default function AprobacionesPage() {
   return (
     <AppShell
+      actions={
+        <Suspense fallback={null}>
+          <MarkRead />
+        </Suspense>
+      }
       title="¿Qué espera una decisión?"
       description="Los cambios que necesitan que otra persona los apruebe. Las pendientes van primero."
     >
@@ -48,14 +53,27 @@ export default function AprobacionesPage() {
   );
 }
 
+// Con avisos sin leer, la acción va en el encabezado (ADR-0036: los botones, siempre en el mismo lugar).
+async function MarkRead() {
+  await requireMenu("approvals");
+  const unread = await getUnreadCount();
+  if (unread === 0) return null;
+  return (
+    <form action={markNotificationsReadAction}>
+      <Button type="submit" variant="outline" className="w-full desk:w-auto">
+        Marcar {unread === 1 ? "el aviso nuevo" : `los ${unread} avisos nuevos`} como leídos
+      </Button>
+    </form>
+  );
+}
+
 async function Inbox() {
   await requireMenu("approvals");
   // Las pendientes (hasta 100) y las últimas 20 resueltas.
-  const [pending, resolved, roles, unread, notices] = await Promise.all([
+  const [pending, resolved, roles, notices] = await Promise.all([
     getInbox(true, 100),
     getInbox(false, 20),
     getRoles(),
-    getUnreadCount(),
     getRecipeNotices(),
   ]);
   const roleNames = Object.fromEntries(roles.map((r) => [r.code, r.name]));
@@ -69,25 +87,16 @@ async function Inbox() {
 
   return (
     <>
-      {unread > 0 ? (
-        <Card className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-base text-ink">
-            Tenés {unread} {unread === 1 ? "aviso nuevo" : "avisos nuevos"}.
-          </p>
-          <form action={markNotificationsReadAction}>
-            <Button type="submit" variant="outline" className="w-full sm:w-auto">
-              Marcar como leídos
-            </Button>
-          </form>
-        </Card>
-      ) : null}
-      {notices.length > 0 ? <Notices rows={notices} /> : null}
+      {/* Primero lo que espera una decisión; después los avisos y lo resuelto. */}
       {pending.length === 0 && resolved.length === 0 ? (
-        <EmptyState title="No hay solicitudes para mostrar." />
+        <>
+          <EmptyState title="No hay solicitudes para mostrar." />
+          {notices.length > 0 ? <Notices rows={notices} /> : null}
+        </>
       ) : (
         <>
           <section aria-labelledby="pendientes" className="flex flex-col gap-4">
-            <h2 id="pendientes" className="text-xl text-ink">
+            <h2 id="pendientes" className="text-xl font-semibold text-ink">
               Pendientes ({pending.length >= 100 ? "100 o más" : pending.length})
             </h2>
             {pending.length === 0 ? (
@@ -96,9 +105,10 @@ async function Inbox() {
               <RequestList rows={pending} roleNames={roleNames} toDirection={toDirection} />
             )}
           </section>
+          {notices.length > 0 ? <Notices rows={notices} /> : null}
           {resolved.length > 0 ? (
             <section aria-labelledby="resueltas" className="flex flex-col gap-4">
-              <h2 id="resueltas" className="text-xl text-ink">
+              <h2 id="resueltas" className="text-xl font-semibold text-ink">
                 Resueltas recientemente
               </h2>
               <RequestList rows={resolved} roleNames={roleNames} toDirection={toDirection} />
@@ -149,7 +159,7 @@ const NOTICE_LABELS: Record<NoticeRow["kind"], { badge: string; link: string }> 
 function Notices({ rows }: { rows: NoticeRow[] }) {
   return (
     <section aria-labelledby="apr-avisos" className="flex flex-col gap-4">
-      <h2 id="apr-avisos" className="text-xl text-ink">
+      <h2 id="apr-avisos" className="text-xl font-semibold text-ink">
         Avisos de recetas, costos y rendimientos ({rows.length >= 20 ? "20 o más" : rows.length})
       </h2>
       <ul className="flex flex-col gap-4">
@@ -279,7 +289,7 @@ function RequestList({
         <li key={r.id}>
           <Card className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-xl text-ink">{r.summary ?? r.workflow_name}</h3>
+              <h3 className="text-base font-semibold text-ink">{r.summary ?? r.workflow_name}</h3>
               <Badge status={STATUS[r.status].status}>{STATUS[r.status].label}</Badge>
             </div>
             <CardDescription>

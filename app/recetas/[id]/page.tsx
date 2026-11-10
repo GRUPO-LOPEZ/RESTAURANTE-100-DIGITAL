@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Suspense } from "react";
-import { ArrowLeft, ChefHat } from "lucide-react";
+import { Suspense, cache } from "react";
+import { ChefHat } from "lucide-react";
 
 import {
   archiveRecipeAction,
@@ -56,18 +56,38 @@ import {
   type VersionStatus,
 } from "@/lib/recipes";
 import { getMenus, requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Ficha de una receta (secciones 13 y 14; ficha por pestañas del rediseño, ADR-0036): nunca un formulario
 // interminable. Quien la trabaja ve el borrador y lo edita; quien solo la ve va a la vista de cocina.
 // La pestaña va en la dirección (?seccion=), así se puede volver o compartir.
 export default function RecetaPage({ params, searchParams }: PageProps<"/recetas/[id]">) {
   return (
-    <AppShell title="Receta" description="Componentes, procedimiento, rendimiento y versiones.">
+    <AppShell
+      title="Receta"
+      heading={
+        <Suspense fallback="Receta">
+          <RecipeName params={params} />
+        </Suspense>
+      }
+      description="Componentes, procedimiento, rendimiento y versiones."
+    >
       <Suspense fallback={<Loading />}>
         <Recipe params={params} searchParams={searchParams} />
       </Suspense>
     </AppShell>
   );
+}
+
+// Una sola lectura por pedido: la usan el título y la ficha.
+const recipeById = cache(getRecipe);
+
+// El h1 de la ficha es el nombre de la receta (rediseño, ADR-0036); la ruta de arriba dice "Receta".
+async function RecipeName({ params }: { params: PageProps<"/recetas/[id]">["params"] }) {
+  await requireMenu("recipes");
+  const { id } = await params;
+  if (!UUID.test(id)) return "Receta";
+  return (await recipeById(id))?.name ?? "Receta";
 }
 
 const STATUS_BADGE: Record<VersionStatus, BadgeStatus> = {
@@ -158,7 +178,7 @@ async function Recipe({
   const session = await requireMenu("recipes");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const recipe = await getRecipe(id);
+  const recipe = await recipeById(id);
   if (!recipe) notFound();
   const works = recipe.can.draft || recipe.can.review || recipe.can.publish;
   // Quien solo ve la receta, la ve como en la cocina.
@@ -220,20 +240,14 @@ async function Recipe({
 
   return (
     <>
-      <Link
-        href={back}
-        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Volver a recetas
-      </Link>
+      <BackLink href={back}>Volver a recetas</BackLink>
 
       {/* Encabezado: siempre a la vista, en todas las pestañas. */}
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col">
-            <CardTitle className="[overflow-wrap:anywhere]">{recipe.name}</CardTitle>
-            <span className="text-sm text-ink-muted tabular-nums">
+            {/* El nombre ya es el título de la pantalla: acá van sus datos. */}
+            <span className="text-base text-ink tabular-nums">
               {recipe.code} · {RECIPE_TYPE_LABELS[recipe.type]} · {recipe.place}
             </span>
           </div>

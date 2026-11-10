@@ -19,6 +19,7 @@ import {
   type VatCondition,
 } from "@/lib/org";
 import { requireMenu } from "@/lib/auth/session";
+import { BackLink } from "@/components/back-link";
 
 // Razones sociales del grupo (ADR-0031; respuesta 2 de Soy, ADR-0030): ¿qué sociedades hay y qué
 // locales usa cada una? Las administra quien administra todo el grupo. La condición frente al IVA
@@ -101,12 +102,7 @@ async function LegalEntities() {
   const without = restaurants.filter((r) => !r.legalEntityId);
   return (
     <>
-      <Link
-        href="/configuracion"
-        className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-      >
-        Volver al panel de control
-      </Link>
+      <BackLink href="/configuracion">Volver al panel de control</BackLink>
       {without.length > 0 ? (
         <Notice status="warn">
           <p>

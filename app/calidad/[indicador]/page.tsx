@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
+import { BackLink } from "@/components/back-link";
 import { PlacePrompt } from "@/components/place-prompt";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -110,13 +110,7 @@ async function Items({ params, searchParams }: Pick<Props, "params" | "searchPar
 
   return (
     <>
-      <Link
-        href={`/calidad?local=${local}`}
-        className="inline-flex min-h-touch items-center gap-1 self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Volver a la calidad de datos
-      </Link>
+      <BackLink href={`/calidad?local=${local}`}>Volver a la calidad de datos</BackLink>
       <Card className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <CardTitle>{indicator.missing}</CardTitle>

@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import type { DataColumn } from "@/components/ui/data-table";
 import {
   ACTION_LABELS,
   FIELD_LABELS,
@@ -94,5 +95,61 @@ export function HistoryList({ rows, compact = false }: { rows: HistoryRow[]; com
         </li>
       ))}
     </ol>
+  );
+}
+
+// Las columnas del Historial en tabla (rediseño, ADR-0036): cuándo, quién, qué, dónde, y el motivo con los
+// campos que cambiaron. En el celular, la tabla pasa a tarjetas con lo mismo.
+export const HISTORY_COLUMNS: DataColumn<HistoryRow>[] = [
+  {
+    key: "what",
+    header: "Qué pasó",
+    mobile: "title",
+    cell: (r) => (
+      <span className="flex flex-col gap-1">
+        <span className="font-medium text-ink">
+          {TABLE_LABELS[`${r.table_schema}.${r.table_name}`] ?? "Dato del sistema"}
+        </span>
+        {r.module && MODULE_LABELS[r.module] ? (
+          <span className="text-sm text-ink-muted">{MODULE_LABELS[r.module]}</span>
+        ) : null}
+      </span>
+    ),
+  },
+  {
+    key: "action",
+    header: "Acción",
+    mobile: "status",
+    cell: (r) => (
+      <Badge status={actionStatus(r.action)}>{ACTION_LABELS[r.action] ?? "Cambio"}</Badge>
+    ),
+  },
+  {
+    key: "when",
+    header: "Cuándo",
+    cell: (r) => (
+      <time dateTime={r.occurred_at} className="whitespace-nowrap tabular-nums">
+        {formatDateTime(r.occurred_at)}
+      </time>
+    ),
+  },
+  { key: "who", header: "Quién", cell: (r) => r.actor_name },
+  { key: "where", header: "Dónde", cell: (r) => r.place_name || "—" },
+  {
+    key: "detail",
+    header: "Motivo y cambios",
+    cell: (r) => (
+      <div className="flex min-w-60 flex-col gap-1">
+        {r.reason ? <span className="text-sm text-ink">Motivo: {r.reason}</span> : null}
+        <Changes row={r} />
+        {!r.reason && !hasChanges(r) ? "—" : null}
+      </div>
+    ),
+  },
+];
+
+function hasChanges(row: HistoryRow) {
+  return (row.changed_fields ?? Object.keys(row.new_values ?? row.old_values ?? {})).some(
+    (f) => FIELD_LABELS[f],
   );
 }

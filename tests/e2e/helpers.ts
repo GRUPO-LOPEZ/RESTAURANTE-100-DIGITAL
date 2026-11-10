@@ -59,21 +59,33 @@ export async function login(page: Page, email: string, { mfa = false }: { mfa?: 
   await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
 }
 
+// En el celular la navegación, Mi cuenta y "Salir" están plegados detrás de "Menú" (ADR-0036): se abre.
+// En la computadora no hay "Menú" (están en la barra lateral) y no hace nada.
+async function openMobileMenu(page: Page) {
+  // Visible: Next guarda ocultas las pantallas anteriores, cada una con su menú.
+  const toggle = page.locator("summary:visible", { hasText: "Menú" });
+  // El encabezado y la barra lateral llegan en streaming, después del resto de la página: primero se espera
+  // lo que se ve en cada pantalla ("Salir" en la barra lateral de la computadora, "Menú" en el celular).
+  await page
+    .getByRole("button", { name: /^Salir/ })
+    .or(toggle)
+    .first()
+    .waitFor();
+  if (await toggle.isVisible()) {
+    const open = await toggle.evaluate((el) => (el.parentElement as HTMLDetailsElement).open);
+    if (!open) await toggle.click();
+  }
+}
+
 export async function logout(page: Page) {
+  await openMobileMenu(page);
   await page.getByRole("button", { name: /^Salir/ }).click();
   await expect(page).toHaveURL(/\/ingresar$/);
 }
 
 // Un enlace del menú principal. En el celular el menú está plegado detrás de "Menú": se abre.
 export async function menuLink(page: Page, name: string) {
-  // El encabezado llega en streaming, después del resto de la página: primero se lo espera.
-  await page.getByRole("button", { name: /^Salir/ }).waitFor();
-  // Visible: Next guarda ocultas las pantallas anteriores, cada una con su menú.
-  const toggle = page.locator("summary:visible", { hasText: "Menú" });
-  if (await toggle.isVisible()) {
-    const open = await toggle.evaluate((el) => (el.parentElement as HTMLDetailsElement).open);
-    if (!open) await toggle.click();
-  }
+  await openMobileMenu(page);
   return page
     .getByRole("navigation", { name: "Menú principal" })
     .getByRole("link", { name, exact: true });
@@ -89,11 +101,12 @@ export function notice(page: Page) {
   return page.locator('[data-slot="notice"]');
 }
 
-// Una pestaña de una ficha (rediseño, ADR-0036): de receta, o de materia prima con of = "materia prima".
-// La pestaña queda en la dirección (?seccion=).
+// Una pestaña de una ficha (rediseño, ADR-0036): de receta, o la que diga of ("materia prima", "persona",
+// "mi cuenta"). La pestaña queda en la dirección (?seccion=).
 export async function openSection(page: Page, name: string, of = "receta") {
+  const label = of.startsWith("mi ") ? `Secciones de ${of}` : `Secciones de la ${of}`;
   const tab = page
-    .getByRole("navigation", { name: `Secciones de la ${of}` })
+    .getByRole("navigation", { name: label })
     .getByRole("link", { name, exact: true });
   await tab.click();
   await expect(tab).toHaveAttribute("aria-current", "page");
