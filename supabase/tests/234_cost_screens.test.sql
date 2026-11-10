@@ -1,5 +1,7 @@
 -- Fase 2 · Etapa 2.3, PR 2: lo que usan las pantallas de costos (ADR-0032): el estado de la cola y el impacto de un
 -- precio. Quién los ve, que no salga el error de la cola ni otro local, y la cuenta del antes y el después.
+-- Las fechas usan recipes.today() (hoy en la Argentina), como el motor de costos: con current_date (UTC), entre las 21 y
+-- las 24 de la Argentina el precio quedaba vigente «desde mañana» y la prueba fallaba sin que nada estuviera mal.
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
@@ -47,7 +49,7 @@ returns void language sql as $$
   values (pg_temp.u(1), pg_temp.u(96000 + p_n), p_scope::core.scope_type,
           case when p_scope = 'brand' then pg_temp.u(p_place) end,
           case when p_scope = 'restaurant' then pg_temp.u(p_place) end,
-          current_date - p_days_ago, p_price,
+          recipes.today() - p_days_ago, p_price,
           case when p_invoice then 'invoice' else 'no_invoice' end::costing.price_document,
           case when p_invoice then 21 end, 'test_value')
 $$;
@@ -84,7 +86,7 @@ create function pg_temp.publish(p_n int) returns void language sql as $$
 $$;
 create function pg_temp.assign(p_n int, p_rest int) returns void language sql as $$
   insert into recipes.recipe_assignments (group_id, recipe_id, restaurant_id, valid_from)
-  values (pg_temp.u(1), pg_temp.u(97000 + p_n), pg_temp.u(p_rest), current_date - 1)
+  values (pg_temp.u(1), pg_temp.u(97000 + p_n), pg_temp.u(p_rest), recipes.today() - 1)
 $$;
 create function pg_temp.cost(p_n int, p_rest int, p_column text default 'total_cost') returns text language plpgsql as $$
 declare
@@ -98,7 +100,7 @@ end
 $$;
 create function pg_temp.line_status(p_n int, p_rest int) returns text language sql as $$
   select string_agg(l.status, ',' order by l.line_order)
-    from costing.recipe_line_costs_internal(pg_temp.u(98000 + p_n), pg_temp.u(p_rest), current_date) l
+    from costing.recipe_line_costs_internal(pg_temp.u(98000 + p_n), pg_temp.u(p_rest), recipes.today()) l
 $$;
 
 -- El estado de la cola.
@@ -130,7 +132,7 @@ select is(pg_temp.q(pg_temp.u(407), 'select pending::text from costing.recalc_st
 
 -- El precio sube a $ 1.500.
 insert into costing.price_records (id, group_id, purchase_product_id, scope_type, valid_from, package_price, document_type, source)
-values (pg_temp.u(99100), pg_temp.u(1), pg_temp.u(96001), 'group', current_date, 1500, 'no_invoice', 'test_value');
+values (pg_temp.u(99100), pg_temp.u(1), pg_temp.u(96001), 'group', recipes.today(), 1500, 'no_invoice', 'test_value');
 select is(pg_temp.cost(2, 201), '750.0000', 'recalculado');
 
 create function pg_temp.impact(p_user int, p_n int, p_rest int) returns text language sql as $$
@@ -167,8 +169,8 @@ select pg_temp.publish(4);
 select pg_temp.assign(4, 201);
 select is(pg_temp.cost(4, 201), '100.0000', 'otra receta, con otra materia prima');
 insert into costing.price_records (id, group_id, purchase_product_id, scope_type, valid_from, package_price, document_type, source)
-values (pg_temp.u(99101), pg_temp.u(1), pg_temp.u(96001), 'group', current_date, 2000, 'no_invoice', 'test_value'),
-       (pg_temp.u(99102), pg_temp.u(1), pg_temp.u(96002), 'group', current_date, 3000, 'no_invoice', 'test_value');
+values (pg_temp.u(99101), pg_temp.u(1), pg_temp.u(96001), 'group', recipes.today(), 2000, 'no_invoice', 'test_value'),
+       (pg_temp.u(99102), pg_temp.u(1), pg_temp.u(96002), 'group', recipes.today(), 3000, 'no_invoice', 'test_value');
 select is(pg_temp.cost(4, 201), '300.0000', 'recalculado junto');
 select is(pg_temp.q(pg_temp.u(407), format('select string_agg(distinct recipe, '','' order by recipe) from costing.price_impact(%L)', pg_temp.u(99102))),
   'Receta 4', 'el precio de una materia prima no muestra las recetas de otra de la misma tanda');
@@ -177,17 +179,17 @@ select is(pg_temp.q(pg_temp.u(407), format('select count(*)::text from costing.p
 
 -- Un precio que no cambió nada no hereda la suba de otro.
 insert into costing.price_records (id, group_id, purchase_product_id, scope_type, valid_from, package_price, document_type, source)
-values (pg_temp.u(99103), pg_temp.u(1), pg_temp.u(96002), 'group', current_date, 3000, 'no_invoice', 'test_value');
+values (pg_temp.u(99103), pg_temp.u(1), pg_temp.u(96002), 'group', recipes.today(), 3000, 'no_invoice', 'test_value');
 select costing.process_recalc_queue(1000);
 update costing.cost_recalc_queue set processed_at = now() - interval '1 hour' where price_record_id = pg_temp.u(99103);
 insert into costing.price_records (group_id, purchase_product_id, scope_type, valid_from, package_price, document_type, source)
-values (pg_temp.u(1), pg_temp.u(96001), 'group', current_date, 2500, 'no_invoice', 'test_value');
+values (pg_temp.u(1), pg_temp.u(96001), 'group', recipes.today(), 2500, 'no_invoice', 'test_value');
 select costing.process_recalc_queue(1000);
 select is(pg_temp.q(pg_temp.u(407), format('select count(*)::text from costing.price_impact(%L)', pg_temp.u(99103))), '0',
   'un precio sin efecto no muestra impacto');
 
 -- Una receta que el local dejó de usar: el Gerente ya no ve su nombre.
-update recipes.recipe_assignments set valid_to = current_date - 1 where recipe_id = pg_temp.u(97004) and restaurant_id = pg_temp.u(201);
+update recipes.recipe_assignments set valid_to = recipes.today() - 1 where recipe_id = pg_temp.u(97004) and restaurant_id = pg_temp.u(201);
 select pg_temp.cost(4, 201);
 select is(pg_temp.q(pg_temp.u(404), format('select count(*)::text from costing.price_impact(%L) where recipe = ''Receta 4''', pg_temp.u(99102))), '0',
   'el Gerente no ve el nombre de una receta que su local dejó de usar');

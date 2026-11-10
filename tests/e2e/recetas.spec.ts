@@ -4,7 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, notice, openAction } from "./helpers";
+import { login, logout, notice, openAction, openSection } from "./helpers";
 
 async function noHorizontalScroll(page: Page) {
   const overflow = await page.evaluate(
@@ -50,7 +50,8 @@ test("el Jefe de Cocina carga una receta y, aprobada, la cocina la ve sin costos
   await page.getByRole("button", { name: "Crear receta" }).click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 
-  // Componentes: buscar desde 3 letras y agregar.
+  // Componentes: buscar desde 3 letras y agregar (pestaña «Ingredientes y subrecetas»).
+  await openSection(page, "Ingredientes y subrecetas");
   await page.getByLabel("Agregar materia prima o preparación").fill("Harina 000");
   await page
     .getByRole("button", { name: /Harina 000/ })
@@ -70,17 +71,19 @@ test("el Jefe de Cocina carga una receta y, aprobada, la cocina la ve sin costos
   await expect(notice(page).filter({ hasText: "Componentes guardados (2)" })).toBeVisible();
 
   // Pasos.
+  await openSection(page, "Procedimiento");
   await page.getByRole("button", { name: "Agregar un paso" }).click();
   await page.getByLabel("Qué se hace").first().fill("Mezclar la harina con el agua y el aceite.");
   await page.getByLabel("Minutos trabajando").first().fill("10");
   await page.getByRole("button", { name: "Agregar un paso" }).click();
   await page.getByLabel("Qué se hace").nth(1).fill("Hornear hasta dorar.");
   await page.getByLabel("Minutos de espera").nth(1).fill("25");
-  await page.getByLabel("Motivo de los cambios").nth(1).fill("Pasos de la receta");
+  await page.getByLabel("Motivo de los cambios").first().fill("Pasos de la receta");
   await page.getByRole("button", { name: "Guardar pasos" }).click();
   await expect(notice(page).filter({ hasText: "Pasos guardados (2)" })).toBeVisible();
 
   // Rendimiento.
+  await openSection(page, "Rendimientos");
   await openAction(page, "Rendimiento, descripción y presentación");
   await page.locator('[id$="-rinde"]').fill("1,2");
   await page.locator('[id$="-rinde-unidad"]').selectOption("kg");
@@ -94,20 +97,24 @@ test("el Jefe de Cocina carga una receta y, aprobada, la cocina la ve sin costos
   await page.goto("/recetas");
   await page.goto(url);
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  // La dirección conserva la pestaña: vuelve a «Rendimientos».
+  await expect(page.getByText("Tiempo total", { exact: true })).toBeVisible();
+  await expect(page.getByText("35 min", { exact: true })).toBeVisible();
+  await openSection(page, "Ingredientes y subrecetas");
   const saved = page.getByRole("list", { name: "Componentes del borrador" });
   await expect(saved.getByText("1. Harina 000")).toBeVisible();
   await expect(saved.getByLabel("Cantidad", { exact: true }).first()).toHaveValue("250");
   await expect(saved.getByLabel("Cantidad", { exact: true }).nth(1)).toHaveValue("30");
+  await openSection(page, "Procedimiento");
   await expect(page.getByLabel("Qué se hace").first()).toHaveValue(
     "Mezclar la harina con el agua y el aceite.",
   );
-  await expect(page.getByText("Tiempo total", { exact: true })).toBeVisible();
-  await expect(page.getByText("35 min", { exact: true })).toBeVisible();
   await axe(page);
   await noHorizontalScroll(page);
   await noRepeatedIds(page);
 
   // Pedir la revisión.
+  await openSection(page, "Versiones y aprobaciones");
   await openAction(page, "Pedir la revisión");
   await page.locator('[id$="-motivo-revision"]').fill("Lista para revisar");
   await page.getByRole("button", { name: "Pedir la revisión" }).click();
@@ -189,6 +196,7 @@ test("las fotos van con la versión: la Cocinera las ve cuando se publica", asyn
   ).toBeVisible();
   const url = page.url();
   // La receta puede venir con una versión abierta (otro proyecto o un reintento): se sigue con esa.
+  await openSection(page, "Versiones y aprobaciones");
   if ((await page.locator("summary", { hasText: "Retirar de revisión" }).count()) > 0) {
     await openAction(page, "Retirar de revisión");
     await page.locator('[id$="-motivo-retiro"]').fill("Reintento de la prueba");
@@ -199,7 +207,9 @@ test("las fotos van con la versión: la Cocinera las ve cuando se publica", asyn
     await page.locator('[id$="-motivo-version"]').fill("Fotos del emplatado");
     await page.getByRole("button", { name: "Crear versión nueva" }).click();
   }
+  await openSection(page, "Rendimientos");
   await expect(page.getByText("Versión en preparación", { exact: false })).toBeVisible();
+  await openSection(page, "Fotos");
   await openAction(page, "Subir una foto");
   await page
     .getByLabel("Foto", { exact: true })
@@ -211,6 +221,7 @@ test("las fotos van con la versión: la Cocinera las ve cuando se publica", asyn
   await expect(notice(page).filter({ hasText: "Foto agregada al borrador" })).toBeVisible();
   await expect(page.getByRole("img", { name: alt })).toBeVisible();
   await axe(page);
+  await openSection(page, "Versiones y aprobaciones");
   await openAction(page, "Pedir la revisión");
   await page.locator('[id$="-motivo-revision"]').fill("Con la foto del emplatado");
   await page.getByRole("button", { name: "Pedir la revisión" }).click();

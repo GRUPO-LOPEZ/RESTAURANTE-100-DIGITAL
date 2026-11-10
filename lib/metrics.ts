@@ -44,12 +44,10 @@ export function metricView(m: MetricInput): MetricView {
   }
   const value = typeof m.value === "number" ? number.format(m.value) : m.value;
   if (m.stale) {
-    return {
-      value,
-      status: "warn",
-      statusLabel: "Desactualizado",
-      detail: m.asOf ? `Dato del ${m.asOf}` : "Dato vencido",
-    };
+    const detail = m.asOf ? `Dato del ${m.asOf}` : "Dato vencido";
+    // Lo más grave primero (decisión de Joaco, 2026-11-09): un dato vencido que además es crítico dice «Crítico».
+    if (m.status === "bad") return { value, status: "bad", statusLabel: "Crítico", detail };
+    return { value, status: "warn", statusLabel: "Desactualizado", detail };
   }
   return { value, status: m.status, statusLabel: m.statusLabel, detail: null };
 }

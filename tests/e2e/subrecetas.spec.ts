@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, notice, openAction } from "./helpers";
+import { login, notice, openAction, openSection } from "./helpers";
 
 async function noHorizontalScroll(page: Page) {
   const overflow = await page.evaluate(
@@ -51,7 +51,8 @@ test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", a
   await page.getByRole("button", { name: "Crear receta" }).click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 
-  // El buscador separa materias primas y preparaciones.
+  // El buscador separa materias primas y preparaciones (pestaña «Ingredientes y subrecetas»).
+  await openSection(page, "Ingredientes y subrecetas");
   await page.getByLabel("Agregar materia prima o preparación").fill("bolognesa");
   const preparations = page.getByRole("list", { name: /^Preparaciones/ });
   await expect(preparations).toBeVisible();
@@ -77,6 +78,7 @@ test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", a
 
   // En una receta publicada, la preparación es un enlace a su ficha.
   await openRecipe(page, "Lasaña bolognesa");
+  await openSection(page, "Ingredientes y subrecetas");
   const components = page.getByRole("list", { name: "Componentes", exact: true });
   await expect(components.getByRole("link", { name: "Salsa blanca" })).toBeVisible();
   await expect(components.getByText("Preparación").first()).toBeVisible();
@@ -86,6 +88,7 @@ test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", a
 test("el Chef del grupo ve dónde se usa una salsa y sus avisos de cambios", async ({ page }) => {
   await login(page, "chefgrupo@ejemplo.test");
   await openRecipe(page, "Salsa bolognesa");
+  await openSection(page, "Dónde se usa");
   const usage = page.getByRole("list", { name: "Recetas que la usan" });
   await expect(usage.getByRole("link", { name: "Lasaña bolognesa", exact: true })).toBeVisible();
   await expect(usage.getByRole("link", { name: "Ravioles de ricota", exact: true })).toBeVisible();
@@ -125,6 +128,7 @@ test("la Chef crea una variante para un local y la ve contra la maestra", async 
   const name = `Ravioles de ricota (${place.replace("Demo Pastas ", "")} e2e)`;
   await login(page, "chef@ejemplo.test");
   await openRecipe(page, "Ravioles de ricota");
+  await openSection(page, "Dónde se usa");
   await expect(page.getByRole("heading", { name: "Variantes de local" })).toBeVisible();
   const options = page.locator('select[id$="-variante-local"] option', { hasText: place });
   if ((await options.count()) > 0) {
@@ -140,6 +144,7 @@ test("la Chef crea una variante para un local y la ve contra la maestra", async 
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   await expect(page.getByText("Variante", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Ravioles de ricota", exact: true })).toBeVisible();
+  await openSection(page, "Ingredientes y subrecetas");
   await expect(page.getByRole("heading", { name: "Diferencias con la maestra" })).toBeVisible();
   await axe(page);
   await noRepeatedIds(page);

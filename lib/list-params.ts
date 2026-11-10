@@ -27,7 +27,7 @@ export function parseList(
   const key = raw.replace(/^-/, "");
   const fallback = defaultSort?.replace(/^-/, "") ?? null;
   return {
-    page: Number.isFinite(page) && page >= 1 ? Math.min(page, 10_000) : 1,
+    page: Number.isFinite(page) && page >= 1 ? Math.min(page, 1_000) : 1,
     size: (PAGE_SIZES as readonly number[]).includes(size) ? size : DEFAULT_PAGE_SIZE,
     sort: sortKeys.includes(key) ? key : fallback,
     dir: sortKeys.includes(key) ? dir : defaultSort?.startsWith("-") ? "desc" : "asc",

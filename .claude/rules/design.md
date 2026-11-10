@@ -59,6 +59,7 @@ Fondo pastel + texto oscuro del mismo tono, **siempre con una palabra** (nunca s
 | Dato faltante o no calculado | "—" y el motivo                            | Sin datos   |
 | Valor real igual a cero      | 0                                          | Según regla |
 | Dato vencido                 | El valor y su fecha                        | Atención    |
+| Vencido y además crítico     | El valor y su fecha                        | Crítico     |
 | Dato completo y vigente      | El valor                                   | Al día      |
 
 Cada estado sale de una regla verificable y cada tarjeta enlaza a los registros que originan su número.

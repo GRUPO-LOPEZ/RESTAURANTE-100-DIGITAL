@@ -3774,6 +3774,7 @@ export type Database = {
         Args: {
           p_limit?: number;
           p_offset?: number;
+          p_order?: string;
           p_recipe_id?: string;
           p_reliability?: Database["costing"]["Enums"]["cost_reliability"];
           p_restaurant_id: string;

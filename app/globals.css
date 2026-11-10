@@ -104,6 +104,7 @@
   --spacing-topbar: 4rem; /* 64 px */
   --spacing-gutter: 2rem; /* 32 px de margen lateral */
   --spacing-gutter-wide: 2.8125rem; /* 45 px desde 1700 px */
+  --spacing-bottom-nav: calc(3.5rem + 1px); /* barra inferior del celular: 56 px y su borde */
 
   /* Cortes: "desk" desde 800 px (barra lateral; debajo, barra inferior del celular); "wide" desde 1700 px. */
   --breakpoint-desk: 50rem;

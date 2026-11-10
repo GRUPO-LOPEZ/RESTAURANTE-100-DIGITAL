@@ -148,6 +148,20 @@ describe("las métricas confiables", () => {
     });
   });
 
+  it("un dato vencido que además es crítico dice «Crítico», con su fecha", () => {
+    expect(
+      metricView({
+        ...base,
+        value: 3,
+        total: 5,
+        stale: true,
+        asOf: "01/10/2026",
+        status: "bad",
+        statusLabel: "Crítico",
+      }),
+    ).toEqual({ value: "3", status: "bad", statusLabel: "Crítico", detail: "Dato del 01/10/2026" });
+  });
+
   it("un dato vencido muestra el valor, su fecha y «Desactualizado»", () => {
     expect(metricView({ ...base, value: 1234, total: 5, stale: true, asOf: "01/10/2026" })).toEqual(
       {

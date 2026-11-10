@@ -38,7 +38,7 @@ function Entry({
     <li>
       <Link
         href={href}
-        className="flex min-h-touch items-center gap-3 rounded-lg border border-line bg-surface p-4 hover:bg-line/50"
+        className="flex min-h-touch items-center gap-3 rounded-md border border-line bg-surface p-4 hover:border-primary"
       >
         <Icon aria-hidden="true" className="size-6 shrink-0 text-primary" />
         <span className="flex min-w-0 flex-1 flex-col gap-1">

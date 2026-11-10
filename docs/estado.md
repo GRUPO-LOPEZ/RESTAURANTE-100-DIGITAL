@@ -1,8 +1,22 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-09. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
 
-## Al retomar: rediseño de la interfaz, PR 1 de 4 (rama `feat/rediseno-ui-1-base`)
+## Al retomar: rediseño de la interfaz, PR 2 de 4 (rama `feat/rediseno-ui-2-inicio-recetas-costos`)
+
+- **Qué se hizo** (ADR-0036, adenda del PR 2):
+  - **Inicio** como panel: aviso «Requiere atención», 4 KPIs, comparación entre locales y tareas pendientes.
+  - **Costos** como listado: KPIs confiables («Sin recetas con costo calculado»), pestañas por confiabilidad, tabla ordenable en la base (`p_order`, migración autorizada) y paginación.
+  - **Recetas:** listado con filtros, pestañas y orden; alta en un modal; ficha en 9 pestañas con barra Guardar / Cancelar fija y aviso de cambios sin guardar.
+  - **Sin selectores de local propios** en Inicio, Costos y Escenarios.
+- **Decisiones de Joaco (2026-11-09):** un solo PR; la migración del orden; «Crítico» gana; la ficha por pestañas.
+- **Pruebas (2026-11-10):** db reset desde cero; lint, tipos y build; Vitest 258; pgTAP 2.133 en 46 archivos (245_cost_order con 25). Playwright en la corrida completa: 196 de 198. Las 2 que fallaron se corrigieron y pasan solas, con la base recreada (18 de 18): `materias-primas.spec` contaba también la búsqueda global de la barra superior (ahora mira solo el contenido) y `admin.spec` en celular, donde el ingreso con doble verificación terminó en el Inicio una vez (intermitente; ya se había visto en costos). Capturas en 1440, 1600, 1920, tablet y celular.
+- **Revisores:** db-reviewer, security-auditor y ui-reviewer sin graves. Corregido: la prueba del orden ahora puede fallar de verdad (25 aserciones, las 12 combinaciones); la pestaña Costos sin versión; volver sin perder filtros; la barra fija arriba de la barra inferior del celular; el aviso de cambios sin guardar en los formularios de la ficha; nombres, «—» cuando falta un dato, página máxima 1.000.
+- **Arreglado de paso:** `234_cost_screens` fallaba entre las 21 y las 24 de la Argentina (usaba la fecha UTC). Ahora usa `recipes.today()`.
+- **Quedó para después:** el título de la ficha dice «Receta» y no el nombre (el nombre está en el encabezado de la tarjeta); la lista de Importaciones todavía sin la tabla nueva (va con el PR 4).
+- **Sigue:** PR 3, Materias primas, Reportes y Calidad.
+
+## Antes: rediseño, PR 1 de 4 (fusionado, PR #47)
 
 - **Qué se hizo** (ADR-0036, prompt de rediseño de Joaco del 2026-11-09): paleta y tipografía nuevas; layout global (barra lateral fija de 240/68 px que se recuerda en una cookie, barra superior con ruta, selector global de local, búsqueda, avisos y perfil, área fluida, barra inferior en el celular); biblioteca de componentes (tabla con orden y paginación en el servidor, filtros que se aplican solos, paginación de 15, pestañas, barra de avance, modal, panel lateral, confirmación, estados, métrica confiable); búsqueda global en /buscar. Reglas actualizadas: design.md y CLAUDE.md («computadora para operar, celular para supervisar»).
 - **Decisiones de Joaco (2026-11-09):** 4 PR por fases; la barra se recuerda en el navegador; se conservan «En revisión» y «Borrador»; la búsqueda trae recetas y materias primas.

@@ -1,22 +1,29 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
+import { TriangleAlert } from "lucide-react";
 
 import { Loading } from "@/components/app-shell";
-import { FiltersPanel } from "@/components/filters-panel";
 import { ReliabilityChart } from "@/components/reliability-chart";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/field";
-import { EmptyState, Kpi } from "@/components/ui/kpi";
+import { Metric } from "@/components/ui/metric";
+import { ProgressBar } from "@/components/ui/progress-bar";
+import { EmptyState } from "@/components/ui/states";
 import { Notice } from "@/components/ui/notice";
 import { RELIABILITY, formatMoneyDifference, type Reliability } from "@/lib/cost-labels";
 import { getRecalcStatus } from "@/lib/costs";
 import { formatDate, formatDateTime, getInbox } from "@/lib/data";
 import { getHomeBoard, getRecentImports, type HomeBoard, type HomeRow } from "@/lib/home";
 import { formatMoney } from "@/lib/money";
-import { getQuality, type QualityCount, type QualityPlaceName } from "@/lib/quality";
+import {
+  getQuality,
+  getQualityCompare,
+  type QualityCount,
+  type QualityPlaceName,
+} from "@/lib/quality";
 import { qualityHref, qualityTop } from "@/lib/quality-labels";
+import { cn } from "@/lib/utils";
 
 const IMPORT_STATUS: Record<string, string> = {
   uploaded: "Subida",
@@ -91,8 +98,9 @@ function Section({
   );
 }
 
-// Una tarjeta con su estado: lo que falta se toca y abre la lista para corregirlo.
-function Card6({
+// Una tarjeta de lo que falta (métricas confiables, ADR-0036): sin denominador dice «Sin datos», nunca «Completo».
+// Si falta algo, enlaza a la lista para corregirlo.
+function Missing({
   label,
   indicator,
   counts,
@@ -106,32 +114,103 @@ function Card6({
   const count = counts.find((c) => c.indicator === indicator);
   if (!count) return null;
   const missing = count.total - count.done;
-  const kpi = (
-    <Kpi
+  return (
+    <Metric
       className="h-full"
       label={label}
       value={missing}
-      detail={`de ${count.total}`}
-      status={count.total === 0 ? "neutral" : missing === 0 ? "ok" : "warn"}
-      statusLabel={
-        count.total === 0
-          ? "Sin datos"
-          : missing === 0
-            ? "Completo"
-            : missing === 1
-              ? "Falta 1"
-              : `Faltan ${missing}`
-      }
+      total={count.total}
+      emptyLabel="Todavía no hay nada que medir en este local."
+      comparison={`de ${count.total}`}
+      status={missing === 0 ? "ok" : "warn"}
+      statusLabel={missing === 0 ? "Completo" : missing === 1 ? "Falta 1" : `Faltan ${missing}`}
+      href={missing > 0 ? `/calidad/${indicator}?local=${placeId}` : undefined}
+      hrefLabel="Ver cuáles"
     />
   );
-  if (missing === 0) return kpi;
+}
+
+// Requiere atención: lo pendiente, en una línea, con el botón para ir a resolverlo.
+function Attention({ counts, placeId }: { counts: QualityCount[]; placeId: string }) {
+  const parts = [
+    // Singular y plural: "1 precio desactualizado", "3 precios desactualizados".
+    ["recipe_cost", "receta con costo por corregir", "recetas con costo por corregir"],
+    ["ingredient_price", "materia prima sin precio", "materias primas sin precio"],
+    ["price_stale", "precio desactualizado", "precios desactualizados"],
+    ["recipe_review", "receta pendiente de revisión", "recetas pendientes de revisión"],
+  ]
+    .map(([key, one, many]) => {
+      const c = counts.find((x) => x.indicator === key);
+      const missing = c ? c.total - c.done : 0;
+      return missing > 0 ? `${missing} ${missing === 1 ? one : many}` : null;
+    })
+    .filter((x): x is string => Boolean(x));
+  if (parts.length === 0) return null;
   return (
-    <Link
-      href={`/calidad/${indicator}?local=${placeId}`}
-      className="rounded-lg hover:outline hover:outline-1 hover:outline-primary"
+    <div
+      role="region"
+      aria-label="Requiere atención"
+      className="flex flex-col gap-3 rounded-md bg-warn p-4 text-warn-ink desk:flex-row desk:items-center desk:justify-between"
     >
-      {kpi}
-    </Link>
+      <p className="flex items-start gap-2 text-base">
+        <TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+        <span>
+          <span className="font-medium">Requiere atención:</span> {parts.join(" · ")}.
+        </span>
+      </p>
+      <Button asChild variant="outline" className="shrink-0">
+        <Link href={`/calidad?local=${placeId}`}>Ver qué falta corregir</Link>
+      </Button>
+    </div>
+  );
+}
+
+// Comparación entre locales: qué tan confiable es el costo en cada uno (solo con más de un local).
+async function Compare({ placeId }: { placeId: string }) {
+  let places: Awaited<ReturnType<typeof getQualityCompare>> = [];
+  try {
+    places = await getQualityCompare();
+  } catch (error) {
+    unstable_rethrow(error);
+    return <Notice status="warn">No pudimos comparar los locales.</Notice>;
+  }
+  if (places.length < 2) return null;
+  return (
+    <Section title="Cómo está cada local" text="Recetas con el costo completo y confiable.">
+      <ul className="flex flex-col gap-3" aria-label="Costo confiable por local">
+        {places.map((p) => {
+          const c = p.counts.find((x) => x.indicator === "recipe_cost");
+          return (
+            <li
+              key={p.id}
+              className="flex flex-col gap-1 desk:flex-row desk:items-center desk:justify-between"
+            >
+              <Link
+                href={`/?local=${p.id}`}
+                aria-current={p.id === placeId ? "true" : undefined}
+                className={cn(
+                  "min-w-0 text-base [overflow-wrap:anywhere] underline-offset-4 hover:underline",
+                  p.id === placeId ? "font-medium text-ink" : "text-primary",
+                )}
+              >
+                {p.name}
+              </Link>
+              <ProgressBar
+                value={c?.done ?? 0}
+                total={c?.total ?? 0}
+                label={`Costo confiable en ${p.name}`}
+              />
+            </li>
+          );
+        })}
+      </ul>
+      <Link
+        href="/calidad"
+        className="inline-flex min-h-touch w-fit items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-control-sm"
+      >
+        Ver la comparación completa
+      </Link>
+    </Section>
   );
 }
 
@@ -182,7 +261,30 @@ async function Activity({
   const recipeRequests = requests.filter((r) => RECIPE_WORKFLOWS.test(r.workflow_code)).slice(0, 3);
   const errors = qualityTop(counts, 3);
   return (
-    <Section title="Actividad" text="Las revisiones y las importaciones son de todos tus locales.">
+    <Section
+      title="Tareas pendientes"
+      text="Primero lo que más falta corregir en este local; las revisiones y las importaciones son de todos tus locales."
+    >
+      <div className="flex flex-col gap-2">
+        <h3 className="text-base font-medium text-ink">Lo que más falta corregir</h3>
+        {errors.length === 0 ? (
+          <p className="text-sm text-ink-muted">No falta nada por corregir.</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-line" aria-label="Lo que más falta corregir">
+            {errors.map(({ key, label, count }) => (
+              <li key={key}>
+                <Link
+                  href={`/calidad/${key}?local=${placeId}`}
+                  className="flex min-h-touch items-center justify-between gap-4 underline-offset-4 hover:underline desk:min-h-control"
+                >
+                  <span className="text-base text-primary">{label}</span>
+                  <span className="shrink-0 text-base text-ink tabular-nums">{count}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       {approvals ? (
         <div className="flex flex-col gap-2">
           <h3 className="text-base font-medium text-ink">Revisiones pendientes</h3>
@@ -204,7 +306,7 @@ async function Activity({
           )}
           <Link
             href="/aprobaciones"
-            className="inline-flex min-h-touch w-fit items-center text-base text-primary underline-offset-4 hover:underline"
+            className="inline-flex min-h-touch w-fit items-center text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
           >
             Ver las aprobaciones
           </Link>
@@ -226,26 +328,6 @@ async function Activity({
           </ul>
         </div>
       ) : null}
-      <div className="flex flex-col gap-2">
-        <h3 className="text-base font-medium text-ink">Lo que más falta corregir</h3>
-        {errors.length === 0 ? (
-          <p className="text-sm text-ink-muted">No falta nada por corregir.</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-line" aria-label="Lo que más falta corregir">
-            {errors.map(({ key, label, count }) => (
-              <li key={key}>
-                <Link
-                  href={`/calidad/${key}?local=${placeId}`}
-                  className="flex min-h-touch items-center justify-between gap-4 underline-offset-4 hover:underline"
-                >
-                  <span className="text-base text-primary">{label}</span>
-                  <span className="shrink-0 text-base text-ink tabular-nums">{count}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </Section>
   );
 }
@@ -275,49 +357,36 @@ async function Board({ placeId, approvals }: { placeId: string; approvals: boole
   return (
     <>
       <p className="text-sm text-ink-muted">
-        Calculado el {formatDateTime(new Date().toISOString())}
+        {/* Los números se calculan al abrir la pantalla, con los datos de ese momento. */}
+        Datos al momento: {formatDateTime(new Date().toISOString())}
+        {recipes ? ` · ${recipes.total} ${recipes.total === 1 ? "receta" : "recetas"}` : ""}
+        {board.preparations === null ? "" : ` · ${board.preparations} preparaciones`}
+        {materials ? ` · ${materials.total} materias primas` : ""}
       </p>
-      <div>
-        <Button asChild variant="outline">
-          <Link href={`/calidad?local=${placeId}`}>Ver qué falta corregir</Link>
-        </Button>
-      </div>
+      <Attention counts={counts} placeId={placeId} />
       {empty ? <EmptyState title="Este local todavía no tiene recetas." /> : null}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {recipes ? (
-          <Kpi
-            label="Recetas"
-            value={recipes.total}
-            detail={[
-              board.preparations === null ? null : `${board.preparations} son preparaciones`,
-              materials ? `${materials.total} materias primas` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          />
-        ) : null}
-        <Card6 label="Sin aprobar" indicator="recipe_approved" counts={counts} placeId={placeId} />
-        <Card6
+      <div className="grid gap-4 sm:grid-cols-2 desk:grid-cols-4">
+        <Missing
+          label="Sin aprobar"
+          indicator="recipe_approved"
+          counts={counts}
+          placeId={placeId}
+        />
+        <Missing
           label="Pendientes de revisión"
           indicator="recipe_review"
           counts={counts}
           placeId={placeId}
         />
-        <Card6
+        <Missing
           label="Costo por corregir"
           indicator="recipe_cost"
           counts={counts}
           placeId={placeId}
         />
-        <Card6
+        <Missing
           label="Materias primas sin precio"
           indicator="ingredient_price"
-          counts={counts}
-          placeId={placeId}
-        />
-        <Card6
-          label="Precios desactualizados"
-          indicator="price_stale"
           counts={counts}
           placeId={placeId}
         />
@@ -327,12 +396,20 @@ async function Board({ placeId, approvals }: { placeId: string; approvals: boole
           <Recalc />
         </Suspense>
       ) : null}
+      <div className="grid gap-4 desk:grid-cols-2">
+        <Suspense fallback={<Loading />}>
+          <Compare placeId={placeId} />
+        </Suspense>
+        <Suspense fallback={<Loading />}>
+          <Activity approvals={approvals} counts={counts} placeId={placeId} />
+        </Suspense>
+      </div>
       {has("reliability") && !empty ? (
         <Section title="¿Qué tan confiable es el costo?">
           <ReliabilityChart data={chart} />
         </Section>
       ) : null}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 desk:grid-cols-2">
         {has("top_portion") ? (
           <Section title="Mayor costo por porción">
             <RowList
@@ -354,7 +431,7 @@ async function Board({ placeId, approvals }: { placeId: string; approvals: boole
               label="Materias primas que más pesan"
               rows={board.topIngredient}
               empty="Todavía no hay costos para comparar."
-              value={(r) => `${(r.amount ?? 0).toLocaleString("es-AR")} %`}
+              value={(r) => (r.amount === null ? "—" : `${r.amount.toLocaleString("es-AR")} %`)}
               href={itemHref}
             />
           </Section>
@@ -382,20 +459,18 @@ async function Board({ placeId, approvals }: { placeId: string; approvals: boole
               label="Lo más usado"
               rows={board.mostUsed}
               empty="Todavía no hay recetas vigentes."
-              value={(r) => String(r.amount ?? 0)}
+              value={(r) => (r.amount === null ? "—" : String(r.amount))}
               href={itemHref}
             />
           </Section>
         ) : null}
       </div>
-      <Suspense fallback={<Loading />}>
-        <Activity approvals={approvals} counts={counts} placeId={placeId} />
-      </Suspense>
     </>
   );
 }
 
-// El tablero del recetario (sección 18): lo ve quien entra a la calidad de datos.
+// El tablero del recetario (sección 18; panel del rediseño, ADR-0036): lo ve quien entra a la calidad de datos.
+// El local sale de la barra de arriba (o de ?local=): sin selector propio.
 export function HomeBoardView({
   places,
   place,
@@ -409,38 +484,34 @@ export function HomeBoardView({
     <>
       <h2 className="text-xl font-semibold text-ink">
         ¿Qué tan completo y confiable está nuestro recetario?
+        {place ? <span className="font-normal text-ink-muted"> · {place.name}</span> : null}
       </h2>
-      {places.length > 1 ? (
-        <FiltersPanel active={place ? [place.name] : []}>
-          <form
-            method="get"
-            role="search"
-            aria-label="Elegir local"
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
-          >
-            <Field id="inicio-local" label="Local">
-              <Select key={place?.id ?? "ninguno"} name="local" defaultValue={place?.id ?? ""}>
-                {place ? null : <option value="">Elegí un local</option>}
-                {places.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Button type="submit">Ver</Button>
-          </form>
-        </FiltersPanel>
-      ) : (
-        <p className="text-sm text-ink-muted">{place?.name}</p>
-      )}
       {place ? (
         <Suspense key={place.id} fallback={<Loading />}>
           <Board placeId={place.id} approvals={approvals} />
         </Suspense>
       ) : (
         <EmptyState title="Elegí un local para ver cómo está su recetario.">
-          <Link href="/calidad" className="text-primary underline-offset-4 hover:underline">
+          <p>Elegilo en «Local», en la barra de arriba, o entrá directo:</p>
+          <ul
+            className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1"
+            aria-label="Tus locales"
+          >
+            {places.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/?local=${p.id}`}
+                  className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline desk:min-h-control-sm"
+                >
+                  {p.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/calidad"
+            className="mt-2 inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline desk:min-h-control-sm"
+          >
             Comparar los locales
           </Link>
         </EmptyState>

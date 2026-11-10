@@ -44,8 +44,9 @@ test("Compras busca por alias, crea una materia prima y la ve en su ficha", asyn
 
   await page.getByRole("link", { name: "Nueva materia prima" }).click();
   await expect(page).toHaveURL(/\/materias-primas\/nueva$/);
-  // Hasta que termina la transición, la lista anterior todavía está en la página.
-  await expect(page.getByRole("search")).toHaveCount(0);
+  // Hasta que termina la transición, la lista anterior todavía está en la página. Solo en el contenido: la
+  // barra superior tiene su propia búsqueda global (ADR-0036).
+  await expect(page.getByRole("main").getByRole("search")).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 1, name: "Nueva materia prima" })).toBeVisible();
   await axe(page);
   const code = `E2E-${testInfo.project.name === "celular" ? "C" : "P"}-${Date.now() % 1_000_000_000}`;

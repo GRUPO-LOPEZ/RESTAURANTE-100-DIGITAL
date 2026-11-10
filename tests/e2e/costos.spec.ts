@@ -4,7 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, notice } from "./helpers";
+import { login, logout, notice, openSection } from "./helpers";
 
 // El servidor de desarrollo compila cada pantalla la primera vez: en celular a veces pasa de 30 s.
 test.describe.configure({ timeout: 90_000 });
@@ -106,7 +106,9 @@ test("el Chef ve el costo por línea, sin precios", async ({ page }) => {
   // En la ficha de la receta, con su local elegido.
   await page.getByLabel("Local activo").selectOption(PASTAS_CENTRO);
   await page.getByRole("button", { name: "Cambiar" }).click();
-  // Cambiar de local recarga la pantalla: la primera vez tarda.
+  // Cambiar de local recarga la pantalla: la primera vez tarda. El costo está en su pestaña.
+  await expect(page.getByLabel("Local activo")).toHaveValue(PASTAS_CENTRO, { timeout: 20_000 });
+  await openSection(page, "Costos");
   await expect(page.getByRole("heading", { name: "Costo en Demo Pastas Centro" })).toBeVisible({
     timeout: 20_000,
   });
@@ -180,4 +182,47 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
   await expect(page.locator('[data-slot="kpi"]')).toHaveCount(3);
   await noHorizontalScroll(page);
   await axe(page);
+});
+
+// Rediseño (ADR-0036): la lista se ordena por columna (en la base: todas las recetas, no solo la página),
+// elige cuántas filas ver, filtra por pestañas y el detalle vuelve a la misma lista.
+test("la lista de costos se ordena, se pagina y vuelve con sus filtros", async ({ page }, info) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto(`/costos?local=${PASTAS_CENTRO}`);
+  if (info.project.name === "computadora") {
+    const header = page.getByRole("columnheader", { name: /Costo sin IVA/ });
+    await header.getByRole("link").click();
+    await expect(page).toHaveURL(/orden=total/);
+    await expect(page.getByRole("columnheader", { name: /Costo sin IVA/ })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    await page
+      .getByRole("columnheader", { name: /Costo sin IVA/ })
+      .getByRole("link")
+      .click();
+    await expect(page).toHaveURL(/orden=-total/);
+    await expect(page.getByRole("columnheader", { name: /Costo sin IVA/ })).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+  }
+  await page.getByRole("link", { name: "10 filas por página" }).click();
+  await expect(page).toHaveURL(/filas=10/);
+  await expect(
+    page.getByRole("status").filter({ hasText: /^Filas 1 a \d+ de \d+$/ }),
+  ).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Confiabilidad" })
+    .getByRole("link", { name: /Incompleto/ })
+    .click();
+  await expect(page).toHaveURL(/confiabilidad=incomplete/);
+  await expect(page.getByRole("link", { name: "Lasaña bolognesa" })).toBeVisible();
+  await axe(page);
+  await noHorizontalScroll(page);
+  // El detalle vuelve a la misma lista, con el filtro y las filas.
+  await page.getByRole("link", { name: "Lasaña bolognesa" }).first().click();
+  await page.getByRole("link", { name: "Volver a costos" }).click();
+  await expect(page).toHaveURL(/confiabilidad=incomplete/);
+  await expect(page).toHaveURL(/filas=10/);
 });

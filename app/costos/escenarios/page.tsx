@@ -5,11 +5,9 @@ import { createScenarioAction } from "@/app/costos/escenarios/actions";
 import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
 import { Disclosure } from "@/components/disclosure";
-import { FiltersPanel } from "@/components/filters-panel";
+import { PlacePrompt } from "@/components/place-prompt";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/field";
 import { FormInput, FormTextarea } from "@/components/ui/form";
 import { EmptyState } from "@/components/ui/kpi";
 import { Notice } from "@/components/ui/notice";
@@ -67,35 +65,14 @@ async function Scenarios({
   if (places.length === 0) return <EmptyState title="No tenés locales donde simular costos." />;
   const place = pickCostPlace(places, first(params.local), activeId);
 
-  const filters = (
-    <FiltersPanel active={place ? [place.name] : []}>
-      <form
-        method="get"
-        role="search"
-        aria-label="Elegir local"
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
-      >
-        <Field id="escenarios-local" label="Local">
-          <Select name="local" defaultValue={place?.id ?? ""}>
-            {place ? null : <option value="">Elegí un local</option>}
-            {places.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Button type="submit">Ver</Button>
-      </form>
-    </FiltersPanel>
-  );
-
+  // El local sale de la barra de arriba (o de ?local=): sin selector propio (ADR-0036).
   if (!place)
     return (
-      <>
-        {filters}
-        <EmptyState title="Elegí un local para ver sus escenarios." />
-      </>
+      <PlacePrompt
+        title="Elegí un local para ver sus escenarios."
+        places={places}
+        path="/costos/escenarios"
+      />
     );
 
   const scenarios = await getScenarios(place.id);
@@ -104,7 +81,6 @@ async function Scenarios({
 
   return (
     <>
-      {filters}
       <Notice status="info">Es una simulación: no cambia ningún costo ni receta.</Notice>
       {scenarios.length === SCENARIO_LIST ? (
         <Notice status="warn">Se muestran los últimos {SCENARIO_LIST} escenarios.</Notice>

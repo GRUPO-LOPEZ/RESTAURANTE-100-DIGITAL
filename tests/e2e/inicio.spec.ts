@@ -27,7 +27,9 @@ test("el Controller ve el tablero y llega a lo que falta", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto(`/?local=${PASTAS_CENTRO}`);
   await expect(page.getByRole("heading", { name: QUESTION })).toBeVisible();
-  await expect(page.locator('[data-slot="kpi"]')).toHaveCount(6);
+  // Rediseño (ADR-0036): una fila de 4 KPIs; los precios desactualizados van en «Requiere atención».
+  await expect(page.locator('[data-slot="kpi"]')).toHaveCount(4);
+  await expect(page.getByRole("region", { name: "Requiere atención" })).toBeVisible();
   // Cada tarjeta dice si falta algo, y lo que falta se toca.
   await expect(page.getByRole("link", { name: /Costo por corregir/ })).toBeVisible();
   // Los estados en cero también se ven, y lo oficial conserva su nombre.
@@ -40,7 +42,7 @@ test("el Controller ve el tablero y llega a lo que falta", async ({ page }) => {
   await expect(page.getByRole("list", { name: "Mayor costo por porción" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Materias primas que más pesan" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Lo más usado" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Actividad" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tareas pendientes" })).toBeVisible();
   await axe(page);
   await noOverflow(page);
   const size = page.viewportSize();
@@ -54,7 +56,8 @@ test("el Controller ve el tablero y llega a lo que falta", async ({ page }) => {
   await page.locator("summary", { hasText: "Ver los números" }).click();
   await expect(page.getByRole("table", { name: "Recetas en cada estado del costo" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Ver qué falta corregir" }).click();
+  // La acción principal, en el encabezado (el aviso «Requiere atención» repite el mismo botón).
+  await page.getByRole("link", { name: "Ver qué falta corregir" }).first().click();
   await expect(page).toHaveURL(/\/calidad\?local=/);
 });
 
@@ -84,4 +87,22 @@ test("sin elegir local, se pide elegir uno", async ({ page }) => {
   await axe(page);
   await page.getByRole("link", { name: "Comparar los locales" }).click();
   await expect(page.getByText("Cómo está cada local")).toBeVisible();
+});
+
+// Rediseño (ADR-0036): el local del Inicio sale del selector global de la barra de arriba.
+test("el selector global de local cambia el tablero del Inicio", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto("/");
+  await page.getByLabel("Local activo").selectOption({ label: "Demo Pastas Centro · PASTAS" });
+  await page.getByRole("button", { name: "Cambiar" }).click();
+  await expect(page.getByRole("heading", { name: QUESTION })).toContainText("Demo Pastas Centro");
+  await expect(page.locator('[data-slot="kpi"]')).toHaveCount(4);
+  await expect(
+    // La acción principal, en el encabezado (el aviso «Requiere atención» repite el mismo botón).
+    page.getByRole("link", { name: "Ver qué falta corregir" }).first(),
+  ).toBeVisible();
+  // Vuelve a "Todos mis locales" para no cambiar otras pruebas.
+  await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
+  await page.getByRole("button", { name: "Cambiar" }).click();
+  await expect(page.getByText("Elegí un local para ver cómo está su recetario.")).toBeVisible();
 });
