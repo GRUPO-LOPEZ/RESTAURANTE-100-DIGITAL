@@ -101,4 +101,4 @@ Sin migraciones ni cambios de permisos o de lógica. Con este PR quedan migradas
   - Importaciones con `DataTable` y paginación común.
   - Todos los «← Volver» usan `BackLink`.
 - **`DataTable`:** cuando la tabla es más ancha que su lugar, la zona con scroll se puede recorrer con el teclado (región con nombre, `tabIndex=0`; axe `scrollable-region-focusable`).
-- **Se borran** `FiltersPanel` y la tabla vieja de personas (`users-table`). TanStack Table ya no se usa en ninguna pantalla; la dependencia queda hasta que Joaco decida si sale del stack.
+- **Se borran** `FiltersPanel` y la tabla vieja de personas (`users-table`). TanStack Table ya no se usa en ninguna pantalla (la tabla común ordena y pagina en el servidor): **sale del stack** por decisión de Joaco (2026-11-10). La tabla de la sección 3 del prompt maestro queda reemplazada por esta decisión.
