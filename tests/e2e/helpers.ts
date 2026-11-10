@@ -89,10 +89,11 @@ export function notice(page: Page) {
   return page.locator('[data-slot="notice"]');
 }
 
-// Una pestaña de la ficha de receta (rediseño, ADR-0036). La pestaña queda en la dirección (?seccion=).
-export async function openSection(page: Page, name: string) {
+// Una pestaña de una ficha (rediseño, ADR-0036): de receta, o de materia prima con of = "materia prima".
+// La pestaña queda en la dirección (?seccion=).
+export async function openSection(page: Page, name: string, of = "receta") {
   const tab = page
-    .getByRole("navigation", { name: "Secciones de la receta" })
+    .getByRole("navigation", { name: `Secciones de la ${of}` })
     .getByRole("link", { name, exact: true });
   await tab.click();
   await expect(tab).toHaveAttribute("aria-current", "page");

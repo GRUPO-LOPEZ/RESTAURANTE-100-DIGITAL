@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
+import { noticeLink } from "@/lib/notices";
 import { describeCooking, formatCleaning } from "@/lib/yields";
 
 // Lecturas para las pantallas. Todo pasa por la base con la sesión de la persona: lo que
@@ -307,8 +308,7 @@ export async function getRecipeNotices(limit = 20): Promise<NoticeRow[]> {
       n.kind === "recipe_cost_changed" || n.kind === "yield_deviation" ? n.kind : "recipe_changed",
     title: n.title,
     body: n.body,
-    // Solo rutas internas, con la misma regla que el check de la base (revisión de seguridad).
-    link: n.link && /^\/[A-Za-z][A-Za-z0-9/_?=&-]*$/.test(n.link) ? n.link : null,
+    link: noticeLink(n.kind, n.link),
     createdAt: n.created_at,
   }));
 }

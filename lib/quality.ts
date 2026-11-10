@@ -62,13 +62,15 @@ export async function getQualityItems(
   restaurantId: string,
   indicator: string,
   page: number,
+  // Filas por página (rediseño, ADR-0036: 15 de entrada, como todos los listados).
+  size: number = QUALITY_PAGE,
 ): Promise<{ items: QualityItem[]; total: number } | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.schema("costing").rpc("data_quality_items", {
     p_restaurant_id: restaurantId,
     p_indicator: indicator,
-    p_limit: QUALITY_PAGE,
-    p_offset: page * QUALITY_PAGE,
+    p_limit: size,
+    p_offset: page * size,
   });
   if (error?.code === "42501") return null;
   if (error) throw new Error("No pudimos cargar la lista.");

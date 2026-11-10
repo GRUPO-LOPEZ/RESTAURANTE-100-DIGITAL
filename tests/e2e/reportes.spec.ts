@@ -94,7 +94,10 @@ test("cambios de costo se pide por período", async ({ page }) => {
   await expect(page.getByLabel("Desde")).toBeVisible();
   await page.getByLabel("Desde").fill("2020-01-01");
   await page.getByLabel("Hasta").fill("2020-01-31");
-  await page.getByRole("button", { name: "Ver" }).click();
+  // El período se aplica solo, sin botón (ADR-0036), y conserva el local.
+  await expect(page).toHaveURL(/desde=2020-01-01/);
+  await expect(page).toHaveURL(/hasta=2020-01-31/);
+  await expect(page).toHaveURL(/local=/);
   await expect(page.getByText("No hubo cambios de costo en este período.")).toBeVisible();
   await axe(page);
 });
@@ -117,9 +120,14 @@ test("quien ve el registro de seguridad ve las exportaciones", async ({ page }) 
   );
   expect(download.ok()).toBe(true);
   await page.goto(`/reportes?local=${PASTAS_CENTRO}`);
-  await expect(page.getByRole("list", { name: "Últimas exportaciones" })).toContainText(
-    "Rendimientos en CSV",
-  );
+  // Una tabla en la computadora y tarjetas en el celular (ADR-0036).
+  const exported = page
+    .getByRole("table", { name: "Últimas exportaciones" })
+    .getByRole("row")
+    .or(page.getByRole("list", { name: "Últimas exportaciones" }).getByRole("listitem"))
+    .filter({ hasText: "Rendimientos" })
+    .filter({ hasText: "CSV" });
+  await expect(exported.first()).toBeVisible();
   await axe(page);
 });
 
@@ -131,8 +139,9 @@ test("la ficha técnica y la de costeo de una receta", async ({ page }) => {
     .getByRole("link", { name: /Ficha técnica/ })
     .click();
   await expect(page.getByText("¿De qué receta?")).toBeVisible();
+  // La búsqueda se aplica sola al dejar de escribir.
   await page.getByLabel("Buscar", { exact: true }).fill("raviol");
-  await page.getByRole("button", { name: "Buscar" }).click();
+  await expect(page).toHaveURL(/buscar=raviol/);
   await page
     .getByRole("list", { name: "Recetas" })
     .getByRole("link", { name: /Ravioles de ricota/ })
@@ -146,7 +155,8 @@ test("la ficha técnica y la de costeo de una receta", async ({ page }) => {
     page.getByRole("list", { name: "Alérgenos" }).getByRole("listitem").first(),
   ).toBeVisible();
   // La ficha técnica nunca trae un importe.
-  await expect(page.locator("main")).not.toContainText(/\$\s?\d/);
+  // Solo la pantalla visible: Next guarda oculta la anterior (la búsqueda ya no recarga la página).
+  await expect(page.locator("main:visible")).not.toContainText(/\$\s?\d/);
   await expect(page.getByRole("button", { name: "Imprimir o guardar como PDF" })).toBeVisible();
   await axe(page);
   await noOverflow(page);
@@ -215,4 +225,49 @@ test("un formato o un reporte que no existe no abre nada", async ({ page }) => {
   expect(format.status()).toBe(404);
   await page.goto(`/reportes/no_existe?local=${PASTAS_CENTRO}`);
   await expect(page.getByText("No encontramos esta página")).toBeVisible();
+});
+
+// Rediseño (ADR-0036): el local es el de la barra de arriba. Sin selector propio; con «Todos mis
+// locales», la pantalla pide uno y lleva a sus reportes.
+test("Reportes usa el local de la barra de arriba", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto("/reportes");
+  await expect(page.getByText("Elegí un local para ver sus reportes.")).toBeVisible();
+  await expect(page.getByRole("main").getByRole("combobox")).toHaveCount(0);
+  await axe(page);
+  await page
+    .getByRole("list", { name: "Tus locales" })
+    .getByRole("link", { name: "Demo Pastas Centro" })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`local=${PASTAS_CENTRO}`));
+  await expect(page.getByRole("heading", { name: "Reportes de Demo Pastas Centro" })).toBeVisible();
+  // El reporte vuelve a la lista de su local.
+  await page
+    .getByRole("navigation", { name: "Reportes" })
+    .getByRole("link", { name: /Rendimientos/ })
+    .click();
+  await page.getByRole("link", { name: "Volver a los reportes" }).click();
+  await expect(page).toHaveURL(new RegExp(`/reportes\\?local=${PASTAS_CENTRO}$`));
+});
+
+// Cambiar el local arriba, con un reporte abierto, muestra el mismo reporte del otro local (el selector saca
+// ?local= de la dirección). Con «Todos mis locales», pide uno (revisión de diseño del PR 3).
+test("el selector de arriba cambia el local de un reporte abierto", async ({ page }) => {
+  await login(page, "controller@ejemplo.test", { mfa: true });
+  await page.goto(`/reportes/usage?local=${PASTAS_CENTRO}`);
+  await expect(page.getByText(/Demo Pastas Centro · Datos del/).first()).toBeVisible();
+  try {
+    await page.getByLabel("Local activo").selectOption({ label: "Demo Pastas Norte · PASTAS" });
+    await page.getByRole("button", { name: "Cambiar" }).click();
+    await expect(page).not.toHaveURL(/local=/, { timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "Dónde se usa" })).toBeVisible();
+    await expect(page.getByText(/Demo Pastas Norte · Datos del/).first()).toBeVisible();
+  } finally {
+    await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
+    await page.getByRole("button", { name: "Cambiar" }).click();
+  }
+  await expect(page.getByText("Elegí un local para ver este reporte.")).toBeVisible({
+    timeout: 20_000,
+  });
+  await axe(page);
 });

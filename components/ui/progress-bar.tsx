@@ -9,12 +9,16 @@ function ProgressBar({
   value,
   total,
   label,
+  decorative = false,
   className,
 }: {
   value: number;
   total: number;
   // Qué mide, para lectores de pantalla ("Recetas completas").
   label: string;
+  // Dentro de un enlace que ya dice el número: la barra se oculta a los lectores de pantalla, así el nombre
+  // del enlace no repite todo.
+  decorative?: boolean;
   className?: string;
 }) {
   if (total <= 0) {
@@ -26,13 +30,17 @@ function ProgressBar({
   }
   const pct = Math.max(0, Math.min(100, Math.round((value / total) * 100)));
   return (
-    <span data-slot="progress-bar" className={cn("flex items-center gap-2", className)}>
+    <span
+      data-slot="progress-bar"
+      aria-hidden={decorative || undefined}
+      className={cn("flex items-center gap-2", className)}
+    >
       <span
-        role="progressbar"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={pct}
+        role={decorative ? undefined : "progressbar"}
+        aria-label={decorative ? undefined : label}
+        aria-valuemin={decorative ? undefined : 0}
+        aria-valuemax={decorative ? undefined : 100}
+        aria-valuenow={decorative ? undefined : pct}
         className="h-2 w-24 shrink-0 overflow-hidden rounded-sm bg-line"
       >
         <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
