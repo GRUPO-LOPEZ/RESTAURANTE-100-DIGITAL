@@ -15,6 +15,17 @@ _Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Para Joaco:** Reportes y Calidad pasan de 50 a 15 filas por página, como el resto (se puede elegir 10, 25 o 50).
 - **Sigue:** PR 4, Aprobaciones, Usuarios, Historial, Roles, Mi cuenta y Panel de control.
 
+## Antes: superadministrador de prueba sin MFA (TEMPORAL; fusionado, PR #49)
+
+- **Qué se hizo** (ADR-0037, pedido de Joaco del 2026-11-10): un rol `superadmin_test` con los permisos del Superadministrador y sin doble verificación, y la persona `superadmin.prueba@ejemplo.test`. Va en un script aparte, `supabase/dev/test-superadmin.sql`, no en migraciones ni en el seed: la regla de MFA no cambia para nadie más.
+- **Cómo se usa:** en local, `npm run db:test-admin` después de cada `npm run db:reset`, con la contraseña local del seed. En staging, Actions → «Publicar en staging» → «Crear el superadministrador de prueba», con el secreto `STAGING_TEST_ADMIN_PASSWORD`, que tiene que crear Joaco.
+- **Probado:** en local el script corre dos veces sin duplicar nada y deja la auditoría; en el navegador entra sin código y ve Usuarios, Roles y permisos e Historial; el Superadministrador de siempre sigue pidiendo el código.
+- **Ojo:** con el script corrido, `040` y `050` fallan en local (11 roles). Antes de las pruebas, `npm run db:reset`.
+- **Revisión de seguridad:** apto, sin graves. Corregido: la contraseña viaja solo en una consulta con hash de costo 10; el script corre solo si el único grupo es el ficticio; la auditoría lleva el número de corrida; una prueba de Vitest vigila que no aparezca en otro flujo, en migraciones ni en el seed.
+- **Mientras exista (ADR-0037):** no cargar un segundo Superadministrador en staging (el de prueba lo podría suspender sin Dirección) y no aprobar pedidos de «Superadministrador de prueba» para otras personas.
+- **Pendiente:** **quitarlo antes de la Fase de producción**: el script, la opción de Actions y el secreto; en staging, quitarle el rol, desactivar la cuenta y dar de baja los permisos del rol y el rol (desactivar solo no alcanza).
+- **Sigue:** PR 3 del rediseño, Materias primas, Reportes y Calidad.
+
 ## Antes: rediseño, PR 2 de 4 (fusionado, PR #48)
 
 - **Qué se hizo** (ADR-0036, adenda del PR 2):
