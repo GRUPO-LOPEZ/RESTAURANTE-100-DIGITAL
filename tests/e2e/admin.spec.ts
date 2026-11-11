@@ -92,31 +92,31 @@ test.describe("quién ve qué", () => {
 });
 
 test.describe("aprobaciones e historial", () => {
-  test("se pide un cambio de la matriz, quien lo pidió no lo aprueba y otra persona sí; el historial muestra a las dos", async ({
+  // Prueba 12 del Módulo 0. Antes usaba un cambio de la matriz, que desde ADR-0039 se aplica sin aprobación: ahora
+  // la Directora de Marca da un rol que aprueba (Chef Ejecutivo), y eso sí espera a otra persona. Dirección lo
+  // rechaza: la decisión queda con identidad, fecha y comentario, y nadie gana permisos en la corrida.
+  test("se pide dar un rol que aprueba, quien lo pidió no lo decide y otra persona sí; el historial muestra a las dos", async ({
     page,
   }, testInfo) => {
     test.setTimeout(150_000);
-    // Un permiso distinto en cada proyecto, para que no se pisen.
-    const [roleCode, roleName, permission] =
+    // Una persona distinta en cada proyecto, para que no se pisen.
+    const [personId, personName] =
       testInfo.project.name === "celular"
-        ? ["cook", "Cocinero / Operador", "approvals.view"]
-        : ["head_chef", "Jefe de Cocina", "audit.export"];
-    const reason = `Prueba automática de la matriz (${testInfo.project.name})`;
+        ? ["00000000-0000-4000-8000-000000000409", "Lucía Operadora"]
+        : ["00000000-0000-4000-8000-000000000406", "Julián Cocina"];
+    const reason = `Prueba automática de una aprobación (${testInfo.project.name})`;
 
-    await login(page, "superadmin@ejemplo.test", { mfa: true });
-    await (await menuLink(page, "Roles y permisos")).click();
-    // El rol se aplica solo al elegirlo (rediseño, ADR-0036).
-    await page.getByLabel("Rol", { exact: true }).selectOption(roleCode);
-    await expect(page).toHaveURL(new RegExp(`rol=${roleCode}`));
-    await expect(page.getByRole("heading", { level: 2, name: roleName })).toBeVisible();
+    await login(page, "director@ejemplo.test", { mfa: true });
+    await page.goto(`/usuarios/${personId}?seccion=roles`);
+    await expect(page.getByRole("heading", { level: 1, name: personName })).toBeVisible();
+    await page.getByLabel("Rol", { exact: true }).selectOption("executive_chef");
+    await page.getByLabel("Dónde", { exact: true }).selectOption({ label: "Marca · Demo Pastas" });
+    await page.getByLabel("Motivo para dar el rol").fill(reason);
+    await page.getByRole("button", { name: "Dar el rol" }).click();
+    await expect(notice(page)).toContainText("pendiente");
     await axe(page);
-    const row = page.getByRole("listitem").filter({ hasText: permission });
-    await row.getByText("Pedir que se lo den").click();
-    await row.getByLabel("Motivo").fill(reason);
-    await row.getByRole("button", { name: "Pedir darlo" }).click();
-    await expect(row.getByText(/Pedido de dar pendiente/)).toBeVisible();
 
-    // Quien lo pidió no lo puede aprobar.
+    // Quien lo pidió no lo puede decidir.
     await page.goto("/aprobaciones");
     const mine = page.getByRole("listitem").filter({ hasText: reason }).first();
     await expect(mine.getByText("La tiene que decidir otra persona con permiso.")).toBeVisible();
@@ -124,7 +124,7 @@ test.describe("aprobaciones e historial", () => {
     await axe(page);
     await logout(page);
 
-    // Dirección General lo aprueba: ve el antes y el después.
+    // Dirección General lo decide: lo rechaza con un comentario.
     await login(page, "direccion2@ejemplo.test", { mfa: true });
     await page.goto("/aprobaciones");
     const pending = page
@@ -132,28 +132,22 @@ test.describe("aprobaciones e historial", () => {
       .filter({ hasText: reason })
       .filter({ hasText: "Pendiente" })
       .first();
-    await expect(pending.getByText(/Antes: No → Después: Sí/)).toBeVisible();
-    await pending.getByLabel("Comentario").fill("De acuerdo");
-    await pending.getByRole("button", { name: "Aprobar" }).click();
+    await pending.getByLabel("Comentario").fill("Todavía no");
+    await pending.getByRole("button", { name: "Rechazar" }).click();
     await expect(
       page
         .getByRole("listitem")
         .filter({ hasText: reason })
         .first()
-        .getByText("Aprobada", { exact: true }),
+        .getByText("Rechazada", { exact: true }),
     ).toBeVisible();
 
     // En el historial figuran las dos personas, con fecha y motivo.
     await page.goto("/historial?modulo=approvals&local=todos");
     await expect(
-      historyEntries(page).filter({ hasText: reason }).filter({ hasText: "Sofía Admin" }).first(),
+      historyEntries(page).filter({ hasText: reason }).filter({ hasText: "Marta Marca" }).first(),
     ).toBeVisible();
-    await expect(
-      historyEntries(page)
-        .filter({ hasText: "Aprobación" })
-        .filter({ hasText: "Delia Dirección" })
-        .first(),
-    ).toBeVisible();
+    await expect(historyEntries(page).filter({ hasText: "Delia Dirección" }).first()).toBeVisible();
     await axe(page);
     await logout(page);
   });

@@ -27,6 +27,16 @@ Grupo multimarca en Buenos Aires: Grupo (Grupo LF) → Marca (RAGU, Padella, Non
 Marcas por ahora: Trattoria Padella, Ragú Bodegón y Casa Nonnos (ADR-0026). Las marcas, locales y razones sociales reales se cargan con Soy desde el panel de control (ADR-0030). Otros negocios del grupo (vinos, consultoría): no por ahora (ADR-0030).
 Orden de módulos: identidad y auditoría → organización → materias primas y proveedores → recetario → costos → compras → inventario → producción → administración → tableros y agentes de IA.
 
+## Edición directa (pedido de Soy, ADR-0039)
+
+Vale para todos los módulos. El detalle visual está en `.claude/rules/design.md`.
+
+- **Sí / no** → toggle de un clic.
+- **Pocas opciones (hasta 5)** → botones visibles (segmented), no desplegables.
+- **Explicaciones** → tooltip (`components/ui/tooltip.tsx`), no texto largo en pantalla.
+- **Se edita donde se ve**, sin formularios intermedios, salvo en las altas complejas.
+- **Cambios con impacto** → contador de pendientes, guardado en lote (una sola transacción) y auditoría con motivo.
+
 ## Stack (no agregar tecnologías sin justificarlo por escrito y sin aprobación de Joaco)
 
 Supabase (PostgreSQL, Auth, Storage, Edge Functions) · Next.js 16 App Router + TypeScript strict · Tailwind CSS 4 + shadcn/ui · Recharts · React Hook Form + Zod · TanStack Query · Vitest, Playwright + axe, pgTAP · GitHub Actions · Vercel.

@@ -103,15 +103,20 @@ function SidePanel({
 }
 
 // Confirmación: el botón de confirmar dice qué hace ("Desactivar la cuenta"), nunca solo "Aceptar".
+// Con `trigger`, se abre solo; sin él, lo abre quien lo usa con `open` (por ejemplo, después de validar).
 function Confirm({
   trigger,
+  open,
+  onOpenChange,
   title,
   description,
   confirmLabel,
   onConfirm,
   destructive = false,
 }: {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   title: string;
   description: string;
   confirmLabel: string;
@@ -119,8 +124,8 @@ function Confirm({
   destructive?: boolean;
 }) {
   return (
-    <AlertDialog.Root>
-      <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger>
+    <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
+      {trigger ? <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger> : null}
       <AlertDialog.Portal>
         <AlertDialog.Overlay className={overlay} />
         <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-md border border-line bg-surface p-6">

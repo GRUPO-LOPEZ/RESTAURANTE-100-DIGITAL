@@ -327,6 +327,21 @@ export const schemas = {
     target_id: z.string().max(60).optional(),
     reason: reasonField,
   }),
+  // Matriz de permisos (ADR-0039): el lote de cambios y su motivo. La base vuelve a controlar todo.
+  permissionMatrix: z.object({
+    group_id: z.string().uuid(),
+    changes: z
+      .array(
+        z.object({
+          role_id: z.string().uuid(),
+          permission_code: z.string().regex(/^[a-z_]+\.[a-z_]+$/),
+          granted: z.boolean(),
+        }),
+      )
+      .min(1, "No hay cambios para guardar.")
+      .max(1000, "Son demasiados cambios juntos: guardá de a partes."),
+    reason: reasonField,
+  }),
   yieldProcess: z.object({ code: catalogCode, name: settingName, reason: reasonField }),
   // Ensayo de rendimiento: pesos en gramos, al menos un par completo (bruto y limpio, o antes y
   // después de cocinar), y el limpio no pesa más que el bruto. Lo mismo exige la base.
