@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 
 import {
@@ -140,9 +141,8 @@ const INGREDIENT_CATEGORIES: CategoryKind = {
   key: "mp",
   title: "Categorías",
   description:
-    "Cada materia prima va en una categoría, y si querés, en una subcategoría (por ejemplo, Lácteos › Quesos).",
-  empty:
-    "Todavía no hay categorías. Creá la primera, por ejemplo «Verduras y frutas», «Carnes» o «Lácteos».",
+    "Cada materia prima va en un rubro de compra, y si querés, en una subcategoría (por ejemplo, Lácteos › Quesos).",
+  empty: "Todavía no hay rubros de compra.",
   usedOne: "materia prima",
   usedMany: "materias primas",
   create: createCategoryAction,
@@ -153,8 +153,8 @@ const INGREDIENT_CATEGORIES: CategoryKind = {
 const RECIPE_CATEGORIES: CategoryKind = {
   key: "rec",
   title: "Categorías de recetas",
-  description: "Para ordenar el recetario: por ejemplo, Salsas, Pastas › Rellenas o Postres.",
-  empty: "Todavía no hay categorías de recetas. Creá la primera, por ejemplo «Salsas» o «Postres».",
+  description: "Para ordenar el recetario dentro de cada rubro: por ejemplo, Pastas › Rellenas.",
+  empty: "Todavía no hay rubros de sub-recetas ni de menú.",
   usedOne: "receta",
   usedMany: "recetas",
   create: createRecipeCategoryAction,
@@ -175,7 +175,13 @@ function Categories({
   return (
     <Card className="flex flex-col gap-4">
       <CardTitle>{kind.title}</CardTitle>
-      <CardDescription>{kind.description}</CardDescription>
+      <CardDescription>
+        {kind.description} Los rubros (el primer nivel) se crean, se renombran y se dan de baja en{" "}
+        <Link href="/rubros" className="text-primary underline underline-offset-4">
+          Rubros
+        </Link>
+        .
+      </CardDescription>
       {categories.length === 0 ? (
         <p className="text-base text-ink">{kind.empty}</p>
       ) : (
@@ -189,6 +195,7 @@ function Categories({
                 uses={c.uses}
                 total={c.children.reduce((sum, s) => sum + s.uses, c.uses)}
                 subcategories={c.children.length}
+                rubro
               />
               {c.children.length > 0 ? (
                 <ul
@@ -213,11 +220,11 @@ function Categories({
           ))}
         </ul>
       )}
-      <Disclosure summary={kind.key === "mp" ? "Nueva categoría" : "Nueva categoría de recetas"}>
+      <Disclosure summary="Nueva subcategoría">
         <ActionForm
           action={kind.create}
-          schema="category"
-          submitLabel="Crear categoría"
+          schema="subcategory"
+          submitLabel="Crear subcategoría"
           pendingLabel="Creando…"
         >
           <input type="hidden" name="groupId" value={groupId} />
@@ -226,11 +233,14 @@ function Categories({
             <FormSelect
               id={`${prefix}-madre`}
               label="Va dentro de"
-              hint="Dejalo en «Ninguna» para una categoría principal."
+              hint="El rubro al que pertenece."
               name="parent_id"
+              required
               defaultValue=""
             >
-              <option value="">Ninguna (categoría principal)</option>
+              <option value="" disabled>
+                Elegí el rubro
+              </option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -256,6 +266,7 @@ function CategoryItem({
   uses,
   total,
   subcategories,
+  rubro = false,
 }: {
   kind: CategoryKind;
   id: string;
@@ -263,6 +274,8 @@ function CategoryItem({
   uses: number;
   total: number;
   subcategories: number;
+  // Un rubro (primer nivel) se da de baja en Rubros, donde se puede reactivar (ADR-0038).
+  rubro?: boolean;
 }) {
   const prefix = `cfg-${kind.key}-cat`;
   const inUse = uses > 0 || subcategories > 0;
@@ -289,7 +302,15 @@ function CategoryItem({
           <Reason id={`${prefix}-renombrar-motivo-${id}`} label="Motivo del cambio de nombre" />
         </ActionForm>
       </Disclosure>
-      {inUse ? (
+      {rubro ? (
+        <p className="text-sm text-ink-muted">
+          Es un rubro: se da de baja en{" "}
+          <Link href="/rubros" className="text-primary underline underline-offset-4">
+            Rubros
+          </Link>
+          .
+        </p>
+      ) : inUse ? (
         <p className="text-sm text-ink-muted">
           No se puede dar de baja: tiene{" "}
           {[uses > 0 ? kind.usedMany : null, subcategories > 0 ? "subcategorías" : null]

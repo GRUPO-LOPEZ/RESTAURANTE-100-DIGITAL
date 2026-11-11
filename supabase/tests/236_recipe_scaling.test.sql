@@ -59,7 +59,9 @@ create function pg_temp.yield(p_n int, p_process int, p_clean numeric, p_cook nu
 $$;
 create function pg_temp.recipe(p_n int, p_kind text, p_yield numeric, p_unit text, p_portions int) returns void language sql as $$
   insert into recipes.recipes (id, group_id, scope_type, code, name, recipe_type, category_id)
-  values (pg_temp.u(97000 + p_n), pg_temp.u(1), 'group', 'COSTO-REC-' || p_n, 'Receta ' || p_n, p_kind::recipes.recipe_type, pg_temp.u(1061));
+  values (pg_temp.u(97000 + p_n), pg_temp.u(1), 'group', 'COSTO-REC-' || p_n, 'Receta ' || p_n, p_kind::recipes.recipe_type,
+          -- Rubros (ADR-0038): un plato va en uno de menú (Pastas); el resto, en uno de sub-recetas (Salsas).
+          case when p_kind = 'dish' then pg_temp.u(1062) else pg_temp.u(1061) end);
   insert into recipes.recipe_versions (id, group_id, recipe_id, version_number, yield_quantity, yield_unit_id, portions)
   values (pg_temp.u(98000 + p_n), pg_temp.u(1), pg_temp.u(97000 + p_n), 1, p_yield,
           (select id from catalog.units where code = p_unit), p_portions);

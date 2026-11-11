@@ -184,15 +184,19 @@ update core.user_profiles set job_title = v.job_title, area_id = v.area_id::uuid
 -- Ids fijos: categorías ...0007CC, ingredientes ...0008NN, proveedores ...0009PP.
 -- Sin precios ni rendimientos: llegan en 2.1 B y 2.1 C.
 -- ---------------------------------------------------------------------------
-insert into catalog.ingredient_categories (id, group_id, name) values
-  ('00000000-0000-4000-8000-000000000701', '00000000-0000-4000-8000-000000000001', 'Verduras y frutas'),
-  ('00000000-0000-4000-8000-000000000702', '00000000-0000-4000-8000-000000000001', 'Carnes'),
-  ('00000000-0000-4000-8000-000000000703', '00000000-0000-4000-8000-000000000001', 'Lácteos'),
-  ('00000000-0000-4000-8000-000000000704', '00000000-0000-4000-8000-000000000001', 'Huevos'),
-  ('00000000-0000-4000-8000-000000000705', '00000000-0000-4000-8000-000000000001', 'Harinas y pastas secas'),
-  ('00000000-0000-4000-8000-000000000706', '00000000-0000-4000-8000-000000000001', 'Aceites y grasas'),
-  ('00000000-0000-4000-8000-000000000707', '00000000-0000-4000-8000-000000000001', 'Almacén'),
-  ('00000000-0000-4000-8000-000000000708', '00000000-0000-4000-8000-000000000001', 'Especias y condimentos');
+-- Rubros (ADR-0038): las categorías del seed conservan su nombre viejo y llevan a mano el código del rubro
+-- de Soy que les corresponde (el mismo que les daría recipes.map_legacy_categories por la primera palabra).
+-- «Almacén» no coincide con ninguno y su código lo arma el trigger (MP-ALM). Los rubros de Soy que faltan los
+-- carga recipes.install_default_categories. El mapeo de datos ya cargados se prueba en 250_rubros.
+insert into catalog.ingredient_categories (id, group_id, name, code) values
+  ('00000000-0000-4000-8000-000000000701', '00000000-0000-4000-8000-000000000001', 'Verduras y frutas', 'MP-VER'),
+  ('00000000-0000-4000-8000-000000000702', '00000000-0000-4000-8000-000000000001', 'Carnes', 'MP-CAR'),
+  ('00000000-0000-4000-8000-000000000703', '00000000-0000-4000-8000-000000000001', 'Lácteos', 'MP-LAC'),
+  ('00000000-0000-4000-8000-000000000704', '00000000-0000-4000-8000-000000000001', 'Huevos', 'MP-HUE'),
+  ('00000000-0000-4000-8000-000000000705', '00000000-0000-4000-8000-000000000001', 'Harinas y pastas secas', 'MP-HAR'),
+  ('00000000-0000-4000-8000-000000000706', '00000000-0000-4000-8000-000000000001', 'Aceites y grasas', 'MP-ACE'),
+  ('00000000-0000-4000-8000-000000000707', '00000000-0000-4000-8000-000000000001', 'Almacén', null),
+  ('00000000-0000-4000-8000-000000000708', '00000000-0000-4000-8000-000000000001', 'Especias y condimentos', 'MP-ESP');
 
 create temporary table seed_ingredients (n int, name text, category int, unit text, aliases text[]) on commit drop;
 insert into seed_ingredients values
@@ -354,12 +358,22 @@ values
 -- y una de local (20, Demo Pastas Centro). Todas publicadas salvo el risotto (11), en borrador.
 -- La bolognesa (2) tiene los pasos del caso 22: 20 + máx(60, 30) + 10 = 90 minutos.
 -- ---------------------------------------------------------------------------
-insert into recipes.recipe_categories (id, group_id, name) values
-  ('00000000-0000-4000-8000-000000001061', '00000000-0000-4000-8000-000000000001', 'Salsas'),
-  ('00000000-0000-4000-8000-000000001062', '00000000-0000-4000-8000-000000000001', 'Pastas'),
-  ('00000000-0000-4000-8000-000000001063', '00000000-0000-4000-8000-000000000001', 'Carnes'),
-  ('00000000-0000-4000-8000-000000001064', '00000000-0000-4000-8000-000000000001', 'Guarniciones'),
-  ('00000000-0000-4000-8000-000000001065', '00000000-0000-4000-8000-000000000001', 'Pastelería y café');
+-- Rubros (ADR-0038): un plato va en un rubro de menú (PL) y una preparación en uno de sub-recetas (SR).
+-- Las categorías viejas llevan el código de Soy que les corresponde; 6 a 8 son rubros de Soy con id fijo
+-- para las recetas que no entraban en la categoría vieja (masa, bondiola braseada y ensalada).
+insert into recipes.recipe_categories (id, group_id, name, kind, code) values
+  ('00000000-0000-4000-8000-000000001061', '00000000-0000-4000-8000-000000000001', 'Salsas', 'subrecipe', 'SR-SAL'),
+  ('00000000-0000-4000-8000-000000001062', '00000000-0000-4000-8000-000000000001', 'Pastas', 'menu', 'PL-PAS'),
+  ('00000000-0000-4000-8000-000000001063', '00000000-0000-4000-8000-000000000001', 'Carnes', 'menu', 'PL-CAR'),
+  ('00000000-0000-4000-8000-000000001064', '00000000-0000-4000-8000-000000000001', 'Guarniciones pre-elaboradas',
+   'subrecipe', 'SR-GUA'),
+  ('00000000-0000-4000-8000-000000001065', '00000000-0000-4000-8000-000000000001', 'Pastelería y café', 'subrecipe',
+   'SR-PST'),
+  ('00000000-0000-4000-8000-000000001066', '00000000-0000-4000-8000-000000000001', 'Masas', 'subrecipe', 'SR-MAS'),
+  ('00000000-0000-4000-8000-000000001067', '00000000-0000-4000-8000-000000000001', 'Cocciones base', 'subrecipe',
+   'SR-COC'),
+  ('00000000-0000-4000-8000-000000001068', '00000000-0000-4000-8000-000000000001', 'Ensaladas', 'menu', 'PL-ENS');
+select recipes.install_default_categories('00000000-0000-4000-8000-000000000001');
 
 create temporary table seed_recipes (n int, code text, name text, kind text, brand int, restaurant int, category int,
                                      yield_qty numeric, yield_unit text, portions int, portion_grams numeric,
@@ -374,7 +388,7 @@ insert into seed_recipes values
    'Hervir las papas, pisarlas y sumar la manteca y la leche caliente.', 15, 25, true),
   (5, 'DEMO-GUA-02', 'Papas rústicas', 'preparation', null, null, 4, 1.5, 'kg', null, null,
    'Cortar en gajos, condimentar y hornear hasta dorar.', 10, 40, true),
-  (6, 'DEMO-PAS-01', 'Masa de pasta fresca', 'preparation', 1, null, 2, 1.2, 'kg', null, null,
+  (6, 'DEMO-PAS-01', 'Masa de pasta fresca', 'preparation', 1, null, 6, 1.2, 'kg', null, null,
    'Formar la masa, amasar y dejar reposar tapada.', 15, 30, true),
   (7, 'DEMO-PAS-02', 'Spaghetti al fileto', 'dish', 1, null, 2, 1, 'unit', 1, 350,
    'Hervir la pasta al dente y saltear con la salsa.', 5, 9, true),
@@ -392,7 +406,7 @@ insert into seed_recipes values
    'Asar a fuego medio, dar vuelta una vez y dejar reposar antes de cortar.', 10, 80, true),
   (14, 'DEMO-PAR-03', 'Provoleta', 'dish', 2, null, 3, 1, 'unit', 1, 200,
    'Grillar en provoletera hasta dorar los dos lados.', 5, 8, true),
-  (15, 'DEMO-PAR-04', 'Bondiola braseada', 'preparation', 2, null, 3, 2, 'kg', null, null,
+  (15, 'DEMO-PAR-04', 'Bondiola braseada', 'preparation', 2, null, 7, 2, 'kg', null, null,
    'Sellar, sumar la cebolla y el vino, tapar y cocinar a fuego bajo.', 20, 150, true),
   (16, 'DEMO-PAR-05', 'Chorizo a la parrilla', 'dish', 2, null, 3, 1, 'unit', 1, 120,
    'Asar a fuego medio dando vuelta seguido.', 5, 20, true),
@@ -400,7 +414,7 @@ insert into seed_recipes values
    'Marinar con limón y aceite, y grillar hasta cocinar bien.', 10, 15, true),
   (18, 'DEMO-CAF-01', 'Budín de limón', 'preparation', 3, null, 5, 1, 'unit', 10, 80,
    'Batir, sumar los secos y la ralladura, y hornear en molde.', 20, 45, true),
-  (19, 'DEMO-CAF-02', 'Ensalada de atún', 'dish', 3, null, 5, 1, 'unit', 1, 330,
+  (19, 'DEMO-CAF-02', 'Ensalada de atún', 'dish', 3, null, 8, 1, 'unit', 1, 330,
    'Hervir la papa y el huevo, enfriar y armar con el atún y las aceitunas.', 10, 20, true),
   (20, 'DEMO-LOC-01', 'Sorrentinos de zapallo', 'dish', 1, 201, 2, 1, 'unit', 1, 320,
    'Asar el zapallo, hacer el relleno, armar los sorrentinos y hervir.', 30, 40, true);

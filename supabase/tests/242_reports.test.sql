@@ -44,7 +44,8 @@ values (pg_temp.u(50003), pg_temp.u(50001), 'Reportes S.A. (ficticia)', '3099999
 insert into org.restaurants (id, group_id, brand_id, name, legal_entity_id)
 values (pg_temp.u(50004), pg_temp.u(50001), pg_temp.u(50002), 'Local de reportes', pg_temp.u(50003));
 insert into catalog.ingredient_categories (id, group_id, name) values (pg_temp.u(50005), pg_temp.u(50001), 'Secos');
-insert into recipes.recipe_categories (id, group_id, name) values (pg_temp.u(50006), pg_temp.u(50001), 'Platos');
+-- Un rubro de menú (ADR-0038): las recetas de esta prueba son platos.
+insert into recipes.recipe_categories (id, group_id, name, kind) values (pg_temp.u(50006), pg_temp.u(50001), 'Platos', 'menu');
 insert into catalog.yield_processes (id, group_id, code, name) values (pg_temp.u(50007), pg_temp.u(50001), 'LIMPIEZA', 'Limpieza');
 -- El Controller alcanza a este grupo solo con una asignación.
 insert into core.user_memberships (user_id, group_id) values (pg_temp.u(407), pg_temp.u(50001));

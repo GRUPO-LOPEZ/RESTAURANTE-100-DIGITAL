@@ -90,6 +90,7 @@ export const getMenus = cache(async () => {
     costs,
     scenarios,
     reports,
+    rubrosRecipes,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -125,6 +126,8 @@ export const getMenus = cache(async () => {
     check("scenarios.manage"),
     // Reportes: en algún local (la base controla cada reporte).
     check("reports.export"),
+    // Rubros de sub-recetas y menú (ADR-0038): permiso propio, para todo el grupo.
+    groupWide("recipes.manage_categories"),
   ]);
   return {
     users,
@@ -143,6 +146,12 @@ export const getMenus = cache(async () => {
     recipes,
     recipesDraft,
     recipesSettings,
+    // Rubros (ADR-0038): los ve quien ve materias primas o recetas. Los de compra los administra Compras
+    // (catalog.manage) o Dirección (prices.configure); los de sub-recetas y menú, recipes.manage_categories.
+    // Todo para el grupo entero, la misma regla que recipes.can_manage_category.
+    rubros: catalog || recipes,
+    rubrosPurchase: catalogManage || pricesConfigure,
+    rubrosRecipes,
     importsRun,
     importsApprove,
     imports: importsRun || importsApprove || catalogManage,

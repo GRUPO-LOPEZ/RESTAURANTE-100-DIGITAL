@@ -379,7 +379,8 @@ export async function createCategoryAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const fields = schemas.category.safeParse(formValues(formData));
+  // Desde la configuración solo se crean subcategorías: los rubros se crean en Rubros (ADR-0038).
+  const fields = schemas.subcategory.safeParse(formValues(formData));
   if (!fields.success) return invalid(fields.error);
   const groupId = uuid.safeParse(formData.get("groupId"));
   if (!groupId.success) return { status: "bad", message: "Falta el grupo." };
@@ -393,7 +394,7 @@ export async function createCategoryAction(
     p_reason: fields.data.reason,
     ...(parent ? { p_parent_id: parent.data } : {}),
   });
-  return settingsDone(error, "Categoría creada. Ya la podés elegir en las materias primas.");
+  return settingsDone(error, "Subcategoría creada. Ya la podés elegir en las materias primas.");
 }
 
 export async function renameCategoryAction(

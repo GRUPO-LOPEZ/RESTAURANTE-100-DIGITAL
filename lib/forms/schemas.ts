@@ -313,6 +313,20 @@ export const schemas = {
     reason: reasonField,
   }),
   rename: z.object({ name: settingName, reason: reasonField }),
+  // Rubros (ADR-0038): alta con motivo; el nombre se cambia en la tarjeta (motivo fijo); la baja
+  // pide destino solo si el rubro tiene usos (lo controla la base).
+  rubro: z.object({ name: settingName, reason: reasonField }),
+  rubroName: z.object({ name: settingName }),
+  // Subcategoría (configuración del catálogo): el primer nivel son los rubros, que se crean en Rubros.
+  subcategory: z.object({
+    name: settingName,
+    parent_id: choice("Elegí el rubro."),
+    reason: reasonField,
+  }),
+  rubroDeactivate: z.object({
+    target_id: z.string().max(60).optional(),
+    reason: reasonField,
+  }),
   yieldProcess: z.object({ code: catalogCode, name: settingName, reason: reasonField }),
   // Ensayo de rendimiento: pesos en gramos, al menos un par completo (bruto y limpio, o antes y
   // después de cocinar), y el limpio no pesa más que el bruto. Lo mismo exige la base.

@@ -553,12 +553,14 @@ export type Database = {
       };
       ingredient_categories: {
         Row: {
+          code: string | null;
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
           group_id: string;
           id: string;
+          is_active: boolean;
           name: string;
           parent_id: string | null;
           stale_price_days: number | null;
@@ -567,12 +569,14 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          code?: string | null;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           group_id: string;
           id?: string;
+          is_active?: boolean;
           name: string;
           parent_id?: string | null;
           stale_price_days?: number | null;
@@ -580,12 +584,14 @@ export type Database = {
           updated_by?: string | null;
         };
         Update: {
+          code?: string | null;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
+          is_active?: boolean;
           name?: string;
           parent_id?: string | null;
           stale_price_days?: number | null;
@@ -1251,7 +1257,9 @@ export type Database = {
       };
       archive_category: { Args: { p_id: string; p_reason: string }; Returns: undefined };
       archive_yield_process: { Args: { p_id: string; p_reason: string }; Returns: undefined };
+      category_first_word: { Args: { p_name: string }; Returns: string };
       category_group: { Args: { p_category_id: string }; Returns: string };
+      category_match_name: { Args: { p_name: string }; Returns: string };
       category_usage: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -1317,6 +1325,10 @@ export type Database = {
       };
       create_yield_process: {
         Args: { p_code: string; p_group_id: string; p_name: string; p_reason: string };
+        Returns: string;
+      };
+      free_category_code: {
+        Args: { p_name: string; p_prefix: string; p_taken: string[] };
         Returns: string;
       };
       group_yield_alert_pct: { Args: { p_group_id: string }; Returns: number };
@@ -4943,12 +4955,15 @@ export type Database = {
       };
       recipe_categories: {
         Row: {
+          code: string | null;
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
           group_id: string;
           id: string;
+          is_active: boolean;
+          kind: Database["recipes"]["Enums"]["category_class"] | null;
           name: string;
           parent_id: string | null;
           updated_at: string;
@@ -4956,24 +4971,30 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          code?: string | null;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           group_id: string;
           id?: string;
+          is_active?: boolean;
+          kind?: Database["recipes"]["Enums"]["category_class"] | null;
           name: string;
           parent_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: {
+          code?: string | null;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
+          is_active?: boolean;
+          kind?: Database["recipes"]["Enums"]["category_class"] | null;
           name?: string;
           parent_id?: string | null;
           updated_at?: string;
@@ -5482,7 +5503,20 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      top_categories: {
+        Row: {
+          category_class: Database["recipes"]["Enums"]["category_class"] | null;
+          code: string | null;
+          created_at: string | null;
+          group_id: string | null;
+          id: string | null;
+          is_active: boolean | null;
+          name: string | null;
+          updated_at: string | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
     };
     Functions: {
       add_media: {
@@ -5507,10 +5541,26 @@ export type Database = {
       apply_publish_version: { Args: { p_request_id: string }; Returns: undefined };
       archive_category: { Args: { p_id: string; p_reason: string }; Returns: undefined };
       archive_recipe: { Args: { p_reason: string; p_recipe_id: string }; Returns: Json };
+      can_manage_category: {
+        Args: { p_class: Database["recipes"]["Enums"]["category_class"]; p_group_id: string };
+        Returns: boolean;
+      };
       can_see_version: { Args: { p_version_id: string }; Returns: boolean };
       can_upload_media: { Args: { p_name: string }; Returns: boolean };
       can_view_recipe: { Args: { p_recipe_id: string }; Returns: boolean };
       can_work_recipe: { Args: { p_recipe_id: string }; Returns: boolean };
+      category_overview: {
+        Args: { p_group_id: string };
+        Returns: {
+          category_class: Database["recipes"]["Enums"]["category_class"];
+          code: string;
+          id: string;
+          is_active: boolean;
+          mismatched: number;
+          name: string;
+          uses: number;
+        }[];
+      };
       category_usage: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -5547,6 +5597,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      create_top_category: {
+        Args: {
+          p_class: Database["recipes"]["Enums"]["category_class"];
+          p_group_id: string;
+          p_name: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
       create_variant: {
         Args: {
           p_code: string;
@@ -5564,6 +5623,23 @@ export type Database = {
           total_minutes: number;
         }[];
       };
+      deactivate_top_category: {
+        Args: {
+          p_class: Database["recipes"]["Enums"]["category_class"];
+          p_id: string;
+          p_reason: string;
+          p_target_id?: string;
+        };
+        Returns: number;
+      };
+      default_categories: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          category_class: Database["recipes"]["Enums"]["category_class"];
+          code: string;
+          name: string;
+        }[];
+      };
       first_invalid_line: {
         Args: { p_version_id: string };
         Returns: {
@@ -5573,8 +5649,13 @@ export type Database = {
         }[];
       };
       freeze_base_quantities: { Args: { p_version_id: string }; Returns: undefined };
+      install_default_categories: { Args: { p_group_id: string }; Returns: number };
       kitchen_card: { Args: { p_recipe_id: string }; Returns: Json };
       lock_sub_graph: { Args: { p_group_id: string }; Returns: undefined };
+      map_legacy_categories: {
+        Args: { p_equivalences?: Json; p_group_id: string };
+        Returns: number;
+      };
       media_recipe_id: { Args: { p_name: string }; Returns: string };
       new_version: { Args: { p_reason: string; p_recipe_id: string }; Returns: Json };
       notify_recipe_changed: {
@@ -5618,6 +5699,15 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      raise_category_error: {
+        Args: {
+          p_class: Database["recipes"]["Enums"]["category_class"];
+          p_constraint: string;
+          p_message: string;
+          p_state: string;
+        };
+        Returns: undefined;
+      };
       raise_friendly: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
@@ -5625,6 +5715,14 @@ export type Database = {
       reaches: {
         Args: { p_from: string; p_only_published: boolean; p_target: string };
         Returns: boolean;
+      };
+      reactivate_top_category: {
+        Args: {
+          p_class: Database["recipes"]["Enums"]["category_class"];
+          p_id: string;
+          p_reason: string;
+        };
+        Returns: undefined;
       };
       recipe_usage: {
         Args: { p_recipe_id: string };
@@ -5639,6 +5737,15 @@ export type Database = {
       remove_media: { Args: { p_media_id: string; p_reason: string }; Returns: Json };
       rename_category: {
         Args: { p_id: string; p_name: string; p_reason: string };
+        Returns: undefined;
+      };
+      rename_top_category: {
+        Args: {
+          p_class: Database["recipes"]["Enums"]["category_class"];
+          p_id: string;
+          p_name: string;
+          p_reason: string;
+        };
         Returns: undefined;
       };
       reopen_returned: { Args: { p_version_id: string }; Returns: undefined };
@@ -5696,6 +5803,10 @@ export type Database = {
       sub_height: { Args: { p_recipe_id: string }; Returns: number };
       sub_in_scope: { Args: { p_parent: string; p_sub: string }; Returns: boolean };
       today: { Args: Record<PropertyKey, never>; Returns: string };
+      top_category_group: {
+        Args: { p_class: Database["recipes"]["Enums"]["category_class"]; p_id: string };
+        Returns: string;
+      };
       unit_to_base: { Args: { p_unit_id: string }; Returns: number };
       update_recipe: { Args: { p_changes: Json; p_id: string; p_reason: string }; Returns: Json };
       variant_diff: {
@@ -5736,6 +5847,7 @@ export type Database = {
       workable_recipe_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
     };
     Enums: {
+      category_class: "purchase" | "subrecipe" | "menu";
       media_kind:
         | "final_product"
         | "plating"
@@ -6289,6 +6401,7 @@ export const Constants = {
   },
   recipes: {
     Enums: {
+      category_class: ["purchase", "subrecipe", "menu"],
       media_kind: [
         "final_product",
         "plating",

@@ -1,5 +1,5 @@
-// Configuración del catálogo (ADR-0022): Compras crea una categoría y ya la puede elegir al cargar
-// una materia prima; el Chef del grupo ve solo los procesos; la Cocinera no entra. En celular y
+// Configuración del catálogo (ADR-0022): Compras crea una subcategoría dentro de un rubro (los rubros se
+// crean en Rubros, ADR-0038) y ya la puede elegir al cargar una materia prima; el Chef del grupo ve solo los procesos; la Cocinera no entra. En celular y
 // computadora, con axe.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
@@ -13,7 +13,7 @@ async function axe(page: Page) {
   expect(results.violations).toEqual([]);
 }
 
-test("Compras crea una categoría, la usa en el alta y da de baja otra vacía", async ({
+test("Compras crea una subcategoría, la usa en el alta y la da de baja vacía", async ({
   page,
 }, testInfo) => {
   const name = `Prueba ${testInfo.project.name} ${Date.now() % 1_000_000}`;
@@ -26,20 +26,27 @@ test("Compras crea una categoría, la usa en el alta y da de baja otra vacía", 
   await expect(page.getByRole("heading", { name: "Procesos de rendimiento" })).toHaveCount(0);
   await axe(page);
 
-  await openAction(page, "Nueva categoría");
+  await openAction(page, "Nueva subcategoría");
   await page.locator("#cfg-mp-cat-nombre").fill(name);
-  await page.locator("#cfg-mp-cat-motivo").fill("Categoría de prueba automática");
-  await page.getByRole("button", { name: "Crear categoría" }).click();
-  await expect(notice(page)).toContainText("Categoría creada");
-  await expect(page.getByRole("list", { name: "Categorías", exact: true })).toContainText(name);
+  await page.locator("#cfg-mp-cat-madre").selectOption({ label: "Carnes" });
+  await page.locator("#cfg-mp-cat-motivo").fill("Subcategoría de prueba automática");
+  await page.getByRole("button", { name: "Crear subcategoría" }).click();
+  await expect(notice(page)).toContainText("Subcategoría creada");
+  await expect(page.getByRole("list", { name: "Subcategorías de Carnes" })).toContainText(name);
 
   await page.goto("/materias-primas/nueva");
-  await expect(page.locator("#mp-alta-categoria").getByRole("option", { name })).toHaveCount(1);
+  await expect(
+    page.locator("#mp-alta-categoria").getByRole("option", { name: `Carnes › ${name}` }),
+  ).toHaveCount(1);
 
   // Vacía: se puede dar de baja, y deja de aparecer.
   await page.goto("/materias-primas/configuracion");
   await openAction(page, `Dar de baja «${name}»`);
-  const item = page.getByRole("listitem").filter({ hasText: `Dar de baja «${name}»` });
+  // La subcategoría va dentro del ítem del rubro: el ítem más interno es el último.
+  const item = page
+    .getByRole("listitem")
+    .filter({ hasText: `Dar de baja «${name}»` })
+    .last();
   await item.getByLabel("Motivo de la baja").fill("Ya no se usa");
   await item.getByRole("button", { name: "Dar de baja" }).click();
   // La categoría desaparece con su formulario: el aviso queda arriba de la pantalla, con el foco,
@@ -51,12 +58,15 @@ test("Compras crea una categoría, la usa en el alta y da de baja otra vacía", 
   await axe(page);
 });
 
-test("una categoría con materias primas no ofrece darla de baja", async ({ page }) => {
+test("un rubro no se da de baja desde la configuración: lleva a Rubros", async ({ page }) => {
   await login(page, "compras@ejemplo.test");
   await page.goto("/materias-primas/configuracion");
   const item = page.getByRole("listitem").filter({ hasText: "Cambiar el nombre de «Carnes»" });
-  await expect(item.getByText("No se puede dar de baja: tiene materias primas.")).toBeVisible();
+  await expect(item.getByText("Es un rubro: se da de baja en Rubros.")).toBeVisible();
+  await expect(item.getByRole("link", { name: "Rubros" })).toHaveAttribute("href", "/rubros");
   await expect(item.locator("summary", { hasText: "Dar de baja" })).toHaveCount(0);
+  // Tampoco se crea un rubro desde acá: la subcategoría pide su rubro.
+  await expect(page.locator("#cfg-mp-cat-madre option", { hasText: "Ninguna" })).toHaveCount(0);
 });
 
 test("el Chef del grupo ve los procesos, no las categorías de materias primas", async ({

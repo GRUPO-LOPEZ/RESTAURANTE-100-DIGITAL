@@ -259,11 +259,14 @@ async function Ingredient({
                     required
                     defaultValue={ingredient.categoryId}
                   >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
-                    ))}
+                    {/* Los rubros dados de baja no se ofrecen, salvo el que ya tiene (ADR-0038). */}
+                    {categories
+                      .filter((c) => c.isActive || c.id === ingredient.categoryId)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.label}
+                        </option>
+                      ))}
                   </FormSelect>
                   <FormTextarea
                     id="mp-notes"

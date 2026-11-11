@@ -9,6 +9,7 @@ import { isCurrent, mobileItems, navGroups, type NavMenus } from "@/lib/nav";
 const none: NavMenus = {
   recipes: false,
   catalog: false,
+  rubros: false,
   costs: false,
   reports: false,
   quality: false,
@@ -35,6 +36,7 @@ describe("la navegación global", () => {
       "Panel de control",
       "Recetas",
       "Materias primas",
+      "Rubros",
       "Costos",
       "Reportes",
       "Calidad",
@@ -47,9 +49,14 @@ describe("la navegación global", () => {
   });
 
   it("muestra solo lo que la persona puede usar, sin grupos vacíos", () => {
-    const cook = navGroups({ ...none, recipes: true }, 0);
+    // El cocinero ve las recetas y, sin editarlos, los rubros (ADR-0038).
+    const cook = navGroups({ ...none, recipes: true, rubros: true }, 0);
     expect(cook.map((g) => g.label)).toEqual(["Visión general", "Base de conocimiento"]);
-    expect(cook.flatMap((g) => g.items.map((i) => i.label))).toEqual(["Inicio", "Recetas"]);
+    expect(cook.flatMap((g) => g.items.map((i) => i.label))).toEqual([
+      "Inicio",
+      "Recetas",
+      "Rubros",
+    ]);
   });
 
   it("sin avisos, Aprobaciones no lleva contador", () => {

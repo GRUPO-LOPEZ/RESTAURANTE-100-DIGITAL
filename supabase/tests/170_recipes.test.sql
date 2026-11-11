@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(100);
+select plan(102);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -355,8 +355,15 @@ select ok((select t1 - t0 < interval '500 milliseconds' from cp_timing), 'y se c
 -- ---------------------------------------------------------------------------
 -- Categorías y responsable técnico
 -- ---------------------------------------------------------------------------
-select ok(pg_temp.q(pg_temp.u(413), $$select recipes.create_category(pg_temp.u(1), 'Panadería', 'Categoría nueva')::text$$)
-          ~ '^[0-9a-f-]{36}$', 'el Chef del grupo crea una categoría de recetas');
+-- El primer nivel son los rubros (ADR-0038): se crean con su clase (recipes.create_top_category, 250_rubros).
+-- Con la función de siempre se crean subcategorías, que heredan la clase de su rubro.
+select ok(pg_temp.q(pg_temp.u(413), $$select recipes.create_category(pg_temp.u(1), 'Panadería', 'Subcategoría nueva',
+                                                                    '00000000-0000-4000-8000-000000001061')::text$$)
+          ~ '^[0-9a-f-]{36}$', 'el Chef del grupo crea una subcategoría de recetas');
+select is((select kind::text from recipes.recipe_categories where name = 'Panadería'), 'subrecipe',
+  'que hereda la clase de su rubro');
+select is(pg_temp.msg(pg_temp.u(413), $$select recipes.create_category(pg_temp.u(1), 'Sin clase', 'Prueba')$$),
+  'Elegí la clase del rubro: sub-recetas o menú.', 'un rubro sin clase no se crea con la función de siempre');
 select is(pg_temp.q(pg_temp.u(406), $$select recipes.create_category(pg_temp.u(1), 'Otra', 'Prueba')::text$$), 'ERROR 42501',
   'el Jefe de Cocina no');
 select is(pg_temp.msg(pg_temp.u(406), format($$select recipes.update_recipe(%L, '{"technical_owner_id": "%s"}', 'Responsable')$$,
@@ -376,8 +383,8 @@ select throws_ok($$insert into workflow.approval_workflows (code, name, required
 -- Conteo por categoría (pantalla de configuración): solo cuenta lo que la sesión ve
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(413), $$select recipes::text from recipes.category_usage()
-                                       where category_id = '00000000-0000-4000-8000-000000001063'$$), '5',
-  'el Chef del grupo cuenta las 5 recetas de Carnes');
+                                       where category_id = '00000000-0000-4000-8000-000000001063'$$), '4',
+  'el Chef del grupo cuenta las 4 recetas de Carnes (la bondiola braseada es una sub-receta: va en Cocciones base)');
 select is(pg_temp.q(pg_temp.u(409), $$select count(*)::text from recipes.category_usage()
                                        where category_id = '00000000-0000-4000-8000-000000001063'$$), '0',
   'la Cocinera de Pastas no cuenta las recetas de Carnes, que son de otra marca y no ve');

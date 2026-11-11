@@ -1,8 +1,35 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).**_
+_Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). En curso: Rubros (ADR-0038, rama `feat/rubros`, PR abierto). Última actualización: 2026-11-11._
 
-## Al retomar: rediseño de la interfaz, PR 4 de 4 (rama `feat/rediseno-ui-4-administracion`)
+## Al retomar: Rubros del recetario (rama `feat/rubros`, PR abierto)
+
+- **Qué se hizo** (pedido de Soy, `instrucciones-rubros-claude-code.md`; ADR-0038; lista para Soy en `docs/modulos/03-rubros-lista-de-cambios.md`):
+  - **Base** (`20261124120000_rubros.sql`, solo aditiva): código (`MP-`, `SR-`, `PL-`) e `is_active` en las dos tablas de categorías, `kind` (sub-recetas o menú) en las de recetas, los 46 rubros de Soy por grupo, la vista `recipes.top_categories`, los conteos en una sola consulta agrupada (`recipes.category_overview`) y funciones para dar de alta, renombrar, dar de baja con destino y reactivar.
+  - **Reglas en la base:** un plato va en un rubro de menú; una preparación o un componente, en uno de sub-recetas. Un rubro dado de baja no recibe nada nuevo. Una baja con usos exige un destino.
+  - **Datos actuales:** `recipes.map_legacy_categories` empareja las categorías vigentes con los rubros de Soy (por equivalencia, por nombre o por la primera palabra) y deja un código propio en el resto. Lo borrado queda como estaba.
+  - **Panel `/rubros`** (Base de conocimiento): pestañas, buscador, orden por cantidad o A-Z, resumen (total, activos, dados de baja, sin uso) y tarjetas de 88 px (5 columnas en la computadora, 2 en el celular) con nombre editable en el lugar, contador, % y barra.
+  - **Otras pantallas:** el alta y la ficha de receta ofrecen solo los rubros de su clase; las materias primas no ofrecen los dados de baja; en Configuración del catálogo se crean solo subcategorías.
+- **Respaldo:** volcado de la base local antes de empezar (carpeta temporal de la sesión).
+- **Pruebas (2026-11-11, todas en verde, con las decisiones de Joaco y de Soy):** db reset desde cero; tipos regenerados sin diferencias; lint, tipos y formato; Vitest 280 en 21 archivos; pgTAP 2.249 en 47 archivos (nueva `250_rubros`, con 114); Playwright 233 en celular y computadora, con axe (3 omitidas a propósito), corrida completa sin fallas.
+  - Playwright: la corrida completa dio 224 en verde y 7 en rojo. Las 7 volvieron a correr sobre una base limpia: 5 eran por la carga de una corrida de 1,1 h y pasan solas, y la de cuenta fallaba porque el correo local (Mailpit) dejó de responder; pasó después de reiniciarlo.
+  - La de «sin scroll» de Rubros fallaba de verdad: dependía de cuántos rubros de compra agregaban otras pruebas. Ahora mide que entren 5 filas (hasta 25 tarjetas) y, si hay 25 o menos, que no haya scroll.
+  - Se ajustaron, sin debilitarlas, las pruebas que usaban los datos de prueba viejos: 050, 170, 230 a 242, `configuracion-catalogo` y `design-system`.
+- **Revisores:** security-auditor apto (4 menores, corregidos); db-reviewer (1 grave en el mapeo de datos viejos y 3 medios, corregidos); ui-reviewer (1 grave y 5 medios, corregidos, y casi todos los menores).
+- **Quedó para después:** `catalog.create_category` sin madre todavía crea rubros (la pantalla ya no la usa; la importación sí); la importación no avisa por fila si nombra un rubro dado de baja; los selectores dicen «Categoría» y no muestran el código.
+- **Decisiones de Joaco (2026-11-10), ya aplicadas y probadas:**
+  - **Materias primas con precio:** al dar de baja un rubro de compra, las pasa Compras o Dirección, cada uno por su cuenta. La baja marca el rubro como inactivo antes del pase, y `catalog.guard_priced_ingredient` acepta el cambio de `catalog.manage` solo si la materia prima sale de un rubro dado de baja. Fuera de una baja, sigue la regla de ADR-0029. Los rubros de compra los administran `catalog.manage` o `prices.configure`.
+  - **Permiso propio** `recipes.manage_categories` para los rubros de sub-recetas y menú. Arranca en los roles que tenían `recipes.draft`, y Soy se lo puede dar a otro rol desde Roles.
+  - Pruebas: 14 más en `250_rubros` (109 en total) y una de pantalla para Dirección. `140_catalog` cuenta el permiso nuevo (22 del recetario).
+  - Revisión de seguridad de estos cambios: apta, sin graves. Corregido: las funciones de antes (`recipes.rename_category` y `archive_category`) ya no esquivan el permiso nuevo, gracias al trigger `recipes.guard_top_category`. Agregadas las pruebas que faltaban.
+- **Decisión de Joaco (2026-11-10):** se acepta que Compras pueda dar de baja un rubro de compra y reactivarlo, aunque así cambie cuándo vencen los precios del rubro sin Dirección. Queda auditado.
+- **Equivalencias de nombres (aprobadas por Soy, 2026-11-11), cargadas y probadas.** A partir de las 7 categorías de staging, que Joaco sacó con una consulta de solo lectura: Carne → MP-CAR Carnes y aves, QUESOS → MP-LAC Lácteos y quesos, Verdura → MP-VER Verduras y hortalizas, CARNES (su receta es un plato) → PL-CAR Principales de carne y PESCADOS → PL-PES Principales de pescado. PASTAS y POSTRES se emparejan solas.
+  - Por decisión de Soy, las emparejadas toman también el nombre de su lista, salvo que otro rubro del grupo ya se llame así.
+  - `250_rubros` (114 pruebas) simula staging y comprueba que quedan exactamente los 46 rubros de Soy.
+  - Antes de producción: correr la misma consulta allá. Las categorías que staging no tenga quedarían con código propio.
+- **Sigue:** PR a `main`. Después, la lista de cambios a Soy antes de producción.
+
+## Antes: rediseño de la interfaz, PR 4 de 4 (fusionado, PR #52)
 
 - **Qué se hizo** (ADR-0036, adenda del PR 4; sin cambios en la base). Con este PR **termina el rediseño**: todas las pantallas usan el sistema nuevo.
   - **Usuarios:** tablero con 4 tarjetas confiables (cada una lleva a sus registros; «Sin permiso» y «Sin comparación» cuando corresponde), tablas por local y por rol, y cambios críticos con «Ver todos» al Historial. Lista de personas con filtros que se aplican solos, pestañas de estado, tabla y paginación con cursor. Ficha en pestañas (Datos y cuenta, Roles, Actividad), con el nombre como título y «← Volver a personas» que conserva los filtros. Invitar con ancho limitado.

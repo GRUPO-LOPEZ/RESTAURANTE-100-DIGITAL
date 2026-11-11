@@ -52,7 +52,8 @@ values (pg_temp.u(50003), pg_temp.u(50001), 'Calidad S.A. (ficticia)', '30999999
 insert into org.restaurants (id, group_id, brand_id, name, legal_entity_id)
 values (pg_temp.u(50004), pg_temp.u(50001), pg_temp.u(50002), 'Local de calidad', pg_temp.u(50003));
 insert into catalog.ingredient_categories (id, group_id, name) values (pg_temp.u(50005), pg_temp.u(50001), 'Secos');
-insert into recipes.recipe_categories (id, group_id, name) values (pg_temp.u(50006), pg_temp.u(50001), 'Platos');
+-- Un rubro de menú (ADR-0038): las recetas de esta prueba son platos.
+insert into recipes.recipe_categories (id, group_id, name, kind) values (pg_temp.u(50006), pg_temp.u(50001), 'Platos', 'menu');
 insert into catalog.yield_processes (id, group_id, code, name) values (pg_temp.u(50007), pg_temp.u(50001), 'LIMPIEZA', 'Limpieza');
 -- Otra marca del grupo, y un local sin razón social.
 insert into org.brands (id, group_id, name, code) values (pg_temp.u(50008), pg_temp.u(50001), 'Otra marca de calidad', 'CALIDAD2');
