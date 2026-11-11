@@ -317,6 +317,115 @@ export async function proposeYieldAction(
       };
 }
 
+// Mermas en % (ADR-0040): la base propone, juntas, la limpieza y el descongelado como estándares (catalog.propose_waste);
+// no cambian el costo hasta que las apruebe un Chef de todo el grupo.
+export async function proposeWasteAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.waste.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = ingredientId(formData);
+  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
+  const loss = (text: string | undefined) =>
+    text ? Math.round(decimal(text) * 100) / 10000 : undefined;
+  const supabase = await createClient();
+  const { data, error } = await supabase.schema("catalog").rpc("propose_waste", {
+    p_ingredient_id: id.data,
+    p_cleaning_loss: loss(fields.data.cleaning_loss),
+    p_thawing_loss: loss(fields.data.thawing_loss),
+    p_declared_no_loss: isChecked(fields.data.declared_no_loss),
+    p_method: fields.data.method ?? "",
+    p_reason: fields.data.reason,
+  });
+  revalidatePath(`/materias-primas/${id.data}`);
+  if (error) return toActionState(null, error);
+  const requests = Number((data as { requests?: number } | null)?.requests ?? 0);
+  return {
+    status: "info",
+    message:
+      requests === 1
+        ? "Queda pendiente: la tiene que aprobar un Chef de todo el grupo, distinto de vos."
+        : "Quedan pendientes: las tiene que aprobar un Chef de todo el grupo, distinto de vos.",
+  };
+}
+
+// Una unidad nueva (ADR-0040). Las unidades valen para todo el sistema; la base pide catalog.manage en el grupo.
+export async function createUnitAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.unit.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const group = uuid.safeParse(formData.get("groupId"));
+  if (!group.success) return { status: "bad", message: "Falta el grupo." };
+  const client = await createClient();
+  const { error } = await client.schema("catalog").rpc("create_unit", {
+    p_group_id: group.data,
+    p_code: fields.data.code,
+    p_long_name: fields.data.long_name,
+    p_abbreviation: fields.data.abbreviation,
+    p_dimension: fields.data.dimension,
+    ...(fields.data.factor ? { p_factor: decimal(fields.data.factor) } : {}),
+    p_reason: fields.data.reason,
+  });
+  revalidatePath("/materias-primas/configuracion");
+  return done(error, `Unidad «${fields.data.long_name}» creada.`);
+}
+
+// Dar de baja una unidad que nada usó (ADR-0040): para corregir un error de carga. La base controla que no se use.
+export async function archiveUnitAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.reason.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const group = uuid.safeParse(formData.get("groupId"));
+  const unit = uuid.safeParse(formData.get("unitId"));
+  if (!group.success || !unit.success) return { status: "bad", message: "Falta la unidad." };
+  const client = await createClient();
+  const { error } = await client.schema("catalog").rpc("archive_unit", {
+    p_group_id: group.data,
+    p_unit_id: unit.data,
+    p_reason: fields.data.reason,
+  });
+  revalidatePath("/materias-primas/configuracion");
+  return done(error, "Unidad dada de baja.");
+}
+
+// Se compra congelada (ADR-0040): cambia el costo de sus recetas (la base anota el recálculo).
+export async function setThawingAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.thawing.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = ingredientId(formData);
+  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
+  const value = fields.data.requires_thawing === "true";
+  const supabase = await createClient();
+  const { data, error } = await supabase.schema("catalog").rpc("set_requires_thawing", {
+    p_ingredient_id: id.data,
+    p_value: value,
+    p_reason: fields.data.reason,
+  });
+  revalidatePath(`/materias-primas/${id.data}`);
+  if (error) return toActionState(null, error);
+  // Dejar de comprarla congelada baja el costo: lo aprueba un Chef de todo el grupo (decisión de Joaco, ADR-0040).
+  const result = (data as { result?: string } | null)?.result;
+  if (result === "pending_approval")
+    return {
+      status: "info",
+      message:
+        "Queda pendiente: dejar de comprarla congelada lo tiene que aprobar un Chef de todo el grupo.",
+    };
+  if (result === "unchanged") return { status: "ok", message: "No había nada que cambiar." };
+  return {
+    status: "ok",
+    message: "Guardado: se compra congelada. Los costos se actualizan en un minuto.",
+  };
+}
+
 // Proponer un precio (ADR-0029). La base controla prices.propose en el lugar elegido, calcula la
 // variación y crea la solicitud: la aprueba el Controller y, si la variación supera el % del grupo,
 // también Dirección General.

@@ -6,6 +6,8 @@ import {
   archiveProcessAction,
   createCategoryAction,
   createProcessAction,
+  archiveUnitAction,
+  createUnitAction,
   renameCategoryAction,
   renameProcessAction,
 } from "@/app/materias-primas/actions";
@@ -20,12 +22,16 @@ import { Disclosure } from "@/components/disclosure";
 import { FlashNotice } from "@/components/flash-notice";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
+import { InfoTip } from "@/components/ui/info-tip";
+import { SegmentedField } from "@/components/ui/segmented-field";
 import { EmptyState } from "@/components/ui/kpi";
 import {
   getSettingsCategories,
   getSettingsGroups,
   getSettingsProcesses,
+  getSettingsUnits,
   type SettingsCategory,
+  type SettingsUnit,
   type SettingsProcess,
 } from "@/lib/catalog";
 import { getRecipeSettingsCategories } from "@/lib/recipes";
@@ -97,10 +103,11 @@ async function Settings({
   const categoryGroup = categoryGroups[0];
   const processGroup = processGroups[0];
   const recipeGroup = recipeGroups[0];
-  const [categories, processes, recipeCategories] = await Promise.all([
+  const [categories, processes, recipeCategories, units] = await Promise.all([
     categoryGroup ? getSettingsCategories(categoryGroup) : [],
     processGroup ? getSettingsProcesses(processGroup) : [],
     recipeGroup ? getRecipeSettingsCategories(recipeGroup) : [],
+    categoryGroup ? getSettingsUnits() : [],
   ]);
   return (
     <>
@@ -113,6 +120,7 @@ async function Settings({
         <Categories kind={RECIPE_CATEGORIES} groupId={recipeGroup} categories={recipeCategories} />
       ) : null}
       {processGroup ? <Processes groupId={processGroup} processes={processes} /> : null}
+      {categoryGroup ? <Units groupId={categoryGroup} units={units} /> : null}
       {!categoryGroup && !processGroup && !recipeGroup ? (
         <EmptyState title="No tenés listas para configurar.">
           Las categorías de materias primas las configura Compras; los procesos y las categorías de
@@ -425,6 +433,128 @@ function Processes({ groupId, processes }: { groupId: string; processes: Setting
             <FormInput id="cfg-proc-nombre" label="Nombre" name="name" required maxLength={80} />
           </div>
           <Reason id="cfg-proc-motivo" label="Motivo" />
+        </ActionForm>
+      </Disclosure>
+    </Card>
+  );
+}
+
+// Unidades de medida (ADR-0040): las que se eligen en recetas y compras, con su equivalencia en la base. Valen para todo
+// el sistema; las crea quien administra el catálogo, con motivo. No se borran (las usan recetas y productos).
+const DIMENSION_LABELS: Record<string, string> = {
+  mass: "Peso",
+  volume: "Volumen",
+  count: "Unidades",
+  package: "Envases",
+};
+
+function Units({ groupId, units }: { groupId: string; units: SettingsUnit[] }) {
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-center gap-1">
+        <CardTitle>Unidades de medida</CardTitle>
+        <InfoTip label="unidades de medida">
+          Las que se eligen al comprar. Las de peso, volumen y unidades de esta lista también se
+          usan en las recetas; una unidad nueva llega a las recetas en la próxima actualización del
+          sistema. Las cuentas se hacen siempre en gramos, mililitros o unidades.
+        </InfoTip>
+      </div>
+      <div className="grid gap-4 desk:grid-cols-4">
+        {Object.entries(DIMENSION_LABELS).map(([dimension, label]) => (
+          <div key={dimension} className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-ink">{label}</h3>
+            {units.every((u) => u.dimension !== dimension) ? (
+              <p className="text-sm text-ink-muted">Sin unidades de este tipo.</p>
+            ) : null}
+            <ul className="flex flex-col gap-1" aria-label={`Unidades de ${label.toLowerCase()}`}>
+              {units
+                .filter((u) => u.dimension === dimension)
+                .map((u) => (
+                  <li
+                    key={u.id}
+                    className="flex flex-col gap-1 rounded-sm border border-line px-3 py-2"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="text-base text-ink">{u.label}</span>
+                      <span className="text-sm text-ink-muted tabular-nums">
+                        {u.isBase
+                          ? "Base"
+                          : u.equivalence
+                            ? `= ${u.equivalence}`
+                            : "Sin equivalencia fija"}
+                      </span>
+                    </div>
+                    {/* Una unidad que nada usó se puede dar de baja (para corregir un error de carga). */}
+                    {!u.canArchive ? null : (
+                      <Disclosure summary={`Dar de baja «${u.label}»`}>
+                        <ActionForm
+                          action={archiveUnitAction}
+                          schema="reason"
+                          submitLabel="Dar de baja"
+                          variant="destructive"
+                        >
+                          <input type="hidden" name="groupId" value={groupId} />
+                          <input type="hidden" name="unitId" value={u.id} />
+                          <Reason id={`cfg-unidad-baja-${u.id}`} label="Motivo de la baja" />
+                        </ActionForm>
+                      </Disclosure>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <Disclosure summary="Nueva unidad">
+        <ActionForm
+          action={createUnitAction}
+          schema="unit"
+          submitLabel="Crear unidad"
+          pendingLabel="Creando…"
+        >
+          <input type="hidden" name="groupId" value={groupId} />
+          <SegmentedField
+            id="cfg-unidad-tipo"
+            name="dimension"
+            label="Tipo"
+            options={Object.entries(DIMENSION_LABELS).map(([value, label]) => ({ value, label }))}
+            hint="Un envase va sin equivalencia: su contenido se carga en cada producto."
+          />
+          <div className="grid gap-4 sm:grid-cols-2 desk:grid-cols-4">
+            <FormInput
+              id="cfg-unidad-nombre"
+              label="Nombre"
+              hint="Por ejemplo, Cucharón."
+              name="long_name"
+              required
+              maxLength={40}
+            />
+            <FormInput
+              id="cfg-unidad-abrev"
+              label="Abreviatura"
+              hint="Por ejemplo, cuch."
+              name="abbreviation"
+              required
+              maxLength={12}
+            />
+            <FormInput
+              id="cfg-unidad-codigo"
+              label="Código"
+              hint="No cambia nunca. Minúsculas, por ejemplo cucharon."
+              name="code"
+              required
+              maxLength={20}
+              autoCapitalize="none"
+            />
+            <FormInput
+              id="cfg-unidad-factor"
+              label="Equivale a (g, ml o unidades)"
+              hint="Un cucharón de 60 ml: 60."
+              name="factor"
+              inputMode="decimal"
+            />
+          </div>
+          <Reason id="cfg-unidad-motivo" label="Motivo" />
         </ActionForm>
       </Disclosure>
     </Card>

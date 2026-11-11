@@ -24,7 +24,11 @@ import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { RELIABILITY, getLiveCost, resolveCostPlace } from "@/lib/costs";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, perBaseLabel } from "@/lib/money";
+import { Metric } from "@/components/ui/metric";
+import type { MetricStatus } from "@/lib/metrics";
+import { formatLoss } from "@/lib/yields";
+import type { Reliability } from "@/lib/cost-labels";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import { EmptyState } from "@/components/ui/states";
@@ -38,11 +42,15 @@ import {
   SCOPE_LABELS,
   STEP_KIND_LABELS,
   VERSION_STATUS_LABELS,
+  unitDimension,
+  unitGroups,
+  unitOptionLabel,
   formatMinutes,
   formatQuantity,
   getAssignments,
   getRecipe,
   getRecipeCategories,
+  getCookingLoss,
   getRecipeUsage,
   getVariantDiff,
   getVariants,
@@ -50,6 +58,7 @@ import {
   getVersionDiff,
   getVersionSummary,
   getVersionPhotos,
+  type CookingLoss,
   type DiffRow,
   type RecipeDetail,
   type RecipeVersion,
@@ -154,6 +163,75 @@ function Ids({ recipe, version }: { recipe: RecipeDetail; version?: RecipeVersio
   );
 }
 
+// El rendimiento final destacado (pedido de Soy, ADR-0040). Sin dato, «—» y el motivo (Metric).
+function YieldKpis({
+  quantity,
+  unit,
+  unitLabel,
+  perBaseUnit,
+  reliability,
+  place,
+  canSeeCosts,
+  cookingLoss,
+}: {
+  quantity: number | null;
+  unit: string | null;
+  unitLabel: string;
+  perBaseUnit: number | null;
+  reliability: Reliability | null;
+  place: string | null;
+  canSeeCosts: boolean;
+  cookingLoss: CookingLoss | null;
+}) {
+  const dimension = unitDimension(unit ?? "");
+  const base = dimension === "mass" ? "g" : dimension === "volume" ? "ml" : "unit";
+  const per = perBaseLabel(base);
+  // El estado del costo es el de la receta (métricas confiables): desactualizado, con estimaciones o completo.
+  const costState = reliability ? RELIABILITY[reliability] : null;
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 desk:grid-cols-3">
+      <Metric
+        label="Rendimiento final"
+        value={quantity ? formatQuantity(quantity) : null}
+        unit={quantity ? unitLabel : undefined}
+        missingReason="Falta cargarlo: sin rendimiento no se pide la revisión."
+        status="ok"
+        statusLabel="Cargado"
+        emptyLabel="Sin datos"
+      />
+      {canSeeCosts ? (
+        <Metric
+          label={dimension ? `Costo ${per.label}` : "Costo"}
+          value={perBaseUnit !== null ? formatMoney(perBaseUnit * per.factor) : null}
+          missingReason={
+            place ? "Falta un dato para calcularlo." : "Elegí un local arriba para ver el costo."
+          }
+          period={place ?? undefined}
+          stale={reliability === "stale"}
+          // RELIABILITY usa solo ok, info, warn y bad: todos son estados de una métrica.
+          status={(costState?.status ?? "none") as MetricStatus}
+          statusLabel={costState?.label ?? "Sin datos"}
+          emptyLabel="Sin datos"
+        />
+      ) : null}
+      <Metric
+        label="Merma de cocción"
+        value={
+          cookingLoss?.factor == null
+            ? null
+            : cookingLoss.factor > 1
+              ? `Se expande ×${cookingLoss.factor.toLocaleString("es-AR", { maximumFractionDigits: 2 })}`
+              : formatLoss(cookingLoss.factor)
+        }
+        missingReason={cookingLoss?.missing ?? "Falta un dato."}
+        status="info"
+        statusLabel="Calculada"
+        emptyLabel="Sin datos"
+      />
+    </div>
+  );
+}
+
 // Las pestañas de la ficha, en el orden del prompt de rediseño.
 const SECTIONS = [
   { key: "datos", label: "Datos generales" },
@@ -211,14 +289,18 @@ async function Recipe({
     (p) => !variants.some((v) => v.restaurantId === p.restaurantId),
   );
   // El costo en el local, también de un borrador. El detalle está en /costos, que ve también quien no la trabaja.
+  const query0 = await searchParams;
   const menus = await getMenus();
   const costPlace = menus.costs ? (await resolveCostPlace(session.user_id)).place : null;
   const cost = version && costPlace ? await getLiveCost(version.id, costPlace.id) : null;
+  // La merma de cocción, solo en la pestaña de rendimientos (ADR-0040).
+  const cookingLoss =
+    version && first(query0.seccion) === "rendimientos" ? await getCookingLoss(version.id) : null;
   const unitLabel = (code: string | null) =>
     LINE_UNITS.find((u) => u.code === code)?.label ?? code ?? "";
   // Costos solo para quien los ve.
   const tabs = SECTIONS.filter((t) => t.key !== "costos" || menus.costs);
-  const query = await searchParams;
+  const query = query0;
   const wanted = first(query.seccion);
   // "← Volver" a la lista con sus filtros y su página: solo la lista de recetas de esta aplicación.
   const volver = first(query.volver);
@@ -412,15 +494,19 @@ async function Recipe({
                     {VERSION_STATUS_LABELS[version.status]}
                   </Badge>
                 </div>
+                {/* Lo que importa para usarla dentro de otra receta (ADR-0040): cuánto rinde terminada, cuánto
+                    cuesta el kg (o el litro, o la unidad) y cuánto pierde al cocinarse. */}
+                <YieldKpis
+                  quantity={version.yieldQuantity}
+                  unit={version.yieldUnit}
+                  unitLabel={unitLabel(version.yieldUnit)}
+                  perBaseUnit={cost?.perBaseUnit ?? null}
+                  reliability={cost?.reliability ?? null}
+                  place={costPlace?.name ?? null}
+                  canSeeCosts={menus.costs}
+                  cookingLoss={cookingLoss}
+                />
                 <dl className="flex flex-col gap-2">
-                  <Row
-                    label="Rinde"
-                    value={
-                      version.yieldQuantity
-                        ? `${formatQuantity(version.yieldQuantity)} ${unitLabel(version.yieldUnit)}`
-                        : "Sin cargar"
-                    }
-                  />
                   <Row
                     label="Tiene"
                     value={`${content.lines.length} ${content.lines.length === 1 ? "componente" : "componentes"} · ${content.steps.length} ${content.steps.length === 1 ? "paso" : "pasos"}`}
@@ -470,10 +556,14 @@ async function Recipe({
                           <option value="" disabled>
                             Elegí la unidad
                           </option>
-                          {LINE_UNITS.map((u) => (
-                            <option key={u.code} value={u.code}>
-                              {u.label}
-                            </option>
+                          {unitGroups().map((g) => (
+                            <optgroup key={g.dimension} label={g.label}>
+                              {g.units.map((u) => (
+                                <option key={u.code} value={u.code}>
+                                  {unitOptionLabel(u.code)}
+                                </option>
+                              ))}
+                            </optgroup>
                           ))}
                         </FormSelect>
                         <FormInput

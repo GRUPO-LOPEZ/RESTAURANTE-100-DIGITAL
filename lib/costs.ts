@@ -6,6 +6,7 @@ import {
   type SnapshotReason,
 } from "@/lib/cost-labels";
 import { getActiveRestaurantId, getMyScopes } from "@/lib/data";
+import { perBaseLabel } from "@/lib/money";
 import type { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -225,6 +226,70 @@ export type LiveCost = {
   perBaseUnit: number | null;
   reliability: Reliability;
 };
+
+// El costo de una materia prima en un local, por kg (o litro, o unidad) como se compra y limpio, calculado por el mismo
+// motor que las recetas (costing.ingredient_line_cost; ADR-0040). El neto usa el estándar de LIMPIEZA y, si se compra
+// congelada, el de descongelado. Un costo que no se puede calcular va vacío con su estado (nunca $ 0).
+export type IngredientNetCost = {
+  gross: number | null;
+  net: number | null;
+  netStatus: string;
+  per: string;
+  // Del precio que vale (costing.resolve_price): vencido, heredado de la marca o del grupo, y desde cuándo.
+  stale: boolean;
+  inherited: boolean;
+  validFrom: string | null;
+};
+
+export async function getIngredientNetCost(
+  ingredientId: string,
+  restaurantId: string,
+  baseUnit: string,
+  cleaningProcessId: string | null,
+): Promise<IngredientNetCost | null> {
+  const client = await createClient();
+  const perBase = perBaseLabel(baseUnit);
+  const { data: units } = await client
+    .schema("catalog")
+    .from("units")
+    .select("id")
+    .eq("code", baseUnit)
+    .maybeSingle();
+  if (!units) return null;
+  const line = (basis: "purchase" | "clean") =>
+    client.schema("costing").rpc("ingredient_line_cost", {
+      p_ingredient_id: ingredientId,
+      p_restaurant_id: restaurantId,
+      p_quantity: perBase.factor,
+      p_unit_id: units.id,
+      p_basis: basis,
+      ...(basis === "clean" && cleaningProcessId ? { p_process_id: cleaningProcessId } : {}),
+    });
+  const [gross, net, price] = await Promise.all([
+    line("purchase"),
+    line("clean"),
+    client.schema("costing").rpc("resolve_price", {
+      p_ingredient_id: ingredientId,
+      p_restaurant_id: restaurantId,
+    }),
+  ]);
+  // Sin permiso para ver precios en ese local no hay costo que mostrar.
+  if ([gross, net, price].some((r) => r.error?.code === "42501")) return null;
+  if (gross.error || net.error || price.error)
+    throw new Error("No pudimos calcular el costo neto.");
+  const g = gross.data?.[0];
+  const n = net.data?.[0];
+  const p = price.data?.[0];
+  return {
+    gross: num(g?.line_cost ?? null),
+    net: num(n?.line_cost ?? null),
+    netStatus: cleaningProcessId ? (n?.status ?? "missing_yield") : "missing_yield",
+    per: perBase.label,
+    stale: p?.stale ?? false,
+    inherited: p?.inherited ?? false,
+    validFrom: p?.valid_from ?? null,
+  };
+}
 
 export async function getLiveCost(
   versionId: string,

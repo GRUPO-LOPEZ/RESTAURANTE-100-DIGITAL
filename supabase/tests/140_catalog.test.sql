@@ -127,7 +127,9 @@ select is(
   (select count(*)::int from information_schema.role_table_grants
     where table_schema = 'catalog' and grantee = 'anon'),
   0, 'anon no ve nada del catálogo');
-select is((select count(*)::int from catalog.units), 14, 'hay 14 unidades');
+select is((select string_agg(code, ',' order by code) from catalog.units where created_by is null),
+          'bag,bottle,box,bunch,can,cc,cup,dozen,fl_oz,g,jug,kg,l,lb,mg,ml,oz,pack,pinch,portion,tbsp,tsp,unit,wheel',
+          'las 24 unidades de las migraciones (las 14 de antes y las 10 de recetario, ADR-0040)');
 select is(
   (select array_agg(code order by code) from catalog.units where is_base), array['g', 'ml', 'unit'],
   'las unidades base son g, ml y unidad');
@@ -203,7 +205,8 @@ select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from catalog.ingredie
   'el Cocinero no ve el catálogo (sus recetas llegan por la vista de cocina)');
 select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from catalog.purchase_products'), '0',
   'el Cocinero no ve productos de compra');
-select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from catalog.units'), '14', 'las unidades las ve cualquiera que opere');
+select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from catalog.units'), (select count(*)::text from catalog.units),
+          'las unidades las ve cualquiera que opere (todas)');
 select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from catalog.ingredients', 'aal1'), '0',
   'Dirección sin doble verificación no ve nada');
 select is(pg_temp.q(null::uuid, 'select count(*)::text from catalog.ingredients'), '0', 'sin persona no se ve nada');
