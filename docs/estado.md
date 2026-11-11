@@ -39,8 +39,6 @@ _Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 
 ## Antes: Rubros del recetario (fusionado, PR #53)
 
-> > > > > > > origin/main
-
 - **Qué se hizo** (pedido de Soy, `instrucciones-rubros-claude-code.md`; ADR-0038; lista para Soy en `docs/modulos/03-rubros-lista-de-cambios.md`):
   - **Base** (`20261124120000_rubros.sql`, solo aditiva): código (`MP-`, `SR-`, `PL-`) e `is_active` en las dos tablas de categorías, `kind` (sub-recetas o menú) en las de recetas, los 46 rubros de Soy por grupo, la vista `recipes.top_categories`, los conteos en una sola consulta agrupada (`recipes.category_overview`) y funciones para dar de alta, renombrar, dar de baja con destino y reactivar.
   - **Reglas en la base:** un plato va en un rubro de menú; una preparación o un componente, en uno de sub-recetas. Un rubro dado de baja no recibe nada nuevo. Una baja con usos exige un destino.
