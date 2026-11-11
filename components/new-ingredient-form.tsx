@@ -62,11 +62,14 @@ export async function NewIngredientForm({ inModal = false }: { inModal?: boolean
                 <option value="" disabled>
                   Elegí la categoría
                 </option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
+                {/* Los rubros dados de baja no se ofrecen (ADR-0038). */}
+                {categories
+                  .filter((c) => c.isActive)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
               </FormSelect>
               <FormSelect
                 id="mp-alta-unidad"

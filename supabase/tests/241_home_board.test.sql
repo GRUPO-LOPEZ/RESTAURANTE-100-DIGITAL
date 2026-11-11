@@ -64,7 +64,9 @@ create function pg_temp.version(p_n int, p_v int, p_ing int, p_grams numeric) re
 $$;
 create function pg_temp.dish(p_n int, p_ing int, p_grams numeric, p_type text default 'dish') returns void language sql as $$
   insert into recipes.recipes (id, group_id, brand_id, scope_type, code, name, recipe_type, category_id)
-  values (pg_temp.u(97000 + p_n), pg_temp.u(1), pg_temp.u(50011), 'brand', 'TAB-REC-' || p_n, 'Plato ' || p_n, p_type::recipes.recipe_type, pg_temp.u(1061));
+  values (pg_temp.u(97000 + p_n), pg_temp.u(1), pg_temp.u(50011), 'brand', 'TAB-REC-' || p_n, 'Plato ' || p_n, p_type::recipes.recipe_type,
+          -- Rubros (ADR-0038): un plato va en uno de menú (Pastas); el resto, en uno de sub-recetas (Salsas).
+          case when p_type = 'dish' then pg_temp.u(1062) else pg_temp.u(1061) end);
   select pg_temp.version(p_n, 1, p_ing, p_grams);
   insert into recipes.recipe_assignments (group_id, recipe_id, restaurant_id, valid_from)
   values (pg_temp.u(1), pg_temp.u(97000 + p_n), pg_temp.u(50012), recipes.today() - 1);

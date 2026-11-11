@@ -33,7 +33,14 @@ export const SOURCE_LABELS: Record<DataSource, string> = {
 };
 
 export type Unit = { id: string; code: string; name: string; dimension: string; isBase: boolean };
-export type Category = { id: string; groupId: string; name: string; label: string };
+// isActive: falso si el rubro (o su madre) está dado de baja (ADR-0038): no se ofrece para cargar.
+export type Category = {
+  id: string;
+  groupId: string;
+  name: string;
+  label: string;
+  isActive: boolean;
+};
 export type Supplier = { id: string; code: string; name: string; isInternal: boolean };
 
 export async function getUnits(): Promise<Unit[]> {
@@ -61,7 +68,7 @@ export async function getCategories(): Promise<Category[]> {
   const { data, error } = await supabase
     .schema("catalog")
     .from("ingredient_categories")
-    .select("id, group_id, parent_id, name")
+    .select("id, group_id, parent_id, name, is_active")
     .order("name");
   if (error) failed("las categorías");
   const byId = new Map(data.map((c) => [c.id, c]));
@@ -73,6 +80,7 @@ export async function getCategories(): Promise<Category[]> {
         groupId: c.group_id,
         name: c.name,
         label: parent ? `${parent.name} › ${c.name}` : c.name,
+        isActive: c.is_active && (parent?.is_active ?? true),
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label, "es"));

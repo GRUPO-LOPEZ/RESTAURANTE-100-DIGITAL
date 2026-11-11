@@ -11,6 +11,7 @@ export type NavIcon =
   | "panel"
   | "recipes"
   | "ingredients"
+  | "rubros"
   | "costs"
   | "reports"
   | "quality"
@@ -33,6 +34,7 @@ export type NavGroup = { label: string; items: NavItem[] };
 export type NavMenus = {
   recipes: boolean;
   catalog: boolean;
+  rubros: boolean;
   costs: boolean;
   reports: boolean;
   quality: boolean;
@@ -64,6 +66,7 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
         ...(menus.catalog
           ? [{ href: "/materias-primas", label: "Materias primas", icon: "ingredients" as const }]
           : []),
+        ...(menus.rubros ? [{ href: "/rubros", label: "Rubros", icon: "rubros" as const }] : []),
       ],
     },
     {
@@ -135,6 +138,7 @@ const MODULES: { href: string; label: string }[] = [
   { href: "/configuracion", label: "Panel de control" },
   { href: "/recetas", label: "Recetas" },
   { href: "/materias-primas", label: "Materias primas" },
+  { href: "/rubros", label: "Rubros" },
   { href: "/costos", label: "Costos" },
   { href: "/reportes", label: "Reportes" },
   { href: "/calidad", label: "Calidad" },

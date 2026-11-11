@@ -1,12 +1,8 @@
 import { createRecipeAction } from "@/app/recetas/actions";
 import { ActionForm } from "@/components/action-form";
+import { RecipeTypeCategory } from "@/components/recipe-type-category";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
-import {
-  RECIPE_TYPE_LABELS,
-  getDraftScopes,
-  getRecipeCategories,
-  type RecipeType,
-} from "@/lib/recipes";
+import { getDraftScopes, getRecipeCategories } from "@/lib/recipes";
 
 // El alta de una receta (sección 13): crea el borrador y lleva a su ficha. La usan la página /recetas/nueva y
 // el modal de la lista (ADR-0036), así son siempre el mismo formulario.
@@ -48,26 +44,12 @@ export async function NewRecipeForm() {
         />
         <FormInput id="rec-alta-nombre" label="Nombre" name="name" required maxLength={120} />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormSelect id="rec-alta-tipo" label="Tipo" name="type" required defaultValue="">
-          <option value="" disabled>
-            Elegí el tipo
-          </option>
-          {(Object.keys(RECIPE_TYPE_LABELS) as RecipeType[]).map((t) => (
-            <option key={t} value={t}>
-              {RECIPE_TYPE_LABELS[t]}
-            </option>
-          ))}
-        </FormSelect>
-        <FormSelect id="rec-alta-categoria" label="Categoría" name="category_id" defaultValue="">
-          <option value="">Sin categoría</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </FormSelect>
-      </div>
+      {/* Tipo y rubro: el rubro se filtra por la clase del tipo (ADR-0038). Los dados de baja no se ofrecen. */}
+      <RecipeTypeCategory
+        categories={categories
+          .filter((c) => c.isActive)
+          .map((c) => ({ id: c.id, label: c.label, kind: c.kind }))}
+      />
       <FormTextarea
         id="rec-alta-motivo"
         label="Motivo"

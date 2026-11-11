@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { SettingsCategory } from "@/lib/catalog";
+import { isRubroClass, type Rubro } from "@/lib/rubros";
 import type {
   MediaKind,
   QuantityBasis,
@@ -96,14 +97,21 @@ export async function getDraftScopes(): Promise<ScopeOption[]> {
 // ---------------------------------------------------------------------------
 // Categorías de recetas
 // ---------------------------------------------------------------------------
-export type RecipeCategory = { id: string; groupId: string; label: string };
+// kind: la clase del rubro (sub-recetas o menú); isActive: falso si el rubro (o su madre) está dado de baja.
+export type RecipeCategory = {
+  id: string;
+  groupId: string;
+  label: string;
+  kind: "subrecipe" | "menu";
+  isActive: boolean;
+};
 
 export async function getRecipeCategories(): Promise<RecipeCategory[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .schema("recipes")
     .from("recipe_categories")
-    .select("id, group_id, parent_id, name")
+    .select("id, group_id, parent_id, name, kind, is_active")
     .order("name");
   if (error) failed("las categorías de recetas");
   const byId = new Map(data.map((c) => [c.id, c]));
@@ -114,6 +122,8 @@ export async function getRecipeCategories(): Promise<RecipeCategory[]> {
         id: c.id,
         groupId: c.group_id,
         label: parent ? `${parent.name} › ${c.name}` : c.name,
+        kind: c.kind === "menu" ? ("menu" as const) : ("subrecipe" as const),
+        isActive: c.is_active && (parent?.is_active ?? true),
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label, "es"));
@@ -149,6 +159,39 @@ export async function getRecipeSettingsCategories(groupId: string): Promise<Sett
         .sort(byName),
     }))
     .sort(byName);
+}
+
+// Rubros (ADR-0038): los del grupo con sus conteos, en una sola consulta agrupada de la base
+// (recipes.category_overview, con los permisos de la sesión). Hoy hay un solo grupo: el de los rubros
+// que la sesión ve. Sin grupo visible, null.
+export async function getRubros(): Promise<{ groupId: string; rubros: Rubro[] } | null> {
+  const supabase = await createClient();
+  const { data: groups, error: groupError } = await supabase
+    .schema("recipes")
+    .from("top_categories")
+    .select("group_id")
+    .limit(1);
+  if (groupError) failed("los rubros");
+  const groupId = groups[0]?.group_id;
+  if (!groupId) return null;
+  const { data, error } = await supabase
+    .schema("recipes")
+    .rpc("category_overview", { p_group_id: groupId });
+  if (error) failed("los rubros");
+  return {
+    groupId,
+    rubros: data
+      .filter((r) => isRubroClass(r.category_class))
+      .map((r) => ({
+        rubroClass: r.category_class,
+        id: r.id,
+        code: r.code,
+        name: r.name,
+        isActive: r.is_active,
+        uses: Number(r.uses),
+        mismatched: Number(r.mismatched),
+      })),
+  };
 }
 
 // ---------------------------------------------------------------------------

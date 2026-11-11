@@ -32,7 +32,9 @@ alter table recipes.recipe_assignments disable trigger recalculate_costs;
 
 insert into recipes.recipes (id, group_id, scope_type, code, name, recipe_type, category_id)
 select pg_temp.u(72000 + n), pg_temp.u(1), 'group', 'CARGA-REC-' || n, 'Receta de carga ' || n,
-       case when n <= 30 then 'preparation' else 'dish' end::recipes.recipe_type, pg_temp.u(1061)
+       case when n <= 30 then 'preparation' else 'dish' end::recipes.recipe_type,
+       -- Rubros (ADR-0038): las preparaciones en Salsas (sub-recetas) y los platos en Pastas (menú).
+       case when n <= 30 then pg_temp.u(1061) else pg_temp.u(1062) end
   from generate_series(1, 300) n;
 insert into recipes.recipe_versions (id, group_id, recipe_id, version_number, yield_quantity, yield_unit_id, portions)
 select pg_temp.u(73000 + n), pg_temp.u(1), pg_temp.u(72000 + n), 1, 1000, (select id from catalog.units where code = 'g'),

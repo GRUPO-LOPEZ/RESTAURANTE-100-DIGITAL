@@ -348,7 +348,8 @@ export async function createRecipeCategoryAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const fields = schemas.category.safeParse(formValues(formData));
+  // Desde la configuración solo se crean subcategorías: los rubros se crean en Rubros (ADR-0038).
+  const fields = schemas.subcategory.safeParse(formValues(formData));
   if (!fields.success) return invalid(fields.error);
   const groupId = uuid.safeParse(formData.get("groupId"));
   if (!groupId.success) return { status: "bad", message: "Falta el grupo." };
@@ -362,7 +363,7 @@ export async function createRecipeCategoryAction(
     p_reason: fields.data.reason,
     ...(parent ? { p_parent_id: parent.data } : {}),
   });
-  return categoryDone(error, "Categoría creada. Ya la podés elegir en las recetas.");
+  return categoryDone(error, "Subcategoría creada. Ya la podés elegir en las recetas.");
 }
 
 export async function renameRecipeCategoryAction(

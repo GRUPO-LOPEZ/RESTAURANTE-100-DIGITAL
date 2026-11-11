@@ -356,11 +356,19 @@ async function Recipe({
                     defaultValue={recipe.categoryId ?? ""}
                   >
                     <option value="">Sin categoría</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
-                    ))}
+                    {/* Un plato va en un rubro de menú; lo demás, en uno de sub-recetas (ADR-0038). */}
+                    {categories
+                      .filter(
+                        (c) =>
+                          c.id === recipe.categoryId ||
+                          (c.isActive &&
+                            c.kind === (recipe.type === "dish" ? "menu" : "subrecipe")),
+                      )
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.label}
+                        </option>
+                      ))}
                   </FormSelect>
                   <FormInput
                     id={`rec-${recipe.id}-sector`}
