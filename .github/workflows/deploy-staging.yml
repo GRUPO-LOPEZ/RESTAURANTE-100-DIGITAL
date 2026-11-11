@@ -38,7 +38,8 @@ jobs:
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push') ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-latest
+    # Fijo en 24.04: en ubuntu-latest (26.04) apt no resuelve los espejos y falla playwright --with-deps (11/11/2026).
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: staging
     # Leer las corridas de "Pruebas" (verificación de la corrida manual).
@@ -170,7 +171,8 @@ jobs:
   app:
     name: App en Vercel
     needs: base
-    runs-on: ubuntu-latest
+    # Fijo en 24.04: en ubuntu-latest (26.04) apt no resuelve los espejos y falla playwright --with-deps (11/11/2026).
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment:
       name: staging

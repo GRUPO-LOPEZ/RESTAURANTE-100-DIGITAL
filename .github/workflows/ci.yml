@@ -17,7 +17,8 @@ concurrency:
 jobs:
   pruebas:
     name: Lint, tipos, Vitest, pgTAP y Playwright
-    runs-on: ubuntu-latest
+    # Fijo en 24.04: en ubuntu-latest (26.04) apt no resuelve los espejos y falla playwright --with-deps (11/11/2026).
+    runs-on: ubuntu-24.04
     # Playwright corre con un solo proceso (comparten la base) y ya pasa los 35 minutos.
     timeout-minutes: 90
     env:
