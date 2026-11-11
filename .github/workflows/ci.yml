@@ -86,7 +86,9 @@ jobs:
         run: npm run test:db
 
       - name: Instalar navegador de Playwright
-        run: npx playwright install --with-deps chromium
+        # Sin --with-deps: la imagen de GitHub ya trae las librerías de Chromium y apt dependía de los espejos de
+        # Ubuntu, que el 11/11/2026 dejaron de resolverse desde las máquinas de GitHub (solo faltaban fuentes que no usamos).
+        run: npx playwright install chromium
 
       - name: Build
         run: npm run build
