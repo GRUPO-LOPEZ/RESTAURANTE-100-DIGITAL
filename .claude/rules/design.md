@@ -84,6 +84,14 @@ Cada estado sale de una regla verificable y cada tarjeta enlaza a los registros 
 - Sin degradados, sin sombras pesadas, sin fondos con imágenes ni texturas.
 - Íconos de trazo, del mismo set en todo el sistema (Lucide), **siempre con texto al lado** o con nombre accesible.
 
+## Edición directa (ADR-0039)
+
+Las reglas están en `CLAUDE.md` («Edición directa»): toggle de un clic para sí/no, botones visibles para pocas opciones, tooltip para las explicaciones, editar donde se ve y, si el cambio tiene impacto, contador + guardar en lote + auditoría. La matriz de permisos (`components/permission-matrix.tsx`) es el ejemplo:
+
+- celdas `<button>` de 44 px con `aria-pressed` y `aria-label`, con ✓ sobre `ok` y ✕ sobre `bad`;
+- la celda cambiada lleva un borde punteado;
+- el contador y «Guardar cambios» van en la barra fija de abajo, con un motivo obligatorio.
+
 ## Tres tipos de pantalla
 
 - **A. Paneles** (Inicio, Panel de control, Calidad): entender el estado en 5 segundos. Encabezado con acción a la derecha, aviso "Requiere atención", fila de 4 KPIs, comparación entre locales y tareas pendientes, tabla resumida con "Ver todas". Lo principal entra sin scroll.

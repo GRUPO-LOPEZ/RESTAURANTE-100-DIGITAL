@@ -137,7 +137,7 @@ select throws_ok($$update core.roles set requires_mfa = false where code = 'supe
   '42501', null, 'a un rol del catálogo inicial no se le saca el MFA');
 select throws_ok($$update core.permissions set deleted_at = now() where code = 'org.view'$$,
   '23514', null, 'no se borra un permiso que algún rol tiene');
-insert into core.permissions (code, module, description) values ('tmp.unused', 'tmp', 'Permiso de prueba');
+insert into core.permissions (code, module, name, description) values ('tmp.unused', 'tmp', 'Permiso de prueba', 'Permiso de prueba');
 update core.permissions set deleted_at = now() where code = 'tmp.unused';
 select throws_ok(
   $$insert into core.role_permissions (role_id, permission_id)

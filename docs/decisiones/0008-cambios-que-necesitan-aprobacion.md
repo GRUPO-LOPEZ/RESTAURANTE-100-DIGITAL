@@ -12,16 +12,16 @@ La sección 6 del prompt maestro pide que las políticas puedan exigir que aprue
 
 ## Decisión
 
-| Cambio                                                                                               | Aprobación | Quién aprueba                                                        |
-| ---------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------- |
-| Dar un rol con `approvals.decide` (Dirección General, Director de Marca, Chef Ejecutivo, Controller) | Sí         | Otra persona con `approvals.decide` en ese alcance                   |
-| Dar el rol Superadministrador                                                                        | Sí         | Dirección General                                                    |
-| Dar un rol sin `approvals.decide` (Gerente, Jefe de Cocina, Compras, Cocinero, Auditor)              | No         | Se aplica al instante, con las reglas de M6, y queda en el historial |
-| Cambiar la matriz de permisos o el catálogo de roles                                                 | Sí         | Dirección General, distinta de quien lo pide                         |
-| Traspasar un local o una marca (ADR-0007)                                                            | Sí         | Dirección General                                                    |
-| Crear o editar marcas, locales y áreas                                                               | No         | Queda en el historial                                                |
-| Bloquear una cuenta                                                                                  | No         | Inmediato, por seguridad; queda en el historial con motivo           |
-| Reactivar una cuenta bloqueada                                                                       | Sí         | Otra persona, distinta de quien la bloqueó                           |
+| Cambio                                                                                               | Aprobación                        | Quién aprueba                                                                                                                |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Dar un rol con `approvals.decide` (Dirección General, Director de Marca, Chef Ejecutivo, Controller) | Sí                                | Otra persona con `approvals.decide` en ese alcance                                                                           |
+| Dar el rol Superadministrador                                                                        | Sí                                | Dirección General                                                                                                            |
+| Dar un rol sin `approvals.decide` (Gerente, Jefe de Cocina, Compras, Cocinero, Auditor)              | No                                | Se aplica al instante, con las reglas de M6, y queda en el historial                                                         |
+| Cambiar la matriz de permisos o el catálogo de roles                                                 | Sí (la matriz, no desde ADR-0039) | Dirección General, distinta de quien lo pide. **La matriz se aplica directo desde ADR-0039** (decisión de Joaco, 2026-11-11) |
+| Traspasar un local o una marca (ADR-0007)                                                            | Sí                                | Dirección General                                                                                                            |
+| Crear o editar marcas, locales y áreas                                                               | No                                | Queda en el historial                                                                                                        |
+| Bloquear una cuenta                                                                                  | No                                | Inmediato, por seguridad; queda en el historial con motivo                                                                   |
+| Reactivar una cuenta bloqueada                                                                       | Sí                                | Otra persona, distinta de quien la bloqueó                                                                                   |
 
 Reglas comunes:
 

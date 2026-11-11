@@ -1660,6 +1660,68 @@ export type Database = {
           },
         ];
       };
+      permission_modules: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          id: string;
+          name: string;
+          sort_order: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          id?: string;
+          name: string;
+          sort_order?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "permission_modules_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "permission_modules_deleted_by_fkey";
+            columns: ["deleted_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "permission_modules_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "actors";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       permissions: {
         Row: {
           action: string;
@@ -1672,6 +1734,8 @@ export type Database = {
           id: string;
           is_sensitive: boolean;
           module: string;
+          name: string | null;
+          sort_order: number;
           updated_at: string;
           updated_by: string | null;
         };
@@ -1687,6 +1751,8 @@ export type Database = {
           id?: string;
           is_sensitive?: boolean;
           module: string;
+          name?: string | null;
+          sort_order?: number;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -1701,6 +1767,8 @@ export type Database = {
           id?: string;
           is_sensitive?: boolean;
           module?: string;
+          name?: string | null;
+          sort_order?: number;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -2284,6 +2352,10 @@ export type Database = {
         Returns: Json;
       };
       apply_governance_status: { Args: { p_request_id: string }; Returns: undefined };
+      apply_permission_matrix: {
+        Args: { p_changes: Json; p_group_id: string; p_reason: string };
+        Returns: Json;
+      };
       apply_reactivation: { Args: { p_request_id: string }; Returns: undefined };
       apply_role_assignment: { Args: { p_request_id: string }; Returns: undefined };
       apply_role_permission_change: { Args: { p_request_id: string }; Returns: undefined };

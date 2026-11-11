@@ -312,11 +312,11 @@ select is(pg_temp.r(pg_temp.u(401), format('core.revoke_role(%L, ''Prueba'')',
 do $$
 begin
   perform core.set_change_context('Permisos de prueba de recetas', 'maintenance');
-  insert into core.permissions (code, module, description) values
-    ('test_recipes.view', 'test_recipes', 'Prueba: ver recetas vigentes.'),
-    ('test_recipes.edit', 'test_recipes', 'Prueba: crear borradores y pedir revisión.'),
-    ('test_recipes.publish', 'test_recipes', 'Prueba: aprobar y publicar recetas.'),
-    ('test_recipes.view_costs', 'test_recipes', 'Prueba: ver costos.');
+  insert into core.permissions (code, module, name, description) values
+    ('test_recipes.view', 'test_recipes', 'Prueba: ver', 'Prueba: ver recetas vigentes.'),
+    ('test_recipes.edit', 'test_recipes', 'Prueba: editar', 'Prueba: crear borradores y pedir revisión.'),
+    ('test_recipes.publish', 'test_recipes', 'Prueba: publicar', 'Prueba: aprobar y publicar recetas.'),
+    ('test_recipes.view_costs', 'test_recipes', 'Prueba: costos', 'Prueba: ver costos.');
   insert into core.role_permissions (role_id, permission_id)
   select r.id, p.id from (values
       ('cook', 'test_recipes.view'), ('head_chef', 'test_recipes.view'), ('head_chef', 'test_recipes.edit'),

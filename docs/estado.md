@@ -1,8 +1,37 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-10. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). En curso: Rubros (ADR-0038, rama `feat/rubros`, PR abierto). Última actualización: 2026-11-11._
+_Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53). En curso: matriz de permisos (ADR-0039, rama `feat/matriz-permisos`); después, medidas, mermas y rendimientos._
 
-## Al retomar: Rubros del recetario (rama `feat/rubros`, PR abierto)
+## Al retomar: matriz de permisos (rama `feat/matriz-permisos`)
+
+- **Qué se hizo** (prompt de Soy «Rediseño Roles y permisos → Matriz de permisos»; ADR-0039; lista para Soy en `docs/modulos/04-matriz-de-permisos-lista-de-cambios.md`):
+  - **Base** (`20261125120000_permission_matrix.sql`):
+    - nombre corto y orden para los 40 permisos y la tabla `core.permission_modules`;
+    - `core.apply_permission_matrix`: guarda un lote todo o nada. Aplica en el momento las quitas y los permisos comunes, y deja pedidas para Dirección las altas de permisos sensibles. Con bloqueos de la matriz y de las asignaciones de roles, sin tocar roles propios, con la separación de funciones y con auditoría y motivo.
+  - **Pantalla `/roles`:** matriz con toggles de un clic, contador, motivo, Guardar/Descartar, confirmación de sensibles, celdas «pendiente», tooltip con mouse y teclado, primera columna y encabezado fijos y celular.
+  - **CLAUDE.md:** sección «Edición directa» para todo el sistema.
+- **Decisiones de Joaco (2026-11-11):**
+  - la matriz se aplica directo;
+  - después de la revisión de seguridad, «Mixto»: los permisos sensibles los aprueba Dirección. Se implementó con un pedido por permiso (el camino que ya existía). Una sola tarjeta por lote queda para otro PR, si se quiere.
+- **Pruebas (2026-11-11):**
+  - db reset desde cero; lint, tipos y formato; Vitest 288;
+  - pgTAP 2.287 en 48 archivos (nueva `260_permission_matrix`, con 38; ajustadas `040`, `050` y `060`);
+  - Playwright `roles.spec.ts` y `admin.spec.ts` (la prueba 12 del Módulo 0 ahora usa la aprobación de un rol) en celular y computadora, con axe y WCAG 2.2;
+  - capturas en 1440, 1600, 1920 y celular;
+  - la corrida completa de Playwright: 243 en verde y 3 omitidas a propósito, sin fallas (1,1 h).
+- **Revisores:**
+  - `security-auditor` no apto en la primera versión (permisos sensibles sin aprobación): resuelto con «Mixto», más las carreras, los bloqueos y los menores;
+  - `db-reviewer`: grave (`040` y `060` sin nombre en sus permisos de prueba) corregido, más los medios;
+  - `ui-reviewer`: sin graves de código; corregidos los medios y casi todos los menores.
+- **Quedó:**
+  - «Superadministrador» se corta en tres líneas en el encabezado;
+  - el código técnico en el tooltip y el rojo para «No lo tiene» (los pidió Soy);
+  - la matriz es una sola para todo el sistema (revisar si se suma otro grupo);
+  - solo entra quien tiene `permissions.manage`.
+- **Aprendido:** `next build` revisa los tipos también de `tests/e2e`. Un archivo de prueba temporal con errores de tipos hace fallar el servidor de Playwright con «webServer was not able to start».
+- **Sigue:** el PR de la matriz y después **medidas, mermas y rendimientos** (plan aprobado en `C:Usersjulym.claudeplansstreamed-giggling-snowflake.md`, PR 2).
+
+## Antes: Rubros del recetario (fusionado, PR #53)
 
 - **Qué se hizo** (pedido de Soy, `instrucciones-rubros-claude-code.md`; ADR-0038; lista para Soy en `docs/modulos/03-rubros-lista-de-cambios.md`):
   - **Base** (`20261124120000_rubros.sql`, solo aditiva): código (`MP-`, `SR-`, `PL-`) e `is_active` en las dos tablas de categorías, `kind` (sub-recetas o menú) en las de recetas, los 46 rubros de Soy por grupo, la vista `recipes.top_categories`, los conteos en una sola consulta agrupada (`recipes.category_overview`) y funciones para dar de alta, renombrar, dar de baja con destino y reactivar.

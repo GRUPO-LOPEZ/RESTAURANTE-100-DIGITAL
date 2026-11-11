@@ -362,13 +362,16 @@ const matrix = z.object({
       is_mine: z.boolean(),
     }),
   ),
+  modules: z.array(z.object({ code: z.string(), name: z.string(), sort_order: z.number() })),
   permissions: z.array(
     z.object({
       code: z.string(),
       module: z.string(),
       action: z.string(),
+      name: z.string(),
       description: z.string(),
       is_sensitive: z.boolean(),
+      sort_order: z.number(),
     }),
   ),
   grants: z.array(z.object({ role_code: z.string(), permission_code: z.string() })),
