@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53). En curso: matriz de permisos (ADR-0039, rama `feat/matriz-permisos`); después, medidas, mermas y rendimientos._
+_Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53) y el arreglo del CI más la sincronización al abrir (PR #54). En curso: matriz de permisos (ADR-0039, rama `feat/matriz-permisos`); después, medidas, mermas y rendimientos._
 
 ## Al retomar: matriz de permisos (rama `feat/matriz-permisos`)
 
@@ -29,9 +29,17 @@ _Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - la matriz es una sola para todo el sistema (revisar si se suma otro grupo);
   - solo entra quien tiene `permissions.manage`.
 - **Aprendido:** `next build` revisa los tipos también de `tests/e2e`. Un archivo de prueba temporal con errores de tipos hace fallar el servidor de Playwright con «webServer was not able to start».
-- **Sigue:** el PR de la matriz y después **medidas, mermas y rendimientos** (plan aprobado en `C:Usersjulym.claudeplansstreamed-giggling-snowflake.md`, PR 2).
+- **Sigue:** el PR de la matriz y después **medidas, mermas y rendimientos** (plan aprobado en `C:\Users\julym\.claude\plans\streamed-giggling-snowflake.md`, PR 2).
+
+## Antes: bajar cambios al abrir (fusionado, PR #54)
+
+- **Qué se hizo (2026-11-11):** hook `SessionStart` (`.claude/hooks/sync-repo.sh`) que, al abrir Claude Code en VS Code, consulta GitHub y baja los cambios nuevos de la rama actual. Nunca pisa trabajo: si hay archivos modificados sin commitear o la rama se separó de la remota, no baja nada y avisa. Sin internet, avisa y sigue.
+- **Por qué en `sh` y no en Node:** en la compu donde se armó (`E:\Luciano\...`) no hay Node ni `node_modules`. El hook solo necesita git. **Ojo:** por lo mismo, los otros hooks del proyecto (`guard`, `protect-migrations`, `pre-commit`, `format`) hoy no corren en esa compu, y tampoco `npm run test`.
+- **Pruebas:** 5 casos probados a mano con un remoto de mentira (al día, baja cambios, archivos sin commitear, ramas separadas, sin conexión) y salida JSON válida. `tests/hooks/sync-repo.test.ts` cubre lo mismo en Vitest; no se pudo correr acá por falta de Node: corre en GitHub Actions.
 
 ## Antes: Rubros del recetario (fusionado, PR #53)
+
+> > > > > > > origin/main
 
 - **Qué se hizo** (pedido de Soy, `instrucciones-rubros-claude-code.md`; ADR-0038; lista para Soy en `docs/modulos/03-rubros-lista-de-cambios.md`):
   - **Base** (`20261124120000_rubros.sql`, solo aditiva): código (`MP-`, `SR-`, `PL-`) e `is_active` en las dos tablas de categorías, `kind` (sub-recetas o menú) en las de recetas, los 46 rubros de Soy por grupo, la vista `recipes.top_categories`, los conteos en una sola consulta agrupada (`recipes.category_overview`) y funciones para dar de alta, renombrar, dar de baja con destino y reactivar.
