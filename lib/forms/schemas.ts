@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseAmount } from "@/lib/money";
+import { LINE_UNIT_CODES } from "@/lib/recipe-format";
 
 // Esquemas de los formularios (ADR-0016): los mismos en el navegador (React Hook Form, antes de
 // enviar) y en las acciones de servidor (que validan igual, porque nunca se confía en la pantalla).
@@ -15,6 +16,13 @@ const percentField = (example: string) =>
       const n = Number(v.replace(",", "."));
       return n > 0 && n <= 100;
     }, "De más de 0 a 100.");
+
+// Una merma en %: de 0 a menos de 100, con hasta dos decimales. Vacía = no se carga.
+const lossField = z
+  .string()
+  .trim()
+  .regex(/^$|^[0-9]{1,2}([.,][0-9]{1,2})?$/, "Escribí la merma en %, por ejemplo 12,5.")
+  .optional();
 
 export const reasonField = z
   .string()
@@ -416,6 +424,61 @@ export const schemas = {
         path: ["declared_no_loss"],
       },
     ),
+  // Mermas en % (ADR-0040): limpieza y descongelado, al menos una. 0 % solo declarando «No tiene merma».
+  waste: z
+    .object({
+      cleaning_loss: lossField,
+      thawing_loss: lossField,
+      declared_no_loss: z.union([z.boolean(), z.literal("on"), z.literal("")]).optional(),
+      method: z.string().trim().max(500, "Hasta 500 caracteres.").optional(),
+      reason: reasonField,
+    })
+    .refine((v) => (v.cleaning_loss ?? "") !== "" || (v.thawing_loss ?? "") !== "", {
+      message: "Cargá al menos una merma.",
+      path: ["cleaning_loss"],
+    })
+    .refine(
+      (v) =>
+        isChecked(v.declared_no_loss) ||
+        ![v.cleaning_loss, v.thawing_loss].some(
+          (x) => (x ?? "") !== "" && Number((x ?? "").replace(",", ".")) === 0,
+        ),
+      { message: "Con 0 % de merma, marcá que no tiene merma.", path: ["declared_no_loss"] },
+    ),
+  // Una unidad nueva (ADR-0040). Un envase va sin equivalencia; las demás, con cuánto vale en la base.
+  unit: z
+    .object({
+      code: z
+        .string()
+        .trim()
+        .regex(/^[a-z_]{1,20}$/, "Solo minúsculas sin acentos y guion bajo, por ejemplo cucharon."),
+      long_name: z.string().trim().min(1, "Escribí el nombre.").max(40, "Hasta 40 caracteres."),
+      abbreviation: z
+        .string()
+        .trim()
+        .min(1, "Escribí la abreviatura.")
+        .max(12, "Hasta 12 caracteres."),
+      dimension: z.enum(["mass", "volume", "count", "package"], { message: "Elegí el tipo." }),
+      factor: z
+        .string()
+        .trim()
+        .regex(/^$|^[0-9]{1,9}([.,][0-9]{1,6})?$/, "Escribí un número, por ejemplo 240.")
+        .optional(),
+      reason: reasonField,
+    })
+    .refine((v) => v.dimension === "package" || Number((v.factor ?? "").replace(",", ".")) > 0, {
+      message: "Escribí cuánto vale en la unidad base.",
+      path: ["factor"],
+    })
+    .refine((v) => v.dimension !== "package" || (v.factor ?? "") === "", {
+      message: "Un envase no tiene equivalencia fija: dejalo vacío.",
+      path: ["factor"],
+    }),
+  // Se compra congelada (ADR-0040): sí o no, con motivo (cambia el costo).
+  thawing: z.object({
+    requires_thawing: z.enum(["true", "false"], { message: "Elegí sí o no." }),
+    reason: reasonField,
+  }),
   // Recetas (etapa 2.2 A, ADR-0023). El alcance viaja como "group:<id>", "brand:<id>" o "restaurant:<id>".
   recipe: z.object({
     scope: choice("Elegí dónde se usa la receta.").regex(
@@ -441,7 +504,7 @@ export const schemas = {
   }),
   recipeDraft: z.object({
     yield_quantity: positiveNumber,
-    yield_unit: z.enum(["g", "kg", "ml", "l", "unit", "dozen"], { message: "Elegí la unidad." }),
+    yield_unit: z.enum(LINE_UNIT_CODES, { message: "Elegí la unidad." }),
     portions: z
       .string()
       .trim()
@@ -598,7 +661,7 @@ export const recipeLinesSchema = z
         sub_recipe_id: z.string().uuid("Elegí la preparación.").nullable(),
         ingredient: z.string().max(200),
         quantity: positiveNumber,
-        unit: z.enum(["g", "kg", "ml", "l", "unit", "dozen"], { message: "Elegí la unidad." }),
+        unit: z.enum(LINE_UNIT_CODES, { message: "Elegí la unidad." }),
         basis: z.enum(["purchase", "clean", "cooked", "finished"]),
         no_scale: z.boolean(),
         notes: z.string().trim().max(500, "Hasta 500 caracteres."),

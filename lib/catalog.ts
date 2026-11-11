@@ -32,7 +32,15 @@ export const SOURCE_LABELS: Record<DataSource, string> = {
   verified: "Verificado por un responsable",
 };
 
-export type Unit = { id: string; code: string; name: string; dimension: string; isBase: boolean };
+// label: «Kilogramo (kg)», como se muestra en los desplegables (ADR-0040).
+export type Unit = {
+  id: string;
+  code: string;
+  name: string;
+  label: string;
+  dimension: string;
+  isBase: boolean;
+};
 // isActive: falso si el rubro (o su madre) está dado de baja (ADR-0038): no se ofrece para cargar.
 export type Category = {
   id: string;
@@ -48,15 +56,19 @@ export async function getUnits(): Promise<Unit[]> {
   const { data, error } = await supabase
     .schema("catalog")
     .from("units")
-    .select("id, code, name, dimension, is_base")
+    .select("id, code, name, long_name, abbreviation, dimension, is_base")
     .order("dimension")
     .order("is_base", { ascending: false })
-    .order("name");
+    .order("long_name");
   if (error) failed("las unidades");
   return data.map((u) => ({
     id: u.id,
     code: u.code,
     name: u.name,
+    label:
+      u.long_name.toLowerCase() === u.abbreviation.toLowerCase()
+        ? u.long_name
+        : `${u.long_name} (${u.abbreviation})`,
     dimension: u.dimension,
     isBase: u.is_base,
   }));
@@ -193,6 +205,8 @@ export type IngredientDetail = {
   purchaseUnit: string | null;
   notes: string | null;
   isActive: boolean;
+  // Se compra congelada: su costo suma la merma de descongelado (ADR-0040).
+  requiresThawing: boolean;
   aliases: string[];
   conversions: {
     kind: ConversionKind;
@@ -242,7 +256,7 @@ export async function getIngredient(id: string): Promise<IngredientDetail | null
       catalog
         .from("ingredients")
         .select(
-          "id, group_id, code, name, category_id, recipe_unit_id, purchase_unit_id, notes, is_active",
+          "id, group_id, code, name, category_id, recipe_unit_id, purchase_unit_id, notes, is_active, requires_thawing",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -298,6 +312,7 @@ export async function getIngredient(id: string): Promise<IngredientDetail | null
     purchaseUnit: i.purchase_unit_id ? (unit.get(i.purchase_unit_id)?.name ?? null) : null,
     notes: i.notes,
     isActive: i.is_active,
+    requiresThawing: i.requires_thawing,
     aliases: (aliases.data ?? []).map((a) => a.alias),
     conversions: (conversions.data ?? []).map((c) => ({
       kind: c.kind,
@@ -381,6 +396,71 @@ export async function getYieldAlertThreshold(ingredientId: string): Promise<numb
     .rpc("yield_alert_threshold", { p_ingredient_id: ingredientId });
   if (error || data === null) return null;
   return Number(data);
+}
+
+// Las unidades con su equivalencia en la base, para la configuración (ADR-0040): «Taza (taza) = 240 ml».
+// canArchive: cargada a mano y sin usar (catalog.archive_unit; las del sistema y las base, nunca).
+export type SettingsUnit = Unit & { equivalence: string | null; canArchive: boolean };
+
+export async function getSettingsUnits(): Promise<SettingsUnit[]> {
+  const client = await createClient();
+  const [units, conversions, authors] = await Promise.all([
+    getUnits(),
+    client.schema("catalog").from("unit_conversions").select("from_unit_id, to_unit_id, factor"),
+    client.schema("catalog").from("units").select("id, created_by"),
+  ]);
+  if (conversions.error) failed("las conversiones");
+  if (authors.error) failed("las unidades");
+  const manual = new Set(authors.data.filter((u) => u.created_by !== null).map((u) => u.id));
+  const byId = new Map(units.map((u) => [u.id, u]));
+  const factor = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 6 });
+  // Solo las cargadas a mano y sin usar (catalog.unit_in_use) se pueden dar de baja.
+  const usage = await Promise.all(
+    units.map((u) =>
+      !manual.has(u.id)
+        ? Promise.resolve(true)
+        : client
+            .schema("catalog")
+            .rpc("unit_in_use", { p_unit_id: u.id })
+            .then((r) => r.error !== null || r.data !== false),
+    ),
+  );
+  return units.map((u, i) => {
+    const c = conversions.data.find((x) => x.from_unit_id === u.id);
+    const to = c ? byId.get(c.to_unit_id) : undefined;
+    return {
+      ...u,
+      equivalence: c && to ? `${factor.format(Number(c.factor))} ${to.name}` : null,
+      canArchive: usage[i] === false,
+    };
+  });
+}
+
+// Si hay un pedido pendiente para dejar de comprarla congelada (ADR-0040). Si no se puede leer, se dice que no.
+export async function getThawingChangePending(ingredientId: string): Promise<boolean> {
+  const client = await createClient();
+  const { data, error } = await client
+    .schema("catalog")
+    .rpc("thawing_change_pending", { p_ingredient_id: ingredientId });
+  return !error && data === true;
+}
+
+// Los procesos de las mermas (ADR-0040): LIMPIEZA y DESCONGELADO del grupo. Vacíos si el grupo no los tiene.
+export async function getWasteProcesses(
+  groupId: string,
+): Promise<{ cleaning: string | null; thawing: string | null }> {
+  const client = await createClient();
+  const { data, error } = await client
+    .schema("catalog")
+    .from("yield_processes")
+    .select("id, code")
+    .eq("group_id", groupId)
+    .in("code", ["LIMPIEZA", "DESCONGELADO"]);
+  if (error) failed("los procesos");
+  return {
+    cleaning: data.find((p) => p.code === "LIMPIEZA")?.id ?? null,
+    thawing: data.find((p) => p.code === "DESCONGELADO")?.id ?? null,
+  };
 }
 
 export async function getYieldProcesses(): Promise<{ id: string; name: string }[]> {

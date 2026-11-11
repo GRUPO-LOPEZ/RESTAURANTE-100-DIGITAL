@@ -66,8 +66,12 @@ test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", a
   await expect(lines.getByText("Cantidad terminada")).toBeVisible();
   // Solo unidades de peso, como su rendimiento: no se puede elegir una que la base rechace.
   await expect(lines.getByLabel("Unidad", { exact: true }).first().locator("option")).toHaveText([
-    "g",
-    "kg",
+    "Gramo (g)",
+    "Kilogramo (kg)",
+    "Miligramo (mg)",
+    "Libra (lb)",
+    "Onza (oz)",
+    "Pizca",
   ]);
   await lines.getByLabel("Cantidad", { exact: true }).first().fill("180");
   await page.getByLabel("Motivo de los cambios").first().fill("Lleva la bolognesa de la casa");

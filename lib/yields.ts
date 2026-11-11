@@ -62,3 +62,63 @@ export function cleaningDifference(measured: number, standard: number): string {
 export function parseDecimal(value: string): number {
   return Number(value.trim().replace(",", "."));
 }
+
+// ---------------------------------------------------------------------------
+// Mermas en % y rendimiento neto (ADR-0040)
+// ---------------------------------------------------------------------------
+// Una merma escrita en % ("12,5") → entre 0 y 1. Vacío → null (no se cargó). Inválida → NaN.
+export function parseLossPercent(text: string | null | undefined): number | null {
+  const value = (text ?? "").trim();
+  if (value === "") return null;
+  if (!/^[0-9]{1,2}([.,][0-9]{1,2})?$/.test(value)) return Number.NaN;
+  return Number(value.replace(",", ".")) / 100;
+}
+
+// Merma de un rendimiento (0,8 → "20,0 %").
+export function formatLoss(yieldValue: number): string {
+  return percent(1 - yieldValue);
+}
+
+export type NetYield = { value: number | null; missing: string | null };
+
+// El rendimiento neto que usa el costo: limpieza × descongelado (si se compra congelada), con 4 decimales como la base
+// (catalog.costing_yield). Nunca supone: sin la limpieza aprobada, o congelada sin el descongelado, falta el dato.
+export function netYield(input: {
+  cleaning: number | null;
+  thawing: number | null;
+  requiresThawing: boolean;
+}): NetYield {
+  if (input.cleaning === null) return { value: null, missing: "Falta la merma de limpieza." };
+  if (input.requiresThawing && input.thawing === null)
+    return { value: null, missing: "Falta la merma de descongelado." };
+  if (!input.requiresThawing) return { value: input.cleaning, missing: null };
+  // En diezmilésimos enteros, como round(…, 4) de la base: con decimales de coma flotante, los empates redondean
+  // distinto (0,5035 × 0,9).
+  const a = Math.round(input.cleaning * 10000);
+  const b = Math.round((input.thawing ?? 1) * 10000);
+  return { value: Math.round((a * b) / 10000) / 10000, missing: null };
+}
+
+// La vista previa del formulario de mermas: con lo que se escribe y, si falta, lo que ya está aprobado.
+export function previewNetYield(input: {
+  cleaningLoss: string;
+  thawingLoss: string;
+  requiresThawing: boolean;
+  approvedCleaning: number | null;
+  approvedThawing: number | null;
+}): NetYield {
+  const cleaning = parseLossPercent(input.cleaningLoss);
+  const thawing = parseLossPercent(input.thawingLoss);
+  if (Number.isNaN(cleaning) || Number.isNaN(thawing))
+    return { value: null, missing: "Revisá los porcentajes." };
+  return netYield({
+    cleaning: cleaning === null ? input.approvedCleaning : 1 - cleaning,
+    thawing: thawing === null ? input.approvedThawing : 1 - thawing,
+    requiresThawing: input.requiresThawing,
+  });
+}
+
+// "Rinde 72,0 % neto".
+export function formatNetYield(value: number): string {
+  return `Rinde ${percent(value)} neto`;
+}

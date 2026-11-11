@@ -6,12 +6,14 @@ import { Suspense, cache } from "react";
 import {
   createProductAction,
   createSupplierAction,
+  proposeWasteAction,
   proposeYieldAction,
   recordYieldTestAction,
   setActiveAction,
   setAliasesAction,
   setAllergenAction,
   setConversionAction,
+  setThawingAction,
   updateIngredientAction,
 } from "@/app/materias-primas/actions";
 import { ActionForm } from "@/components/action-form";
@@ -19,6 +21,11 @@ import { AppShell, Loading } from "@/components/app-shell";
 import { Disclosure } from "@/components/disclosure";
 import { Badge, type BadgeStatus } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { Metric } from "@/components/ui/metric";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Notice } from "@/components/ui/notice";
+import { ToggleField } from "@/components/ui/toggle-field";
+import { WastePreview } from "@/components/waste-preview";
 import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { Tabs } from "@/components/ui/tabs";
 import {
@@ -28,6 +35,8 @@ import {
   getIngredient,
   getSuppliers,
   getUnits,
+  getThawingChangePending,
+  getWasteProcesses,
   getYieldProcesses,
   getYieldRestaurants,
   getIngredientUsage,
@@ -36,15 +45,21 @@ import {
   type AllergenStatus,
   type IngredientDetail,
   type IngredientUsage,
+  type Unit,
   type YieldRow,
 } from "@/lib/catalog";
 import { UUID, first, formatDate } from "@/lib/data";
 import { getMenus, requireMenu } from "@/lib/auth/session";
+import { lineStatusLabel } from "@/lib/cost-labels";
+import { getIngredientNetCost, resolveCostPlace, type IngredientNetCost } from "@/lib/costs";
+import { formatMoney } from "@/lib/money";
 import {
   cleaningDifference,
   describeCooking,
   exceedsYieldAlert,
   formatCleaning,
+  formatLoss,
+  netYield,
 } from "@/lib/yields";
 import { BackLink } from "@/components/back-link";
 
@@ -127,6 +142,32 @@ const ALLERGEN_BADGE: Record<AllergenStatus, BadgeStatus> = {
 
 const number = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 6 });
 
+// Las unidades del catálogo, agrupadas por tipo y como «Kilogramo (kg)» (ADR-0040).
+const UNIT_GROUPS: [string, string][] = [
+  ["mass", "Peso"],
+  ["volume", "Volumen"],
+  ["count", "Unidades"],
+  ["package", "Envases"],
+];
+function UnitOptions({ units }: { units: Unit[] }) {
+  return (
+    <>
+      {UNIT_GROUPS.map(([dimension, label]) => {
+        const list = units.filter((u) => u.dimension === dimension);
+        return list.length === 0 ? null : (
+          <optgroup key={dimension} label={label}>
+            {list.map((u) => (
+              <option key={u.code} value={u.code}>
+                {u.label}
+              </option>
+            ))}
+          </optgroup>
+        );
+      })}
+    </>
+  );
+}
+
 function SourceOptions() {
   return (
     <>
@@ -149,7 +190,7 @@ async function Ingredient({
   params: PageProps<"/materias-primas/[id]">["params"];
   searchParams: PageProps<"/materias-primas/[id]">["searchParams"];
 }) {
-  await requireMenu("catalog");
+  const session = await requireMenu("catalog");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const [ingredient, menus, query] = await Promise.all([
@@ -189,6 +230,23 @@ async function Ingredient({
     show("rendimientos") ? getYieldAlertThreshold(ingredient.id) : Promise.resolve(null),
     show("uso") ? getIngredientUsage(ingredient.id) : none,
   ]);
+  // Mermas (ADR-0040): los procesos de limpieza y descongelado, y el costo neto en el local de arriba.
+  const [wasteProcesses, thawingPending] = show("rendimientos")
+    ? await Promise.all([
+        getWasteProcesses(ingredient.groupId),
+        ingredient.requiresThawing ? getThawingChangePending(ingredient.id) : false,
+      ])
+    : [{ cleaning: null, thawing: null }, false];
+  const costPlace =
+    show("rendimientos") && menus.costs ? (await resolveCostPlace(session.user_id)).place : null;
+  const netCost = costPlace
+    ? await getIngredientNetCost(
+        ingredient.id,
+        costPlace.id,
+        ingredient.unitCode,
+        wasteProcesses.cleaning,
+      )
+    : null;
 
   return (
     <>
@@ -339,6 +397,18 @@ async function Ingredient({
         />
       ) : null}
       {show("rendimientos") ? (
+        <Waste
+          ingredient={ingredient}
+          rows={yieldRows}
+          processes={wasteProcesses}
+          canManage={canManage}
+          canRecord={canRecordYields}
+          netCost={netCost}
+          place={costPlace?.name ?? null}
+          thawingPending={thawingPending}
+        />
+      ) : null}
+      {show("rendimientos") ? (
         <Yields
           ingredient={ingredient}
           rows={yieldRows}
@@ -455,11 +525,7 @@ function Products({
                   <option value="" disabled>
                     Elegí cómo viene
                   </option>
-                  {units.map((u) => (
-                    <option key={u.code} value={u.code}>
-                      {u.name}
-                    </option>
-                  ))}
+                  <UnitOptions units={units} />
                 </FormSelect>
                 <FormInput
                   id="mp-units_per_package"
@@ -490,13 +556,7 @@ function Products({
                   <option value="" disabled>
                     Elegí la unidad
                   </option>
-                  {units
-                    .filter((u) => u.dimension !== "package")
-                    .map((u) => (
-                      <option key={u.code} value={u.code}>
-                        {u.name}
-                      </option>
-                    ))}
+                  <UnitOptions units={units.filter((u) => u.dimension !== "package")} />
                 </FormSelect>
                 <FormSelect
                   id="mp-supplier_id"
@@ -721,6 +781,198 @@ function Allergens({
             </div>
             <Reason id="mp-motivo-alergeno" />
           </ActionForm>
+        </Disclosure>
+      ) : null}
+    </Card>
+  );
+}
+
+// Mermas y rendimiento neto (ADR-0040, pedido de Soy): la merma de limpieza y la de descongelado en %, el rendimiento
+// neto y el costo neto. Son los estándares de LIMPIEZA y DESCONGELADO (generales: sin corte ni proveedor), con la misma
+// aprobación que cualquier rendimiento. Sin dato, «—» y el motivo: nunca 0 % ni 100 %.
+function Waste({
+  ingredient,
+  rows,
+  processes,
+  canManage,
+  canRecord,
+  netCost,
+  place,
+  thawingPending,
+}: {
+  ingredient: IngredientDetail;
+  rows: YieldRow[];
+  processes: { cleaning: string | null; thawing: string | null };
+  canManage: boolean;
+  canRecord: boolean;
+  netCost: IngredientNetCost | null;
+  place: string | null;
+  thawingPending: boolean;
+}) {
+  const general = (processId: string | null) =>
+    rows.find((r) => r.processId === processId && r.cut === null && r.supplier === null);
+  const cleaning = general(processes.cleaning);
+  const thawing = general(processes.thawing);
+  const thaws = ingredient.requiresThawing;
+  const net = netYield({
+    cleaning: cleaning?.standardCleaning ?? null,
+    thawing: thawing?.standardCleaning ?? null,
+    requiresThawing: thaws,
+  });
+  const pending = (cleaning?.pendingProposals ?? 0) + (thawing?.pendingProposals ?? 0);
+  // Sin los dos procesos, la propuesta fallaría: se avisa y no se ofrece el formulario.
+  const missingProcesses = [
+    processes.cleaning === null ? "limpieza (LIMPIEZA)" : null,
+    processes.thawing === null ? "descongelado (DESCONGELADO)" : null,
+  ].filter((p): p is string => p !== null);
+  const approved = { status: "ok" as const, statusLabel: "Aprobada", emptyLabel: "Sin datos" };
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <CardTitle>Mermas y rendimiento neto</CardTitle>
+          <InfoTip label="mermas y rendimiento neto">
+            Lo que se pierde al limpiar y al descongelar. El costo usa siempre lo aprobado por un
+            Chef de todo el grupo.
+          </InfoTip>
+        </div>
+        {pending > 0 ? (
+          <Badge status="review">
+            {pending === 1 ? "1 merma en revisión" : `${pending} mermas en revisión`}
+          </Badge>
+        ) : null}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 desk:grid-cols-4">
+        <Metric
+          label="Merma de limpieza"
+          value={cleaning?.standardCleaning != null ? formatLoss(cleaning.standardCleaning) : null}
+          missingReason="Sin merma de limpieza aprobada."
+          {...approved}
+        />
+        {thaws ? (
+          <Metric
+            label="Merma de descongelado"
+            value={thawing?.standardCleaning != null ? formatLoss(thawing.standardCleaning) : null}
+            missingReason="Se compra congelada y falta su merma aprobada."
+            {...approved}
+          />
+        ) : (
+          <Metric
+            label="Merma de descongelado"
+            value="—"
+            status="none"
+            statusLabel="No aplica"
+            comparison="No se compra congelada."
+            emptyLabel="Sin datos"
+          />
+        )}
+        <Metric
+          label="Rinde neto"
+          value={net.value !== null ? formatCleaning(net.value) : null}
+          missingReason={net.missing ?? undefined}
+          status="ok"
+          statusLabel="Calculado"
+          emptyLabel="Sin datos"
+        />
+        <Metric
+          label={netCost ? `Costo neto ${netCost.per}` : "Costo neto"}
+          value={netCost?.net != null ? formatMoney(netCost.net) : null}
+          missingReason={
+            !place
+              ? "Elegí un local arriba para ver el costo."
+              : !netCost
+                ? "No ves los precios de este local."
+                : (lineStatusLabel(netCost.netStatus) ?? "Falta un dato.")
+          }
+          period={place ?? undefined}
+          // Un precio vencido va en «Atención» con su fecha; uno heredado de la marca o del grupo, en «Información».
+          stale={netCost?.stale ?? false}
+          asOf={netCost?.validFrom ? formatDate(netCost.validFrom) : null}
+          status={netCost?.inherited ? "info" : "ok"}
+          statusLabel={netCost?.inherited ? "Precio heredado" : "Al día"}
+          emptyLabel="Sin datos"
+        />
+      </div>
+      {canManage ? (
+        <ActionForm action={setThawingAction} schema="thawing" submitLabel="Guardar">
+          <input type="hidden" name="ingredientId" value={ingredient.id} />
+          <div className="flex items-center gap-1">
+            <ToggleField
+              // Con un pedido pendiente vuelve a mostrar lo vigente (sigue congelada hasta que lo aprueben).
+              key={`${thaws}-${thawingPending}`}
+              id="mp-congelada"
+              name="requires_thawing"
+              label="¿Se compra congelada?"
+              defaultValue={thaws}
+            />
+            <InfoTip label="se compra congelada">
+              Si se compra congelada, su costo suma la merma de descongelado aprobada. Dejar de
+              comprarla congelada baja el costo: lo aprueba un Chef de todo el grupo.
+            </InfoTip>
+          </div>
+          {thawingPending ? (
+            <Badge status="review" className="self-start whitespace-normal">
+              Pedido pendiente: dejar de comprarla congelada
+            </Badge>
+          ) : null}
+          <Reason id="mp-motivo-congelada" />
+        </ActionForm>
+      ) : null}
+      {canRecord ? (
+        <Disclosure summary="Proponer mermas">
+          {missingProcesses.length > 0 ? (
+            <Notice status="warn">
+              Al grupo le falta el proceso de {missingProcesses.join(" y el de ")}. Lo crea un Chef
+              de todo el grupo en la configuración del catálogo.
+            </Notice>
+          ) : (
+            <ActionForm action={proposeWasteAction} schema="waste" submitLabel="Proponer mermas">
+              <p className="text-base text-ink">
+                No cambia el costo hasta que la apruebe un Chef de todo el grupo, distinto de vos.
+              </p>
+              <input type="hidden" name="ingredientId" value={ingredient.id} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormInput
+                  id="mp-merma-limpieza"
+                  label="Merma de limpieza (%)"
+                  hint="Lo que se descarta al limpiar: 20 si de 1 kg quedan 800 g."
+                  name="cleaning_loss"
+                  inputMode="decimal"
+                />
+                <FormInput
+                  id="mp-merma-descongelado"
+                  label="Merma de descongelado (%)"
+                  hint={
+                    thaws
+                      ? "El agua que pierde al descongelarse."
+                      : "Solo cuenta si se compra congelada."
+                  }
+                  name="thawing_loss"
+                  inputMode="decimal"
+                />
+              </div>
+              <WastePreview
+                requiresThawing={thaws}
+                approvedCleaning={cleaning?.standardCleaning ?? null}
+                approvedThawing={thawing?.standardCleaning ?? null}
+                grossCost={netCost?.gross ?? null}
+                per={netCost?.per ?? ""}
+              />
+              <FormCheckbox
+                id="mp-merma-sin"
+                name="declared_no_loss"
+                label="No tiene merma"
+                hint="Obligatorio para cargar 0 %: el sistema nunca supone que no hay merma."
+              />
+              <FormTextarea
+                id="mp-merma-metodo"
+                label="Cómo se midió"
+                name="method"
+                maxLength={500}
+              />
+              <Reason id="mp-motivo-merma" />
+            </ActionForm>
+          )}
         </Disclosure>
       ) : null}
     </Card>

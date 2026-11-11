@@ -1,8 +1,44 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53) y el arreglo del CI más la sincronización al abrir (PR #54). En curso: matriz de permisos (ADR-0039, rama `feat/matriz-permisos`); después, medidas, mermas y rendimientos._
+_Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). En curso: medidas, mermas y rendimientos (ADR-0040, rama `feat/mermas-rendimientos`)._
 
-## Al retomar: matriz de permisos (rama `feat/matriz-permisos`)
+## Al retomar: medidas, mermas y rendimientos (rama `feat/mermas-rendimientos`)
+
+- **Qué se hizo** (pedido de Soy; ADR-0040; lista para Soy en `docs/modulos/05-mermas-y-rendimientos-lista-de-cambios.md`):
+  - **Base** (`20261126120000_units_and_waste.sql`):
+    - unidades con nombre largo y abreviatura, y 10 medidas de recetario;
+    - alta y baja de unidades;
+    - «se compra congelada» (`requires_thawing`) y el proceso DESCONGELADO, que el motor suma al rendimiento (`catalog.costing_yield` y `catalog.thawing_factor`, también en escenarios);
+    - mermas en % con aprobación (`catalog.propose_waste`);
+    - merma de cocción informativa (`recipes.cooking_loss`).
+  - **Pantallas:**
+    - en la ficha de la materia prima, la tarjeta «Mermas y rendimiento neto»: 4 indicadores, interruptor de congelada y propuesta con vista previa;
+    - en la ficha de la receta, el rendimiento final, el costo por kg y la merma de cocción;
+    - Unidades en la configuración del catálogo;
+    - desplegables «Kilogramo (kg)».
+  - **Respaldo** de la base local antes de empezar: el archivo `respaldo-antes-mermas-2026-11-11.sql` de la carpeta temporal de la sesión.
+- **Decisiones de Joaco (2026-11-11):**
+  - mermas sobre el estándar aprobado;
+  - nunca suponer;
+  - rendimiento final obligatorio;
+  - después de las revisiones: dejar de comprar congelada pide aprobación (marcar es directo), y las unidades las crea Compras, con baja para las cargadas a mano que nada usó.
+- **El costo de lo cargado no cambia:** las 198 líneas del seed dan igual antes y después de la migración, y 270 lo prueba.
+- **Pruebas (2026-11-11):**
+  - db reset desde cero; tipos regenerados; lint, tipos y formato;
+  - Vitest 306;
+  - pgTAP 2.355 en 49 archivos (nueva `270_units_and_waste`, con 68; ajustadas `050` y `140`);
+  - Playwright `mermas.spec.ts` (8) en celular y computadora, con axe WCAG 2.2;
+  - Playwright completo: 246 pasaron, 3 omitidas y 5 fallaron en la primera vuelta. Cuatro eran pruebas viejas que chocaban con lo nuevo: «Limpieza (%)» ahora coincide con «Merma de limpieza (%)» en `rendimientos.spec`, y la lista de unidades de peso en `subrecetas.spec` tiene nombres largos y 6 opciones. Se ajustó el localizador y la lista esperada, y siguen controlando lo mismo (solo unidades de peso). La quinta, `precios.spec` en computadora, falló por tiempo. Las tres specs se corrieron de nuevo: 26 de 26.
+- **Revisores:** seguridad apto; base y diseño sin graves. Los medios están resueltos o documentados en el ADR-0040.
+- **Quedó:**
+  - las unidades de las recetas siguen en `lib/recipe-format.ts`: una unidad nueva llega a las recetas con una actualización;
+  - la foto del costo no guarda el perfil de descongelado aparte;
+  - el costo neto de la ficha se muestra con `menus.costs` y la base pide `prices.view`.
+- **Aprendido:**
+  - una función `security invoker` nueva tiene que probarse con la sesión de un usuario: `recipes.cooking_loss` usaba `recipes.unit_to_base` (interna) y solo andaba como superusuario;
+  - en los scripts de Node, `split/join` en vez de `replace`: un `$$` del texto nuevo se convierte en `$`.
+
+## Antes: matriz de permisos (fusionado, PR #56)
 
 - **Qué se hizo** (prompt de Soy «Rediseño Roles y permisos → Matriz de permisos»; ADR-0039; lista para Soy en `docs/modulos/04-matriz-de-permisos-lista-de-cambios.md`):
   - **Base** (`20261125120000_permission_matrix.sql`):

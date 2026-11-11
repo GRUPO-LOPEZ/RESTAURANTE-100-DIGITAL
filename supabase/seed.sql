@@ -330,7 +330,9 @@ insert into catalog.yield_processes (id, group_id, code, name) values
   ('00000000-0000-4000-8000-000000000962', '00000000-0000-4000-8000-000000000001', 'LIMPIEZA', 'Limpieza'),
   ('00000000-0000-4000-8000-000000000963', '00000000-0000-4000-8000-000000000001', 'DESGRASADO', 'Desgrasado'),
   ('00000000-0000-4000-8000-000000000964', '00000000-0000-4000-8000-000000000001', 'DESHUESADO', 'Deshuesado'),
-  ('00000000-0000-4000-8000-000000000965', '00000000-0000-4000-8000-000000000001', 'HERVIDO', 'Hervido');
+  ('00000000-0000-4000-8000-000000000965', '00000000-0000-4000-8000-000000000001', 'HERVIDO', 'Hervido'),
+  -- Descongelado (ADR-0040): ninguna materia prima del seed se compra congelada, así el costo de prueba no cambia.
+  ('00000000-0000-4000-8000-000000000966', '00000000-0000-4000-8000-000000000001', 'DESCONGELADO', 'Descongelado');
 
 insert into catalog.ingredient_yield_profiles (group_id, ingredient_id, process_id, cleaning_yield, cooking_factor, method,
                                                status, approved_by, approved_at)

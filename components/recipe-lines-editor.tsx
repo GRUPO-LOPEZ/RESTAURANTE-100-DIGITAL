@@ -20,6 +20,8 @@ import {
   LINE_UNITS,
   lineUnitForYield,
   unitDimension,
+  unitGroups,
+  unitOptionLabel,
   type QuantityBasis,
 } from "@/lib/recipe-format";
 import type { RecipeLine } from "@/lib/recipes";
@@ -254,13 +256,14 @@ export function RecipeLinesEditor({
                     onChange={(e) => update(line.key, { unit: e.target.value as Line["unit"] })}
                   >
                     {/* Una preparación solo se mide como su rendimiento (peso, volumen o unidades). */}
-                    {LINE_UNITS.filter(
-                      (u) =>
-                        !line.sub_recipe_id || unitDimension(u.code) === unitDimension(line.unit),
-                    ).map((u) => (
-                      <option key={u.code} value={u.code}>
-                        {u.label}
-                      </option>
+                    {unitGroups(line.sub_recipe_id ? unitDimension(line.unit) : null).map((g) => (
+                      <optgroup key={g.dimension} label={g.label}>
+                        {g.units.map((u) => (
+                          <option key={u.code} value={u.code}>
+                            {unitOptionLabel(u.code)}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </Select>
                 </Field>

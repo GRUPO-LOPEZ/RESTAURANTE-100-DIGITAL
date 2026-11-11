@@ -58,28 +58,67 @@ export const ALLERGEN_LABELS: Record<string, string> = {
   not_verified: "No verificado",
 };
 
-// Unidades que se usan en las líneas de una receta (las de envase no: no tienen contenido fijo).
+// Unidades que se usan en las líneas y el rendimiento de una receta (las de envase no: no tienen contenido fijo).
+// Son las de catalog.units (migraciones 20261028120100 y 20261126120000, ADR-0040): la base hace las conversiones;
+// acá van el código, la abreviatura (label, la que acompaña a las cantidades), el nombre largo y la dimensión.
+// Los desplegables muestran «Kilogramo (kg)» (unitOptionLabel), agrupados por dimensión.
 export const LINE_UNITS = [
-  { code: "g", label: "g" },
-  { code: "kg", label: "kg" },
-  { code: "ml", label: "ml" },
-  { code: "l", label: "l" },
-  { code: "unit", label: "unidad" },
-  { code: "dozen", label: "docena" },
+  { code: "g", label: "g", name: "Gramo", dimension: "mass" },
+  { code: "kg", label: "kg", name: "Kilogramo", dimension: "mass" },
+  { code: "mg", label: "mg", name: "Miligramo", dimension: "mass" },
+  { code: "lb", label: "lb", name: "Libra", dimension: "mass" },
+  { code: "oz", label: "oz", name: "Onza", dimension: "mass" },
+  { code: "pinch", label: "pizca", name: "Pizca", dimension: "mass" },
+  { code: "ml", label: "ml", name: "Mililitro", dimension: "volume" },
+  { code: "l", label: "l", name: "Litro", dimension: "volume" },
+  { code: "cc", label: "cc", name: "Centímetro cúbico", dimension: "volume" },
+  { code: "cup", label: "taza", name: "Taza", dimension: "volume" },
+  { code: "tbsp", label: "cda", name: "Cucharada", dimension: "volume" },
+  { code: "tsp", label: "cdta", name: "Cucharadita", dimension: "volume" },
+  { code: "fl_oz", label: "fl oz", name: "Onza líquida", dimension: "volume" },
+  { code: "unit", label: "unidad", name: "Unidad", dimension: "count" },
+  { code: "dozen", label: "docena", name: "Docena", dimension: "count" },
+  { code: "portion", label: "porción", name: "Porción", dimension: "count" },
 ] as const;
+
+export type LineUnit = (typeof LINE_UNITS)[number]["code"];
+export type UnitDimension = (typeof LINE_UNITS)[number]["dimension"];
+// Los códigos, para los esquemas de Zod (el mismo en el navegador y en el servidor).
+export const LINE_UNIT_CODES = LINE_UNITS.map((u) => u.code) as [LineUnit, ...LineUnit[]];
+
+export const DIMENSION_LABELS: Record<UnitDimension, string> = {
+  mass: "Peso",
+  volume: "Volumen",
+  count: "Unidades",
+};
+
+// «Kilogramo (kg)». Una unidad desconocida se muestra con su código.
+export function unitOptionLabel(code: string): string {
+  const u = LINE_UNITS.find((x) => x.code === code);
+  if (!u) return code;
+  return u.name.toLowerCase() === u.label ? u.name : `${u.name} (${u.label})`;
+}
+
+// Las unidades agrupadas por dimensión, para los <optgroup> de los desplegables.
+export function unitGroups(
+  only?: UnitDimension | null,
+): { dimension: UnitDimension; label: string; units: (typeof LINE_UNITS)[number][] }[] {
+  return (["mass", "volume", "count"] as const)
+    .filter((d) => !only || d === only)
+    .map((d) => ({
+      dimension: d,
+      label: DIMENSION_LABELS[d],
+      units: LINE_UNITS.filter((u) => u.dimension === d),
+    }));
+}
 
 // La unidad sugerida para una línea de preparación: la del rendimiento, en la unidad chica de su
 // dimensión (una salsa que rinde kilos se usa en gramos). Sin rendimiento, gramos.
-export function lineUnitForYield(yieldUnit: string | null): (typeof LINE_UNITS)[number]["code"] {
-  switch (yieldUnit) {
-    case "kg":
-    case "g":
-      return "g";
-    case "l":
-    case "ml":
+export function lineUnitForYield(yieldUnit: string | null): LineUnit {
+  switch (unitDimension(yieldUnit ?? "")) {
+    case "volume":
       return "ml";
-    case "unit":
-    case "dozen":
+    case "count":
       return "unit";
     default:
       return "g";
@@ -87,11 +126,8 @@ export function lineUnitForYield(yieldUnit: string | null): (typeof LINE_UNITS)[
 }
 
 // De qué se trata una unidad de línea: peso, volumen o unidades (se convierten solo dentro de su tipo).
-export function unitDimension(unit: string): "mass" | "volume" | "count" | null {
-  if (unit === "g" || unit === "kg") return "mass";
-  if (unit === "ml" || unit === "l") return "volume";
-  if (unit === "unit" || unit === "dozen") return "count";
-  return null;
+export function unitDimension(unit: string): UnitDimension | null {
+  return LINE_UNITS.find((u) => u.code === unit)?.dimension ?? null;
 }
 
 // Formatos para la cocina: "1,5 kg", "1 h 30 min".

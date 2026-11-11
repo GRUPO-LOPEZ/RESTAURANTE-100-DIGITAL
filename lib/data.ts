@@ -696,6 +696,7 @@ export const FIELD_LABELS: Record<string, string> = {
   cleaning_yield: "Rendimiento de limpieza",
   cooking_factor: "Factor de cocción",
   declared_no_loss: "Declarado sin merma",
+  requires_thawing: "Se compra congelada",
   method: "Método",
   tested_on: "Fecha del ensayo",
   samples: "Muestras",

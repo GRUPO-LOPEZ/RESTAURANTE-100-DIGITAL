@@ -868,6 +868,7 @@ export type Database = {
           notes: string | null;
           purchase_unit_id: string | null;
           recipe_unit_id: string;
+          requires_thawing: boolean;
           storage_unit_id: string | null;
           updated_at: string;
           updated_by: string | null;
@@ -888,6 +889,7 @@ export type Database = {
           notes?: string | null;
           purchase_unit_id?: string | null;
           recipe_unit_id: string;
+          requires_thawing?: boolean;
           storage_unit_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
@@ -907,6 +909,7 @@ export type Database = {
           notes?: string | null;
           purchase_unit_id?: string | null;
           recipe_unit_id?: string;
+          requires_thawing?: boolean;
           storage_unit_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
@@ -1154,6 +1157,7 @@ export type Database = {
       };
       units: {
         Row: {
+          abbreviation: string;
           code: string;
           created_at: string;
           created_by: string | null;
@@ -1162,12 +1166,14 @@ export type Database = {
           dimension: Database["catalog"]["Enums"]["dimension"];
           id: string;
           is_base: boolean;
+          long_name: string;
           name: string;
           updated_at: string;
           updated_by: string | null;
         };
         ComputedFields: never;
         Insert: {
+          abbreviation: string;
           code: string;
           created_at?: string;
           created_by?: string | null;
@@ -1176,11 +1182,13 @@ export type Database = {
           dimension: Database["catalog"]["Enums"]["dimension"];
           id?: string;
           is_base?: boolean;
+          long_name: string;
           name: string;
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: {
+          abbreviation?: string;
           code?: string;
           created_at?: string;
           created_by?: string | null;
@@ -1189,6 +1197,7 @@ export type Database = {
           dimension?: Database["catalog"]["Enums"]["dimension"];
           id?: string;
           is_base?: boolean;
+          long_name?: string;
           name?: string;
           updated_at?: string;
           updated_by?: string | null;
@@ -1240,6 +1249,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      apply_requires_thawing: { Args: { p_request_id: string }; Returns: undefined };
       apply_yield_profile: { Args: { p_request_id: string }; Returns: undefined };
       approved_yield: {
         Args: {
@@ -1256,6 +1266,10 @@ export type Database = {
         }[];
       };
       archive_category: { Args: { p_id: string; p_reason: string }; Returns: undefined };
+      archive_unit: {
+        Args: { p_group_id: string; p_reason: string; p_unit_id: string };
+        Returns: undefined;
+      };
       archive_yield_process: { Args: { p_id: string; p_reason: string }; Returns: undefined };
       category_first_word: { Args: { p_name: string }; Returns: string };
       category_group: { Args: { p_category_id: string }; Returns: string };
@@ -1281,6 +1295,20 @@ export type Database = {
         Returns: {
           quantity: number;
           status: string;
+        }[];
+      };
+      costing_yield: {
+        Args: {
+          p_cut: string;
+          p_ingredient_id: string;
+          p_process_id: string;
+          p_supplier_id: string;
+        };
+        Returns: {
+          cleaning_yield: number;
+          cooking_factor: number;
+          profile_id: string;
+          thawing_yield: number;
         }[];
       };
       create_category: {
@@ -1323,6 +1351,18 @@ export type Database = {
         };
         Returns: string;
       };
+      create_unit: {
+        Args: {
+          p_abbreviation: string;
+          p_code: string;
+          p_dimension: Database["catalog"]["Enums"]["dimension"];
+          p_factor?: number;
+          p_group_id: string;
+          p_long_name: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
       create_yield_process: {
         Args: { p_code: string; p_group_id: string; p_name: string; p_reason: string };
         Returns: string;
@@ -1354,6 +1394,17 @@ export type Database = {
           process_id: string;
           standards: number;
         }[];
+      };
+      propose_waste: {
+        Args: {
+          p_cleaning_loss?: number;
+          p_declared_no_loss: boolean;
+          p_ingredient_id: string;
+          p_method: string;
+          p_reason: string;
+          p_thawing_loss?: number;
+        };
+        Returns: Json;
       };
       propose_yield_standard: {
         Args: {
@@ -1428,6 +1479,10 @@ export type Database = {
         Args: { p_active: boolean; p_id: string; p_reason: string };
         Returns: undefined;
       };
+      set_requires_thawing: {
+        Args: { p_ingredient_id: string; p_reason: string; p_value: boolean };
+        Returns: Json;
+      };
       set_unit_conversion: {
         Args: {
           p_factor: number;
@@ -1455,6 +1510,11 @@ export type Database = {
           status: string;
         }[];
       };
+      thawing_change_pending: { Args: { p_ingredient_id: string }; Returns: boolean };
+      thawing_factor: {
+        Args: { p_ingredient_id: string; p_process_id: string; p_supplier_id: string };
+        Returns: number;
+      };
       to_base_quantity: {
         Args: { p_ingredient_id: string; p_quantity: number; p_unit_id: string };
         Returns: {
@@ -1464,6 +1524,7 @@ export type Database = {
         }[];
       };
       unit_id: { Args: { p_code: string }; Returns: string };
+      unit_in_use: { Args: { p_unit_id: string }; Returns: boolean };
       update_ingredient: {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
@@ -5649,6 +5710,15 @@ export type Database = {
           new_quantity: number;
           old_quantity: number;
           unit: string;
+        }[];
+      };
+      cooking_loss: {
+        Args: { p_version_id: string };
+        Returns: {
+          factor: number;
+          input_grams: number;
+          output_grams: number;
+          status: string;
         }[];
       };
       copy_version_content: { Args: { p_from: string; p_to: string }; Returns: undefined };

@@ -48,7 +48,7 @@ test("el Chef propone un estándar y el Chef del grupo lo aprueba", async ({ pag
   await openAction(page, "Proponer un estándar nuevo");
   await page.locator("#mp-est-proceso").selectOption({ label: "Pelado" });
   await page.locator("#mp-est-corte").fill(cut);
-  await page.getByLabel("Limpieza (%)").fill("85");
+  await page.locator("#mp-est-limpieza").fill("85");
   await page.locator("#mp-motivo-estandar").fill("Propuesta de prueba automática");
   await page.getByRole("button", { name: "Proponer estándar" }).click();
   await expect(notice(page)).toContainText(

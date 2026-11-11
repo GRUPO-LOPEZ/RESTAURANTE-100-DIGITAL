@@ -655,6 +655,28 @@ export async function getVersionSummary(versionId: string): Promise<{
   };
 }
 
+// Merma de cocción informativa (recipes.cooking_loss, ADR-0040): peso terminado sobre el peso de las líneas, en
+// gramos. Sin todo en peso, factor vacío y el motivo.
+const COOKING_LOSS_MISSING: Record<string, string> = {
+  missing_yield: "Falta el rendimiento.",
+  yield_not_weight: "Rinde en volumen o en unidades: se calcula solo en peso.",
+  no_lines: "La receta no tiene componentes.",
+  missing_conversion: "Falta pasar algún componente a gramos (densidad o peso por unidad).",
+};
+export type CookingLoss = { factor: number | null; missing: string | null };
+
+export async function getCookingLoss(versionId: string): Promise<CookingLoss> {
+  const client = await createClient();
+  const { data, error } = await client
+    .schema("recipes")
+    .rpc("cooking_loss", { p_version_id: versionId });
+  if (error) failed("la merma de cocción");
+  const row = data?.[0];
+  if (!row || row.factor === null)
+    return { factor: null, missing: COOKING_LOSS_MISSING[row?.status ?? ""] ?? "Falta un dato." };
+  return { factor: Number(row.factor), missing: null };
+}
+
 export type DiffRow = {
   change: string;
   ingredient: string;
