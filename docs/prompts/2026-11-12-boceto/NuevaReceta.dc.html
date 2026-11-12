@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Nueva receta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+label{font-size:14px;font-weight:500;color:#1F2937;display:flex;flex-direction:column;gap:6px}
+select,input,textarea{font:inherit;font-size:16px;font-weight:400;border:1px solid #E5E7EB;border-radius:8px;padding:0 12px;height:44px;background:#FFFFFF;color:#1F2937}
+textarea{height:72px;padding:10px 12px;resize:vertical}
+.hint{font-size:13px;color:#6B7280;font-weight:400}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #8A93A3; font-family: Inter, system-ui, sans-serif; color: #1F2937; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px; box-sizing: border-box;">
+  <div role="dialog" aria-modal="true" aria-labelledby="nr-t" style="width: 100%; max-width: 560px; background: #FFFFFF; border-radius: 10px; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1 id="nr-t" style="margin: 0; font-size: 20px; font-weight: 600;">Nueva receta</h1>
+      <a href="Main.dc.html" aria-label="Cerrar" style="font-size: 20px; text-decoration: none; color: #6B7280; padding: 4px 10px;">✕</a>
+    </div>
+
+    <label>1 · Alcance
+      <select>
+        <option>Todo el grupo</option>
+        <option>Marca · Trattoria Padella</option>
+        <option>Marca · Ragú Bodegón</option>
+        <option>Marca · Casa Nonnos</option>
+        <option>Local · Demo Café Centro</option>
+      </select>
+      <span class="hint">Dónde se usa. No cambia después.</span>
+    </label>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 14px; font-weight: 500;">2 · Tipo</span>
+      <div role="group" aria-label="Tipo" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden;">
+        <button onClick="{{pickDish}}" aria-pressed="{{isDish}}" style="height: 44px; border: 0; font: inherit; font-size: 15px; font-weight: 500; background: {{dishBg}}; color: {{dishInk}};">Plato</button>
+        <button onClick="{{pickPrep}}" aria-pressed="{{isPrep}}" style="height: 44px; border: 0; border-left: 1px solid #E5E7EB; font: inherit; font-size: 15px; font-weight: 500; background: {{prepBg}}; color: {{prepInk}};">Preparación</button>
+      </div>
+    </div>
+
+    <label>3 · Rubro
+      <select onChange="{{onRubro}}" value="{{rubro}}">
+        <sc-for list="{{rubros}}" as="r" hint-placeholder-count="5">
+          <option value="{{r.code}}">{{r.name}} ({{r.code}})</option>
+        </sc-for>
+      </select>
+      <span class="hint">{{rubroHint}}</span>
+    </label>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 14px; font-weight: 500;">4 · Código</span>
+      <div style="height: 44px; border-radius: 8px; background: #F1F2F4; display: flex; align-items: center; padding: 0 12px; font-size: 18px; font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums;">{{code}}</div>
+      <span class="hint">Lo arma el sistema: {{prefix}} + rubro + número siguiente. El último de este rubro es {{last}}. Se confirma al crear y no cambia nunca.</span>
+    </div>
+
+    <label>5 · Nombre
+      <input placeholder="{{namePh}}">
+    </label>
+
+    <label>6 · Motivo
+      <textarea placeholder="Por ejemplo: alta de la carta de verano"></textarea>
+      <span class="hint">Queda en el historial.</span>
+    </label>
+
+    <a href="FichaReceta.dc.html" style="height: 44px; border-radius: 8px; background: #4A6FB8; color: #FFFFFF; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; text-decoration: none;">Crear receta</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { kind: 'prep', rubro: 'SR-SAL' }; }
+  renderVals() {
+    const R = {
+      dish: [['PL-CAF','Cafetería',3],['PL-PAS','Pastas',3],['PL-CAR','Principales de carne',2],['PL-ENT','Entradas',1],['PL-POS','Postres',1],['PL-ENS','Ensaladas',0]],
+      prep: [['SR-SAL','Salsas',3],['SR-MAS','Masas',1],['SR-FON','Fondos y caldos',1],['SR-REL','Rellenos',1],['SR-COC','Cocciones base',1],['SR-ADE','Aderezos y vinagretas',0]]
+    };
+    const { kind, rubro } = this.state;
+    const list = R[kind];
+    const cur = list.find(r => r[0] === rubro) || list[0];
+    const prefix = kind === 'dish' ? 'PLA' : 'PRE';
+    const suf = cur[0].slice(3);
+    const pad = (n) => String(n).padStart(4, '0');
+    const isDish = kind === 'dish';
+    return {
+      rubros: list.map(r => ({ code: r[0], name: r[1] })), rubro: cur[0],
+      onRubro: (e) => this.setState({ rubro: e.target.value }),
+      rubroHint: isDish ? 'Rubros de menú (PL).' : 'Rubros de preparaciones (SR).',
+      code: prefix + '-' + suf + '-' + pad(cur[2] + 1), prefix,
+      last: cur[2] ? prefix + '-' + suf + '-' + pad(cur[2]) : 'ninguno todavía',
+      namePh: isDish ? 'Por ejemplo: Tallarines al pomodoro' : 'Por ejemplo: Salsa pomodoro',
+      isDish, isPrep: !isDish,
+      dishBg: isDish ? '#EAF0FB' : '#FFFFFF', dishInk: isDish ? '#2F4F8F' : '#1F2937',
+      prepBg: !isDish ? '#EAF0FB' : '#FFFFFF', prepInk: !isDish ? '#2F4F8F' : '#1F2937',
+      pickDish: () => this.setState({ kind: 'dish', rubro: 'PL-CAF' }),
+      pickPrep: () => this.setState({ kind: 'prep', rubro: 'SR-SAL' })
+    };
+  }
+}
+</script>
+</body>
+</html>

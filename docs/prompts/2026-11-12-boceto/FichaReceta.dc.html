@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha única de receta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:block;color:#D6DEEC;text-decoration:none;padding:8px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:16px 12px 6px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;padding:20px 24px}
+.card h2{margin:0 0 16px;font-size:20px;font-weight:600}
+.lbl{font-size:13px;font-weight:500;color:#1F2937;display:flex;flex-direction:column;gap:6px}
+.in{font:inherit;font-size:14px;font-weight:400;border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;height:38px;background:#FFFFFF;color:#1F2937;box-sizing:border-box}
+.grid th{font-size:12px;font-weight:500;color:#6B7280;text-align:left;padding:8px 8px;border-bottom:1px solid #E5E7EB;white-space:nowrap;vertical-align:bottom}
+.grid td{font-size:13px;color:#1F2937;padding:6px 8px;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.grid .num{text-align:right;font-variant-numeric:tabular-nums}
+.grid .scale{background:#F7F8FA}
+.cell{font:inherit;font-size:13px;border:1px solid #E5E7EB;border-radius:6px;height:32px;padding:0 8px;background:#FFFFFF;color:#1F2937;box-sizing:border-box}
+.kpi{font-size:32px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.muted{color:#6B7280}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 2900px; display: flex; flex-wrap: wrap; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 16px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 8px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="Main.dc.html" class="on">Recetas</a><a href="FichaMateriaPrima.dc.html">Materias primas</a><a href="#">Rubros</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px;">
+      <span class="muted">Grupo LF › Recetas › <span style="color: #1F2937; font-weight: 500;">{{name}}</span></span>
+      <span class="muted">Local: <span style="color: #1F2937;">Demo Café Centro</span> · los precios son de este local</span>
+    </div>
+
+    <div style="padding: 20px 32px 120px; display: flex; flex-direction: column; gap: 20px;">
+      <a href="Main.dc.html" style="font-size: 14px; text-decoration: none;">← Volver a recetas</a>
+
+      <!-- Encabezado + carrusel de fotos -->
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch;">
+        <div class="card" style="flex: 999 1 520px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+            <span style="font-size: 14px; font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums;">{{code}}</span>
+            <span style="font-size: 13px; padding: 3px 8px; border-radius: 6px; background: #FFEDD5; color: #9A3412;">Borrador v2</span>
+            <span style="font-size: 13px; padding: 3px 8px; border-radius: 6px; background: #DCFCE7; color: #166534;">Vigente v1</span>
+          </div>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 600;">{{name}}</h1>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 500;">Tipo <span class="muted" style="font-weight: 400;">(en el boceto, para ver los dos casos)</span></span>
+              <div role="group" aria-label="Tipo" style="display: flex; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden;">
+                <button onClick="{{pickDish}}" aria-pressed="{{isDish}}" style="height: 38px; padding: 0 18px; border: 0; font: inherit; font-size: 14px; font-weight: 500; background: {{dishBg}}; color: {{dishInk}};">Plato</button>
+                <button onClick="{{pickPrep}}" aria-pressed="{{isPrep}}" style="height: 38px; padding: 0 18px; border: 0; border-left: 1px solid #E5E7EB; font: inherit; font-size: 14px; font-weight: 500; background: {{prepBg}}; color: {{prepInk}};">Preparación</button>
+              </div>
+            </div>
+            <span style="font-size: 14px;" class="muted">Rubro: <span style="color: #1F2937;">{{rubro}}</span> · Alcance: <span style="color: #1F2937;">Todo el grupo</span></span>
+          </div>
+          <nav aria-label="Ir a la sección" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+            <a href="#datos" style="font-size: 13px; padding: 6px 12px; border: 1px solid #E5E7EB; border-radius: 16px; text-decoration: none;">Datos generales</a>
+            <a href="#ingredientes" style="font-size: 13px; padding: 6px 12px; border: 1px solid #E5E7EB; border-radius: 16px; text-decoration: none;">Ingredientes y costos</a>
+            <a href="#rendimiento" style="font-size: 13px; padding: 6px 12px; border: 1px solid #E5E7EB; border-radius: 16px; text-decoration: none;">Rendimiento</a>
+            <a href="#procedimiento" style="font-size: 13px; padding: 6px 12px; border: 1px solid #E5E7EB; border-radius: 16px; text-decoration: none;">Procedimiento</a>
+            <a href="#alergenos" style="font-size: 13px; padding: 6px 12px; border: 1px solid #E5E7EB; border-radius: 16px; text-decoration: none;">Alérgenos</a>
+            <a href="#versiones" style="font-size: 13px; padding: 6px 12px; border: 1px solid #E5E7EB; border-radius: 16px; text-decoration: none;">Versiones y aprobaciones</a>
+            <a href="#uso" style="font-size: 13px; padding: 6px 12px; border: 1px solid #E5E7EB; border-radius: 16px; text-decoration: none;">Dónde se usa</a>
+          </nav>
+        </div>
+        <figure class="card" style="flex: 1 1 320px; max-width: 380px; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 190px; border-radius: 8px; background: #F1F2F4; display: flex; align-items: center; justify-content: center; position: relative;">
+            <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 8"></path></svg>
+            <button onClick="{{prevPhoto}}" aria-label="Foto anterior" style="position: absolute; left: 8px; top: 50%; margin-top: -20px; width: 40px; height: 40px; border-radius: 20px; border: 1px solid #E5E7EB; background: #FFFFFF; font-size: 18px; color: #1F2937;">‹</button>
+            <button onClick="{{nextPhoto}}" aria-label="Foto siguiente" style="position: absolute; right: 8px; top: 50%; margin-top: -20px; width: 40px; height: 40px; border-radius: 20px; border: 1px solid #E5E7EB; background: #FFFFFF; font-size: 18px; color: #1F2937;">›</button>
+          </div>
+          <figcaption style="display: flex; justify-content: space-between; font-size: 13px;"><span class="muted">{{photoCaption}}</span><a href="#">+ Agregar foto</a></figcaption>
+        </figure>
+      </div>
+
+      <!-- Datos generales -->
+      <section id="datos" class="card">
+        <h2>Datos generales</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+          <label class="lbl">Nombre<input class="in" value="{{name}}"></label>
+          <label class="lbl">Nombre corto<input class="in" placeholder="Para la comanda"></label>
+          <label class="lbl">Sector<select class="in"><option>Cocina caliente</option><option>Cocina fría</option><option>Pastelería</option><option>Barra</option></select></label>
+          <label class="lbl">Partida<select class="in"><option>Salsas</option><option>Pastas</option><option>Plancha</option></select></label>
+          <label class="lbl">Tiempo total<input class="in" value="45 min"></label>
+          <label class="lbl">Conservación<input class="in" placeholder="Por ejemplo: 3 días en cámara a 4 °C"></label>
+          <label class="lbl" style="grid-column: 1 / -1;">Descripción<input class="in" placeholder="Qué es y cómo se presenta"></label>
+        </div>
+      </section>
+
+      <!-- Ingredientes y costos -->
+      <section id="ingredientes" class="card">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: baseline;">
+          <h2>Ingredientes y costos</h2>
+          <span class="muted" style="font-size: 13px;">10 filas listas; al completar la última se agrega otra. Datos de ejemplo.</span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="grid" style="width: 100%; border-collapse: collapse; min-width: 1080px;">
+            <thead>
+              <tr>
+                <th rowspan="2">#</th>
+                <th rowspan="2">Código</th>
+                <th rowspan="2">Ingrediente</th>
+                <th rowspan="2" class="num">Cantidad</th>
+                <th rowspan="2">Medida</th>
+                <th colspan="2" class="scale" style="text-align: center;">Hacer <input class="cell" aria-label="Cantidad de recetas, columna A" value="{{a}}" onChange="{{onA}}" style="width: 48px; text-align: right;"> recetas</th>
+                <th colspan="2" class="scale" style="text-align: center;">Hacer <input class="cell" aria-label="Cantidad de recetas, columna B" value="{{b}}" onChange="{{onB}}" style="width: 48px; text-align: right;"> recetas</th>
+                <th rowspan="2" class="num">Precio por kg o l</th>
+                <th rowspan="2" class="num">Costo en la receta</th>
+                <th rowspan="2" class="num">Incidencia $</th>
+                <th rowspan="2" class="num">Incidencia peso</th>
+              </tr>
+              <tr>
+                <th class="num scale">Peso bruto</th><th class="num scale">Costo</th>
+                <th class="num scale">Peso bruto</th><th class="num scale">Costo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{lines}}" as="l" hint-placeholder-count="7">
+                <tr>
+                  <td class="muted">{{l.n}}</td>
+                  <td><input class="cell" aria-label="Código, fila {{l.n}}" value="{{l.code}}" style="width: 128px;"></td>
+                  <td>
+                    <span style="display: flex; gap: 6px; align-items: center;">
+                      <input class="cell" aria-label="Ingrediente, fila {{l.n}}" value="{{l.name}}" style="width: 200px;">
+                      <sc-if value="{{l.sub}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; padding: 2px 6px; border-radius: 6px; background: #DBEAFE; color: #1E40AF;">Preparación</span></sc-if>
+                    </span>
+                  </td>
+                  <td class="num"><input class="cell" aria-label="Cantidad, fila {{l.n}}" value="{{l.qty}}" style="width: 72px; text-align: right;"></td>
+                  <td><select class="cell" aria-label="Medida, fila {{l.n}}"><option>{{l.unitLong}}</option><option>Kilogramo (kg)</option><option>Gramo (g)</option><option>Litro (l)</option><option>Mililitro (ml)</option><option>Centímetro cúbico (cc)</option><option>Unidad (u)</option></select></td>
+                  <td class="num scale">{{l.qa}}</td>
+                  <td class="num scale">{{l.ca}}</td>
+                  <td class="num scale">{{l.qb}}</td>
+                  <td class="num scale">{{l.cb}}</td>
+                  <td class="num">{{l.price}}</td>
+                  <td class="num" style="font-weight: 500;">{{l.cost}}</td>
+                  <td class="num">{{l.pc}}</td>
+                  <td class="num">{{l.pw}}</td>
+                </tr>
+              </sc-for>
+              <tr>
+                <td class="muted">{{nTyping}}</td>
+                <td><input class="cell" aria-label="Código, fila nueva" placeholder="Código" style="width: 128px;"></td>
+                <td style="position: relative;">
+                  <input class="cell" aria-label="Ingrediente, fila nueva" value="har" style="width: 200px; border-color: #4A6FB8;">
+                  <ul role="listbox" aria-label="Sugerencias" style="position: absolute; left: 8px; top: 40px; z-index: 2; margin: 0; padding: 4px; list-style: none; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; width: 300px; box-shadow: 0 4px 12px rgba(31,41,55,.08);">
+                    <li role="option" aria-selected="true" style="padding: 8px; border-radius: 6px; background: #EAF0FB; font-size: 13px;"><b style="font-weight: 600;">Har</b>ina 000 <span class="muted">· MPR-HAR-0001</span></li>
+                    <li role="option" aria-selected="false" style="padding: 8px; font-size: 13px;"><b style="font-weight: 600;">Har</b>ina 0000 <span class="muted">· MPR-HAR-0002</span></li>
+                    <li role="option" aria-selected="false" style="padding: 8px; font-size: 13px;"><b style="font-weight: 600;">Har</b>ina integral <span class="muted">· MPR-HAR-0005</span></li>
+                  </ul>
+                </td>
+                <td class="num"><input class="cell" aria-label="Cantidad, fila nueva" style="width: 72px;"></td>
+                <td><select class="cell" aria-label="Medida, fila nueva"><option>Elegí</option></select></td>
+                <td class="scale"></td><td class="scale"></td><td class="scale"></td><td class="scale"></td>
+                <td></td><td></td><td></td><td></td>
+              </tr>
+              <sc-for list="{{blanks}}" as="b" hint-placeholder-count="2">
+                <tr>
+                  <td class="muted">{{b.n}}</td>
+                  <td><input class="cell" aria-label="Código, fila {{b.n}}" placeholder="Código" style="width: 128px;"></td>
+                  <td><input class="cell" aria-label="Ingrediente, fila {{b.n}}" placeholder="Escribí para buscar" style="width: 200px;"></td>
+                  <td class="num"><input class="cell" aria-label="Cantidad, fila {{b.n}}" style="width: 72px;"></td>
+                  <td><select class="cell" aria-label="Medida, fila {{b.n}}"><option>Elegí</option></select></td>
+                  <td class="scale"></td><td class="scale"></td><td class="scale"></td><td class="scale"></td>
+                  <td></td><td></td><td></td><td></td>
+                </tr>
+              </sc-for>
+              <tr style="background: #F7F8FA;">
+                <td></td><td></td>
+                <td style="font-weight: 600;">Total</td>
+                <td class="num" style="font-weight: 600;">{{totalG}}</td>
+                <td></td>
+                <td class="num scale" style="font-weight: 600;">{{totalGA}}</td>
+                <td class="num scale" style="font-weight: 600;">{{totalCA}}</td>
+                <td class="num scale" style="font-weight: 600;">{{totalGB}}</td>
+                <td class="num scale" style="font-weight: 600;">{{totalCB}}</td>
+                <td></td>
+                <td class="num" style="font-weight: 600;">{{totalC}}</td>
+                <td class="num" style="font-weight: 600;">100 %</td>
+                <td class="num" style="font-weight: 600;">100 %</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px;">
+          <div style="border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px;">
+            <div class="muted" style="font-size: 14px;">Peso total de la receta</div>
+            <div class="kpi">{{totalG}}</div>
+          </div>
+          <div style="border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px;">
+            <div class="muted" style="font-size: 14px;">Costo total de la receta, sin IVA</div>
+            <div class="kpi">{{totalC}}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rendimiento -->
+      <section id="rendimiento" class="card">
+        <h2>Rendimiento</h2>
+        <sc-if value="{{isDish}}" hint-placeholder-val="{{false}}">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: end;">
+            <label class="lbl">Peso de la porción (g)<input class="in" value="{{portion}}" onChange="{{onPortion}}" style="font-size: 16px; text-align: right;"></label>
+            <div><div class="muted" style="font-size: 14px;">Porciones que salen</div><div class="kpi">{{portions}}</div></div>
+            <div><div class="muted" style="font-size: 14px;">Costo por porción</div><div class="kpi">{{costPortion}}</div></div>
+          </div>
+          <p class="muted" style="font-size: 13px; margin: 12px 0 0;">Peso total ÷ peso de la porción. Las porciones con decimales se muestran así para no esconder sobrante.</p>
+        </sc-if>
+        <sc-if value="{{isPrep}}" hint-placeholder-val="{{true}}">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end;">
+            <div><div class="muted" style="font-size: 14px;">Peso bruto total</div><div class="kpi">{{totalG}}</div><div class="muted" style="font-size: 12px;">Suma de los ingredientes</div></div>
+            <label class="lbl">Peso neto total (g)<input class="in" value="{{net}}" onChange="{{onNet}}" style="font-size: 16px; text-align: right;"><span class="muted" style="font-weight: 400; font-size: 12px;">Lo que queda al terminar. Se carga a mano.</span></label>
+            <div><div class="muted" style="font-size: 14px;">Rendimiento (neto ÷ bruto)</div><div class="kpi">{{yieldPct}}</div><div class="muted" style="font-size: 12px;">Es el objetivo para el control de lotes</div></div>
+            <div><div class="muted" style="font-size: 14px;">Costo por kg neto</div><div class="kpi">{{costKg}}</div></div>
+          </div>
+        </sc-if>
+        <p class="muted" style="font-size: 13px; margin: 12px 0 0;">Las mermas de cada materia prima se cargan en su ficha. Acá va el rendimiento final de la receta.</p>
+      </section>
+
+      <!-- Procedimiento -->
+      <section id="procedimiento" class="card">
+        <h2>Procedimiento</h2>
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px;">
+          <sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+            <li style="border: 1px solid #E5E7EB; border-radius: 10px; padding: 14px; display: grid; grid-template-columns: 40px minmax(240px, 3fr) repeat(4, minmax(110px, 1fr)); gap: 12px; align-items: end;">
+              <span style="width: 32px; height: 32px; border-radius: 16px; background: #EAF0FB; color: #2F4F8F; font-weight: 600; display: flex; align-items: center; justify-content: center;">{{s.n}}</span>
+              <label class="lbl">Qué se hace<input class="in" value="{{s.what}}"></label>
+              <label class="lbl">Tipo<select class="in"><option>{{s.kind}}</option></select></label>
+              <label class="lbl">Min. trabajando<input class="in" value="{{s.work}}" style="text-align: right;"></label>
+              <label class="lbl">Min. de espera<input class="in" value="{{s.wait}}" style="text-align: right;"></label>
+              <label class="lbl">Equipo<input class="in" value="{{s.tool}}"></label>
+            </li>
+          </sc-for>
+        </ol>
+        <button style="margin-top: 12px; height: 40px; padding: 0 16px; border: 1px dashed #6B7280; border-radius: 8px; background: #FFFFFF; font: inherit; font-size: 14px; color: #1F2937;">+ Agregar paso</button>
+      </section>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+        <section id="alergenos" class="card">
+          <h2>Alérgenos</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <sc-for list="{{allergens}}" as="al" hint-placeholder-count="2">
+              <span style="font-size: 13px; padding: 4px 10px; border-radius: 6px; background: #FEF3C7; color: #92400E;">Contiene: {{al}}</span>
+            </sc-for>
+          </div>
+          <p class="muted" style="font-size: 13px; margin: 12px 0 0;">Salen solos de las materias primas y preparaciones de la lista.</p>
+        </section>
+        <section id="uso" class="card">
+          <h2>Dónde se usa</h2>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+            <sc-for list="{{uses}}" as="u" hint-placeholder-count="2">
+              <li><a href="#">{{u.name}}</a> <span class="muted">· {{u.code}} · {{u.qty}}</span></li>
+            </sc-for>
+          </ul>
+        </section>
+      </div>
+
+      <!-- Versiones y aprobaciones -->
+      <section id="versiones" class="card">
+        <h2>Versiones y aprobaciones</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+            <li style="display: flex; gap: 8px; align-items: center;"><span style="font-size: 13px; padding: 3px 8px; border-radius: 6px; background: #FFEDD5; color: #9A3412;">Borrador v2</span> Cambió la cantidad de tomate · Sofía Admin · hoy</li>
+            <li style="display: flex; gap: 8px; align-items: center;"><span style="font-size: 13px; padding: 3px 8px; border-radius: 6px; background: #DCFCE7; color: #166534;">Vigente v1</span> Publicada el 02/11 · aprobó Chef ejecutivo</li>
+          </ul>
+          <div style="border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="font-size: 14px; font-weight: 600;">Lo que ve quien revisa</div>
+            <p class="muted" style="margin: 0; font-size: 13px;">Toda la ficha en solo lectura, con los cambios marcados. No puede editar nada.</p>
+            <label class="lbl">Observaciones<textarea class="in" style="height: 64px; padding: 8px 10px;" placeholder="Por ejemplo: revisar la sal"></textarea></label>
+            <div style="display: flex; gap: 8px;">
+              <button style="height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #4A6FB8; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 500;">Aprobar</button>
+              <button style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid #E5E7EB; background: #FFFFFF; color: #991B1B; font: inherit; font-size: 14px; font-weight: 500;">No aprobar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Barra fija de guardado -->
+    <div style="position: sticky; bottom: 0; background: #FFFFFF; border-top: 1px solid #E5E7EB; padding: 12px 32px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-end;">
+      <span style="font-size: 14px; margin-right: auto;"><b style="font-weight: 600;">3 cambios</b> sin guardar</span>
+      <input class="in" aria-label="Motivo de los cambios" placeholder="Motivo (obligatorio)" style="width: 320px;">
+      <button style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid #E5E7EB; background: #FFFFFF; font: inherit; font-size: 14px; color: #1F2937;">Descartar</button>
+      <button style="height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #4A6FB8; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 500;">Guardar cambios</button>
+      <button style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid #4A6FB8; background: #FFFFFF; color: #3D5E9F; font: inherit; font-size: 14px; font-weight: 500;">Enviar a revisión</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { kind: 'prep', a: '4', b: '10', portion: '330', net: '1850', photo: 0 }; }
+  renderVals() {
+    const nf = (v, d) => Number(v).toLocaleString('es-AR', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
+    const money = (v) => '$ ' + nf(Math.round(v));
+    const num = (s) => { const x = parseFloat(String(s).replace(',', '.')); return isFinite(x) && x > 0 ? x : 0; };
+    const U = { g: 'Gramo (g)', ml: 'Mililitro (ml)' };
+    const data = {
+      prep: { code: 'PRE-SAL-0003', name: 'Salsa pomodoro', rubro: 'Salsas (SR-SAL)', lines: [
+        ['MPR-VER-0004', 'Tomate perita', 2000, 'g', 1800, 'kg', false],
+        ['MPR-VER-0011', 'Cebolla', 300, 'g', 1200, 'kg', false],
+        ['MPR-VER-0002', 'Ajo', 30, 'g', 6000, 'kg', false],
+        ['MPR-ACE-0001', 'Aceite de oliva', 100, 'ml', 12000, 'l', false],
+        ['MPR-HIE-0001', 'Albahaca fresca', 20, 'g', 15000, 'kg', false],
+        ['MPR-ESP-0003', 'Sal fina', 15, 'g', 800, 'kg', false],
+        ['MPR-DUL-0001', 'Azúcar', 10, 'g', 1100, 'kg', false]
+      ], allergens: [], uses: [{ name: 'Tallarines al pomodoro', code: 'PLA-PAS-0002', qty: '180 g' }, { name: 'Ñoquis de papa', code: 'PLA-PAS-0003', qty: '150 g' }],
+        steps: [['Picar la cebolla y el ajo', 'Preparación', 10, 0, 'Tabla y cuchillo'], ['Rehogar en aceite de oliva', 'Cocción', 8, 0, 'Olla'], ['Agregar el tomate y cocinar a fuego bajo', 'Cocción', 5, 30, 'Olla'], ['Procesar, ajustar sal y sumar albahaca', 'Terminación', 5, 0, 'Mixer']] },
+      dish: { code: 'PLA-PAS-0002', name: 'Tallarines al pomodoro', rubro: 'Pastas (PL-PAS)', lines: [
+        ['PRE-MAS-0001', 'Masa de pasta al huevo', 130, 'g', 1980, 'kg', true],
+        ['PRE-SAL-0003', 'Salsa pomodoro', 180, 'g', 3061, 'kg', true],
+        ['MPR-LAC-0008', 'Queso parmesano', 15, 'g', 28000, 'kg', false],
+        ['MPR-HIE-0001', 'Albahaca fresca', 3, 'g', 15000, 'kg', false],
+        ['MPR-ACE-0001', 'Aceite de oliva', 2, 'ml', 12000, 'l', false]
+      ], allergens: ['gluten', 'huevo', 'leche'], uses: [{ name: 'Carta de Padella', code: 'Menú', qty: '1 porción' }],
+        steps: [['Hervir agua con sal', 'Preparación', 2, 8, 'Olla grande'], ['Cocinar la pasta', 'Cocción', 1, 3, 'Olla grande'], ['Saltear con la salsa caliente', 'Cocción', 2, 0, 'Sartén'], ['Emplatar con parmesano y albahaca', 'Terminación', 1, 0, 'Plato hondo']] }
+    };
+    const st = this.state; const d = data[st.kind]; const isDish = st.kind === 'dish';
+    const A = num(st.a), B = num(st.b);
+    const rows = d.lines.map(l => ({ code: l[0], name: l[1], qty: l[2], unit: l[3], price: l[4], per: l[5], sub: l[6], cost: l[2] / 1000 * l[4] }));
+    const tg = rows.reduce((s, r) => s + r.qty, 0); const tc = rows.reduce((s, r) => s + r.cost, 0);
+    const lines = rows.map((r, i) => ({ n: i + 1, code: r.code, name: r.name, sub: r.sub, qty: nf(r.qty), unitLong: U[r.unit],
+      qa: A ? nf(r.qty * A) + ' ' + r.unit : '—', ca: A ? money(r.cost * A) : '—', qb: B ? nf(r.qty * B) + ' ' + r.unit : '—', cb: B ? money(r.cost * B) : '—',
+      price: money(r.price) + ' / ' + r.per, cost: money(r.cost), pc: nf(r.cost * 100 / tc, 1) + ' %', pw: nf(r.qty * 100 / tg, 1) + ' %' }));
+    const n0 = rows.length;
+    const blanks = []; for (let i = n0 + 2; i <= 10; i++) blanks.push({ n: i });
+    const P = num(st.portion), N = num(st.net);
+    const portions = P ? tg / P : 0;
+    return {
+      code: d.code, name: d.name, rubro: d.rubro, lines, blanks, nTyping: n0 + 1,
+      totalG: nf(tg) + ' g', totalC: money(tc),
+      totalGA: A ? nf(tg * A) + ' g' : '—', totalCA: A ? money(tc * A) : '—', totalGB: B ? nf(tg * B) + ' g' : '—', totalCB: B ? money(tc * B) : '—',
+      a: st.a, b: st.b, onA: (e) => this.setState({ a: e.target.value }), onB: (e) => this.setState({ b: e.target.value }),
+      portion: st.portion, onPortion: (e) => this.setState({ portion: e.target.value }),
+      portions: P ? nf(portions, 1) : 'Sin peso de porción', costPortion: P ? money(tc / portions) : '—',
+      net: st.net, onNet: (e) => this.setState({ net: e.target.value }),
+      yieldPct: N ? nf(N * 100 / tg, 1) + ' %' : 'Sin peso neto', costKg: N ? money(tc / (N / 1000)) : '—',
+      steps: d.steps.map((s, i) => ({ n: i + 1, what: s[0], kind: s[1], work: s[2], wait: s[3], tool: s[4] })),
+      allergens: d.allergens.length ? d.allergens : ['ninguno declarado'], uses: d.uses,
+      isDish, isPrep: !isDish,
+      dishBg: isDish ? '#EAF0FB' : '#FFFFFF', dishInk: isDish ? '#2F4F8F' : '#1F2937',
+      prepBg: !isDish ? '#EAF0FB' : '#FFFFFF', prepInk: !isDish ? '#2F4F8F' : '#1F2937',
+      pickDish: () => this.setState({ kind: 'dish' }), pickPrep: () => this.setState({ kind: 'prep' }),
+      photoCaption: 'Foto ' + (st.photo + 1) + ' de 3',
+      prevPhoto: () => this.setState({ photo: (st.photo + 2) % 3 }), nextPhoto: () => this.setState({ photo: (st.photo + 1) % 3 })
+    };
+  }
+}
+</script>
+</body>
+</html>

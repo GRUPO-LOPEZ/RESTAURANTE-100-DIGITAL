@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha única de materia prima</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:block;color:#D6DEEC;text-decoration:none;padding:8px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:16px 12px 6px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;padding:20px 24px}
+.card h2{margin:0 0 16px;font-size:20px;font-weight:600}
+.lbl{font-size:13px;font-weight:500;color:#1F2937;display:flex;flex-direction:column;gap:6px}
+.in{font:inherit;font-size:14px;font-weight:400;border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;height:38px;background:#FFFFFF;color:#1F2937;box-sizing:border-box}
+.grid th{font-size:12px;font-weight:500;color:#6B7280;text-align:left;padding:8px;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.grid td{font-size:13px;color:#1F2937;padding:10px 8px;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.kpi{font-size:32px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.muted{color:#6B7280}
+.chip{font-size:13px;padding:6px 12px;border:1px solid #E5E7EB;border-radius:16px;text-decoration:none}
+.pill{font-size:13px;padding:3px 8px;border-radius:6px}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 2500px; display: flex; flex-wrap: wrap; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 16px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 8px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="Main.dc.html">Recetas</a><a href="#" class="on">Materias primas</a><a href="#">Rubros</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px;">
+      <span class="muted">Grupo LF › Materias primas › <span style="color: #1F2937; font-weight: 500;">Tomate perita</span></span>
+      <span class="muted">Local: <span style="color: #1F2937;">Demo Café Centro</span></span>
+    </div>
+
+    <div style="padding: 20px 32px 120px; display: flex; flex-direction: column; gap: 20px;">
+      <a href="#" style="font-size: 14px; text-decoration: none;">← Volver a materias primas</a>
+
+      <div class="card" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          <span style="font-size: 14px; font-weight: 600; letter-spacing: .03em;">MPR-VER-0004</span>
+          <span class="pill" style="background: #DCFCE7; color: #166534;">Activa</span>
+          <span class="pill" style="background: #DCFCE7; color: #166534;">Precio al día</span>
+        </div>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Tomate perita</h1>
+        <span class="muted" style="font-size: 14px;">Rubro: <span style="color: #1F2937;">Verduras y hortalizas (MP-VER)</span> · Se usa en recetas en <span style="color: #1F2937;">Gramo (g)</span></span>
+        <nav aria-label="Ir a la sección" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+          <a class="chip" href="#datos">Datos generales</a>
+          <a class="chip" href="#compra">Precios de compra</a>
+          <a class="chip" href="#mermas">Mermas y rendimientos</a>
+          <a class="chip" href="#conversiones">Conversiones</a>
+          <a class="chip" href="#alergenos">Alérgenos</a>
+          <a class="chip" href="#uso">Dónde se usa</a>
+        </nav>
+      </div>
+
+      <section id="datos" class="card">
+        <h2>Datos generales</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+          <label class="lbl">Nombre<input class="in" value="Tomate perita"></label>
+          <label class="lbl">Rubro<select class="in"><option>Verduras y hortalizas (MP-VER)</option></select></label>
+          <label class="lbl">Se usa en recetas en<select class="in"><option>Gramo (g)</option><option>Kilogramo (kg)</option><option>Litro (l)</option><option>Mililitro (ml)</option><option>Centímetro cúbico (cc)</option><option>Unidad (u)</option></select></label>
+          <label class="lbl">Se compra en<select class="in"><option>Kilogramo (kg)</option></select></label>
+          <label class="lbl">Otros nombres<input class="in" value="Tomate pera"></label>
+          <label class="lbl">Observaciones<input class="in" placeholder="Opcional"></label>
+        </div>
+      </section>
+
+      <section id="compra" class="card">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 12px;">
+          <h2 style="margin: 0;">Precios de compra</h2>
+          <div style="display: flex; gap: 32px;">
+            <div><div class="muted" style="font-size: 14px;">Precio vigente</div><div class="kpi">$ 1.800 / kg</div><div class="muted" style="font-size: 12px;">Desde el 08/11 · Datos de ejemplo</div></div>
+            <div><div class="muted" style="font-size: 14px;">Costo neto (con merma)</div><div class="kpi">$ 1.957 / kg</div></div>
+          </div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="grid" style="width: 100%; border-collapse: collapse; min-width: 820px;">
+            <thead><tr><th>Producto de compra</th><th>Proveedor</th><th>Viene en</th><th class="num">Contenido</th><th class="num">Precio</th><th class="num">Precio por kg</th><th>Fecha</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td>Tomate perita x 10 kg</td><td>Verdulería Mercado Central</td><td>Cajón</td><td class="num">10 kg</td><td class="num">$ 18.000</td><td class="num">$ 1.800</td><td>08/11</td><td><span class="pill" style="background: #DCFCE7; color: #166534;">Vigente</span></td></tr>
+              <tr><td>Tomate perita x 20 kg</td><td>Distribuidora Sur</td><td>Cajón</td><td class="num">20 kg</td><td class="num">$ 37.400</td><td class="num">$ 1.870</td><td>21/10</td><td><span class="pill" style="background: #FEF3C7; color: #92400E;">Atención: 22 días</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button style="margin-top: 12px; height: 40px; padding: 0 16px; border: 1px dashed #6B7280; border-radius: 8px; background: #FFFFFF; font: inherit; font-size: 14px; color: #1F2937;">+ Agregar producto de compra</button>
+      </section>
+
+      <section id="mermas" class="card">
+        <h2>Mermas y rendimientos</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+          <div><div class="muted" style="font-size: 14px;">Merma de limpieza</div><div class="kpi">8 %</div></div>
+          <div><div class="muted" style="font-size: 14px;">Merma de descongelado</div><div class="kpi">—</div><div class="muted" style="font-size: 12px;">No se compra congelada</div></div>
+          <div><div class="muted" style="font-size: 14px;">Rinde neto</div><div class="kpi">92 %</div></div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <span style="font-size: 14px;" class="muted">¿Se compra congelada?</span>
+            <div role="group" aria-label="Se compra congelada" style="display: flex; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; width: max-content;">
+              <button aria-pressed="false" style="height: 38px; padding: 0 16px; border: 0; font: inherit; font-size: 14px; background: #FFFFFF; color: #1F2937;">Sí</button>
+              <button aria-pressed="true" style="height: 38px; padding: 0 16px; border: 0; border-left: 1px solid #E5E7EB; font: inherit; font-size: 14px; font-weight: 500; background: #EAF0FB; color: #2F4F8F;">No</button>
+            </div>
+          </div>
+        </div>
+        <h3 style="font-size: 16px; font-weight: 600; margin: 24px 0 8px;">Rendimientos por proceso</h3>
+        <div style="overflow-x: auto;">
+          <table class="grid" style="width: 100%; border-collapse: collapse; min-width: 820px;">
+            <thead><tr><th>Proceso</th><th>Corte o presentación</th><th class="num">Peso bruto</th><th class="num">Peso limpio</th><th class="num">Antes de cocinar</th><th class="num">Después de cocinar</th><th class="num">Rinde</th><th>Medido en</th></tr></thead>
+            <tbody>
+              <tr><td>Limpieza</td><td>Sin piel ni semillas</td><td class="num">1.000 g</td><td class="num">920 g</td><td class="num">—</td><td class="num">—</td><td class="num">92 %</td><td>Demo Café Centro · 05/11</td></tr>
+              <tr><td>Cocción</td><td>Salsa</td><td class="num">—</td><td class="num">—</td><td class="num">920 g</td><td class="num">690 g</td><td class="num">75 %</td><td>Demo Café Centro · 05/11</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button style="margin-top: 12px; height: 40px; padding: 0 16px; border: 1px dashed #6B7280; border-radius: 8px; background: #FFFFFF; font: inherit; font-size: 14px; color: #1F2937;">+ Proponer merma o rendimiento (pide aprobación)</button>
+      </section>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+        <section id="conversiones" class="card">
+          <h2>Conversiones</h2>
+          <table class="grid" style="width: 100%; border-collapse: collapse;">
+            <thead><tr><th>Conversión</th><th class="num">Valor</th><th>De dónde sale</th></tr></thead>
+            <tbody>
+              <tr><td>1 unidad pesa</td><td class="num">90 g</td><td>Medición propia · 05/11</td></tr>
+            </tbody>
+          </table>
+          <button style="margin-top: 12px; height: 40px; padding: 0 16px; border: 1px dashed #6B7280; border-radius: 8px; background: #FFFFFF; font: inherit; font-size: 14px; color: #1F2937;">+ Agregar conversión</button>
+        </section>
+        <section id="alergenos" class="card">
+          <h2>Alérgenos</h2>
+          <span class="pill" style="background: #F1F2F4; color: #4B5563;">No contiene alérgenos declarados</span>
+          <div style="margin-top: 16px;"><button style="height: 40px; padding: 0 16px; border: 1px dashed #6B7280; border-radius: 8px; background: #FFFFFF; font: inherit; font-size: 14px; color: #1F2937;">+ Agregar alérgeno</button></div>
+        </section>
+      </div>
+
+      <section id="uso" class="card">
+        <h2>Dónde se usa</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+          <li><a href="FichaReceta.dc.html">Salsa pomodoro</a> <span class="muted">· PRE-SAL-0003 · 2.000 g</span></li>
+          <li><a href="#">Salsa bolognesa</a> <span class="muted">· PRE-SAL-0001 · 1.500 g</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <div style="position: sticky; bottom: 0; background: #FFFFFF; border-top: 1px solid #E5E7EB; padding: 12px 32px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-end;">
+      <span style="font-size: 14px; margin-right: auto;"><b style="font-weight: 600;">1 cambio</b> sin guardar</span>
+      <input class="in" aria-label="Motivo de los cambios" placeholder="Motivo (obligatorio)" style="width: 320px;">
+      <button style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid #E5E7EB; background: #FFFFFF; font: inherit; font-size: 14px; color: #1F2937;">Descartar</button>
+      <button style="height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #4A6FB8; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 500;">Guardar cambios</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
