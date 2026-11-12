@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Recetas por rubro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:block;color:#D6DEEC;text-decoration:none;padding:8px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:16px 12px 6px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+th{font-size:13px;font-weight:500;color:#6B7280;text-align:left;padding:12px 16px;border-bottom:1px solid #E5E7EB}
+td{font-size:14px;color:#1F2937;padding:12px 16px;border-bottom:1px solid #E5E7EB}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 1000px; display: flex; flex-wrap: wrap; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 16px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 8px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#" class="on">Recetas</a><a href="#">Materias primas</a><a href="#">Rubros</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+  </nav>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px;">
+      <span style="color: #6B7280;">Grupo LF › <span style="color: #1F2937; font-weight: 500;">Recetas</span></span>
+      <span style="color: #6B7280;">Local: <span style="color: #1F2937;">Demo Café Centro</span></span>
+    </div>
+    <div style="padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between;">
+        <div>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Recetas</h1>
+          <p style="margin: 4px 0 0; font-size: 16px; color: #6B7280;">Platos y preparaciones, ordenados por rubro.</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #E5E7EB; background: #FFFFFF; border-radius: 8px; font: inherit; font-size: 14px; color: #1F2937;">Categorías</button>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #E5E7EB; background: #FFFFFF; border-radius: 8px; font: inherit; font-size: 14px; color: #1F2937;">Importaciones</button>
+          <a href="NuevaReceta.dc.html" style="height: 40px; padding: 0 16px; border-radius: 8px; background: #4A6FB8; color: #FFFFFF; font-size: 14px; font-weight: 500; display: flex; align-items: center; text-decoration: none;">+ Nueva receta</a>
+        </div>
+      </div>
+
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500;">Buscar
+        <input value="{{query}}" onChange="{{onQuery}}" placeholder="Nombre o código, por ejemplo PRE-SAL" style="height: 44px; max-width: 560px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 0 14px; font: inherit; font-size: 16px; font-weight: 400; background: #FFFFFF;">
+      </label>
+
+      <div role="group" aria-label="Tipo de receta" style="display: flex; gap: 0; border: 1px solid #E5E7EB; border-radius: 8px; width: max-content; overflow: hidden; background: #FFFFFF;">
+        <button onClick="{{pickDish}}" aria-pressed="{{isDish}}" style="height: 40px; padding: 0 20px; border: 0; font: inherit; font-size: 14px; font-weight: 500; background: {{dishBg}}; color: {{dishInk}};">Platos · {{dishCount}}</button>
+        <button onClick="{{pickPrep}}" aria-pressed="{{isPrep}}" style="height: 40px; padding: 0 20px; border: 0; border-left: 1px solid #E5E7EB; font: inherit; font-size: 14px; font-weight: 500; background: {{prepBg}}; color: {{prepInk}};">Preparaciones · {{prepCount}}</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px;">
+        <sc-for list="{{cards}}" as="c" hint-placeholder-count="8">
+          <button onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="text-align: left; min-height: 88px; padding: 12px 14px 10px; border-radius: 10px; border: {{c.border}}; background: #FFFFFF; font: inherit; color: #1F2937; display: flex; flex-direction: column; gap: 6px; cursor: pointer;">
+            <span style="font-size: 14px; font-weight: 600; line-height: 1.3;">{{c.name}}</span>
+            <span style="display: flex; justify-content: space-between; font-size: 12px; color: #6B7280; width: 100%;"><span>{{c.code}}</span><span>{{c.count}} · {{c.pct}}</span></span>
+            <span style="height: 4px; border-radius: 2px; background: #F1F2F4; width: 100%; display: block;"><span style="display: block; height: 4px; border-radius: 2px; background: #4F79C7; width: {{c.bar}};"></span></span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 10px; overflow-x: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 600;">{{tableTitle}}</h2>
+          <sc-if value="{{hasRubro}}" hint-placeholder-val="{{false}}">
+            <button onClick="{{clearRubro}}" style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #E5E7EB; background: #EAF0FB; color: #2F4F8F; font: inherit; font-size: 13px;">{{rubroName}} ✕ quitar</button>
+          </sc-if>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; min-width: 820px;">
+          <thead><tr><th>Código</th><th>Receta</th><th>Rubro</th><th>Alcance</th><th>Estado</th><th style="text-align: right;">Costo sin IVA</th></tr></thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+              <tr>
+                <td style="font-variant-numeric: tabular-nums; color: #6B7280;">{{r.code}}</td>
+                <td><a href="FichaReceta.dc.html" style="font-weight: 500;">{{r.name}}</a></td>
+                <td>{{r.rubro}}</td>
+                <td>{{r.scope}}</td>
+                <td><span style="font-size: 13px; padding: 3px 8px; border-radius: 6px; background: {{r.stBg}}; color: {{r.stInk}};">{{r.state}}</span></td>
+                <td style="text-align: right; font-variant-numeric: tabular-nums;">{{r.cost}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+          <p style="padding: 24px 16px; margin: 0; color: #6B7280; font-size: 14px;">Sin recetas en este rubro con esa búsqueda.</p>
+        </sc-if>
+        <div style="padding: 12px 16px; font-size: 13px; color: #6B7280;">Filas 1 a {{rowCount}} de {{rowCount}} · Datos de ejemplo</div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { kind: 'dish', rubro: null, query: '' }; }
+  renderVals() {
+    const R = {
+      dish: [['PL-CAF','Cafetería'],['PL-PAS','Pastas'],['PL-CAR','Principales de carne'],['PL-ENT','Entradas'],['PL-ENS','Ensaladas'],['PL-POS','Postres'],['PL-GUA','Guarniciones'],['PL-BEB','Bebidas sin alcohol']],
+      prep: [['SR-SAL','Salsas'],['SR-MAS','Masas'],['SR-FON','Fondos y caldos'],['SR-REL','Rellenos'],['SR-ADE','Aderezos y vinagretas'],['SR-PST','Bases de pastelería'],['SR-COC','Cocciones base'],['SR-GUA','Guarniciones pre-elaboradas']]
+    };
+    const S = { pub: ['Vigente v2', '#DCFCE7', '#166534'], draft: ['Borrador', '#FFEDD5', '#9A3412'], rev: ['En revisión', '#EDE9FE', '#5B21B6'] };
+    const all = [
+      ['PLA-CAF-0001','Café espresso','dish','PL-CAF','Todo el grupo','pub','$ 410'],
+      ['PLA-CAF-0002','Cortado','dish','PL-CAF','Todo el grupo','pub','$ 455'],
+      ['PLA-CAF-0003','Medialuna con manteca','dish','PL-CAF','Padella','draft','Sin costo'],
+      ['PLA-PAS-0001','Sorrentinos de calabaza','dish','PL-PAS','Todo el grupo','pub','$ 3.980'],
+      ['PLA-PAS-0002','Tallarines al pomodoro','dish','PL-PAS','Padella','rev','$ 2.140'],
+      ['PLA-PAS-0003','Ñoquis de papa','dish','PL-PAS','Ragú','pub','$ 1.870'],
+      ['PLA-CAR-0001','Lomo a la pimienta','dish','PL-CAR','Todo el grupo','draft','Sin costo'],
+      ['PLA-CAR-0002','Milanesa napolitana','dish','PL-CAR','Ragú','pub','$ 5.320'],
+      ['PLA-ENT-0001','Empanada de carne','dish','PL-ENT','Casa Nonnos','draft','Sin costo'],
+      ['PLA-POS-0001','Flan con dulce de leche','dish','PL-POS','Todo el grupo','pub','$ 1.150'],
+      ['PRE-SAL-0001','Salsa bolognesa','prep','SR-SAL','Todo el grupo','pub','$ 6.940 / kg'],
+      ['PRE-SAL-0002','Salsa blanca','prep','SR-SAL','Todo el grupo','pub','$ 3.210 / kg'],
+      ['PRE-SAL-0003','Salsa pomodoro','prep','SR-SAL','Todo el grupo','draft','$ 3.061 / kg'],
+      ['PRE-MAS-0001','Masa de pasta al huevo','prep','SR-MAS','Todo el grupo','pub','$ 1.980 / kg'],
+      ['PRE-FON-0001','Fondo oscuro','prep','SR-FON','Ragú','rev','$ 1.420 / l'],
+      ['PRE-REL-0001','Relleno de calabaza','prep','SR-REL','Todo el grupo','pub','$ 2.760 / kg'],
+      ['PRE-COC-0001','Papa cocida','prep','SR-COC','Todo el grupo','pub','$ 1.130 / kg']
+    ];
+    const { kind, rubro, query } = this.state;
+    const ofKind = all.filter(r => r[2] === kind);
+    const total = ofKind.length;
+    const cards = R[kind].map(([code, name]) => {
+      const n = ofKind.filter(r => r[3] === code).length;
+      const on = rubro === code;
+      return { code, name, count: n === 1 ? '1 receta' : n + ' recetas', pct: total ? Math.round(n * 100 / total) + ' %' : '—', bar: total ? Math.round(n * 100 / total) + '%' : '0%', on, border: on ? '2px solid #4A6FB8' : '1px solid #E5E7EB', pick: () => this.setState({ rubro: on ? null : code }) };
+    });
+    const q = query.trim().toLowerCase();
+    const names = Object.fromEntries([...R.dish, ...R.prep]);
+    const rows = ofKind.filter(r => (!rubro || r[3] === rubro) && (!q || r[0].toLowerCase().includes(q) || r[1].toLowerCase().includes(q)))
+      .map(r => ({ code: r[0], name: r[1], rubro: names[r[3]], scope: r[4], state: S[r[5]][0], stBg: S[r[5]][1], stInk: S[r[5]][2], cost: r[6] }));
+    const isDish = kind === 'dish';
+    return {
+      query, onQuery: (e) => this.setState({ query: e.target.value }),
+      cards, rows, empty: rows.length === 0, rowCount: rows.length,
+      isDish, isPrep: !isDish,
+      dishBg: isDish ? '#EAF0FB' : '#FFFFFF', dishInk: isDish ? '#2F4F8F' : '#1F2937',
+      prepBg: !isDish ? '#EAF0FB' : '#FFFFFF', prepInk: !isDish ? '#2F4F8F' : '#1F2937',
+      dishCount: all.filter(r => r[2] === 'dish').length, prepCount: all.filter(r => r[2] === 'prep').length,
+      pickDish: () => this.setState({ kind: 'dish', rubro: null }), pickPrep: () => this.setState({ kind: 'prep', rubro: null }),
+      hasRubro: !!rubro, rubroName: rubro ? names[rubro] : '', clearRubro: () => this.setState({ rubro: null }),
+      tableTitle: rubro ? names[rubro] + ' · ' + rows.length : (isDish ? 'Todos los platos · ' : 'Todas las preparaciones · ') + rows.length
+    };
+  }
+}
+</script>
+</body>
+</html>

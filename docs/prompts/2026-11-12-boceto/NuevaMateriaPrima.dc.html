@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Nueva materia prima</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+label{font-size:14px;font-weight:500;color:#1F2937;display:flex;flex-direction:column;gap:6px}
+select,input,textarea{font:inherit;font-size:16px;font-weight:400;border:1px solid #E5E7EB;border-radius:8px;padding:0 12px;height:44px;background:#FFFFFF;color:#1F2937}
+textarea{height:72px;padding:10px 12px;resize:vertical}
+.hint{font-size:13px;color:#6B7280;font-weight:400}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #8A93A3; font-family: Inter, system-ui, sans-serif; color: #1F2937; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px; box-sizing: border-box;">
+  <div role="dialog" aria-modal="true" aria-labelledby="nm-t" style="width: 100%; max-width: 560px; background: #FFFFFF; border-radius: 10px; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1 id="nm-t" style="margin: 0; font-size: 20px; font-weight: 600;">Nueva materia prima</h1>
+      <button aria-label="Cerrar" style="font-size: 20px; border: 0; background: transparent; color: #6B7280; padding: 4px 10px;">✕</button>
+    </div>
+    <p style="margin: 0; font-size: 14px; color: #6B7280;">Se carga una sola vez para todo el grupo, con el nombre sin marca: «Mozzarella», no la de un proveedor.</p>
+
+    <label>1 · Rubro
+      <select onChange="{{onRubro}}" value="{{rubro}}">
+        <sc-for list="{{rubros}}" as="r" hint-placeholder-count="6">
+          <option value="{{r.code}}">{{r.name}} ({{r.code}})</option>
+        </sc-for>
+      </select>
+    </label>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 14px; font-weight: 500;">2 · Código</span>
+      <div style="height: 44px; border-radius: 8px; background: #F1F2F4; display: flex; align-items: center; padding: 0 12px; font-size: 18px; font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums;">{{code}}</div>
+      <span class="hint">Lo arma el sistema: MPR + rubro + número siguiente. El último de este rubro es {{last}}. No cambia nunca.</span>
+    </div>
+
+    <label>3 · Nombre
+      <input placeholder="Por ejemplo: Tomate perita">
+    </label>
+
+    <label>4 · Se usa en recetas en
+      <select>
+        <option>Kilogramo (kg)</option>
+        <option>Gramo (g)</option>
+        <option>Litro (l)</option>
+        <option>Mililitro (ml)</option>
+        <option>Centímetro cúbico (cc)</option>
+        <option>Unidad (u)</option>
+        <option>Cucharada (cda)</option>
+        <option>Cucharadita (cdta)</option>
+        <option>Taza (taza)</option>
+        <option>Pizca (pizca)</option>
+      </select>
+      <span class="hint">La misma lista de medidas que usan las recetas.</span>
+    </label>
+
+    <label>5 · Motivo
+      <textarea placeholder="Por ejemplo: nuevo proveedor de verdura"></textarea>
+      <span class="hint">Queda en el historial.</span>
+    </label>
+
+    <a href="FichaMateriaPrima.dc.html" style="height: 44px; border-radius: 8px; background: #4A6FB8; color: #FFFFFF; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; text-decoration: none;">Crear materia prima</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { rubro: 'MP-VER' }; }
+  renderVals() {
+    const list = [['MP-CAR','Carnes y aves',7],['MP-LAC','Lácteos y quesos',12],['MP-VER','Verduras y hortalizas',21],['MP-HAR','Harinas, cereales y legumbres',9],['MP-ACE','Aceites, vinagres y grasas',4],['MP-ESP','Especias y condimentos',15],['MP-HIE','Hierbas frescas',0]];
+    const cur = list.find(r => r[0] === this.state.rubro) || list[0];
+    const suf = cur[0].slice(3);
+    const pad = (n) => String(n).padStart(4, '0');
+    return {
+      rubros: list.map(r => ({ code: r[0], name: r[1] })), rubro: cur[0],
+      onRubro: (e) => this.setState({ rubro: e.target.value }),
+      code: 'MPR-' + suf + '-' + pad(cur[2] + 1),
+      last: cur[2] ? 'MPR-' + suf + '-' + pad(cur[2]) : 'ninguno todavía'
+    };
+  }
+}
+</script>
+</body>
+</html>
