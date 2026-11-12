@@ -101,6 +101,8 @@ export async function getDraftScopes(): Promise<ScopeOption[]> {
 export type RecipeCategory = {
   id: string;
   groupId: string;
+  // El rubro madre (null si es un rubro): para filtrar un rubro con sus subcategorías.
+  parentId: string | null;
   label: string;
   kind: "subrecipe" | "menu";
   isActive: boolean;
@@ -121,6 +123,7 @@ export async function getRecipeCategories(): Promise<RecipeCategory[]> {
       return {
         id: c.id,
         groupId: c.group_id,
+        parentId: c.parent_id,
         label: parent ? `${parent.name} › ${c.name}` : c.name,
         kind: c.kind === "menu" ? ("menu" as const) : ("subrecipe" as const),
         isActive: c.is_active && (parent?.is_active ?? true),
@@ -199,10 +202,12 @@ export async function getRubros(): Promise<{ groupId: string; rubros: Rubro[] } 
 // ---------------------------------------------------------------------------
 export type RecipesFilter = {
   search?: string;
-  type?: RecipeType;
+  // Platos, o preparaciones (con los componentes por unidad de antes): ADR-0041.
+  types?: readonly RecipeType[];
   // "variant": las variantes de local (recetas de local hechas a partir de una maestra).
   scope?: RecipeScope | "variant";
-  categoryId?: string;
+  // Un rubro con sus subcategorías (la tarjeta elegida).
+  categoryIds?: string[];
   // Pestañas del rediseño (ADR-0036): con versión vigente, o con una versión abierta (borrador o en revisión).
   status?: "current" | "attention";
   // Página desde 0 y filas por página (si no se dice, las de siempre).
@@ -270,10 +275,10 @@ export async function getRecipes(
   // PostgREST: se filtran las versiones embebidas y se dejan solo las recetas que tienen alguna.
   if (statuses)
     query = query.in("recipe_versions.status", statuses).not("recipe_versions", "is", null);
-  if (filter.type) query = query.eq("recipe_type", filter.type);
+  if (filter.types) query = query.in("recipe_type", [...filter.types]);
   if (filter.scope === "variant") query = query.not("variant_of_recipe_id", "is", null);
   else if (filter.scope) query = query.eq("scope_type", filter.scope);
-  if (filter.categoryId) query = query.eq("category_id", filter.categoryId);
+  if (filter.categoryIds) query = query.in("category_id", filter.categoryIds);
   if (filter.search)
     query = query.or(`name.ilike.%${filter.search}%,code.ilike.%${filter.search}%`);
   const [{ data, error, count }, places, categories] = await Promise.all([
@@ -929,4 +934,60 @@ export async function getKitchenCard(recipeId: string): Promise<KitchenCard | nu
     steps: (c.steps ?? []) as KitchenCard["steps"],
     allergens: (c.allergens ?? []) as AllergenStatus[],
   };
+}
+
+// Cuántas recetas ve la sesión de cada tipo, para los botones Platos | Preparaciones (ADR-0041), con la misma
+// búsqueda y el mismo alcance que la tabla (así un botón no promete lo que la tabla no muestra). Con los permisos de
+// quien consulta (RLS).
+export async function countRecipesByTypes(
+  groups: readonly (readonly RecipeType[])[],
+  filter: Pick<RecipesFilter, "search" | "scope"> = {},
+): Promise<number[]> {
+  const supabase = await createClient();
+  const results = await Promise.all(
+    groups.map((types) => {
+      let query = supabase
+        .schema("recipes")
+        .from("recipes")
+        .select("id", { count: "exact", head: true })
+        .in("recipe_type", [...types]);
+      if (filter.scope === "variant") query = query.not("variant_of_recipe_id", "is", null);
+      else if (filter.scope) query = query.eq("scope_type", filter.scope);
+      if (filter.search)
+        query = query.or(`name.ilike.%${filter.search}%,code.ilike.%${filter.search}%`);
+      return query;
+    }),
+  );
+  if (results.some((r) => r.error)) failed("las recetas");
+  return results.map((r) => r.count ?? 0);
+}
+
+// Un rubro y sus subcategorías: lo que filtra una tarjeta de rubro.
+export function withSubcategories(
+  categories: { id: string; parentId: string | null }[],
+  rubroId: string,
+): string[] {
+  return [rubroId, ...categories.filter((c) => c.parentId === rubroId).map((c) => c.id)];
+}
+
+// Si una receta o una materia prima se creó hace menos de 10 minutos: el aviso de «salió otro código» (ADR-0041)
+// solo tiene sentido justo después del alta, así un enlace viejo o armado a mano no lo muestra.
+export async function createdRecently(kind: "recipe" | "ingredient", id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } =
+    kind === "recipe"
+      ? await supabase
+          .schema("recipes")
+          .from("recipes")
+          .select("created_at")
+          .eq("id", id)
+          .maybeSingle()
+      : await supabase
+          .schema("catalog")
+          .from("ingredients")
+          .select("created_at")
+          .eq("id", id)
+          .maybeSingle();
+  if (!data) return false;
+  return Date.now() - Date.parse(data.created_at) < 10 * 60 * 1000;
 }

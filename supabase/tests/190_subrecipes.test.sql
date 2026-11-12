@@ -49,15 +49,16 @@ $$;
 create function pg_temp.u(p_n int) returns uuid language sql as $$
   select format('00000000-0000-4000-8000-%s', lpad(p_n::text, 12, '0'))::uuid
 $$;
-create function pg_temp.rec(p_code text) returns uuid language sql as $$
-  select id from recipes.recipes where code = p_code
-$$;
-create function pg_temp.ver(p_code text, p_number int) returns uuid language sql as $$
-  select v.id from recipes.recipe_versions v join recipes.recipes r on r.id = v.recipe_id
-   where r.code = p_code and v.version_number = p_number
-$$;
 create temporary table ids (k text primary key, id uuid);
 grant select on ids to authenticated;
+-- Desde ADR-0041 el código lo arma la base: las recetas de esta prueba se buscan por su etiqueta (PRB-…), guardada
+-- en ids al crearlas; las del seed, por su código.
+create function pg_temp.rec(p_code text) returns uuid language sql as $$
+  select coalesce((select id from ids where k = p_code), (select id from recipes.recipes where code = p_code))
+$$;
+create function pg_temp.ver(p_code text, p_number int) returns uuid language sql as $$
+  select v.id from recipes.recipe_versions v where v.recipe_id = pg_temp.rec(p_code) and v.version_number = p_number
+$$;
 create function pg_temp.id(p_k text) returns uuid language sql as $$ select id from ids where k = p_k $$;
 grant execute on function pg_temp.u(int), pg_temp.rec(text), pg_temp.ver(text, int), pg_temp.id(text) to authenticated;
 create function pg_temp.res(p_user uuid, p_call text) returns text language sql as $$
@@ -80,8 +81,11 @@ as $$
 declare
   v_version uuid;
 begin
-  v_version := (pg_temp.q(p_author, format($f$select recipes.create_recipe(%L, %L, null, %L, %L, %L, null, 'Prueba') ->> 'version_id'$f$,
-                                          p_group, p_brand, p_code, p_name, p_type)))::uuid;
+  -- Las preparaciones van en Salsas (SR-SAL) y los platos en Pastas (PL-PAS).
+  v_version := (pg_temp.q(p_author, format($f$select recipes.create_recipe(%L, %L, null, %L, %L, %L, 'Prueba') ->> 'version_id'$f$,
+                                          p_group, p_brand, p_name, p_type,
+                                          case when p_type = 'dish' then pg_temp.u(1062) else pg_temp.u(1061) end)))::uuid;
+  insert into ids select p_code, recipe_id from recipes.recipe_versions where id = v_version;
   perform pg_temp.q(p_author, format($f$select recipes.set_components(%L, %L, 'Prueba')$f$, v_version, p_lines));
   perform pg_temp.q(p_author, format($f$select recipes.set_steps(%L, '[{"instructions": "Hacer", "active_minutes": 10}]', 'Prueba')$f$,
                                      v_version));
@@ -166,7 +170,7 @@ select is(pg_temp.q(pg_temp.u(409), format('select coalesce(recipes.kitchen_card
 -- ---------------------------------------------------------------------------
 insert into ids
 select 'plato', (r ->> 'id')::uuid from (select pg_temp.q(pg_temp.u(405),
-  $$select recipes.create_recipe(null, pg_temp.u(101), null, 'PRB-PLATO', 'Plato de prueba', 'dish', null, 'Prueba')::text$$)::jsonb as r) x;
+  $$select recipes.create_recipe(null, pg_temp.u(101), null, 'Plato de prueba', 'dish', pg_temp.u(1062), 'Prueba')::text$$)::jsonb as r) x;
 insert into ids select 'plato_v1', id from recipes.recipe_versions where recipe_id = pg_temp.id('plato');
 
 select is(pg_temp.msg(pg_temp.u(405), format($$select recipes.set_components(%L, %L, 'Prueba')$$, pg_temp.id('plato_v1'),
@@ -294,7 +298,7 @@ select is(pg_temp.publish(pg_temp.u(405), pg_temp.u(403), pg_temp.id('plato_v1')
 select is(pg_temp.allergens(pg_temp.u(405), pg_temp.id('plato_v1')), 'DEMO-GLUTEN=free_verified, DEMO-LECHE=not_verified',
   'todo tomate: sin gluten verificado');
 select is(pg_temp.q(pg_temp.u(405), $$select string_agg(code, ', ') from recipes.recipe_usage(pg_temp.rec('PRB-SALSA'))$$),
-  'PRB-PLATO', 'la salsa sabe dónde se usa');
+  (select code from recipes.recipes where id = pg_temp.id('plato')), 'la salsa sabe dónde se usa');
 
 select is(pg_temp.res(pg_temp.u(405), format($$recipes.set_assignment(%L, pg_temp.u(201), true, 'Se sirve en Centro')$$, pg_temp.id('plato'))),
   'applied', 'el plato se usa en Demo Pastas Centro');
@@ -332,11 +336,11 @@ select is(pg_temp.publish(pg_temp.u(413), pg_temp.u(402), pg_temp.ver('PRB-SALSA
 -- ---------------------------------------------------------------------------
 -- Variantes locales
 -- ---------------------------------------------------------------------------
-select is(pg_temp.res(pg_temp.u(406), $$recipes.create_variant(pg_temp.rec('DEMO-PAS-03'), pg_temp.u(201), 'PRB-VAR', 'Ravioles (Centro)', 'Más relleno')$$),
+select is(pg_temp.res(pg_temp.u(406), $$recipes.create_variant(pg_temp.rec('DEMO-PAS-03'), pg_temp.u(201), 'Ravioles (Centro)', 'Más relleno')$$),
   'denied', 'el Jefe de Cocina no crea variantes: solo el Chef Ejecutivo');
 insert into ids
 select 'var', (r ->> 'id')::uuid from (select pg_temp.q(pg_temp.u(405),
-  $$select recipes.create_variant(pg_temp.rec('DEMO-PAS-03'), pg_temp.u(201), 'prb-var', 'Ravioles (Centro)', 'Más relleno')::text$$)::jsonb as r) x;
+  $$select recipes.create_variant(pg_temp.rec('DEMO-PAS-03'), pg_temp.u(201), 'Ravioles (Centro)', 'Más relleno')::text$$)::jsonb as r) x;
 insert into ids select 'var_v1', id from recipes.recipe_versions where recipe_id = pg_temp.id('var');
 select is((select scope_type::text || '/' || restaurant_id::text || '/' || variant_of_recipe_id::text from recipes.recipes where id = pg_temp.id('var')),
   'restaurant/' || pg_temp.u(201) || '/' || pg_temp.rec('DEMO-PAS-03'), 'la Chef crea la variante de Centro');
@@ -348,11 +352,11 @@ select is(pg_temp.status(pg_temp.id('var_v1')) || '/' ||
   'draft/6', 'en borrador, con las 6 líneas de la maestra (también su preparación)');
 select is(pg_temp.q(pg_temp.u(405), format($$select count(*)::text from recipes.variant_diff(%L)$$, pg_temp.id('var'))), '0',
   'todavía igual a la maestra');
-select is(pg_temp.msg(pg_temp.u(405), $$select recipes.create_variant(pg_temp.rec('DEMO-PAS-03'), pg_temp.u(201), 'PRB-VAR2', 'Otra', 'Otra')$$),
+select is(pg_temp.msg(pg_temp.u(405), $$select recipes.create_variant(pg_temp.rec('DEMO-PAS-03'), pg_temp.u(201), 'Otra', 'Otra')$$),
   'Ese local ya tiene una variante de esta receta.', 'una sola variante por local');
-select is(pg_temp.msg(pg_temp.u(402), $$select recipes.create_variant(pg_temp.rec('DEMO-PAS-03'), pg_temp.u(203), 'PRB-VAR3', 'Otra', 'Otra')$$),
+select is(pg_temp.msg(pg_temp.u(402), $$select recipes.create_variant(pg_temp.rec('DEMO-PAS-03'), pg_temp.u(203), 'Otra', 'Otra')$$),
   'Ese local no usa esa receta: está fuera de su alcance.', 'no se hace la variante para un local de otra marca');
-select is(pg_temp.msg(pg_temp.u(405), $$select recipes.create_variant(pg_temp.rec('DEMO-LOC-01'), pg_temp.u(202), 'PRB-VAR4', 'Otra', 'Otra')$$),
+select is(pg_temp.msg(pg_temp.u(405), $$select recipes.create_variant(pg_temp.rec('DEMO-LOC-01'), pg_temp.u(202), 'Otra', 'Otra')$$),
   'Solo se hacen variantes de una receta maestra del grupo o de una marca, activa.', 'ni de una receta de local');
 
 select is(pg_temp.res(pg_temp.u(406), format($$recipes.set_components(%L, %L, 'Más ricota')$$, pg_temp.id('var_v1'),

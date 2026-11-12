@@ -46,18 +46,19 @@ test("Compras busca por alias, crea una materia prima y la ve en su ficha", asyn
   const dialog = page.getByRole("dialog", { name: "Nueva materia prima" });
   await expect(dialog).toBeVisible();
   await axe(page);
-  const code = `E2E-${testInfo.project.name === "celular" ? "C" : "P"}-${Date.now() % 1_000_000_000}`;
-  await dialog.locator("#mp-alta-codigo").fill(code);
-  await dialog.locator("#mp-alta-nombre").fill(`Rúcula de prueba ${code}`);
+  const run = `E2E-${testInfo.project.name === "celular" ? "C" : "P"}-${Date.now() % 1_000_000_000}`;
+  // El código no se escribe: sale del rubro (ADR-0041).
   await dialog.locator("#mp-alta-categoria").selectOption({ label: "Verduras y frutas" });
+  await expect(dialog.locator("#mp-alta-codigo")).toHaveValue(/^MPR-VER-\d{4}$/);
+  await dialog.locator("#mp-alta-nombre").fill(`Rúcula de prueba ${run}`);
   await dialog.locator("#mp-alta-unidad").selectOption("g");
   await dialog.locator("#mp-alta-motivo").fill("Prueba automática del catálogo");
   await dialog.getByRole("button", { name: "Crear materia prima" }).click();
 
-  await expect(page).toHaveURL(/\/materias-primas\/[0-9a-f-]{36}$/);
-  await expect(page.getByRole("heading", { name: `Rúcula de prueba ${code}` })).toBeVisible();
-  // El encabezado de la ficha: código y categoría.
-  await expect(page.getByText(`${code} · Verduras y frutas`, { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/materias-primas\/[0-9a-f-]{36}(\?aviso=codigo&previsto=.*)?$/);
+  await expect(page.getByRole("heading", { name: `Rúcula de prueba ${run}` })).toBeVisible();
+  // El encabezado de la ficha: el código que armó la base y el rubro.
+  await expect(page.getByText(/^MPR-VER-\d{4} · Verduras y frutas$/)).toBeVisible();
   await axe(page);
   await noHorizontalScroll(page);
   // Next guarda ocultos el alta y la lista: si un id se repitiera, una etiqueta podría apuntar al
@@ -70,7 +71,7 @@ test("Compras busca por alias, crea una materia prima y la ve en su ficha", asyn
 
   // Los otros nombres quedan guardados (en minúsculas) y se ven en la ficha. Un alias es de una
   // sola materia prima del grupo: cada corrida usa los suyos.
-  const suffix = code.toLowerCase();
+  const suffix = run.toLowerCase();
   await openAction(page, "Cambiar los otros nombres");
   await page.getByLabel("Otros nombres").fill(`Rucula ${suffix}, roqueta ${suffix}`);
   await page.locator("#mp-motivo-alias").fill("Nombres que usa la cocina");
@@ -80,19 +81,20 @@ test("Compras busca por alias, crea una materia prima y la ve en su ficha", asyn
   await page.screenshot({ path: testInfo.outputPath("ficha.png"), fullPage: true });
 });
 
-test("un código repetido se rechaza con un mensaje en español", async ({ page }) => {
+test("el código no se escribe y un nombre repetido se rechaza en español", async ({ page }) => {
   await login(page, "compras@ejemplo.test");
   await page.goto("/materias-primas/nueva");
-  await page.getByLabel("Código").fill("DEMO-ING-001");
-  await page.getByLabel("Nombre").fill("Tomate repetido");
-  await page
-    .getByRole("combobox", { name: "Categoría" })
-    .selectOption({ label: "Verduras y frutas" });
+  // El código es de solo lectura: lo arma la base con el rubro (ADR-0041).
+  await expect(page.locator("#mp-alta-codigo")).toHaveAttribute("readonly", "");
+  await expect(page.locator("#mp-alta-codigo")).toHaveValue("Se arma al elegir el rubro");
+  await page.getByRole("combobox", { name: "Rubro" }).selectOption({ label: "Verduras y frutas" });
+  await expect(page.locator("#mp-alta-codigo")).toHaveValue(/^MPR-VER-\d{4}$/);
+  await page.getByLabel("Nombre").fill("TOMATE PERITA");
   await page.getByLabel("Se usa en recetas en").selectOption("g");
   await page.getByLabel("Motivo").fill("Prueba automática");
   await page.getByRole("button", { name: "Crear materia prima" }).click();
   await expect(notice(page)).toContainText(
-    "Ya existe una materia prima con ese código en el grupo.",
+    "Ya existe una materia prima con ese nombre en el grupo.",
   );
 });
 

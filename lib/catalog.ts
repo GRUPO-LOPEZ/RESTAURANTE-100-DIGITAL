@@ -45,6 +45,8 @@ export type Unit = {
 export type Category = {
   id: string;
   groupId: string;
+  // El rubro madre (null si es un rubro): para filtrar un rubro con sus subcategorías.
+  parentId: string | null;
   name: string;
   label: string;
   isActive: boolean;
@@ -90,6 +92,7 @@ export async function getCategories(): Promise<Category[]> {
       return {
         id: c.id,
         groupId: c.group_id,
+        parentId: c.parent_id,
         name: c.name,
         label: parent ? `${parent.name} › ${c.name}` : c.name,
         isActive: c.is_active && (parent?.is_active ?? true),
@@ -114,7 +117,8 @@ export async function getSuppliers(): Promise<Supplier[]> {
 
 export type IngredientsFilter = {
   search?: string;
-  categoryId?: string;
+  // Un rubro con sus subcategorías (la tarjeta elegida, ADR-0041).
+  categoryIds?: string[];
   status?: "active" | "inactive";
   // Página desde 0 y filas por página (si no se dice, las de siempre).
   page: number;
@@ -160,7 +164,7 @@ export async function getIngredients(
       filter.page * (filter.size ?? INGREDIENTS_PAGE),
       (filter.page + 1) * (filter.size ?? INGREDIENTS_PAGE) - 1,
     );
-  if (filter.categoryId) query = query.eq("category_id", filter.categoryId);
+  if (filter.categoryIds) query = query.in("category_id", filter.categoryIds);
   if (filter.status) query = query.eq("is_active", filter.status === "active");
   if (filter.search) {
     // Por nombre, código o alias.

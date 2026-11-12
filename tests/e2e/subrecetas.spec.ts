@@ -32,7 +32,12 @@ async function axe(page: Page) {
 
 async function openRecipe(page: Page, name: string) {
   await page.goto(`/recetas?q=${encodeURIComponent(name.slice(0, 8))}`);
-  await page.getByRole("link", { name, exact: true }).first().click();
+  // La lista entra en Platos (ADR-0041): una preparación buscada ahí se alcanza con «Ver N en Preparaciones».
+  const link = page.getByRole("link", { name, exact: true }).first();
+  const other = page.getByRole("link", { name: /^Ver \d+ en Preparaciones$/ });
+  await expect(link.or(other).first()).toBeVisible();
+  if (!(await link.isVisible())) await other.click();
+  await link.click();
 }
 
 test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", async ({
@@ -44,9 +49,11 @@ test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", a
   await login(page, "chef@ejemplo.test");
   await page.goto("/recetas/nueva");
   await page.locator("#rec-alta-alcance").selectOption({ label: "De la marca Demo Pastas" });
-  await page.locator("#rec-alta-codigo").fill(`E2E-SUB-${n}`);
+  // Tipo y rubro: el código lo arma la base con los dos (ADR-0041).
+  await page.getByRole("group", { name: "Tipo" }).getByText("Plato", { exact: true }).click();
+  await page.locator("#rec-alta-categoria").selectOption({ label: "Pastas" });
+  await expect(page.locator("#rec-alta-codigo")).toHaveValue(/^PLA-PAS-\d{4}$/);
   await page.locator("#rec-alta-nombre").fill(name);
-  await page.locator("#rec-alta-tipo").selectOption("dish");
   await page.locator("#rec-alta-motivo").fill("Receta de prueba automática");
   await page.getByRole("button", { name: "Crear receta" }).click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
@@ -138,7 +145,6 @@ test("la Chef crea una variante para un local y la ve contra la maestra", async 
   if ((await options.count()) > 0) {
     await openAction(page, "Crear una variante para un local");
     await page.locator('select[id$="-variante-local"]').selectOption({ label: place });
-    await page.getByLabel("Código de la variante").fill(`E2E-VAR-${Date.now() % 1_000_000}`);
     await page.getByLabel("Nombre de la variante").fill(name);
     await page.locator('textarea[id$="-motivo-variante"]').fill("Variante de prueba automática");
     await page.getByRole("button", { name: "Crear variante" }).click();

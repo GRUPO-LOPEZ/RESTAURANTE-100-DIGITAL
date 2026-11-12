@@ -212,16 +212,15 @@ test("al dar de alta una receta, el rubro se ofrece según el tipo", async ({ pa
   await login(page, "chefgrupo@ejemplo.test");
   await page.goto("/recetas/nueva");
   const category = page.locator("#rec-alta-categoria");
-  await page.locator("#rec-alta-tipo").selectOption("dish");
-  await expect(category.locator("optgroup")).toHaveCount(1);
-  await expect(category.locator("optgroup")).toHaveAttribute("label", "Rubros de menú (platos)");
+  const type = page.getByRole("group", { name: "Tipo" });
+  // Sin tipo no hay rubro: cada tipo tiene los suyos (y solo hay Plato y Preparación, ADR-0041).
+  await expect(category).toBeDisabled();
+  await expect(type.getByRole("radio")).toHaveCount(2);
+  await type.getByText("Plato", { exact: true }).click();
   await expect(category.getByRole("option", { name: "Pastas", exact: true })).toHaveCount(1);
   await expect(category.getByRole("option", { name: "Salsas", exact: true })).toHaveCount(0);
-  await page.locator("#rec-alta-tipo").selectOption("preparation");
-  await expect(category.locator("optgroup")).toHaveAttribute(
-    "label",
-    "Sub-recetas (preparaciones y componentes)",
-  );
+  await type.getByText("Preparación", { exact: true }).click();
   await expect(category.getByRole("option", { name: "Salsas", exact: true })).toHaveCount(1);
+  await expect(category.getByRole("option", { name: "Pastas", exact: true })).toHaveCount(0);
   await axe(page);
 });

@@ -43,9 +43,11 @@ test("el Jefe de Cocina carga una receta y, aprobada, la cocina la ve sin costos
   await axe(page);
   await page.getByRole("link", { name: "Nueva receta" }).click();
   await page.locator("#rec-alta-alcance").selectOption({ label: "Del local Demo Pastas Centro" });
-  await page.locator("#rec-alta-codigo").fill(`E2E-${n}`);
+  // Tipo y rubro: el código lo arma la base con los dos (ADR-0041).
+  await page.getByRole("group", { name: "Tipo" }).getByText("Plato", { exact: true }).click();
+  await page.locator("#rec-alta-categoria").selectOption({ label: "Pastas" });
+  await expect(page.locator("#rec-alta-codigo")).toHaveValue(/^PLA-PAS-\d{4}$/);
   await page.locator("#rec-alta-nombre").fill(name);
-  await page.locator("#rec-alta-tipo").selectOption("dish");
   await page.locator("#rec-alta-motivo").fill("Receta de prueba automática");
   await page.getByRole("button", { name: "Crear receta" }).click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
@@ -161,6 +163,9 @@ test("la Cocinera no ve borradores ni crea recetas", async ({ page }) => {
   await login(page, "cocinero@ejemplo.test");
   await page.goto("/recetas");
   await expect(page.getByRole("link", { name: "Nueva receta" })).toHaveCount(0);
+  await expect(page.getByText("Risotto de hongos")).toHaveCount(0);
+  // Las preparaciones están en su pestaña (ADR-0041): tampoco ahí ve borradores.
+  await page.goto("/recetas?tipo=preparaciones");
   await expect(page.getByText("Risotto de hongos")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Salsa bolognesa" }).first()).toBeVisible();
   await page.goto("/recetas/nueva");

@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { toActionState, type ActionState } from "@/lib/auth/results";
 import type { AllergenStatus, ConversionKind, DataSource } from "@/lib/catalog";
+import { codeChangedHref } from "@/lib/codes";
 import { fieldErrors, formValues, isChecked, schemas } from "@/lib/forms/schemas";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,7 +47,7 @@ export async function createIngredientAction(
   if (!fields.success) return invalid(fields.error);
   const categoryId = uuid.safeParse(fields.data.category_id);
   if (!categoryId.success)
-    return { status: "bad", fieldErrors: { category_id: "Elegí la categoría." } };
+    return { status: "bad", fieldErrors: { category_id: "Elegí el rubro." } };
   const supabase = await createClient();
   // El grupo es el de la categoría elegida (la base vuelve a controlar que coincidan).
   const { data: category } = await supabase
@@ -55,19 +56,23 @@ export async function createIngredientAction(
     .select("group_id")
     .eq("id", categoryId.data)
     .maybeSingle();
-  if (!category) return { status: "bad", fieldErrors: { category_id: "Elegí la categoría." } };
+  if (!category) return { status: "bad", fieldErrors: { category_id: "Elegí el rubro." } };
   const { data, error } = await supabase.schema("catalog").rpc("create_ingredient", {
     p_group_id: category.group_id,
-    p_code: fields.data.code,
     p_name: fields.data.name,
-    p_category_id: fields.data.category_id,
+    p_category_id: categoryId.data,
     p_recipe_unit: fields.data.recipe_unit,
     p_details: {},
     p_reason: fields.data.reason,
+    p_expected_code: fields.data.expected_code ?? "",
   });
-  if (error) return toActionState(null, error);
+  const result = data as { id?: string; code?: string } | null;
+  if (error || !result?.id) return toActionState(null, error);
   revalidatePath("/materias-primas");
-  redirect(`/materias-primas/${data}`);
+  // Si salió otro código que el de la vista previa, la ficha lo avisa (ADR-0041).
+  redirect(
+    codeChangedHref(`/materias-primas/${result.id}`, fields.data.expected_code, result.code),
+  );
 }
 
 export async function updateIngredientAction(
@@ -591,4 +596,15 @@ export async function archiveProcessAction(
   if (error) return toActionState(null, error);
   revalidatePath("/materias-primas", "layout");
   redirect("/materias-primas/configuracion?baja=proceso");
+}
+
+// Vista previa del código de una materia prima nueva (ADR-0041), sin entregar el número. Sin permiso, null.
+export async function previewIngredientCodeAction(categoryId: string): Promise<string | null> {
+  const category = uuid.safeParse(categoryId);
+  if (!category.success) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .rpc("preview_ingredient_code", { p_category_id: category.data });
+  return error ? null : (data ?? null);
 }

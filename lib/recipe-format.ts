@@ -10,11 +10,17 @@ export type QuantityBasis = Recipes["Enums"]["quantity_basis"];
 export type StepKind = Recipes["Enums"]["step_kind"];
 export type VersionStatus = Database["core"]["Enums"]["version_status"];
 
+// Solo platos y preparaciones (pedido de Soy, ADR-0041): los componentes por unidad que ya existían se muestran como
+// preparaciones; la base ya no los crea.
 export const RECIPE_TYPE_LABELS: Record<RecipeType, string> = {
   preparation: "Preparación",
   dish: "Plato",
-  unit_component: "Componente unitario",
+  unit_component: "Preparación",
 };
+
+// Los tipos que se ofrecen al crear una receta, en este orden.
+export const NEW_RECIPE_TYPES = ["dish", "preparation"] as const satisfies readonly RecipeType[];
+export type NewRecipeType = (typeof NEW_RECIPE_TYPES)[number];
 
 export const SCOPE_LABELS: Record<RecipeScope, string> = {
   group: "Maestra del grupo",

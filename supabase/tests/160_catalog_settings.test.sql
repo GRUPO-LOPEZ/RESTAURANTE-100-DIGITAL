@@ -122,7 +122,7 @@ select ok(exists (select 1 from audit.audit_events where table_schema = 'catalog
                     and action = 'soft_delete' and record_id = (select id from archived)
                     and new_values ->> 'deleted_at' is not null and reason = 'Ya no se usa'),
   'la baja queda en la auditoría, con el motivo');
-select is(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'ING-9001', 'Pan de molde',
+select is(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'Pan de molde',
             (select id from archived), 'g', null, 'Prueba')::text$$),
   'ERROR 23514', 'una categoría dada de baja no se puede usar en una materia prima nueva');
 select is(pg_temp.q(pg_temp.u(408), $$select catalog.rename_category((select id from archived), 'Otra', 'Prueba')::text$$),
