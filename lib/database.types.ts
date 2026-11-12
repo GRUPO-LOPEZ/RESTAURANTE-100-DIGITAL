@@ -439,6 +439,46 @@ export type Database = {
         };
         Relationships: [];
       };
+      code_series: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          last_number: number;
+          prefix: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          last_number?: number;
+          prefix: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          last_number?: number;
+          prefix?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       ingredient_aliases: {
         Row: {
           alias: string;
@@ -1285,6 +1325,16 @@ export type Database = {
         Args: { p_action: string; p_ingredient_id: string };
         Returns: undefined;
       };
+      code_format: {
+        Args: { p_number: number; p_prefix: string; p_width: number };
+        Returns: string;
+      };
+      code_highest: { Args: { p_group_id: string; p_prefix: string }; Returns: number };
+      code_message: {
+        Args: { p_code: string; p_expected: string; p_what: string };
+        Returns: string;
+      };
+      code_taken: { Args: { p_code: string; p_group_id: string }; Returns: boolean };
       convert_quantity: {
         Args: {
           p_from_unit_id: string;
@@ -1318,14 +1368,14 @@ export type Database = {
       create_ingredient: {
         Args: {
           p_category_id: string;
-          p_code: string;
           p_details: Json;
+          p_expected_code?: string;
           p_group_id: string;
           p_name: string;
           p_reason: string;
           p_recipe_unit: string;
         };
-        Returns: string;
+        Returns: Json;
       };
       create_purchase_product: {
         Args: {
@@ -1372,6 +1422,7 @@ export type Database = {
         Returns: string;
       };
       group_yield_alert_pct: { Args: { p_group_id: string }; Returns: number };
+      ingredient_code_prefix: { Args: { p_category_id: string }; Returns: string };
       ingredient_group: { Args: { p_ingredient_id: string }; Returns: string };
       ingredient_usage: {
         Args: { p_ingredient_id: string };
@@ -1387,7 +1438,16 @@ export type Database = {
         Args: { p_content_unit_id: string; p_ingredient_id: string };
         Returns: string;
       };
+      next_code: {
+        Args: { p_group_id: string; p_prefix: string; p_width: number };
+        Returns: string;
+      };
       notify_yield_deviation: { Args: { p_test_id: string }; Returns: undefined };
+      peek_code: {
+        Args: { p_group_id: string; p_prefix: string; p_width: number };
+        Returns: string;
+      };
+      preview_ingredient_code: { Args: { p_category_id: string }; Returns: string };
       process_usage: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -5701,6 +5761,10 @@ export type Database = {
           recipes: number;
         }[];
       };
+      code_prefix: {
+        Args: { p_category_id: string; p_type: Database["recipes"]["Enums"]["recipe_type"] };
+        Returns: string;
+      };
       compare_versions: {
         Args: { p_new: string; p_old: string };
         Returns: {
@@ -5730,7 +5794,7 @@ export type Database = {
         Args: {
           p_brand_id: string;
           p_category_id: string;
-          p_code: string;
+          p_expected_code?: string;
           p_group_id: string;
           p_name: string;
           p_reason: string;
@@ -5749,13 +5813,7 @@ export type Database = {
         Returns: string;
       };
       create_variant: {
-        Args: {
-          p_code: string;
-          p_master_id: string;
-          p_name: string;
-          p_reason: string;
-          p_restaurant_id: string;
-        };
+        Args: { p_master_id: string; p_name: string; p_reason: string; p_restaurant_id: string };
         Returns: Json;
       };
       critical_path: {
@@ -5840,6 +5898,10 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      preview_code: {
+        Args: { p_category_id: string; p_type: Database["recipes"]["Enums"]["recipe_type"] };
+        Returns: string;
       };
       raise_category_error: {
         Args: {

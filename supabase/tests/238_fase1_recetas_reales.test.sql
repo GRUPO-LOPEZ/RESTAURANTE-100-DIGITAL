@@ -72,8 +72,8 @@ select is(pg_temp.q(pg_temp.u(409), format('select coalesce(recipes.kitchen_card
 -- ---------------------------------------------------------------------------
 -- 3. El jefe de cocina crea un borrador pero no publica sin permiso
 -- ---------------------------------------------------------------------------
-insert into ids values ('receta', (pg_temp.q(pg_temp.u(406), $$select recipes.create_recipe(null, null, pg_temp.u(201), 'loc-0238',
-  'Ñoquis del 29', 'dish', null, 'Receta nueva del local') ->> 'id'$$))::uuid);
+insert into ids values ('receta', (pg_temp.q(pg_temp.u(406), $$select recipes.create_recipe(null, null, pg_temp.u(201),
+  'Ñoquis del 29', 'dish', pg_temp.u(1062), 'Receta nueva del local') ->> 'id'$$))::uuid);
 select ok(pg_temp.id('receta') is not null, '3. el jefe de cocina crea una receta en su local');
 insert into ids values ('v1', (select id from recipes.recipe_versions where recipe_id = pg_temp.id('receta')));
 select is(pg_temp.status(pg_temp.id('v1')), 'draft', '3. queda en borrador');

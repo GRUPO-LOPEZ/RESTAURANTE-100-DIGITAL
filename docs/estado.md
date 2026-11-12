@@ -1,8 +1,43 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). En curso: medidas, mermas y rendimientos (ADR-0040, rama `feat/mermas-rendimientos`)._
+_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). En curso: códigos automáticos y listados por rubro (ADR-0041, rama `feat/codigos-y-listados-por-rubro`), Prompt 1 de 3._
 
-## Al retomar: medidas, mermas y rendimientos (rama `feat/mermas-rendimientos`)
+## Al retomar: códigos automáticos y listados por rubro (rama `feat/codigos-y-listados-por-rubro`)
+
+- **Qué se hizo** (Prompt 1 de `docs/prompts/2026-11-12-fichas-unicas-recetas-y-materias-primas.md`; ADR-0041; lista para Soy en `docs/modulos/06-codigos-y-listados-lista-de-cambios.md`):
+  - **Base** (`20261127120000_auto_codes.sql`):
+    - el código lo arma la base: `PLA-CAF-0001`, `PRE-SAL-0001`, `MPR-CAR-0001` y, en las variantes, `<maestra>-V01`;
+    - contador `catalog.code_series` con bloqueo, sin reutilizar números;
+    - vista previa sin consumir (`recipes.preview_code`, `catalog.preview_ingredient_code`);
+    - las altas ya no reciben código y avisan si salió otro;
+    - el código de una materia prima ya no cambia (`catalog.guard_code`).
+  - **Pantallas:**
+    - alta de receta en el orden de Soy, con Plato | Preparación, el rubro obligatorio y el código en solo lectura;
+    - alta de materia prima con todas las unidades (se guarda la base);
+    - `/recetas` y `/materias-primas` con tarjetas de rubros que filtran la tabla, y Platos | Preparaciones con su cantidad.
+- **Decisiones de Joaco (2026-11-12):**
+  - 9999 pasa a 5 dígitos;
+  - variantes con -V01;
+  - la importación conserva el código del Excel;
+  - «Se usa en recetas en» con todas las unidades, guardando g, ml o unidad.
+- **Pruebas (2026-11-12):**
+  - db reset desde cero y tipos regenerados; lint, tipos y formato;
+  - Vitest 322 (nueva `codes.test.ts`);
+  - pgTAP 2.406 en 50 archivos (nueva `280_auto_codes`, con 51; ajustadas `050`, `140`, `160`, `170`, `190`, `238` y `250`);
+  - Playwright: nueva `codigos.spec.ts` (11 en verde, 1 omitida a propósito), en celular y computadora (1440, 1600 y 1920), con axe;
+  - las specs relacionadas dieron 111 en verde y 4 en rojo. Las 4 eran 2 pruebas que buscaban preparaciones en la pestaña Platos, y se ajustaron;
+  - Playwright completo (2026-11-12): 261 en verde, 4 omitidas a propósito y 1 caída por tiempo en `roles.spec` (celular), que no toca este cambio; corrida sola, pasaron sus 5 pruebas.
+- **Revisores:**
+  - base: sin graves; los 2 medios (prueba de auditoría y RLS para anónimo o sin membresía) corregidos;
+  - seguridad: apto; 2 de los 3 menores corregidos y el tercero (la numeración del grupo deja intuir cantidades) documentado;
+  - diseño: sin graves; los 2 medios (código duplicado en el celular, búsqueda en la pestaña equivocada) y los menores de una línea, corregidos.
+- **Quedó** (ADR-0041, «Lo que queda»):
+  - las tarjetas no dependen del buscador;
+  - «insumos» o «materias primas»: falta unificar el término con Soy;
+  - reservar los prefijos PLA, PRE y MPR en la importación.
+- **Sigue:** el PR de este Prompt 1. Después, el Prompt 2 (ficha única de receta) y el Prompt 3 (ficha única de materia prima).
+
+## Antes: medidas, mermas y rendimientos (fusionado, PR #57)
 
 - **Qué se hizo** (pedido de Soy; ADR-0040; lista para Soy en `docs/modulos/05-mermas-y-rendimientos-lista-de-cambios.md`):
   - **Base** (`20261126120000_units_and_waste.sql`):

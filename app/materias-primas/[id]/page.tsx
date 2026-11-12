@@ -24,6 +24,8 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Metric } from "@/components/ui/metric";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
+import { codeNoticeFromQuery } from "@/lib/codes";
+import { createdRecently } from "@/lib/recipes";
 import { ToggleField } from "@/components/ui/toggle-field";
 import { WastePreview } from "@/components/waste-preview";
 import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
@@ -202,6 +204,11 @@ async function Ingredient({
   const canManage = menus.catalogManage;
   const canRecordYields = menus.yieldsRecord;
 
+  // Recién creada con otro código que el de la vista previa (alguien creó otra en el medio, ADR-0041).
+  const codeNotice =
+    first(query.aviso) === "codigo" && (await createdRecently("ingredient", ingredient.id))
+      ? codeNoticeFromQuery(first(query.aviso), first(query.previsto), ingredient.code)
+      : null;
   const wanted = first(query.seccion);
   const section: Section = SECTIONS.find((t) => t.key === wanted)?.key ?? "datos";
   const show = (key: Section) => section === key;
@@ -251,6 +258,7 @@ async function Ingredient({
   return (
     <>
       <BackLink href={back}>Volver a materias primas</BackLink>
+      {codeNotice ? <Notice status="info">{codeNotice}</Notice> : null}
 
       {/* Encabezado: siempre a la vista, en todas las pestañas. */}
       <Card className="flex flex-col gap-2">

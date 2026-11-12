@@ -5,7 +5,8 @@ import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { getDraftScopes, getRecipeCategories } from "@/lib/recipes";
 
 // El alta de una receta (sección 13): crea el borrador y lleva a su ficha. La usan la página /recetas/nueva y
-// el modal de la lista (ADR-0036), así son siempre el mismo formulario.
+// el modal de la lista (ADR-0036), así son siempre el mismo formulario. Orden del pedido de Soy (ADR-0041):
+// alcance, tipo, rubro, código (automático), nombre y motivo.
 export async function NewRecipeForm() {
   const [scopes, categories] = await Promise.all([getDraftScopes(), getRecipeCategories()]);
   return (
@@ -32,24 +33,13 @@ export async function NewRecipeForm() {
           </option>
         ))}
       </FormSelect>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormInput
-          id="rec-alta-codigo"
-          label="Código"
-          hint="No cambia nunca. Por ejemplo, REC-0001."
-          name="code"
-          required
-          maxLength={30}
-          autoCapitalize="characters"
-        />
-        <FormInput id="rec-alta-nombre" label="Nombre" name="name" required maxLength={120} />
-      </div>
-      {/* Tipo y rubro: el rubro se filtra por la clase del tipo (ADR-0038). Los dados de baja no se ofrecen. */}
+      {/* Los rubros dados de baja no se ofrecen (ADR-0038). */}
       <RecipeTypeCategory
         categories={categories
           .filter((c) => c.isActive)
           .map((c) => ({ id: c.id, label: c.label, kind: c.kind }))}
       />
+      <FormInput id="rec-alta-nombre" label="Nombre" name="name" required maxLength={120} />
       <FormTextarea
         id="rec-alta-motivo"
         label="Motivo"

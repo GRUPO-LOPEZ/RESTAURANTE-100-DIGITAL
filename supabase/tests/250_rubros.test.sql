@@ -140,20 +140,22 @@ select is(pg_temp.q(gen_random_uuid(), $$select count(*)::text from recipes.top_
 -- ---------------------------------------------------------------------------
 -- Un plato va en un rubro de menú; una preparación o un componente, en uno de sub-recetas
 -- ---------------------------------------------------------------------------
-select ok(pg_temp.q(pg_temp.u(413), $$select recipes.create_recipe(pg_temp.u(1), null, null, 'RUB-01', 'Plato de prueba', 'dish',
+select ok(pg_temp.q(pg_temp.u(413), $$select recipes.create_recipe(pg_temp.u(1), null, null, 'Plato de prueba', 'dish',
                                         pg_temp.rub('PL-PAS'), 'Prueba') ->> 'result'$$) = 'applied',
   'un plato entra en un rubro de menú');
-select is(pg_temp.msg(pg_temp.u(413), $$select recipes.create_recipe(pg_temp.u(1), null, null, 'RUB-02', 'Plato mal', 'dish',
+select is(pg_temp.msg(pg_temp.u(413), $$select recipes.create_recipe(pg_temp.u(1), null, null, 'Plato mal', 'dish',
                                         pg_temp.rub('SR-SAL'), 'Prueba')$$),
   'Un plato va en un rubro de menú; una preparación o un componente, en un rubro de sub-recetas.',
   'un plato no entra en un rubro de sub-recetas');
-select is(pg_temp.msg(pg_temp.u(413), $$select recipes.create_recipe(pg_temp.u(1), null, null, 'RUB-03', 'Salsa mal', 'preparation',
+select is(pg_temp.msg(pg_temp.u(413), $$select recipes.create_recipe(pg_temp.u(1), null, null, 'Salsa mal', 'preparation',
                                         pg_temp.rub('PL-PAS'), 'Prueba')$$),
   'Un plato va en un rubro de menú; una preparación o un componente, en un rubro de sub-recetas.',
   'una preparación no entra en un rubro de menú');
-select ok(pg_temp.q(pg_temp.u(413), $$select recipes.create_recipe(pg_temp.u(1), null, null, 'RUB-04', 'Medallón', 'unit_component',
-                                        pg_temp.rub('SR-COC'), 'Prueba') ->> 'result'$$) = 'applied',
-  'un componente unitario va en un rubro de sub-recetas');
+-- Desde ADR-0041 ya no se crean componentes por unidad: se simula uno cargado antes.
+select core.set_change_context('Componente cargado antes de ADR-0041', 'maintenance');
+select lives_ok($$insert into recipes.recipes (group_id, scope_type, code, name, recipe_type, category_id)
+                  values (pg_temp.u(1), 'group', 'RUB-04', 'Medallón', 'unit_component', pg_temp.rub('SR-COC'))$$,
+  'un componente unitario (cargado antes) va en un rubro de sub-recetas');
 select is(pg_temp.msg(pg_temp.u(413), format($$select recipes.update_recipe(%L, '{"category_id": "%s"}', 'Cambio de rubro')$$,
                                              pg_temp.u(1107), pg_temp.rub('SR-SAL'))),
   'Un plato va en un rubro de menú; una preparación o un componente, en un rubro de sub-recetas.',

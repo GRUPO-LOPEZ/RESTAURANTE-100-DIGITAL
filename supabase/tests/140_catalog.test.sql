@@ -89,10 +89,10 @@ $$;
 select is(
   (select array_agg(c.relname::text order by c.relname::text) from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'catalog' and c.relkind = 'r'),
-  array['allergens', 'ingredient_aliases', 'ingredient_allergens', 'ingredient_categories', 'ingredient_unit_conversions',
+  array['allergens', 'code_series', 'ingredient_aliases', 'ingredient_allergens', 'ingredient_categories', 'ingredient_unit_conversions',
         'ingredient_yield_profiles', 'ingredient_yield_tests', 'ingredients', 'purchase_products', 'suppliers',
         'unit_conversions', 'units', 'yield_processes'],
-  'el catálogo tiene sus 13 tablas (10 de 2.1 A y 3 de rendimientos, 2.1 B)');
+  'el catálogo tiene sus 14 tablas (10 de 2.1 A, 3 de rendimientos, 2.1 B, y los contadores de códigos, ADR-0041)');
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'catalog' and c.relkind = 'r' and not c.relrowsecurity),
@@ -239,43 +239,45 @@ select is(pg_temp.q(pg_temp.u(408), $$update catalog.ingredients set name = 'x' 
 select is(pg_temp.q(pg_temp.u(408), $$delete from catalog.ingredients where id = pg_temp.ing(1) returning 'ok'$$),
   'ERROR 42501', 'nadie borra: no hay borrado');
 
-select ok(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'demo-ing-900', 'Rúcula',
-            pg_temp.u(701), 'g', '{"purchase_unit": "kg"}', 'Alta de prueba')::text$$) ~ '^[0-9a-f-]{36}$',
+select ok(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'Rúcula',
+            pg_temp.u(701), 'g', '{"purchase_unit": "kg"}', 'Alta de prueba') ->> 'id'$$) ~ '^[0-9a-f-]{36}$',
   'Compras crea una materia prima');
-select is((select code || '|' || name from catalog.ingredients where code = 'DEMO-ING-900'), 'DEMO-ING-900|Rúcula',
-  'el código queda en mayúsculas');
+select is((select code || '|' || name from catalog.ingredients where name = 'Rúcula'), 'MPR-VER-0001|Rúcula',
+  'el código lo arma la base con el rubro (ADR-0041)');
 select is(
   (select format('%s|%s|%s|%s', e.action, (e.actor_user_id = pg_temp.u(408))::text, e.reason, e.new_values ->> 'name')
      from audit.audit_events e
     where e.table_schema = 'catalog' and e.table_name = 'ingredients'
-      and e.record_id = (select id from catalog.ingredients where code = 'DEMO-ING-900')),
+      and e.record_id = (select id from catalog.ingredients where name = 'Rúcula')),
   'insert|true|Alta de prueba|Rúcula', 'la auditoría guarda quién, qué y por qué');
 select is(
   (select module from audit.audit_events where table_schema = 'catalog' and table_name = 'ingredients' limit 1),
   'catalog', 'el historial lo muestra en el módulo catálogo');
 
-select is(pg_temp.q(pg_temp.u(405), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-901', 'Rúcula 2',
+select is(pg_temp.q(pg_temp.u(405), $$select catalog.create_ingredient(pg_temp.u(1), 'Rúcula 2',
             pg_temp.u(701), 'g', null, 'Prueba')::text$$), 'ERROR 42501', 'el Chef no edita el catálogo');
-select is(pg_temp.q(pg_temp.u(406), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-901', 'Rúcula 2',
+select is(pg_temp.q(pg_temp.u(406), $$select catalog.create_ingredient(pg_temp.u(1), 'Rúcula 2',
             pg_temp.u(701), 'g', null, 'Prueba')::text$$), 'ERROR 42501', 'el Jefe de Cocina tampoco');
-select is(pg_temp.q(pg_temp.u(410), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-901', 'Rúcula 2',
+select is(pg_temp.q(pg_temp.u(410), $$select catalog.create_ingredient(pg_temp.u(1), 'Rúcula 2',
             pg_temp.u(701), 'g', null, 'Prueba')::text$$), 'ERROR 42501', 'el Auditor tampoco');
-select is(pg_temp.q(pg_temp.u(402), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-901', 'Rúcula 2',
+select is(pg_temp.q(pg_temp.u(402), $$select catalog.create_ingredient(pg_temp.u(1), 'Rúcula 2',
             pg_temp.u(701), 'g', null, 'Prueba')::text$$), 'ERROR 42501', 'Dirección tampoco');
-select is(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-901', 'Rúcula 2',
+select is(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'Rúcula 2',
             pg_temp.u(701), 'g', null, '  ')::text$$), 'ERROR 22023', 'sin motivo no se crea');
 select is(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-001', 'Otro tomate',
-            pg_temp.u(701), 'g', null, 'Prueba')::text$$), 'ERROR 23505', 'un código repetido se rechaza');
-select is(pg_temp.msg(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-001', 'Otro tomate',
-            pg_temp.u(701), 'g', null, 'Prueba')$$),
-  'Ya existe una materia prima con ese código en el grupo.', 'y el mensaje sale en español, sin nombres técnicos');
+            pg_temp.u(701), 'g', null, 'Prueba')::text$$), 'ERROR 42883', 'el código ya no se elige: la firma vieja no existe');
+select throws_ok($$insert into catalog.ingredients (group_id, code, name, category_id, recipe_unit_id)
+                   select group_id, 'DEMO-ING-001', 'Otro tomate', category_id, recipe_unit_id from catalog.ingredients where code = 'DEMO-ING-002'$$,
+  '23505', null, 'y un código repetido lo sigue rechazando la base');
 select is(pg_temp.msg(pg_temp.u(408), $$select catalog.create_supplier(pg_temp.u(1), 'x', 'Proveedor nuevo', null, 'Prueba')$$),
   'El código va en mayúsculas, números y guiones, de 2 a 30 caracteres (por ejemplo, ING-0001).',
   'un código fuera de formato explica cómo va');
-select is(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-902', 'TOMATE PERITA',
+select is(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'TOMATE PERITA',
             pg_temp.u(701), 'g', null, 'Prueba')::text$$), 'ERROR 23505', 'un nombre repetido (sin importar mayúsculas) se rechaza');
-select is(pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-903', 'Harina integral',
-            pg_temp.u(705), 'kg', null, 'Prueba')::text$$), 'ERROR 23514', 'la unidad de uso en recetas es siempre g, ml o unidad');
+select pg_temp.q(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'Harina de garbanzo', pg_temp.u(705), 'kg', null, 'Prueba')::text$$);
+select is((select u.code from catalog.ingredients i join catalog.units u on u.id = i.recipe_unit_id
+            where i.name = 'Harina de garbanzo'),
+  'g', 'la unidad de uso en recetas es siempre g, ml o unidad: elegida en kg, queda en g');
 select is(pg_temp.q(pg_temp.u(408), $$select catalog.update_ingredient(pg_temp.ing(1), '{"code": "OTRO"}', 'Prueba')::text$$),
   'ERROR 22023', 'el código de una materia prima no cambia');
 select is(pg_temp.q(pg_temp.u(408), $$select catalog.set_ingredient_active(pg_temp.ing(50), false, 'Ya no se compra')::text$$),
@@ -349,7 +351,7 @@ begin
   update catalog.ingredient_aliases set deleted_at = now() where alias = 'calabaza';
 end
 $$;
-select is(pg_temp.msg(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'DEMO-ING-910', 'Cúrcuma',
+select is(pg_temp.msg(pg_temp.u(408), $$select catalog.create_ingredient(pg_temp.u(1), 'Cúrcuma',
             pg_temp.u(708), 'g', null, 'Prueba')$$),
   'Esa categoría está borrada: elegí otra.', 'no se usa una categoría borrada');
 select is(pg_temp.msg(pg_temp.u(408), $$select catalog.create_purchase_product(pg_temp.ing(21), 'DEMO-PROD-910', 'Ricota, balde',

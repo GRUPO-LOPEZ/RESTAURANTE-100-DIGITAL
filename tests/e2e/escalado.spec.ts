@@ -80,9 +80,11 @@ test("el Chef ve el costo proyectado y carga la capacidad en un borrador", async
   // Una receta nueva por proyecto: el borrador con la capacidad no toca las otras pruebas.
   await page.goto("/recetas/nueva");
   await page.locator("#rec-alta-alcance").selectOption({ label: "Del local Demo Pastas Centro" });
-  await page.locator("#rec-alta-codigo").fill(`E2E-ESC-${info.project.name.toUpperCase()}`);
+  // Tipo y rubro: el código lo arma la base con los dos (ADR-0041).
+  await page.getByRole("group", { name: "Tipo" }).getByText("Plato", { exact: true }).click();
+  await page.locator("#rec-alta-categoria").selectOption({ label: "Pastas" });
+  await expect(page.locator("#rec-alta-codigo")).toHaveValue(/^PLA-PAS-\d{4}$/);
   await page.locator("#rec-alta-nombre").fill(`Prueba de escalado ${info.project.name}`);
-  await page.locator("#rec-alta-tipo").selectOption("dish");
   await page.locator("#rec-alta-motivo").fill("Receta de prueba automática");
   await page.getByRole("button", { name: "Crear receta" }).click();
   await expect(page).toHaveURL(/recetas.[0-9a-f-]{36}/);

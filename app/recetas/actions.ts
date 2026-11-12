@@ -13,7 +13,8 @@ import {
   recipeStepsSchema,
   schemas,
 } from "@/lib/forms/schemas";
-import { PHOTO_MAX_BYTES, PHOTO_TYPES } from "@/lib/recipe-format";
+import { codeChangedHref } from "@/lib/codes";
+import { PHOTO_MAX_BYTES, PHOTO_TYPES, type NewRecipeType } from "@/lib/recipe-format";
 import { parseAmount } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
@@ -47,25 +48,25 @@ export async function createRecipeAction(
   const fields = schemas.recipe.safeParse(formValues(formData));
   if (!fields.success) return invalid(fields.error);
   const [kind, place] = fields.data.scope.split(":") as ["group" | "brand" | "restaurant", string];
-  const category = fields.data.category_id ? uuid.safeParse(fields.data.category_id) : null;
-  if (category && !category.success)
-    return { status: "bad", fieldErrors: { category_id: "Elegí la categoría." } };
+  const category = uuid.safeParse(fields.data.category_id);
+  if (!category.success) return { status: "bad", fieldErrors: { category_id: "Elegí el rubro." } };
   const supabase = await createClient();
   const { data, error } = await supabase.schema("recipes").rpc("create_recipe", {
     // La función acepta lugares vacíos (el alcance es el más chico indicado); el tipo generado no lo refleja.
     p_group_id: (kind === "group" ? place : null) as string,
     p_brand_id: (kind === "brand" ? place : null) as string,
     p_restaurant_id: (kind === "restaurant" ? place : null) as string,
-    p_code: fields.data.code,
     p_name: fields.data.name,
     p_type: fields.data.type,
-    p_category_id: (category?.data ?? null) as string,
+    p_category_id: category.data,
     p_reason: fields.data.reason,
+    p_expected_code: fields.data.expected_code ?? "",
   });
-  const result = data as { result?: string; id?: string } | null;
+  const result = data as { result?: string; id?: string; code?: string } | null;
   if (error || result?.result !== "applied" || !result.id) return toActionState(data, error);
   revalidatePath("/recetas");
-  redirect(`/recetas/${result.id}`);
+  // Si salió otro código que el de la vista previa, la ficha lo avisa (ADR-0041).
+  redirect(codeChangedHref(`/recetas/${result.id}`, fields.data.expected_code, result.code));
 }
 
 export async function updateRecipeAction(
@@ -241,7 +242,6 @@ export async function createVariantAction(
   const { data, error } = await supabase.schema("recipes").rpc("create_variant", {
     p_master_id: recipe.data,
     p_restaurant_id: place.data,
-    p_code: fields.data.code,
     p_name: fields.data.name,
     p_reason: fields.data.reason,
   });
@@ -483,4 +483,19 @@ export async function removePhotoAction(
     .rpc("remove_media", { p_media_id: media.data, p_reason: fields.data.reason });
   refresh(recipe.data);
   return toActionState(data, error);
+}
+
+// Vista previa del código de una receta nueva (ADR-0041): la base dice qué código saldría para ese rubro y tipo,
+// sin entregar el número. Sin permiso o sin rubro devuelve null.
+export async function previewRecipeCodeAction(
+  categoryId: string,
+  type: NewRecipeType,
+): Promise<string | null> {
+  const category = uuid.safeParse(categoryId);
+  if (!category.success || (type !== "dish" && type !== "preparation")) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("recipes")
+    .rpc("preview_code", { p_category_id: category.data, p_type: type });
+  return error ? null : (data ?? null);
 }

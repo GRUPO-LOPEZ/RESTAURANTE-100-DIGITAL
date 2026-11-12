@@ -31,6 +31,8 @@ import { formatLoss } from "@/lib/yields";
 import type { Reliability } from "@/lib/cost-labels";
 import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
+import { codeNoticeFromQuery } from "@/lib/codes";
+import { createdRecently } from "@/lib/recipes";
 import { EmptyState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
 import { UUID, first, formatDateTime } from "@/lib/data";
@@ -320,9 +322,16 @@ async function Recipe({
     </EmptyState>
   );
 
+  // Recién creada con otro código que el de la vista previa (alguien creó otra en el medio, ADR-0041).
+  const codeNotice =
+    first(query.aviso) === "codigo" && (await createdRecently("recipe", recipe.id))
+      ? codeNoticeFromQuery(first(query.aviso), first(query.previsto), recipe.code)
+      : null;
+
   return (
     <>
       <BackLink href={back}>Volver a recetas</BackLink>
+      {codeNotice ? <Notice status="info">{codeNotice}</Notice> : null}
 
       {/* Encabezado: siempre a la vista, en todas las pestañas. */}
       <Card className="flex flex-col gap-3">
@@ -977,8 +986,8 @@ async function Recipe({
           {variantPlaces.length > 0 ? (
             <Disclosure summary="Crear una variante para un local">
               <p className="text-base text-ink">
-                Hacemos una copia de la receta vigente para ese local. Después la ajustás y pedís la
-                revisión.
+                Hacemos una copia de la receta vigente para ese local, con el código {recipe.code}
+                -V01 (o el siguiente). Después la ajustás y pedís la revisión.
               </p>
               <ActionForm
                 action={createVariantAction}
@@ -1002,14 +1011,6 @@ async function Recipe({
                     </option>
                   ))}
                 </FormSelect>
-                <FormInput
-                  id={`rec-${recipe.id}-variante-codigo`}
-                  label="Código de la variante"
-                  name="code"
-                  hint="Único en el grupo. Por ejemplo: LOC-0101."
-                  required
-                  maxLength={30}
-                />
                 <FormInput
                   id={`rec-${recipe.id}-variante-nombre`}
                   label="Nombre de la variante"

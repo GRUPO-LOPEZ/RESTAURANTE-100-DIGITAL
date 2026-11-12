@@ -149,21 +149,22 @@ select is(pg_temp.q(pg_temp.u(409), $$select count(*)::text from recipes.version
 -- ---------------------------------------------------------------------------
 -- Crear y editar
 -- ---------------------------------------------------------------------------
-insert into ids values ('nueva', (pg_temp.q(pg_temp.u(406), $$select recipes.create_recipe(null, null, pg_temp.u(201), 'loc-0002',
-  'Fainá de prueba', 'dish', null, 'Receta nueva del local') ->> 'id'$$))::uuid);
+insert into ids values ('nueva', (pg_temp.q(pg_temp.u(406), $$select recipes.create_recipe(null, null, pg_temp.u(201),
+  'Fainá de prueba', 'dish', pg_temp.u(1062), 'Receta nueva del local') ->> 'id'$$))::uuid);
 select ok(pg_temp.id('nueva') is not null, 'el Jefe de Cocina crea una receta de su local');
-select is((select scope_type::text || '/' || code from recipes.recipes where id = pg_temp.id('nueva')), 'restaurant/LOC-0002',
-  'queda como receta de local, con el código en mayúsculas');
+select is((select scope_type::text || '/' || code from recipes.recipes where id = pg_temp.id('nueva')), 'restaurant/PLA-PAS-0001',
+  'queda como receta de local, con el código que arma la base (ADR-0041)');
 select is((select count(*)::int from recipes.recipe_assignments where recipe_id = pg_temp.id('nueva') and restaurant_id = pg_temp.u(201)),
   1, 'y asignada a su local');
 insert into ids values ('nueva_v1', (select id from recipes.recipe_versions where recipe_id = pg_temp.id('nueva')));
 select is(pg_temp.status(pg_temp.id('nueva_v1')), 'draft', 'su versión 1 nace en borrador');
-select is(pg_temp.res(pg_temp.u(406), $$recipes.create_recipe(null, null, pg_temp.u(203), 'LOC-0003', 'Otra', 'dish', null, 'Prueba')$$),
+select is(pg_temp.res(pg_temp.u(406), $$recipes.create_recipe(null, null, pg_temp.u(203), 'Otra', 'dish', pg_temp.u(1062), 'Prueba')$$),
   'denied', 'no crea recetas en otro local');
-select is(pg_temp.res(pg_temp.u(409), $$recipes.create_recipe(null, null, pg_temp.u(201), 'LOC-0004', 'Otra', 'dish', null, 'Prueba')$$),
+select is(pg_temp.res(pg_temp.u(409), $$recipes.create_recipe(null, null, pg_temp.u(201), 'Otra', 'dish', pg_temp.u(1062), 'Prueba')$$),
   'denied', 'la Cocinera no crea recetas');
-select is(pg_temp.msg(pg_temp.u(406), $$select recipes.create_recipe(null, null, pg_temp.u(201), 'DEMO-PAS-01', 'Repetida', 'dish', null, 'Prueba')$$),
-  'Ya existe una receta con ese código en el grupo.', 'código repetido, en español');
+select throws_ok($$insert into recipes.recipes (group_id, scope_type, code, name, recipe_type, category_id)
+                   values (pg_temp.u(1), 'group', 'DEMO-PAS-01', 'Repetida', 'dish', pg_temp.u(1062))$$,
+  '23505', null, 'un código repetido lo sigue rechazando la base (el código ya no se elige: ADR-0041)');
 
 select is(pg_temp.res(pg_temp.u(406), format($$recipes.set_components(%L, '[
     {"ingredient_id": "00000000-0000-4000-8000-000000000827", "quantity": 250, "unit": "g"},
@@ -204,8 +205,8 @@ select is(pg_temp.res(pg_temp.u(406), format($$recipes.save_draft(%L, '{"yield_q
 -- ---------------------------------------------------------------------------
 -- Caso 11: un local no edita la receta de otro, y queda registrado
 -- ---------------------------------------------------------------------------
-insert into ids values ('norte', (pg_temp.q(pg_temp.u(405), $$select recipes.create_recipe(null, null, pg_temp.u(202), 'LOC-0202',
-  'Receta de Norte', 'dish', null, 'Receta del otro local') ->> 'version_id'$$))::uuid);
+insert into ids values ('norte', (pg_temp.q(pg_temp.u(405), $$select recipes.create_recipe(null, null, pg_temp.u(202),
+  'Receta de Norte', 'dish', pg_temp.u(1062), 'Receta del otro local') ->> 'version_id'$$))::uuid);
 select is(pg_temp.res(pg_temp.u(406), format($$recipes.set_components(%L, '[]', 'Intento')$$, pg_temp.id('norte'))), 'denied',
   'caso 11: el Jefe de Cocina de Centro no edita una receta de Norte');
 set local role audit_owner;

@@ -60,6 +60,12 @@ const catalogCode = z
     /^[A-Z0-9][A-Z0-9-]{1,29}$/,
     "Mayúsculas, números y guiones, de 2 a 30 caracteres (por ejemplo, ING-0001).",
   );
+// El código de la vista previa del alta (ADR-0041): no lo escribe nadie, puede faltar.
+const expectedCode = z
+  .string()
+  .trim()
+  .regex(/^$|^[A-Z0-9][A-Z0-9-]{1,29}$/)
+  .optional();
 const catalogName = z
   .string({ message: "Escribí el nombre." })
   .trim()
@@ -249,11 +255,15 @@ export const schemas = {
       message: "La contraseña nueva tiene que ser otra.",
       path: ["password"],
     }),
+  // El código lo arma la base (ADR-0041): viaja solo el de la vista previa, para avisar si salió otro.
   ingredient: z.object({
-    code: catalogCode,
+    category_id: choice("Elegí el rubro."),
+    expected_code: expectedCode,
     name: catalogName,
-    category_id: choice("Elegí la categoría."),
-    recipe_unit: z.enum(["g", "ml", "unit"], { message: "Elegí en qué se usa: g, ml o unidad." }),
+    recipe_unit: z
+      .string()
+      .trim()
+      .regex(/^[a-z_]{1,20}$/, "Elegí en qué se usa en las recetas."),
     reason: reasonField,
   }),
   // El código no cambia nunca: no se edita.
@@ -485,12 +495,11 @@ export const schemas = {
       /^(group|brand|restaurant):[0-9a-f-]{36}$/,
       "Elegí dónde se usa la receta.",
     ),
-    code: catalogCode,
+    // Solo platos y preparaciones, siempre con rubro: el código lo arma la base (ADR-0041).
+    type: z.enum(["dish", "preparation"], { message: "Elegí el tipo: plato o preparación." }),
+    category_id: choice("Elegí el rubro."),
+    expected_code: expectedCode,
     name: catalogName,
-    type: z.enum(["preparation", "dish", "unit_component"], {
-      message: "Elegí el tipo de receta.",
-    }),
-    category_id: z.string().max(60).optional(),
     reason: reasonField,
   }),
   // El código y el alcance no cambian: no se editan.
@@ -525,10 +534,9 @@ export const schemas = {
     restaurant_id: choice("Elegí el local."),
     reason: reasonField,
   }),
-  // Variante local de una maestra (ADR-0025): el local, su código y su nombre.
+  // Variante local de una maestra (ADR-0025): el local y su nombre. El código es el de la maestra y -V01 (ADR-0041).
   variant: z.object({
     restaurant_id: choice("Elegí el local."),
-    code: catalogCode,
     name: catalogName,
     reason: reasonField,
   }),

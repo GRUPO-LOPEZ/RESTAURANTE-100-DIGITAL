@@ -11,7 +11,6 @@ function errorsOf(name: keyof typeof schemas, values: Record<string, string>) {
 }
 
 const ingredient = {
-  code: "ing-0051",
   name: "Rúcula",
   category_id: "00000000-0000-4000-8000-000000000701",
   recipe_unit: "g",
@@ -19,20 +18,28 @@ const ingredient = {
 };
 
 describe("formularios del catálogo", () => {
-  it("el código queda en mayúsculas y sigue el formato de la base", () => {
-    const parsed = schemas.ingredient.safeParse(ingredient);
-    expect(parsed.success && parsed.data.code).toBe("ING-0051");
-    expect(errorsOf("ingredient", { ...ingredient, code: "x" })).toEqual({
-      code: "Mayúsculas, números y guiones, de 2 a 30 caracteres (por ejemplo, ING-0001).",
+  it("el código no se escribe: lo arma la base y viaja solo el de la vista previa (ADR-0041)", () => {
+    const parsed = schemas.ingredient.safeParse({ ...ingredient, code: "ING-0051" });
+    expect(parsed.success && "code" in parsed.data).toBe(false);
+    expect(errorsOf("ingredient", { ...ingredient, expected_code: "MPR-VER-0001" })).toEqual({});
+    expect(errorsOf("ingredient", { ...ingredient, expected_code: "" })).toEqual({});
+    expect(errorsOf("ingredient", { ...ingredient, expected_code: "mpr ver" })).toHaveProperty(
+      "expected_code",
+    );
+    expect(errorsOf("ingredient", { ...ingredient, category_id: "" })).toEqual({
+      category_id: "Elegí el rubro.",
     });
-    expect(errorsOf("ingredient", { ...ingredient, code: "ING 51" })).toHaveProperty("code");
   });
 
-  it("una materia prima se usa en recetas solo en g, ml o unidades", () => {
+  it("una materia prima se usa en recetas en cualquier medida del catálogo (la base guarda g, ml o unidad)", () => {
     expect(errorsOf("ingredient", ingredient)).toEqual({});
-    expect(errorsOf("ingredient", { ...ingredient, recipe_unit: "kg" })).toEqual({
-      recipe_unit: "Elegí en qué se usa: g, ml o unidad.",
+    expect(errorsOf("ingredient", { ...ingredient, recipe_unit: "kg" })).toEqual({});
+    expect(errorsOf("ingredient", { ...ingredient, recipe_unit: "" })).toEqual({
+      recipe_unit: "Elegí en qué se usa en las recetas.",
     });
+    expect(errorsOf("ingredient", { ...ingredient, recipe_unit: "KG; drop" })).toHaveProperty(
+      "recipe_unit",
+    );
   });
 
   it("los números aceptan coma decimal y tienen que ser mayores que cero", () => {
