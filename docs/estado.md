@@ -1,8 +1,22 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-11. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). En curso: medidas, mermas y rendimientos (ADR-0040, rama `feat/mermas-rendimientos`)._
+_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54), la matriz de permisos (PR #56) y medidas, mermas y rendimientos (PR #57). Próximo: fichas únicas de recetas y materias primas (pedido de Soy del 2026-11-12)._
 
-## Al retomar: medidas, mermas y rendimientos (rama `feat/mermas-rendimientos`)
+## Próximo: fichas únicas de recetas y materias primas (pedido de Soy, 2026-11-12)
+
+- **Qué se pidió:**
+  - códigos automáticos (`PLA-CAF-0001`, `PRE-SAL-0001` y `MPR-CAR-0001`);
+  - listados de recetas y materias primas agrupados por rubro;
+  - una sola ficha, sin pestañas, para la receta y otra para la materia prima.
+- **Pantallas aprobadas por Soy.** El boceto está en `docs/prompts/2026-11-12-boceto/`.
+- **Prompts listos** en `docs/prompts/2026-11-12-fichas-unicas-recetas-y-materias-primas.md`: tres, en orden, cada uno en su rama y su PR. Las decisiones de Soy están al principio del archivo.
+- **Quién sigue:** Joaco. Se le mandó el mail con los pasos.
+  1. Abrir y fusionar el PR de la rama `docs/prompts-fichas-unicas` (solo documentación).
+  2. Correr el Prompt 1 en modo plan y aprobar el plan.
+  3. Después, el 2 y el 3.
+- **Pendiente de verificar:** la rama se armó en una máquina sin Node, así que no se corrió `npm run format:check`. Si el CI falla por formato, alcanza con `npm run format`.
+
+## Antes: medidas, mermas y rendimientos (fusionado, PR #57)
 
 - **Qué se hizo** (pedido de Soy; ADR-0040; lista para Soy en `docs/modulos/05-mermas-y-rendimientos-lista-de-cambios.md`):
   - **Base** (`20261126120000_units_and_waste.sql`):
