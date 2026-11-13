@@ -28,7 +28,7 @@ _Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
     - pgTAP sobre la base recién recreada: 2503 de 2503 (52 archivos);
     - Playwright: 263 en verde, 15 salteadas y 2 fallas, en `codigos.spec` (celular y computadora). Buscaba «código · rubro» juntos y el encabezado nuevo los separa. Ahora controla el código, el rubro y que la unidad quedó en gramos: 11 en verde y 1 salteada.
   - Capturas mirando la pantalla real: 1440, 1600, 1920 y celular, en `test-results/ficha-materia-prima-*`.
-- **Sigue:** commit, push y PR, con la aprobación de Joaco.
+- **Commit `9f33c51` subido (2026-11-13).** Sigue: Joaco abre el PR a mano (texto preparado en la sesión), mira que GitHub Actions dé verde y lo fusiona. Después, decidir con Soy los temas de «Para decidir con Soy».
 
 ## Ficha única de receta (rama `feat/ficha-unica-receta`, PR #60 fusionado)
 
