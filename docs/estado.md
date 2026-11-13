@@ -7,7 +7,7 @@ _Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Prompts:** `docs/prompts/2026-11-13-fichas-sin-scroll.md`, dos en orden: 1) ficha de materia prima (rama `feat/ficha-materia-prima-sin-scroll`); 2) ficha de receta (rama `feat/ficha-receta-sin-scroll`). Boceto aprobado de la materia prima en `docs/prompts/2026-11-13-boceto-fichas-sin-scroll/`.
 - **Qué pide:** las dos fichas entran en 1440 × 900 sin scroll de página, con el mismo patrón que el Inicio. En la receta, la planilla de ingredientes es la única parte con scroll propio. Los alérgenos pasan a un botón por alérgeno que cambia de estado con cada clic.
 - **Orden:** primero el Inicio (reutilizan su regla de estado), después Prompt 1 y después Prompt 2.
-- **La ficha de receta no tiene boceto:** el plan de Joaco trae un esquema para que Soy lo vea antes de programar.
+- **Bocetos aprobados de las dos fichas** en `docs/prompts/2026-11-13-boceto-fichas-sin-scroll/` (materia prima y receta).
 - **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
 
 ## Próximo: Inicio sin scroll (pedido de Soy, 2026-11-13)

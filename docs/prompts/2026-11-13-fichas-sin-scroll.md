@@ -9,7 +9,7 @@ Boceto aprobado: `docs/prompts/2026-11-13-boceto-fichas-sin-scroll/` (y el enlac
 - **Todas las pantallas siguen los mismos criterios** que el Inicio, Recetas, Materias primas y Rubros: la misma apariencia, el mismo uso y nada repetido.
 - **La ficha de materia prima entra entera en 1440 × 900, sin scroll.** Boceto aprobado.
 - **Alérgenos:** un botón por alérgeno que cambia de estado con cada clic (Sin dato → No contiene → Puede contener → Contiene), cada estado con su color y su palabra. Reemplaza a los 4 botones por alérgeno, que no entran sin scroll.
-- **La ficha de receta tampoco tiene scroll de página.** La planilla de ingredientes es la única parte con su propio scroll, como una hoja de cálculo.
+- **La ficha de receta tampoco tiene scroll de página.** La planilla de ingredientes es la única parte con su propio scroll, como una hoja de cálculo. Boceto aprobado: `FichaRecetaSinScroll.dc.html`.
 
 ## El patrón común (va en los dos prompts)
 
@@ -103,12 +103,13 @@ Commit: «feat(materias-primas): ficha en una pantalla sin scroll».
 
 ```text
 Leé docs/estado.md, CLAUDE.md, .claude/rules/design.md (con la sección nueva «Pantallas de carga
-sin scroll» del PR anterior), docs/decisiones/0042 y la ficha de materia prima ya hecha.
+sin scroll» del PR anterior), docs/decisiones/0042, la ficha de materia prima ya hecha y el boceto
+aprobado docs/prompts/2026-11-13-boceto-fichas-sin-scroll/FichaRecetaSinScroll.dc.html.
 Tarea: que la ficha de receta (app/recetas/[id]/page.tsx y components/recipe-sheet/) entre en
 una pantalla sin scroll de página. La planilla de ingredientes es la única parte con scroll
 propio, como una hoja de cálculo. Rama: feat/ficha-receta-sin-scroll. Entrá en modo plan y
-mostrame el plan antes de tocar nada. Esta ficha no tiene boceto: en el plan incluí un esquema
-de la disposición (ASCII o captura) para que yo se lo muestre a Soy antes de programar.
+mostrame el plan antes de tocar nada. Si algo del boceto no se puede hacer igual, decímelo en el
+plan con el motivo.
 
 QUÉ NO CAMBIA
 - La base: recipes.save_sheet, costing.preview_sheet_lines, los permisos (precio por kg solo
@@ -119,20 +120,24 @@ QUÉ NO CAMBIA
 - Los enlaces de antes (?seccion=, #anclas, Calidad) llevan el foco a su tarjeta.
 - El celular sigue siendo de consulta (puede tener scroll).
 
-DISPOSICIÓN PROPUESTA (1440 × 900; ajustala en el plan si no entra)
+DISPOSICIÓN (1440 × 900, ver el boceto)
 1. Encabezado en una línea: «← Recetas», nombre, código · rubro · Plato o Preparación, chip de
-   versión y estado (Vigente v2, Borrador, En revisión), y a la derecha las acciones de la
-   versión que correspondan al rol.
+   versión y estado (Vigente v2, Borrador, En revisión), y a la derecha «Ficha de cocina» y
+   «Escalar». En revisión, debajo, una franja violeta (review) en una línea: quién pidió la
+   versión, cuándo y su motivo.
 2. 4 indicadores (Metric):
    - en un Plato: Costo total, Costo por porción, Peso total y Porciones;
    - en una Preparación: Costo total, Costo por kg neto, Peso bruto → neto y Rendimiento %.
    Si el costo está incompleto: «—» y el motivo, nunca un número supuesto.
 3. Dos columnas:
-   a. Izquierda (8/12), alta: la planilla, con encabezado fijo y la fila de totales fija abajo
-      dentro de la tarjeta. Solo el cuerpo de la planilla hace scroll. Con teclado, el foco
-      que baja de fila la lleva a la vista.
-   b. Derecha (4/12), de arriba hacia abajo:
-      - Fotos (carrusel chico) y Datos generales compactos, en una tarjeta.
+   a. Izquierda (el ancho que queda), alta: la planilla, con encabezado fijo y la fila de
+      totales fija abajo (con su estado: «Completo» o «Incompleto: falta N dato»). Solo el cuerpo
+      de la planilla hace scroll. Los números de las escalas (4 y 10) se editan en el encabezado
+      de su columna. Con teclado, el foco que baja de fila la lleva a la vista. En revisión, las
+      filas cambiadas van en fondo review con «antes 380 g» o «nuevo».
+   b. Derecha (300 px), de arriba hacia abajo:
+      - Fotos (carrusel chico con ‹ ›) y Datos generales compactos (rubro, alcance, + Agregar
+        foto), en una tarjeta.
       - Rendimiento: el peso de la porción (Plato) o el peso neto (Preparación), editable.
       - Procedimiento: pasos numerados, hasta los que entren, y «Ver los N pasos» o edición en el
         panel lateral. Decidí en el plan si los pasos se editan en la tarjeta (con su propio

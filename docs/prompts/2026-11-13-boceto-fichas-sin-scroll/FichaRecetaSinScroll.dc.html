@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha de receta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:7px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:14px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.sec{font-size:15px;font-weight:600;margin:0}
+.in{height:30px;border:1px solid #E5E7EB;border-radius:6px;padding:0 6px;font:inherit;font-size:13px;color:#1F2937;background:#FFFFFF;box-sizing:border-box}
+.add{height:30px;padding:0 10px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer;white-space:nowrap}
+.sheet{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+.sheet th{position:sticky;top:0;background:#F7F8FA;font-weight:500;color:#4B5563;text-align:left;padding:6px 6px;border-bottom:1px solid #E5E7EB;z-index:1;white-space:nowrap}
+.sheet td{padding:3px 6px;border-bottom:1px solid #E5E7EB;white-space:nowrap;height:28px;box-sizing:border-box}
+.sheet tfoot td{position:sticky;bottom:0;background:#EAF0FB;color:#1F2937;font-weight:600;font-size:13px;border-top:1px solid #C9D6EE;height:34px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:30px;border-bottom:1px solid #E5E7EB;font-size:13px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box; display: flex; flex-direction: column;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#" class="on">Recetas</a><a href="#">Materias primas</a><a href="#">Rubros</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Usuarios</a><a href="#">Roles y permisos</a><a href="#">Historial</a>
+    <div style="margin-top: auto; border-top: 1px solid #34445F; padding-top: 10px;"><span style="display: block; padding: 0 12px 4px; font-size: 12px; color: #D6DEEC;">Sofía Admin</span><a href="#">Mi cuenta</a></div>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › <a href="#">Recetas</a> › <span style="color: #1F2937; font-weight: 500;">{{name}}</span></span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="color: #6B7280;">Local</span>
+        <span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Demo Café Centro ▾</span>
+        <span style="height: 36px; width: 260px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center; color: #6B7280;">Buscar recetas y materias primas</span>
+        <span style="width: 32px; height: 32px; border-radius: 16px; background: #EAF0FB; color: #2F4F8F; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center;">SA</span>
+      </div>
+    </div>
+
+    <div style="flex: 1 1 auto; min-height: 0; padding: 14px 32px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+      <!-- 1. Encabezado en una línea -->
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <a href="#" style="font-size: 14px;">← Recetas</a>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600;">{{name}}</h1>
+          <span style="font-size: 13px; color: #6B7280; font-variant-numeric: tabular-nums;">{{code}} · {{rubro}} · {{typeLabel}}</span>
+          <span class="chip" style="background: {{verBg}}; color: {{verInk}};">{{verText}}</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <a href="#" class="add" style="height: 36px; display: flex; align-items: center; text-decoration: none;">Ficha de cocina</a>
+          <a href="#" class="add" style="height: 36px; display: flex; align-items: center; text-decoration: none;">Escalar</a>
+        </div>
+      </div>
+
+      <sc-if value="{{review}}" hint-placeholder-val="{{false}}">
+        <div role="status" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 8px; background: #EDE9FE; color: #5B21B6; font-size: 13px;"><b style="font-weight: 600;">En revisión:</b> v3 pedida por Martín (Chef) el 12/11 · Motivo: «Más salsa bolognesa». Ves la ficha sin poder editarla; los cambios están marcados.</div>
+      </sc-if>
+
+      <!-- 2. Cuatro indicadores -->
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+          <div class="card" style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 13px; font-weight: 500; color: #6B7280;">{{k.label}}</span>
+            <span style="font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2;">{{k.value}}</span>
+            <span style="display: flex; justify-content: space-between; align-items: center; gap: 8px;"><span style="font-size: 12px; color: #6B7280;">{{k.note}}</span><span class="chip" style="background: {{k.bg}}; color: {{k.ink}};">{{k.state}}</span></span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- 3. Planilla (con scroll propio) + columna derecha -->
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; flex: 1 1 0; min-height: 0;">
+        <section class="card" style="display: flex; flex-direction: column; min-height: 0; overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; gap: 12px;">
+            <h2 class="sec">Ingredientes y costos <span style="font-weight: 400; font-size: 12px; color: #6B7280;">· {{lineCount}} ingredientes · sin IVA</span></h2>
+            <span style="font-size: 12px; color: #6B7280;">Los títulos y los totales quedan fijos; la lista se desplaza.</span>
+          </div>
+          <div style="flex: 1 1 0; min-height: 0; overflow: auto; border-top: 1px solid #E5E7EB;">
+            <table class="sheet">
+              <thead>
+                <tr>
+                  <th>Código</th><th>Ingrediente</th><th class="num">Cantidad</th><th>Medida</th>
+                  <th class="num">Hacer <input class="in" aria-label="Primera escala" value="{{n1}}" onChange="{{onN1}}" style="width: 36px; height: 24px; text-align: right;"> · peso / costo</th>
+                  <th class="num">Hacer <input class="in" aria-label="Segunda escala" value="{{n2}}" onChange="{{onN2}}" style="width: 36px; height: 24px; text-align: right;"> · peso / costo</th>
+                  <th class="num">$ por kg</th><th class="num">Costo</th><th class="num">% $</th><th class="num">% peso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{lines}}" as="l" hint-placeholder-count="12">
+                  <tr style="background: {{l.rowBg}};">
+                    <td style="color: #6B7280;">{{l.code}}</td>
+                    <td><span style="color: #1F2937;">{{l.name}}</span> <sc-if value="{{l.isPrep}}" hint-placeholder-val="{{false}}"><span class="chip" style="background: #DBEAFE; color: #1E40AF; font-size: 12px; padding: 0 6px;">Preparación</span></sc-if></td>
+                    <td class="num">
+                      <sc-if value="{{editable}}" hint-placeholder-val="{{true}}"><input class="in" aria-label="Cantidad de {{l.name}}" value="{{l.qty}}" onChange="{{l.onQty}}" style="width: 64px; text-align: right; border: {{l.qtyBorder}};"></sc-if>
+                      <sc-if value="{{readonly}}" hint-placeholder-val="{{false}}"><span style="border-bottom: {{l.qtyBorder}};">{{l.qty}}</span></sc-if>
+                    </td>
+                    <td>{{l.unit}}</td>
+                    <td class="num">{{l.s1}}</td>
+                    <td class="num">{{l.s2}}</td>
+                    <td class="num" title="{{l.why}}">{{l.price}}</td>
+                    <td class="num" title="{{l.why}}">{{l.cost}}</td>
+                    <td class="num">{{l.pctCost}}</td>
+                    <td class="num">{{l.pctW}}</td>
+                  </tr>
+                </sc-for>
+                <sc-if value="{{editable}}" hint-placeholder-val="{{true}}">
+                  <tr><td style="color: #6B7280;">—</td><td colspan="9"><input class="in" placeholder="Escribí un código o un nombre para agregar…" aria-label="Agregar ingrediente" style="width: 320px;"></td></tr>
+                </sc-if>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2">Total <span class="chip" style="background: {{totBg}}; color: {{totInk}}; margin-left: 6px;">{{totState}}</span></td>
+                  <td class="num" colspan="2">{{totW}}</td>
+                  <td class="num">{{totS1}}</td>
+                  <td class="num">{{totS2}}</td>
+                  <td></td>
+                  <td class="num">{{totCost}}</td>
+                  <td class="num">100 %</td>
+                  <td class="num">100 %</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+          <section class="card" style="padding: 10px 12px; display: flex; gap: 10px;">
+            <div style="flex: 0 0 104px; display: flex; flex-direction: column; gap: 4px; align-items: center;">
+              <div role="img" aria-label="Foto 1 de 3 de la receta" style="width: 104px; height: 78px; border-radius: 8px; background: #F1F2F4; color: #6B7280; font-size: 12px; display: flex; align-items: center; justify-content: center;">Foto 1 de 3</div>
+              <div style="display: flex; gap: 4px;"><button class="add" aria-label="Foto anterior" style="height: 26px; padding: 0 8px;">‹</button><button class="add" aria-label="Foto siguiente" style="height: 26px; padding: 0 8px;">›</button></div>
+            </div>
+            <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+              <h2 class="sec">Datos generales</h2>
+              <label style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">Rubro <select class="in" style="width: 120px;"><option>{{rubro}}</option></select></label>
+              <label style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">Alcance <select class="in" style="width: 120px;"><option>Todo el grupo</option></select></label>
+              <a href="#" style="font-size: 12px;">+ Agregar foto</a>
+            </div>
+          </section>
+
+          <section class="card" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+            <h2 class="sec">Rendimiento</h2>
+            <sc-if value="{{isDish}}" hint-placeholder-val="{{true}}">
+              <label style="display: flex; justify-content: space-between; align-items: center;">Peso de la porción (g) <input class="in" value="{{portion}}" onChange="{{onPortion}}" disabled="{{readonly}}" style="width: 80px; text-align: right;"></label>
+              <span style="color: #4B5563;">Salen <b style="color: #1F2937;">{{portions}}</b> porciones de {{totW}}.</span>
+            </sc-if>
+            <sc-if value="{{isPrep}}" hint-placeholder-val="{{false}}">
+              <span style="display: flex; justify-content: space-between;">Peso bruto (suma) <b style="font-variant-numeric: tabular-nums;">{{totW}}</b></span>
+              <label style="display: flex; justify-content: space-between; align-items: center;">Peso neto total (g) <input class="in" value="{{net}}" onChange="{{onNet}}" disabled="{{readonly}}" style="width: 80px; text-align: right;"></label>
+              <span style="color: #4B5563;">Rinde <b style="color: #1F2937;">{{yieldPct}}</b>. Se compara con los lotes cuando exista producción.</span>
+            </sc-if>
+          </section>
+
+          <section class="card" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-height: 0; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center;"><h2 class="sec">Procedimiento</h2><sc-if value="{{editable}}" hint-placeholder-val="{{true}}"><button class="add" style="height: 26px;">+ Paso</button></sc-if></div>
+            <ol style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px;">
+              <sc-for list="{{steps}}" as="s" hint-placeholder-count="3"><li>{{s}}</li></sc-for>
+            </ol>
+            <a href="#" style="font-size: 13px; margin-top: auto;">Ver los 9 pasos</a>
+          </section>
+
+          <section class="card" style="padding: 6px 12px; display: flex; flex-direction: column;">
+            <div class="row"><span>Alérgenos</span><span style="display: flex; gap: 4px;"><span class="chip" style="background: #FEE2E2; color: #991B1B;">Gluten</span><span class="chip" style="background: #FEE2E2; color: #991B1B;">Leche</span><span class="chip" style="background: #FEE2E2; color: #991B1B;">Huevo</span></span></div>
+            <a href="#" class="row" style="text-decoration: none;"><span>Dónde se usa</span><span>{{usedIn}}</span></a>
+            <a href="#" class="row" style="text-decoration: none; border-bottom: 0;"><span>Versiones</span><span>{{versions}}</span></a>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Barra fija: edición o revisión -->
+    <div style="height: 56px; flex: 0 0 56px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; box-sizing: border-box; font-size: 14px;">
+      <sc-if value="{{editable}}" hint-placeholder-val="{{true}}">
+        <span style="font-weight: 500;">{{pendingText}}</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label style="font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;">Motivo *<input class="in" placeholder="Obligatorio: por qué cambia" style="width: 280px; height: 36px;"></label>
+          <button onClick="{{discard}}" class="add" style="height: 36px;">Descartar</button>
+          <button class="add" style="height: 36px;">Guardar cambios</button>
+          <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #4A6FB8; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 500;">Enviar a revisión</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{readonly}}" hint-placeholder-val="{{false}}">
+        <span style="font-weight: 500;">Revisión de v3 · 2 cambios marcados</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label style="font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;">Observaciones<input class="in" placeholder="Obligatorio si no aprobás" style="width: 300px; height: 36px;"></label>
+          <button class="add" style="height: 36px; color: #991B1B;">No aprobar</button>
+          <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #4A6FB8; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 500;">Aprobar</button>
+        </div>
+      </sc-if>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tipo":{"editor":"enum","options":["Plato","Preparación"],"default":"Plato"},"modo":{"editor":"enum","options":["Edición","Revisión"],"default":"Edición"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { qty: {}, n1: 4, n2: 10, portion: 350, net: 2200 }; }
+  renderVals() {
+    const isDish = (this.props.tipo ?? 'Plato') === 'Plato';
+    const review = (this.props.modo ?? 'Edición') === 'Revisión';
+    // [código, nombre, cantidad, medida, gramos por unidad de medida (null = no se sabe), $ por kg (null = sin precio), motivo, es preparación, cambio en revisión]
+    const DISH = [
+      ['PRE-MAS-0002', 'Masa de lasaña', 300, 'g', 1, 1980, '', true],
+      ['PRE-SAL-0001', 'Salsa bolognesa', 450, 'g', 1, 6940, '', true, 'antes 380 g'],
+      ['PRE-SAL-0002', 'Salsa blanca', 300, 'g', 1, 3210, '', true],
+      ['MPR-LAC-0003', 'Queso muzzarella', 200, 'g', 1, 9800, ''],
+      ['MPR-LAC-0005', 'Queso parmesano', 60, 'g', 1, 24500, ''],
+      ['MPR-LAC-0001', 'Manteca', 30, 'g', 1, 11200, ''],
+      ['MPR-LAC-0002', 'Leche entera', 100, 'ml', null, 1450, 'Falta la densidad (g por ml) de la leche'],
+      ['MPR-VER-0001', 'Tomate perita', 120, 'g', 1, 2400, ''],
+      ['MPR-HUE-0001', 'Huevo', 1, 'u', 50, 5200, '', false, 'nuevo'],
+      ['MPR-ACE-0001', 'Aceite de oliva', 15, 'g', 1, 14000, ''],
+      ['MPR-VER-0004', 'Albahaca', 5, 'g', 1, 18000, ''],
+      ['MPR-CON-0001', 'Sal fina', 4, 'g', 1, 900, ''],
+      ['MPR-CON-0002', 'Pimienta negra', 1, 'g', 1, 32000, ''],
+      ['MPR-CON-0003', 'Nuez moscada', 0.5, 'g', 1, 60000, ''],
+      ['MPR-VER-0006', 'Orégano', 1, 'g', 1, 21000, '']
+    ];
+    const PREP = [
+      ['MPR-CAR-0002', 'Carne picada especial', 1000, 'g', 1, 8900, ''],
+      ['MPR-VER-0002', 'Cebolla', 300, 'g', 1, 2100, ''],
+      ['MPR-VER-0003', 'Zanahoria', 150, 'g', 1, 1500, ''],
+      ['MPR-VER-0007', 'Apio', 100, 'g', 1, 3200, '', false, 'nuevo'],
+      ['MPR-VER-0005', 'Ajo', 20, 'g', 1, 6000, ''],
+      ['MPR-ALM-0004', 'Tomate triturado', 800, 'g', 1, 2600, '', false, 'antes 700 g'],
+      ['MPR-BEB-0001', 'Vino tinto', 200, 'ml', 0.99, 5000, ''],
+      ['MPR-ACE-0001', 'Aceite de oliva', 40, 'g', 1, 14000, ''],
+      ['PRE-FON-0001', 'Fondo oscuro', 250, 'g', 1, null, 'El fondo oscuro todavía no tiene costo', true],
+      ['MPR-CON-0001', 'Sal fina', 15, 'g', 1, 900, ''],
+      ['MPR-CON-0002', 'Pimienta negra', 3, 'g', 1, 32000, ''],
+      ['MPR-VER-0004', 'Albahaca', 10, 'g', 1, 18000, ''],
+      ['MPR-VER-0006', 'Orégano', 3, 'g', 1, 21000, '']
+    ];
+    const rows = isDish ? DISH : PREP;
+    const f0 = (n) => Math.round(n).toLocaleString('es-AR');
+    const money = (n) => '$ ' + f0(n);
+    const kg = (g) => g >= 1000 ? (g / 1000).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' kg' : f0(g) + ' g';
+    const { n1, n2 } = this.state;
+    const editable = !review;
+    let pending = 0;
+    const calc = rows.map((r, i) => {
+      const key = (isDish ? 'd' : 'p') + i;
+      const qty = this.state.qty[key] ?? r[2];
+      if (this.state.qty[key] !== undefined && Number(this.state.qty[key]) !== r[2]) pending++;
+      const w = r[4] == null ? null : Number(qty) * r[4];
+      const cost = w == null || r[5] == null ? null : w * r[5] / 1000;
+      return { r, key, qty, w, cost };
+    });
+    const totW = calc.reduce((s, c) => s + (c.w ?? 0), 0);
+    const totCost = calc.reduce((s, c) => s + (c.cost ?? 0), 0);
+    const missing = calc.filter(c => c.cost == null).length;
+    const lines = calc.map(({ r, key, qty, w, cost }) => {
+      const reviewMark = review && r[8];
+      const editMark = this.state.qty[key] !== undefined && Number(this.state.qty[key]) !== r[2];
+      return {
+        code: r[0], name: r[1] + (reviewMark ? '  (' + r[8] + ')' : ''), isPrep: !!r[7], unit: r[3], qty: String(qty).replace('.', ','),
+        onQty: (e) => this.setState({ qty: { ...this.state.qty, [key]: e.target.value.replace(',', '.') } }),
+        qtyBorder: (editMark || reviewMark) ? '1px dashed #2F4F8F' : '1px solid #E5E7EB',
+        rowBg: reviewMark ? '#EDE9FE' : '#FFFFFF',
+        s1: w == null ? '—' : kg(w * n1) + ' / ' + (cost == null ? '—' : money(cost * n1)),
+        s2: w == null ? '—' : kg(w * n2) + ' / ' + (cost == null ? '—' : money(cost * n2)),
+        price: r[5] == null ? '—' : money(r[5]), cost: cost == null ? '—' : money(cost),
+        why: r[6] || '',
+        pctCost: cost == null || !totCost ? '—' : (cost * 100 / totCost).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' %',
+        pctW: w == null || !totW ? '—' : (w * 100 / totW).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' %'
+      };
+    });
+    const portion = Number(this.state.portion) || 0, net = Number(this.state.net) || 0;
+    const portions = portion > 0 ? totW / portion : null;
+    const yieldR = net > 0 && totW > 0 ? net / totW : null;
+    const inc = missing > 0;
+    const k = (label, value, note, state, c) => ({ label, value, note, state, bg: c[0], ink: c[1] });
+    const WARN = ['#FEF3C7', '#92400E'], OK = ['#DCFCE7', '#166534'], INFO = ['#DBEAFE', '#1E40AF'];
+    const costNote = inc ? 'Falta ' + missing + ' dato · pasá el mouse por el «—»' : 'Sin IVA';
+    const kpis = isDish
+      ? [k('Costo total', money(totCost), costNote, inc ? 'Incompleto' : 'Completo', inc ? WARN : OK),
+         k('Costo por porción', portions ? money(totCost / portions) : '—', portion + ' g por porción', inc ? 'Incompleto' : 'Completo', inc ? WARN : OK),
+         k('Peso total', kg(totW), inc ? 'Sin la leche: falta su densidad' : 'Suma de ingredientes', inc ? 'Incompleto' : 'Completo', inc ? WARN : OK),
+         k('Porciones', portions ? portions.toLocaleString('es-AR', { maximumFractionDigits: 1 }) : '—', 'Peso total ÷ peso de la porción', 'Calculado', INFO)]
+      : [k('Costo total', money(totCost), costNote, inc ? 'Incompleto' : 'Completo', inc ? WARN : OK),
+         k('Costo por kg neto', yieldR ? money(totCost / (net / 1000)) : '—', 'Con el peso neto cargado', inc ? 'Incompleto' : 'Completo', inc ? WARN : OK),
+         k('Peso bruto → neto', kg(totW) + ' → ' + kg(net), 'Lo que queda al terminar', 'Calculado', INFO),
+         k('Rendimiento', yieldR ? (yieldR * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' %' : '—', 'Contra esto se controlan los lotes', 'Calculado', INFO)];
+    return {
+      name: isDish ? 'Lasaña de carne' : 'Salsa bolognesa', code: isDish ? 'PLA-PAS-0004' : 'PRE-SAL-0001',
+      rubro: isDish ? 'Pastas' : 'Salsas', typeLabel: isDish ? 'Plato' : 'Preparación',
+      verText: review ? 'v3 · En revisión' : 'v3 · Borrador', verBg: review ? '#EDE9FE' : '#FFEDD5', verInk: review ? '#5B21B6' : '#9A3412',
+      review, editable, readonly: review, isDish, isPrep: !isDish,
+      kpis, lines, lineCount: rows.length,
+      n1, n2, onN1: (e) => this.setState({ n1: Number(e.target.value) || 0 }), onN2: (e) => this.setState({ n2: Number(e.target.value) || 0 }),
+      totW: kg(totW), totS1: kg(totW * n1) + ' / ' + money(totCost * n1), totS2: kg(totW * n2) + ' / ' + money(totCost * n2), totCost: money(totCost),
+      totState: inc ? 'Incompleto: falta ' + missing + ' dato' : 'Completo', totBg: inc ? WARN[0] : OK[0], totInk: inc ? WARN[1] : OK[1],
+      portion: this.state.portion, onPortion: (e) => this.setState({ portion: e.target.value }),
+      portions: portions ? portions.toLocaleString('es-AR', { maximumFractionDigits: 1 }) : '—',
+      net: this.state.net, onNet: (e) => this.setState({ net: e.target.value }),
+      yieldPct: yieldR ? (yieldR * 100).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' %' : '—',
+      steps: isDish
+        ? ['Calentar la salsa bolognesa y la salsa blanca por separado.', 'Armar capas: masa, bolognesa, blanca y muzzarella.', 'Repetir 3 capas y terminar con parmesano.']
+        : ['Rehogar cebolla, zanahoria y apio en aceite de oliva.', 'Sumar la carne y dorar a fuego fuerte.', 'Desglasar con vino tinto y reducir a la mitad.'],
+      usedIn: isDish ? 'En 2 menús · Ver' : 'En 6 recetas · Ver',
+      versions: review ? 'v2 vigente · v3 en revisión · Ver' : 'v2 vigente · v3 borrador · Ver',
+      pendingText: pending === 0 ? 'Sin cambios' : pending + (pending === 1 ? ' cambio sin guardar' : ' cambios sin guardar'),
+      discard: () => this.setState({ qty: {}, portion: 350, net: 2200 })
+    };
+  }
+}
+</script>
+</body>
+</html>
