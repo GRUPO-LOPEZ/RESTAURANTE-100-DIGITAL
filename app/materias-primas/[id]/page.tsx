@@ -1,6 +1,5 @@
-import { IngredientPrices } from "@/components/ingredient-prices";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense, cache } from "react";
 
 import {
@@ -10,51 +9,58 @@ import {
   proposeYieldAction,
   recordYieldTestAction,
   setActiveAction,
-  setAliasesAction,
-  setAllergenAction,
-  setConversionAction,
-  setThawingAction,
-  updateIngredientAction,
 } from "@/app/materias-primas/actions";
 import { ActionForm } from "@/components/action-form";
+import { ActionModal, ProposalModal } from "@/components/action-modal";
 import { AppShell, Loading } from "@/components/app-shell";
+import { BackLink } from "@/components/back-link";
 import { Disclosure } from "@/components/disclosure";
-import { Badge, type BadgeStatus } from "@/components/ui/badge";
+import { IngredientPrices } from "@/components/ingredient-prices";
+import {
+  AllergensSection,
+  ConversionsSection,
+  DataSection,
+  IngredientSheetProvider,
+  SheetBar,
+  ThawingToggle,
+} from "@/components/ingredient-sheet/sheet-editor";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Metric } from "@/components/ui/metric";
-import { InfoTip } from "@/components/ui/info-tip";
-import { Notice } from "@/components/ui/notice";
-import { codeNoticeFromQuery } from "@/lib/codes";
-import { createdRecently } from "@/lib/recipes";
-import { ToggleField } from "@/components/ui/toggle-field";
-import { WastePreview } from "@/components/waste-preview";
 import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
-import { Tabs } from "@/components/ui/tabs";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Metric } from "@/components/ui/metric";
+import { Notice } from "@/components/ui/notice";
+import { WastePreview } from "@/components/waste-preview";
+import { getMenus, requireMenu } from "@/lib/auth/session";
 import {
   ALLERGEN_STATUS_LABELS,
   SOURCE_LABELS,
   getCategories,
   getIngredient,
+  getIngredientSheetState,
+  getIngredientUsage,
   getSuppliers,
-  getUnits,
   getThawingChangePending,
+  getUnits,
   getWasteProcesses,
+  getYieldAlertThreshold,
   getYieldProcesses,
   getYieldRestaurants,
-  getIngredientUsage,
-  getYieldAlertThreshold,
   getYieldSummary,
-  type AllergenStatus,
   type IngredientDetail,
   type IngredientUsage,
   type Unit,
   type YieldRow,
 } from "@/lib/catalog";
-import { UUID, first, formatDate } from "@/lib/data";
-import { getMenus, requireMenu } from "@/lib/auth/session";
+import { codeNoticeFromQuery } from "@/lib/codes";
 import { lineStatusLabel } from "@/lib/cost-labels";
 import { getIngredientNetCost, resolveCostPlace, type IngredientNetCost } from "@/lib/costs";
+import { UUID, first, formatDate } from "@/lib/data";
+import { priceState, type IngredientSheetDraft } from "@/lib/ingredient-sheet";
 import { formatMoney } from "@/lib/money";
+import { getLocalCost, getProductPrices, type LocalCost, type ProductPrice } from "@/lib/prices";
+import { bigUnitPrice } from "@/lib/recipe-sheet";
+import { createdRecently } from "@/lib/recipes";
 import {
   cleaningDifference,
   describeCooking,
@@ -63,10 +69,11 @@ import {
   formatLoss,
   netYield,
 } from "@/lib/yields";
-import { BackLink } from "@/components/back-link";
 
-// Ficha de una materia prima (sección 18; ficha por pestañas del rediseño, ADR-0036). La pestaña va en la
-// dirección (?seccion=), así se puede volver o compartir.
+// Ficha única de una materia prima (ADR-0043, pedido de Soy del 2026-11-12): una sola página con índice, con la misma
+// forma que la ficha de receta (ADR-0042). Lo que se edita se guarda junto con la barra de abajo (ADR-0039); las altas
+// y las propuestas con aprobación (producto, proveedor, merma, rendimiento, ensayo, precio) van en un panel corto, con
+// su propio flujo. Las reglas no cambian: las decide la base. En el celular, la ficha es de consulta.
 export default function MateriaPrimaPage({
   params,
   searchParams,
@@ -91,7 +98,6 @@ export default function MateriaPrimaPage({
 // Una sola lectura por pedido: la usan el título y la ficha.
 const ingredientById = cache(getIngredient);
 
-// El h1 de la ficha es el nombre de la materia prima (rediseño, ADR-0036); la ruta de arriba dice "Materia prima".
 async function IngredientName({
   params,
 }: {
@@ -103,16 +109,30 @@ async function IngredientName({
   return (await ingredientById(id))?.name ?? "Materia prima";
 }
 
-// Las pestañas de la ficha. "Precios y compra" junta el precio vigente y cómo se compra.
 const SECTIONS = [
   { key: "datos", label: "Datos generales" },
-  { key: "compra", label: "Precios y compra" },
-  { key: "rendimientos", label: "Rendimientos" },
+  { key: "compra", label: "Precios de compra" },
+  { key: "rendimientos", label: "Mermas y rendimientos" },
   { key: "conversiones", label: "Conversiones" },
   { key: "alergenos", label: "Alérgenos" },
   { key: "uso", label: "Dónde se usa" },
 ] as const;
-type Section = (typeof SECTIONS)[number]["key"];
+
+// Los avisos después de guardar (la ficha vuelve con lo guardado y el aviso va arriba).
+const NOTICES: Record<string, { status: "ok" | "info"; text: string }> = {
+  guardado: { status: "ok", text: "Cambios guardados." },
+  congelada: {
+    status: "ok",
+    text: "Guardado: se compra congelada. Los costos se actualizan en un minuto.",
+  },
+  "congelada-pendiente": {
+    status: "info",
+    text: "Cambios guardados. Queda pendiente: dejar de comprarla congelada lo tiene que aprobar un Chef de todo el grupo.",
+  },
+};
+
+const linkClass =
+  "inline-flex min-h-touch items-center text-base text-primary underline-offset-4 hover:underline";
 
 function Reason({ id, label = "Motivo" }: { id: string; label?: string }) {
   return (
@@ -126,23 +146,6 @@ function Reason({ id, label = "Motivo" }: { id: string; label?: string }) {
     />
   );
 }
-
-function Row({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:gap-2">
-      <dt className="text-sm font-medium text-ink sm:w-40 sm:shrink-0">{label}</dt>
-      <dd className="text-sm break-words text-ink-muted">{value ?? "—"}</dd>
-    </div>
-  );
-}
-
-const ALLERGEN_BADGE: Record<AllergenStatus, BadgeStatus> = {
-  contains: "bad",
-  may_contain: "warn",
-  free_verified: "ok",
-};
-
-const number = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 6 });
 
 // Las unidades del catálogo, agrupadas por tipo y como «Kilogramo (kg)» (ADR-0040).
 const UNIT_GROUPS: [string, string][] = [
@@ -170,18 +173,9 @@ function UnitOptions({ units }: { units: Unit[] }) {
   );
 }
 
-function SourceOptions() {
-  return (
-    <>
-      <option value="" disabled>
-        Elegí de dónde sale
-      </option>
-      {Object.entries(SOURCE_LABELS).map(([value, label]) => (
-        <option key={value} value={value}>
-          {label}
-        </option>
-      ))}
-    </>
+function today() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(
+    new Date(),
   );
 }
 
@@ -203,338 +197,523 @@ async function Ingredient({
   if (!ingredient) notFound();
   const canManage = menus.catalogManage;
   const canRecordYields = menus.yieldsRecord;
+  // Cada sección lleva el comienzo del id: Next guarda oculta la ficha anterior, y con dos «#uso» un enlace podría
+  // bajar a la oculta (lo mismo que en la ficha de receta).
+  const anchor = (key: string) => `${key}-${ingredient.id.slice(0, 8)}`;
+  // Los enlaces de antes (?seccion=compra) bajan a la sección.
+  const old = first(query.seccion);
+  const volver = first(query.volver);
+  const back = volver && /^\/materias-primas(\?|$)/.test(volver) ? volver : "/materias-primas";
+  if (old && SECTIONS.some((s) => s.key === old)) {
+    const q = back !== "/materias-primas" ? `?${new URLSearchParams({ volver: back })}` : "";
+    redirect(`/materias-primas/${ingredient.id}${q}#${anchor(old)}`);
+  }
 
   // Recién creada con otro código que el de la vista previa (alguien creó otra en el medio, ADR-0041).
   const codeNotice =
     first(query.aviso) === "codigo" && (await createdRecently("ingredient", ingredient.id))
       ? codeNoticeFromQuery(first(query.aviso), first(query.previsto), ingredient.code)
       : null;
-  const wanted = first(query.seccion);
-  const section: Section = SECTIONS.find((t) => t.key === wanted)?.key ?? "datos";
-  const show = (key: Section) => section === key;
-  // "← Volver" a la lista con sus filtros y su página: solo la lista de materias primas de esta aplicación.
-  const volver = first(query.volver);
-  const back = volver && /^\/materias-primas(\?|$)/.test(volver) ? volver : "/materias-primas";
-  // Las pestañas conservan el "volver" a la lista.
-  const tabHref = (key: Section) => {
-    const q = new URLSearchParams();
-    if (key !== "datos") q.set("seccion", key);
-    if (back !== "/materias-primas") q.set("volver", back);
-    return q.size ? `/materias-primas/${ingredient.id}?${q}` : `/materias-primas/${ingredient.id}`;
-  };
+  const saved = NOTICES[first(query.aviso) ?? ""];
 
-  // Cada pestaña consulta solo lo que muestra.
   const none = Promise.resolve([]);
-  const [categories, units, suppliers] = await Promise.all([
-    canManage && show("datos") ? getCategories() : none,
-    canManage && show("compra") ? getUnits() : none,
-    canManage && show("compra") ? getSuppliers() : none,
+  const [categories, units, suppliers, sheetState] = await Promise.all([
+    getCategories(),
+    getUnits(),
+    canManage ? getSuppliers() : none,
+    canManage ? getIngredientSheetState(ingredient.id) : Promise.resolve(null),
   ]);
-  const [yieldRows, processes, yieldRestaurants, yieldAlert, usage] = await Promise.all([
-    show("rendimientos") ? getYieldSummary(ingredient.id) : none,
-    canRecordYields && show("rendimientos") ? getYieldProcesses() : none,
-    canRecordYields && show("rendimientos") ? getYieldRestaurants() : none,
-    show("rendimientos") ? getYieldAlertThreshold(ingredient.id) : Promise.resolve(null),
-    show("uso") ? getIngredientUsage(ingredient.id) : none,
+  const [yieldRows, processes, yieldRestaurants, yieldAlert, usage, wasteProcesses] =
+    await Promise.all([
+      getYieldSummary(ingredient.id),
+      canRecordYields ? getYieldProcesses() : none,
+      canRecordYields ? getYieldRestaurants() : none,
+      getYieldAlertThreshold(ingredient.id),
+      getIngredientUsage(ingredient.id),
+      getWasteProcesses(ingredient.groupId),
+    ]);
+  const thawingPending = ingredient.requiresThawing
+    ? await getThawingChangePending(ingredient.id)
+    : false;
+  // El precio y el costo, en el local elegido arriba.
+  const place =
+    menus.costs || menus.pricesView ? (await resolveCostPlace(session.user_id)).place : null;
+  const [netCost, localCost, productPrices] = await Promise.all([
+    place && menus.costs
+      ? getIngredientNetCost(ingredient.id, place.id, ingredient.unitCode, wasteProcesses.cleaning)
+      : Promise.resolve(null),
+    place && menus.pricesView ? getLocalCost(ingredient.id, place.id) : Promise.resolve(null),
+    place && menus.pricesView ? getProductPrices(ingredient.id, place.id) : Promise.resolve([]),
   ]);
-  // Mermas (ADR-0040): los procesos de limpieza y descongelado, y el costo neto en el local de arriba.
-  const [wasteProcesses, thawingPending] = show("rendimientos")
-    ? await Promise.all([
-        getWasteProcesses(ingredient.groupId),
-        ingredient.requiresThawing ? getThawingChangePending(ingredient.id) : false,
-      ])
-    : [{ cleaning: null, thawing: null }, false];
-  const costPlace =
-    show("rendimientos") && menus.costs ? (await resolveCostPlace(session.user_id)).place : null;
-  const netCost = costPlace
-    ? await getIngredientNetCost(
-        ingredient.id,
-        costPlace.id,
-        ingredient.unitCode,
-        wasteProcesses.cleaning,
-      )
-    : null;
+
+  // Solo se edita con catalog.manage y con el sello de la base (si no hay sello, la base no la deja editar).
+  const editable = canManage && sheetState !== null;
+  const initial: IngredientSheetDraft = {
+    data: {
+      name: ingredient.name,
+      category_id: ingredient.categoryId,
+      recipe_unit: ingredient.unitCode,
+      purchase_unit: ingredient.purchaseUnitCode ?? "",
+      notes: ingredient.notes ?? "",
+    },
+    aliases: ingredient.aliases,
+    requiresThawing: ingredient.requiresThawing,
+    conversions: {
+      density: null,
+      unit_weight: null,
+      ...Object.fromEntries(
+        ingredient.conversions.map((c) => [
+          c.kind,
+          {
+            factor: String(c.factor).replace(".", ","),
+            source: c.source,
+            measured_on: c.measuredOn,
+            measured_by: c.measuredBy ?? "",
+          },
+        ]),
+      ),
+    },
+    allergens: Object.fromEntries(
+      ingredient.allergens
+        .filter((a) => a.status !== null)
+        .map((a) => [a.id, { status: a.status ?? "", source: a.source ?? "" }]),
+    ),
+  };
+  const options = {
+    // Los rubros dados de baja no se ofrecen, salvo el que ya tiene (ADR-0038).
+    categories: categories
+      .filter((c) => c.isActive || c.id === ingredient.categoryId)
+      .map((c) => ({ id: c.id, label: c.label })),
+    units: units.map((u) => ({
+      code: u.code,
+      label: u.label,
+      dimension: u.dimension,
+      isBase: u.isBase,
+    })),
+    allergens: ingredient.allergens.map((a) => ({
+      id: a.id,
+      name: a.name,
+      validated: a.validated,
+    })),
+    sources: Object.entries(SOURCE_LABELS).map(([value, label]) => ({ value, label })),
+    statuses: Object.entries(ALLERGEN_STATUS_LABELS).map(([value, label]) => ({ value, label })),
+  };
+  const recipeUnit = units.find((u) => u.code === ingredient.unitCode);
 
   return (
     <>
       <BackLink href={back}>Volver a materias primas</BackLink>
       {codeNotice ? <Notice status="info">{codeNotice}</Notice> : null}
+      {saved ? <Notice status={saved.status}>{saved.text}</Notice> : null}
 
-      {/* Encabezado: siempre a la vista, en todas las pestañas. */}
-      <Card className="flex flex-col gap-2">
+      {/* Encabezado: código, estado, rubro, unidad de recetas e índice de secciones. */}
+      <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-col">
-            {/* El nombre ya es el título de la pantalla: acá van sus datos. */}
-            <span className="text-base text-ink tabular-nums">
-              {ingredient.code}
-              {ingredient.category ? ` · ${ingredient.category}` : ""}
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="text-base text-ink tabular-nums">{ingredient.code}</span>
+            <span className="text-sm text-ink-muted">
+              Rubro: {ingredient.category || "sin rubro"} · Se usa en recetas en{" "}
+              {recipeUnit?.label ?? ingredient.unit}
             </span>
           </div>
-          {ingredient.isActive ? (
-            <Badge status="ok">Activa</Badge>
-          ) : (
-            <Badge status="none">Desactivada</Badge>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {ingredient.isActive ? (
+              <Badge status="ok">Activa</Badge>
+            ) : (
+              <Badge status="none">Desactivada</Badge>
+            )}
+            {thawingPending || ingredient.requiresThawing ? (
+              <Badge status="info">Se compra congelada</Badge>
+            ) : null}
+          </div>
         </div>
+        <nav aria-label="Secciones de la materia prima">
+          <ul className="flex flex-wrap gap-2">
+            {SECTIONS.map((s) => (
+              <li key={s.key}>
+                <a
+                  href={`#${anchor(s.key)}`}
+                  className="inline-flex min-h-touch items-center rounded-sm border border-line px-3 text-sm text-ink hover:bg-line/50 desk:min-h-control-sm"
+                >
+                  {s.key === "compra" && !menus.pricesView ? "Cómo se compra" : s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        {canManage ? (
+          // En el celular la ficha es de consulta (ADR-0043): desactivar se hace en la computadora.
+          <div className="hidden desk:block">
+            <Disclosure summary={ingredient.isActive ? "Desactivar" : "Volver a activar"}>
+              <ActionForm
+                action={setActiveAction}
+                schema="reason"
+                submitLabel={ingredient.isActive ? "Desactivar" : "Activar"}
+                variant={ingredient.isActive ? "destructive" : "default"}
+              >
+                <input type="hidden" name="ingredientId" value={ingredient.id} />
+                <input type="hidden" name="active" value={ingredient.isActive ? "false" : "true"} />
+                <p className="text-base text-ink">
+                  {ingredient.isActive
+                    ? "No se borra nada: deja de ofrecerse para recetas nuevas y su historia queda."
+                    : "Vuelve a ofrecerse para recetas nuevas."}
+                </p>
+                <Reason id="mp-motivo-activa" />
+              </ActionForm>
+            </Disclosure>
+          </div>
+        ) : null}
       </Card>
 
-      <Tabs
-        label="Secciones de la materia prima"
-        items={SECTIONS.map((t) => ({
-          href: tabHref(t.key),
-          // Quien no ve precios encuentra ahí solo cómo se compra.
-          label: t.key === "compra" && !menus.pricesView ? "Cómo se compra" : t.label,
-          current: show(t.key),
-        }))}
-      />
-
-      {show("datos") ? (
-        <Card className="flex flex-col gap-4">
+      <IngredientSheetProvider
+        ingredientId={ingredient.id}
+        stamp={sheetState?.stamp ?? null}
+        editable={editable}
+        hasPrices={sheetState?.hasPrices ?? false}
+        categoryLocked={sheetState?.categoryLocked ?? true}
+        initial={initial}
+        options={options}
+      >
+        <Card id={anchor("datos")} className="flex scroll-mt-24 flex-col gap-4">
           <CardTitle>Datos generales</CardTitle>
-          <dl className="flex flex-col gap-2">
-            <Row label="Categoría" value={ingredient.category} />
-            <Row label="Se usa en recetas en" value={ingredient.unit} />
-            <Row label="Se compra en" value={ingredient.purchaseUnit} />
-            <Row
-              label="Otros nombres"
-              value={ingredient.aliases.length > 0 ? ingredient.aliases.join(", ") : null}
-            />
-            <Row label="Observaciones" value={ingredient.notes} />
-          </dl>
-          {canManage ? (
-            <div className="flex flex-col gap-2">
-              <Disclosure summary="Editar datos">
-                <ActionForm
-                  action={updateIngredientAction}
-                  schema="ingredientEdit"
-                  submitLabel="Guardar"
-                >
-                  <input type="hidden" name="ingredientId" value={ingredient.id} />
-                  <FormInput
-                    id="mp-name"
-                    label="Nombre"
-                    name="name"
-                    required
-                    maxLength={120}
-                    defaultValue={ingredient.name}
-                  />
-                  <FormSelect
-                    id="mp-category_id"
-                    label="Categoría"
-                    name="category_id"
-                    required
-                    defaultValue={ingredient.categoryId}
-                  >
-                    {/* Los rubros dados de baja no se ofrecen, salvo el que ya tiene (ADR-0038). */}
-                    {categories
-                      .filter((c) => c.isActive || c.id === ingredient.categoryId)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.label}
-                        </option>
-                      ))}
-                  </FormSelect>
-                  <FormTextarea
-                    id="mp-notes"
-                    label="Observaciones"
-                    name="notes"
-                    maxLength={1000}
-                    defaultValue={ingredient.notes ?? ""}
-                  />
-                  <Reason id="mp-motivo-datos" />
-                </ActionForm>
-              </Disclosure>
-              <Disclosure summary="Cambiar los otros nombres">
-                <ActionForm
-                  action={setAliasesAction}
-                  schema="aliases"
-                  submitLabel="Guardar nombres"
-                >
-                  <input type="hidden" name="ingredientId" value={ingredient.id} />
-                  <FormTextarea
-                    id="mp-aliases"
-                    label="Otros nombres"
-                    hint="Uno por línea o separados por coma. Sirven para buscar e importar sin duplicar."
-                    name="aliases"
-                    maxLength={1000}
-                    defaultValue={ingredient.aliases.join("\n")}
-                  />
-                  <Reason id="mp-motivo-alias" />
-                </ActionForm>
-              </Disclosure>
-              <Disclosure summary={ingredient.isActive ? "Desactivar" : "Volver a activar"}>
-                <ActionForm
-                  action={setActiveAction}
-                  schema="reason"
-                  submitLabel={ingredient.isActive ? "Desactivar" : "Activar"}
-                  variant={ingredient.isActive ? "destructive" : "default"}
-                >
-                  <input type="hidden" name="ingredientId" value={ingredient.id} />
-                  <input
-                    type="hidden"
-                    name="active"
-                    value={ingredient.isActive ? "false" : "true"}
-                  />
-                  <p className="text-base text-ink">
-                    {ingredient.isActive
-                      ? "No se borra nada: deja de ofrecerse para recetas nuevas y su historia queda."
-                      : "Vuelve a ofrecerse para recetas nuevas."}
-                  </p>
-                  <Reason id="mp-motivo-activa" />
-                </ActionForm>
-              </Disclosure>
-            </div>
-          ) : null}
+          <DataSection />
         </Card>
-      ) : null}
 
-      {show("compra") && menus.pricesView ? (
-        <IngredientPrices
-          ingredient={ingredient}
-          canPropose={menus.pricesPropose}
-          canSeeImpact={menus.costs}
-          suppliers={suppliers}
-        />
-      ) : null}
-      {show("compra") ? (
-        <Products
-          ingredient={ingredient}
-          canManage={canManage}
-          units={units}
-          suppliers={suppliers}
-        />
-      ) : null}
-      {show("rendimientos") ? (
-        <Waste
-          ingredient={ingredient}
-          rows={yieldRows}
-          processes={wasteProcesses}
-          canManage={canManage}
-          canRecord={canRecordYields}
-          netCost={netCost}
-          place={costPlace?.name ?? null}
-          thawingPending={thawingPending}
-        />
-      ) : null}
-      {show("rendimientos") ? (
-        <Yields
-          ingredient={ingredient}
-          rows={yieldRows}
-          alertPct={yieldAlert}
-          canRecord={canRecordYields}
-          processes={processes}
-          restaurants={yieldRestaurants}
-          canManageProcesses={menus.yieldsApprove}
-        />
-      ) : null}
-      {show("conversiones") ? <Conversions ingredient={ingredient} canManage={canManage} /> : null}
-      {show("alergenos") ? <Allergens ingredient={ingredient} canManage={canManage} /> : null}
-      {show("uso") ? <Usage rows={usage} canOpen={menus.recipes} /> : null}
+        <Card id={anchor("compra")} className="flex scroll-mt-24 flex-col gap-4">
+          <CardTitle>{menus.pricesView ? "Precios de compra" : "Cómo se compra"}</CardTitle>
+          <PurchaseSection
+            ingredient={ingredient}
+            prices={menus.pricesView}
+            money={menus.costs}
+            place={place?.name ?? null}
+            localCost={localCost}
+            netCost={netCost}
+            productPrices={productPrices}
+            canManage={canManage}
+            units={units}
+            suppliers={suppliers}
+          />
+        </Card>
+        {menus.pricesView ? (
+          <IngredientPrices
+            ingredient={ingredient}
+            canPropose={menus.pricesPropose}
+            canSeeImpact={menus.costs}
+            suppliers={suppliers}
+          />
+        ) : null}
+
+        <Card id={anchor("rendimientos")} className="flex scroll-mt-24 flex-col gap-4">
+          <Waste
+            ingredient={ingredient}
+            rows={yieldRows}
+            processes={wasteProcesses}
+            netCost={netCost}
+            place={place?.name ?? null}
+            thawingPending={thawingPending}
+          />
+          <Yields
+            ingredient={ingredient}
+            rows={yieldRows}
+            alertPct={yieldAlert}
+            canRecord={canRecordYields}
+            processes={processes}
+            restaurants={yieldRestaurants}
+            canManageProcesses={menus.yieldsApprove}
+            wasteProcesses={wasteProcesses}
+            netCost={netCost}
+          />
+        </Card>
+
+        <Card id={anchor("conversiones")} className="flex scroll-mt-24 flex-col gap-4">
+          <CardTitle>Conversiones</CardTitle>
+          <CardDescription>
+            Solo hacen falta si se compra en una unidad y se usa en otra (por ejemplo, aceite por kg
+            usado en ml). Nunca se supone que 1 litro pesa 1 kilo.
+          </CardDescription>
+          <ConversionsSection />
+        </Card>
+
+        <Card id={anchor("alergenos")} className="flex scroll-mt-24 flex-col gap-4">
+          <div className="flex items-center gap-1">
+            <CardTitle>Alérgenos</CardTitle>
+            <InfoTip label="alérgenos">
+              «Sin dato» no quiere decir que no tenga: un plato con un ingrediente sin dato se
+              muestra como no verificado.
+            </InfoTip>
+          </div>
+          <AllergensSection />
+        </Card>
+
+        <Card id={anchor("uso")} className="flex scroll-mt-24 flex-col gap-4">
+          <CardTitle>Dónde se usa</CardTitle>
+          <Usage rows={usage} canOpen={menus.recipes} />
+        </Card>
+
+        <SheetBar />
+      </IngredientSheetProvider>
     </>
   );
 }
 
 // Dónde se usa (sección 18): las recetas vigentes o en preparación que la tienen, entre las que se ven.
 function Usage({ rows, canOpen }: { rows: IngredientUsage[]; canOpen: boolean }) {
+  if (rows.length === 0)
+    return <p className="text-base text-ink-muted">Todavía no está en ninguna receta.</p>;
   return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>Dónde se usa</CardTitle>
-      {rows.length === 0 ? (
-        <p className="text-base text-ink-muted">Todavía no está en ninguna receta.</p>
-      ) : (
-        <ul className="flex flex-col gap-2" aria-label="Recetas que la usan">
-          {rows.map((r) => (
-            <li key={r.recipeId} className="flex flex-wrap items-center justify-between gap-2">
-              {canOpen ? (
-                <Link
-                  href={`/recetas/${r.recipeId}`}
-                  className="inline-flex min-h-touch items-center text-base text-primary underline-offset-4 hover:underline"
-                >
-                  {r.name}
-                </Link>
-              ) : (
-                <span className="text-base text-ink">{r.name}</span>
-              )}
-              <span className="text-sm text-ink-muted tabular-nums">
-                {r.code} · v{r.versionNumber}{" "}
-                {r.status === "published" ? "vigente" : "en preparación"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
+    <ul className="flex flex-col gap-2" aria-label="Recetas que la usan">
+      {rows.map((r) => (
+        <li key={r.recipeId} className="flex flex-wrap items-center justify-between gap-2">
+          {canOpen ? (
+            <Link href={`/recetas/${r.recipeId}`} className={linkClass}>
+              {r.name}
+            </Link>
+          ) : (
+            <span className="text-base text-ink">{r.name}</span>
+          )}
+          <span className="text-sm text-ink-muted tabular-nums">
+            {r.code} · v{r.versionNumber} {r.status === "published" ? "vigente" : "en preparación"}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-function Products({
+// ---------------------------------------------------------------------------
+// Precios de compra: el precio vigente y el costo neto destacados, y la tabla de productos
+// ---------------------------------------------------------------------------
+function PurchaseSection({
   ingredient,
+  prices,
+  money,
+  place,
+  localCost,
+  netCost,
+  productPrices,
   canManage,
   units,
   suppliers,
 }: {
   ingredient: IngredientDetail;
+  prices: boolean;
+  money: boolean;
+  place: string | null;
+  localCost: LocalCost | null;
+  netCost: IngredientNetCost | null;
+  productPrices: ProductPrice[];
   canManage: boolean;
-  units: Awaited<ReturnType<typeof getUnits>>;
+  units: Unit[];
   suppliers: Awaited<ReturnType<typeof getSuppliers>>;
 }) {
+  const priceOf = new Map(productPrices.map((p) => [p.productId, p]));
+  // Los activos, y los que ya no se compran pero tienen el precio que vale (el último costo conocido).
+  const products = ingredient.products.filter(
+    (p) => p.isActive || priceOf.get(p.id)?.priceRecordId != null,
+  );
+  const current = localCost ? bigUnitPrice(localCost.unit_cost, localCost.base_unit) : null;
+  const missingPlace = "Elegí un local arriba para ver el precio.";
   return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>Cómo se compra</CardTitle>
-      <CardDescription>
-        Cada producto dice qué trae el envase. Varios productos pueden ser de la misma materia
-        prima.
-      </CardDescription>
-      {ingredient.products.length === 0 ? (
+    <>
+      {prices ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Metric
+            label="Precio vigente"
+            value={current ? `${formatMoney(current.value)} / ${current.unit}` : null}
+            missingReason={
+              !place
+                ? missingPlace
+                : localCost
+                  ? (lineStatusLabel(localCost.status) ?? "Sin precio aprobado.")
+                  : "Sin precio aprobado."
+            }
+            period={place ?? undefined}
+            stale={localCost?.stale ?? false}
+            asOf={localCost?.valid_from ? formatDate(localCost.valid_from) : null}
+            status={localCost?.inherited ? "info" : "ok"}
+            statusLabel={localCost?.inherited ? "Precio heredado" : "Al día"}
+            emptyLabel="Sin datos"
+          />
+          {money ? (
+            <Metric
+              label={netCost ? `Costo neto (con merma) ${netCost.per}` : "Costo neto (con merma)"}
+              value={netCost?.net != null ? formatMoney(netCost.net) : null}
+              missingReason={
+                !place
+                  ? missingPlace
+                  : !netCost
+                    ? "No ves los costos de este local."
+                    : (lineStatusLabel(netCost.netStatus) ?? "Falta un dato.")
+              }
+              period={place ?? undefined}
+              stale={netCost?.stale ?? false}
+              asOf={netCost?.validFrom ? formatDate(netCost.validFrom) : null}
+              status={netCost?.inherited ? "info" : "ok"}
+              statusLabel={netCost?.inherited ? "Precio heredado" : "Al día"}
+              emptyLabel="Sin datos"
+            />
+          ) : null}
+        </div>
+      ) : (
+        <CardDescription>
+          Cada producto dice qué trae el envase. Varios productos pueden ser de la misma materia
+          prima.
+        </CardDescription>
+      )}
+
+      {products.length === 0 ? (
         <p className="text-base text-ink-muted">Todavía no tiene productos de compra.</p>
       ) : (
-        <ul className="flex flex-col gap-2" aria-label="Productos de compra">
-          {ingredient.products.map((p) => (
-            <li key={p.id} className="flex flex-col gap-1 rounded-sm border border-line p-3">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <span className="font-medium text-ink">{p.description}</span>
-                {p.isActive ? null : <Badge>Ya no se compra</Badge>}
-              </div>
-              <span className="text-sm text-ink-muted tabular-nums">
-                {[p.code, p.contents, p.brandName, p.supplier].filter(Boolean).join(" · ")}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {/* Computadora: tabla de ancho completo. Celular: tarjetas (ADR-0036). */}
+          <div className="hidden overflow-x-auto desk:block">
+            <table className="w-full border-collapse text-base">
+              <caption className="sr-only">Productos de compra</caption>
+              <thead>
+                <tr className="border-b border-line text-left text-sm text-ink-muted">
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    Producto de compra
+                  </th>
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    Proveedor
+                  </th>
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    Viene en
+                  </th>
+                  <th scope="col" className="py-2 pr-3 text-right font-medium">
+                    Contenido
+                  </th>
+                  {prices ? (
+                    <>
+                      <th scope="col" className="py-2 pr-3 text-right font-medium">
+                        Precio
+                      </th>
+                      <th scope="col" className="py-2 pr-3 text-right font-medium">
+                        Precio por kg, l o u
+                      </th>
+                      <th scope="col" className="py-2 pr-3 font-medium">
+                        Fecha
+                      </th>
+                      <th scope="col" className="py-2 font-medium">
+                        Estado
+                      </th>
+                    </>
+                  ) : null}
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => {
+                  const price = priceOf.get(p.id);
+                  const big = price ? bigUnitPrice(price.unitCost, price.baseUnit) : null;
+                  const state = price
+                    ? priceState(price)
+                    : { status: "none" as const, label: place ? "Sin precio" : "Elegí un local" };
+                  return (
+                    <tr key={p.id} className="border-b border-line">
+                      <th scope="row" className="py-2 pr-3 text-left font-medium text-ink">
+                        {p.description}
+                        {p.isActive ? null : (
+                          <Badge status="none" className="ml-2">
+                            Ya no se compra
+                          </Badge>
+                        )}
+                        <span className="block text-sm font-normal text-ink-muted tabular-nums">
+                          {[p.code, p.brandName].filter(Boolean).join(" · ")}
+                        </span>
+                      </th>
+                      <td className="py-2 pr-3 text-ink">{p.supplier ?? "—"}</td>
+                      <td className="py-2 pr-3 text-ink">{p.packageUnit}</td>
+                      <td className="py-2 pr-3 text-right text-ink tabular-nums">{p.content}</td>
+                      {prices ? (
+                        <>
+                          <td className="py-2 pr-3 text-right text-ink tabular-nums">
+                            {price?.packageCost != null ? formatMoney(price.packageCost) : "—"}
+                          </td>
+                          <td className="py-2 pr-3 text-right text-ink tabular-nums">
+                            {big ? `${formatMoney(big.value)} / ${big.unit}` : "—"}
+                          </td>
+                          <td className="py-2 pr-3 text-ink tabular-nums">
+                            {price?.validFrom ? formatDate(price.validFrom) : "—"}
+                          </td>
+                          <td className="py-2">
+                            <Badge status={state.status}>{state.label}</Badge>
+                          </td>
+                        </>
+                      ) : null}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <ul className="flex flex-col gap-2 desk:hidden" aria-label="Productos de compra">
+            {products.map((p) => {
+              const price = priceOf.get(p.id);
+              const big = price ? bigUnitPrice(price.unitCost, price.baseUnit) : null;
+              const state = price
+                ? priceState(price)
+                : { status: "none" as const, label: place ? "Sin precio" : "Elegí un local" };
+              return (
+                <li key={p.id} className="flex flex-col gap-1 rounded-sm border border-line p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <span className="font-medium text-ink">{p.description}</span>
+                    {/* El mismo estado que en la tabla: sin precio también se dice. */}
+                    {prices ? (
+                      <Badge status={state.status}>{state.label}</Badge>
+                    ) : p.isActive ? null : (
+                      <Badge status="none">Ya no se compra</Badge>
+                    )}
+                  </div>
+                  <span className="text-sm text-ink-muted tabular-nums">
+                    {[p.supplier, `${p.packageUnit} de ${p.content}`].filter(Boolean).join(" · ")}
+                  </span>
+                  {prices && big ? (
+                    <span className="text-base text-ink tabular-nums">
+                      {formatMoney(big.value)} / {big.unit}
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
+
       {canManage ? (
-        <div className="flex flex-col gap-2">
-          <Disclosure summary="Agregar un producto de compra">
+        <div className="hidden flex-wrap gap-2 desk:flex">
+          <ActionModal
+            label="Agregar producto de compra"
+            title="Agregar producto de compra"
+            description="Qué trae el envase, como lo vende el proveedor."
+          >
             <ActionForm
               action={createProductAction}
               schema="product"
               submitLabel="Agregar producto"
             >
               <input type="hidden" name="ingredientId" value={ingredient.id} />
+              <FormInput id="mp-code" label="Código" name="code" required maxLength={30} />
+              <FormInput
+                id="mp-description"
+                label="Descripción"
+                hint="Como lo vende el proveedor."
+                name="description"
+                required
+                maxLength={200}
+              />
+              <FormSelect
+                id="mp-package_unit"
+                label="Viene en"
+                name="package_unit"
+                required
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Elegí cómo viene
+                </option>
+                <UnitOptions units={units} />
+              </FormSelect>
               <div className="grid gap-4 sm:grid-cols-2">
-                <FormInput id="mp-code" label="Código" name="code" required maxLength={30} />
-                <FormInput
-                  id="mp-description"
-                  label="Descripción"
-                  hint="Como lo vende el proveedor."
-                  name="description"
-                  required
-                  maxLength={200}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <FormSelect
-                  id="mp-package_unit"
-                  label="Viene en"
-                  name="package_unit"
-                  required
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Elegí cómo viene
-                  </option>
-                  <UnitOptions units={units} />
-                </FormSelect>
                 <FormInput
                   id="mp-units_per_package"
                   label="Unidades por envase"
@@ -553,38 +732,40 @@ function Products({
                   required
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <FormSelect
-                  id="mp-content_unit"
-                  label="Unidad del contenido"
-                  name="content_unit"
-                  required
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Elegí la unidad
+              <FormSelect
+                id="mp-content_unit"
+                label="Unidad del contenido"
+                name="content_unit"
+                required
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Elegí la unidad
+                </option>
+                <UnitOptions units={units.filter((u) => u.dimension !== "package")} />
+              </FormSelect>
+              <FormSelect
+                id="mp-supplier_id"
+                label="Proveedor habitual"
+                name="supplier_id"
+                defaultValue=""
+              >
+                <option value="">Sin proveedor fijo</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
                   </option>
-                  <UnitOptions units={units.filter((u) => u.dimension !== "package")} />
-                </FormSelect>
-                <FormSelect
-                  id="mp-supplier_id"
-                  label="Proveedor habitual"
-                  name="supplier_id"
-                  defaultValue=""
-                >
-                  <option value="">Sin proveedor fijo</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </FormSelect>
-                <FormInput id="mp-brand_name" label="Marca" name="brand_name" maxLength={80} />
-              </div>
+                ))}
+              </FormSelect>
+              <FormInput id="mp-brand_name" label="Marca" name="brand_name" maxLength={80} />
               <Reason id="mp-motivo-producto" />
             </ActionForm>
-          </Disclosure>
-          <Disclosure summary="Crear un proveedor">
+          </ActionModal>
+          <ActionModal
+            label="Crear un proveedor"
+            title="Crear un proveedor"
+            description="Queda para todo el grupo. Después lo elegís en el producto."
+          >
             <ActionForm
               action={createSupplierAction}
               schema="supplier"
@@ -592,218 +773,38 @@ function Products({
             >
               <input type="hidden" name="groupId" value={ingredient.groupId} />
               <input type="hidden" name="ingredientId" value={ingredient.id} />
-              <div className="grid gap-4 sm:grid-cols-3">
-                <FormInput
-                  id="mp-supplier_code"
-                  label="Código"
-                  name="code"
-                  required
-                  maxLength={30}
-                />
-                <FormInput
-                  id="mp-supplier_name"
-                  label="Nombre"
-                  name="name"
-                  required
-                  maxLength={120}
-                />
-                <FormInput
-                  id="mp-tax_id"
-                  label="CUIT"
-                  name="tax_id"
-                  hint="Con o sin guiones."
-                  maxLength={15}
-                />
-              </div>
-              <Reason id="mp-motivo-proveedor" />
-            </ActionForm>
-          </Disclosure>
-        </div>
-      ) : null}
-    </Card>
-  );
-}
-
-function Conversions({
-  ingredient,
-  canManage,
-}: {
-  ingredient: IngredientDetail;
-  canManage: boolean;
-}) {
-  // Hoy, en la hora de la Argentina, como fecha de la medición por defecto.
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(new Date());
-  const labels = { density: "Densidad", unit_weight: "Peso por unidad" } as const;
-  const units = { density: "g por ml", unit_weight: "g por unidad" } as const;
-  return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>Conversiones</CardTitle>
-      <CardDescription>
-        Solo hacen falta si se compra en una unidad y se usa en otra (por ejemplo, aceite por kg
-        usado en ml). Nunca se supone que 1 litro pesa 1 kilo.
-      </CardDescription>
-      {ingredient.conversions.length === 0 ? (
-        <p className="text-base text-ink-muted">No tiene conversiones cargadas.</p>
-      ) : (
-        <dl className="flex flex-col gap-2">
-          {ingredient.conversions.map((c) => (
-            <Row
-              key={c.kind}
-              label={labels[c.kind]}
-              value={`${number.format(c.factor)} ${units[c.kind]} · ${SOURCE_LABELS[c.source]} · ${formatDate(c.measuredOn)}${c.measuredBy ? ` · ${c.measuredBy}` : ""}`}
-            />
-          ))}
-        </dl>
-      )}
-      {canManage ? (
-        <Disclosure summary="Cargar o cambiar una conversión">
-          <ActionForm
-            action={setConversionAction}
-            schema="conversion"
-            submitLabel="Guardar conversión"
-          >
-            <input type="hidden" name="ingredientId" value={ingredient.id} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormSelect id="mp-kind" label="Conversión" name="kind" required defaultValue="">
-                <option value="" disabled>
-                  Elegí cuál
-                </option>
-                <option value="density">Densidad (g por ml)</option>
-                <option value="unit_weight">Peso por unidad (g por unidad)</option>
-              </FormSelect>
-              <FormInput id="mp-factor" label="Valor" name="factor" inputMode="decimal" required />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <FormSelect
-                id="mp-source"
-                label="De dónde sale"
-                name="source"
-                required
-                defaultValue=""
-              >
-                <SourceOptions />
-              </FormSelect>
+              <FormInput id="mp-supplier_code" label="Código" name="code" required maxLength={30} />
               <FormInput
-                id="mp-measured_on"
-                label="Fecha de la medición"
-                name="measured_on"
-                type="date"
+                id="mp-supplier_name"
+                label="Nombre"
+                name="name"
                 required
-                defaultValue={today}
-              />
-              <FormInput
-                id="mp-measured_by"
-                label="Quién lo midió"
-                name="measured_by"
                 maxLength={120}
               />
-            </div>
-            <Reason id="mp-motivo-conversion" />
-          </ActionForm>
-        </Disclosure>
+              <FormInput
+                id="mp-tax_id"
+                label="CUIT"
+                name="tax_id"
+                hint="Con o sin guiones."
+                maxLength={15}
+              />
+              <Reason id="mp-motivo-proveedor" />
+            </ActionForm>
+          </ActionModal>
+        </div>
       ) : null}
-    </Card>
+    </>
   );
 }
 
-function Allergens({
-  ingredient,
-  canManage,
-}: {
-  ingredient: IngredientDetail;
-  canManage: boolean;
-}) {
-  const unvalidated = ingredient.allergens.some((a) => !a.validated);
-  return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>Alérgenos</CardTitle>
-      <CardDescription>
-        «Sin dato» no quiere decir que no tenga: un plato con un ingrediente sin dato se muestra
-        como no verificado.
-      </CardDescription>
-      {unvalidated ? (
-        <p className="rounded-sm border border-line bg-warn p-3 text-base text-warn-ink">
-          La lista de alérgenos todavía no está validada por un responsable.
-        </p>
-      ) : null}
-      <ul className="flex flex-col gap-2" aria-label="Alérgenos">
-        {ingredient.allergens.map((a) => (
-          <li
-            key={a.id}
-            className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2 last:border-0"
-          >
-            <span className="text-base text-ink">{a.name}</span>
-            {a.status ? (
-              <Badge status={ALLERGEN_BADGE[a.status]}>{ALLERGEN_STATUS_LABELS[a.status]}</Badge>
-            ) : (
-              <Badge>Sin dato</Badge>
-            )}
-          </li>
-        ))}
-      </ul>
-      {canManage && ingredient.allergens.length > 0 ? (
-        <Disclosure summary="Cambiar un alérgeno">
-          <ActionForm action={setAllergenAction} schema="allergen" submitLabel="Guardar alérgeno">
-            <input type="hidden" name="ingredientId" value={ingredient.id} />
-            <div className="grid gap-4 sm:grid-cols-3">
-              <FormSelect
-                id="mp-allergen_id"
-                label="Alérgeno"
-                name="allergen_id"
-                required
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Elegí el alérgeno
-                </option>
-                {ingredient.allergens.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </FormSelect>
-              <FormSelect id="mp-status" label="Estado" name="status" defaultValue="">
-                <option value="">Sin dato</option>
-                {Object.entries(ALLERGEN_STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </FormSelect>
-              <FormSelect
-                id="mp-allergen_source"
-                label="De dónde sale"
-                hint="No hace falta para «Sin dato»."
-                name="source"
-                defaultValue=""
-              >
-                <option value="">Sin indicar</option>
-                {Object.entries(SOURCE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </FormSelect>
-            </div>
-            <Reason id="mp-motivo-alergeno" />
-          </ActionForm>
-        </Disclosure>
-      ) : null}
-    </Card>
-  );
-}
-
-// Mermas y rendimiento neto (ADR-0040, pedido de Soy): la merma de limpieza y la de descongelado en %, el rendimiento
-// neto y el costo neto. Son los estándares de LIMPIEZA y DESCONGELADO (generales: sin corte ni proveedor), con la misma
-// aprobación que cualquier rendimiento. Sin dato, «—» y el motivo: nunca 0 % ni 100 %.
+// ---------------------------------------------------------------------------
+// Mermas y rendimiento neto (ADR-0040): la merma de limpieza y la de descongelado en %, el rendimiento neto y el costo
+// neto. Sin dato, «—» y el motivo: nunca 0 % ni 100 %.
+// ---------------------------------------------------------------------------
 function Waste({
   ingredient,
   rows,
   processes,
-  canManage,
-  canRecord,
   netCost,
   place,
   thawingPending,
@@ -811,8 +812,6 @@ function Waste({
   ingredient: IngredientDetail;
   rows: YieldRow[];
   processes: { cleaning: string | null; thawing: string | null };
-  canManage: boolean;
-  canRecord: boolean;
   netCost: IngredientNetCost | null;
   place: string | null;
   thawingPending: boolean;
@@ -828,17 +827,12 @@ function Waste({
     requiresThawing: thaws,
   });
   const pending = (cleaning?.pendingProposals ?? 0) + (thawing?.pendingProposals ?? 0);
-  // Sin los dos procesos, la propuesta fallaría: se avisa y no se ofrece el formulario.
-  const missingProcesses = [
-    processes.cleaning === null ? "limpieza (LIMPIEZA)" : null,
-    processes.thawing === null ? "descongelado (DESCONGELADO)" : null,
-  ].filter((p): p is string => p !== null);
   const approved = { status: "ok" as const, statusLabel: "Aprobada", emptyLabel: "Sin datos" };
   return (
-    <Card className="flex flex-col gap-4">
+    <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1">
-          <CardTitle>Mermas y rendimiento neto</CardTitle>
+          <CardTitle>Mermas y rendimientos</CardTitle>
           <InfoTip label="mermas y rendimiento neto">
             Lo que se pierde al limpiar y al descongelar. El costo usa siempre lo aprobado por un
             Chef de todo el grupo.
@@ -901,107 +895,15 @@ function Waste({
           emptyLabel="Sin datos"
         />
       </div>
-      {canManage ? (
-        <ActionForm action={setThawingAction} schema="thawing" submitLabel="Guardar">
-          <input type="hidden" name="ingredientId" value={ingredient.id} />
-          <div className="flex items-center gap-1">
-            <ToggleField
-              // Con un pedido pendiente vuelve a mostrar lo vigente (sigue congelada hasta que lo aprueben).
-              key={`${thaws}-${thawingPending}`}
-              id="mp-congelada"
-              name="requires_thawing"
-              label="¿Se compra congelada?"
-              defaultValue={thaws}
-            />
-            <InfoTip label="se compra congelada">
-              Si se compra congelada, su costo suma la merma de descongelado aprobada. Dejar de
-              comprarla congelada baja el costo: lo aprueba un Chef de todo el grupo.
-            </InfoTip>
-          </div>
-          {thawingPending ? (
-            <Badge status="review" className="self-start whitespace-normal">
-              Pedido pendiente: dejar de comprarla congelada
-            </Badge>
-          ) : null}
-          <Reason id="mp-motivo-congelada" />
-        </ActionForm>
-      ) : null}
-      {canRecord ? (
-        <Disclosure summary="Proponer mermas">
-          {missingProcesses.length > 0 ? (
-            <Notice status="warn">
-              Al grupo le falta el proceso de {missingProcesses.join(" y el de ")}. Lo crea un Chef
-              de todo el grupo en la configuración del catálogo.
-            </Notice>
-          ) : (
-            <ActionForm action={proposeWasteAction} schema="waste" submitLabel="Proponer mermas">
-              <p className="text-base text-ink">
-                No cambia el costo hasta que la apruebe un Chef de todo el grupo, distinto de vos.
-              </p>
-              <input type="hidden" name="ingredientId" value={ingredient.id} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormInput
-                  id="mp-merma-limpieza"
-                  label="Merma de limpieza (%)"
-                  hint="Lo que se descarta al limpiar: 20 si de 1 kg quedan 800 g."
-                  name="cleaning_loss"
-                  inputMode="decimal"
-                />
-                <FormInput
-                  id="mp-merma-descongelado"
-                  label="Merma de descongelado (%)"
-                  hint={
-                    thaws
-                      ? "El agua que pierde al descongelarse."
-                      : "Solo cuenta si se compra congelada."
-                  }
-                  name="thawing_loss"
-                  inputMode="decimal"
-                />
-              </div>
-              <WastePreview
-                requiresThawing={thaws}
-                approvedCleaning={cleaning?.standardCleaning ?? null}
-                approvedThawing={thawing?.standardCleaning ?? null}
-                grossCost={netCost?.gross ?? null}
-                per={netCost?.per ?? ""}
-              />
-              <FormCheckbox
-                id="mp-merma-sin"
-                name="declared_no_loss"
-                label="No tiene merma"
-                hint="Obligatorio para cargar 0 %: el sistema nunca supone que no hay merma."
-              />
-              <FormTextarea
-                id="mp-merma-metodo"
-                label="Cómo se midió"
-                name="method"
-                maxLength={500}
-              />
-              <Reason id="mp-motivo-merma" />
-            </ActionForm>
-          )}
-        </Disclosure>
-      ) : null}
-    </Card>
+      <ThawingToggle pending={thawingPending} />
+    </>
   );
 }
 
-// Rendimientos (etapa 2.1 B): el estándar que usa el costo, lo que dicen los ensayos y la
-// diferencia. Un ensayo nunca cambia el estándar: se propone uno nuevo y lo aprueba un Chef de
-// todo el grupo (ADR-0021).
-function YieldStandard({ row }: { row: YieldRow }) {
-  if (row.standardCleaning === null || row.standardCooking === null) {
-    return <Badge status="warn">Sin estándar aprobado</Badge>;
-  }
-  return (
-    <span className="text-base text-ink tabular-nums">
-      Limpieza {formatCleaning(row.standardCleaning)} · {describeCooking(row.standardCooking)}
-      {row.declaredNoLoss ? " · declarado sin merma" : ""}
-    </span>
-  );
-}
-
+// ---------------------------------------------------------------------------
+// Rendimientos por proceso (etapa 2.1 B): el estándar que usa el costo, lo que dicen los ensayos y la diferencia. Un
+// ensayo nunca cambia el estándar: se propone uno nuevo y lo aprueba un Chef de todo el grupo (ADR-0021).
+// ---------------------------------------------------------------------------
 // Si el promedio de los ensayos se desvía del estándar más que el umbral del aviso de rendimiento (ADR-0035).
 function deviates(row: YieldRow, alertPct: number | null): boolean {
   if (alertPct === null) return false;
@@ -1016,8 +918,13 @@ function deviates(row: YieldRow, alertPct: number | null): boolean {
   return cleaning || cooking;
 }
 
-function YieldTests({ row, alertPct }: { row: YieldRow; alertPct: number | null }) {
-  if (row.tests === 0) return <span className="text-sm text-ink-muted">Sin ensayos.</span>;
+function standardText(row: YieldRow): string | null {
+  if (row.standardCleaning === null || row.standardCooking === null) return null;
+  return `Limpieza ${formatCleaning(row.standardCleaning)} · ${describeCooking(row.standardCooking)}${row.declaredNoLoss ? " · declarado sin merma" : ""}`;
+}
+
+function testsText(row: YieldRow): string {
+  if (row.tests === 0) return "Sin ensayos.";
   const parts = [row.tests === 1 ? "1 ensayo" : `${row.tests} ensayos`];
   if (row.measuredCleaning !== null) {
     parts.push(
@@ -1029,14 +936,22 @@ function YieldTests({ row, alertPct }: { row: YieldRow; alertPct: number | null 
   }
   if (row.measuredCooking !== null) parts.push(describeCooking(row.measuredCooking));
   if (row.lastTestedOn) parts.push(`último el ${formatDate(row.lastTestedOn)}`);
+  return parts.join(" · ");
+}
+
+function YieldState({ row, alertPct }: { row: YieldRow; alertPct: number | null }) {
+  const standard = standardText(row) !== null;
+  const off = deviates(row, alertPct);
   return (
-    <span className="flex flex-col items-start gap-1">
-      <span className="text-sm text-ink-muted tabular-nums">{parts.join(" · ")}</span>
-      {deviates(row, alertPct) ? (
+    <span className="flex flex-wrap gap-1">
+      {standard ? null : <Badge status="warn">Sin estándar aprobado</Badge>}
+      {row.pendingProposals > 0 ? <Badge status="review">Propuesta en revisión</Badge> : null}
+      {off ? (
         <Badge status="warn" className="whitespace-normal">
           El promedio se desvía más del {alertPct?.toLocaleString("es-AR")} % del estándar
         </Badge>
       ) : null}
+      {standard && row.pendingProposals === 0 && !off ? <Badge status="ok">Aprobado</Badge> : null}
     </span>
   );
 }
@@ -1049,6 +964,8 @@ function Yields({
   processes,
   restaurants,
   canManageProcesses,
+  wasteProcesses,
+  netCost,
 }: {
   ingredient: IngredientDetail;
   rows: YieldRow[];
@@ -1057,44 +974,86 @@ function Yields({
   processes: { id: string; name: string }[];
   restaurants: { id: string; name: string }[];
   canManageProcesses: boolean;
+  wasteProcesses: { cleaning: string | null; thawing: string | null };
+  netCost: IngredientNetCost | null;
 }) {
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(new Date());
+  const label = (r: YieldRow) =>
+    [r.process, r.cut, r.supplier ? `de ${r.supplier}` : null].filter(Boolean).join(" · ");
+  const key = (r: YieldRow) => `${r.processId}-${r.cut ?? ""}-${r.supplier ?? ""}`;
   return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>Rendimientos</CardTitle>
-      <CardDescription>
-        Cuánto rinde según el proceso. El costo usa siempre el estándar aprobado; los ensayos
-        muestran lo que se midió en las cocinas y no lo cambian.
-      </CardDescription>
+    <section
+      className="flex flex-col gap-3"
+      aria-labelledby={`rend-proceso-${ingredient.id.slice(0, 8)}`}
+    >
+      <h3
+        id={`rend-proceso-${ingredient.id.slice(0, 8)}`}
+        className="text-base font-semibold text-ink"
+      >
+        Rendimientos por proceso
+      </h3>
       {rows.length === 0 ? (
-        <p className="text-base text-ink-muted">
-          Todavía no tiene rendimientos cargados.
-          {canRecord ? " Registrá un ensayo o proponé un estándar." : ""}
-        </p>
+        <p className="text-base text-ink-muted">Todavía no tiene rendimientos cargados.</p>
       ) : (
-        <ul className="flex flex-col gap-2" aria-label="Rendimientos por proceso">
-          {rows.map((r) => (
-            <li
-              key={`${r.processId}-${r.cut ?? ""}-${r.supplier ?? ""}`}
-              className="flex flex-col gap-1 rounded-sm border border-line p-3"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <span className="font-medium text-ink">
-                  {[r.process, r.cut, r.supplier ? `de ${r.supplier}` : null]
-                    .filter(Boolean)
-                    .join(" · ")}
+        <>
+          <div className="hidden overflow-x-auto desk:block">
+            <table className="w-full border-collapse text-base">
+              <caption className="sr-only">Rendimientos por proceso</caption>
+              <thead>
+                <tr className="border-b border-line text-left text-sm text-ink-muted">
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    Proceso
+                  </th>
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    Corte o presentación
+                  </th>
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    Estándar que usa el costo
+                  </th>
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    Ensayos en las cocinas
+                  </th>
+                  <th scope="col" className="py-2 font-medium">
+                    Estado
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={key(r)} className="border-b border-line align-top">
+                    <th scope="row" className="py-2 pr-3 text-left font-medium text-ink">
+                      {r.process}
+                      {r.supplier ? (
+                        <span className="block text-sm font-normal text-ink-muted">
+                          de {r.supplier}
+                        </span>
+                      ) : null}
+                    </th>
+                    <td className="py-2 pr-3 text-ink">{r.cut ?? "—"}</td>
+                    <td className="py-2 pr-3 text-ink tabular-nums">{standardText(r) ?? "—"}</td>
+                    <td className="py-2 pr-3 text-sm text-ink-muted tabular-nums">
+                      {testsText(r)}
+                    </td>
+                    <td className="py-2">
+                      <YieldState row={r} alertPct={alertPct} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="flex flex-col gap-2 desk:hidden" aria-label="Rendimientos por proceso">
+            {rows.map((r) => (
+              <li key={key(r)} className="flex flex-col gap-1 rounded-sm border border-line p-3">
+                <span className="font-medium text-ink">{label(r)}</span>
+                <span className="text-base text-ink tabular-nums">
+                  {standardText(r) ?? "Sin estándar aprobado"}
                 </span>
-                {r.pendingProposals > 0 ? (
-                  <Badge status="review">Propuesta en revisión</Badge>
-                ) : null}
-              </div>
-              <YieldStandard row={r} />
-              <YieldTests row={r} alertPct={alertPct} />
-            </li>
-          ))}
-        </ul>
+                <span className="text-sm text-ink-muted tabular-nums">{testsText(r)}</span>
+                <YieldState row={r} alertPct={alertPct} />
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {canRecord && processes.length === 0 ? (
         <div className="flex flex-col gap-1">
@@ -1103,199 +1062,290 @@ function Yields({
             {canManageProcesses ? "" : " Los crea un Chef de todo el grupo."}
           </p>
           {canManageProcesses ? (
-            <Link
-              href="/materias-primas/configuracion"
-              className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
-            >
+            <Link href="/materias-primas/configuracion" className={`${linkClass} self-start`}>
               Crealos en la configuración del catálogo
             </Link>
           ) : null}
         </div>
       ) : null}
-      {canRecord && processes.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <Disclosure summary="Registrar un ensayo">
-            {restaurants.length === 0 ? (
-              <p className="text-base text-ink">No tenés locales donde registrar ensayos.</p>
-            ) : (
-              <ActionForm
-                action={recordYieldTestAction}
-                schema="yieldTest"
-                submitLabel="Registrar ensayo"
-              >
-                <input type="hidden" name="ingredientId" value={ingredient.id} />
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <FormSelect
-                    id="mp-ren-proceso"
-                    label="Proceso"
-                    name="process_id"
-                    required
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Elegí el proceso
-                    </option>
-                    {processes.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </FormSelect>
-                  <FormSelect
-                    id="mp-ren-local"
-                    label="Local donde se midió"
-                    name="restaurant_id"
-                    required
-                    defaultValue={restaurants.length === 1 ? restaurants[0]?.id : ""}
-                  >
-                    <option value="" disabled>
-                      Elegí el local
-                    </option>
-                    {restaurants.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </FormSelect>
-                  <FormInput
-                    id="mp-ren-fecha"
-                    label="Fecha"
-                    name="tested_on"
-                    type="date"
-                    required
-                    max={today}
-                    defaultValue={today}
+      {canRecord ? (
+        <div className="hidden flex-wrap gap-2 desk:flex">
+          <ProposalModal
+            label="Proponer merma o rendimiento"
+            options={[
+              {
+                value: "merma",
+                label: "Merma",
+                content: (
+                  <WasteForm
+                    ingredient={ingredient}
+                    rows={rows}
+                    processes={wasteProcesses}
+                    netCost={netCost}
                   />
-                </div>
-                <FormInput
-                  id="mp-ren-corte"
-                  label="Corte o presentación"
-                  hint="Solo si el estándar es de un corte. Por ejemplo, «en cubos»."
-                  name="cut"
-                  maxLength={80}
-                />
-                <p className="text-sm text-ink-muted">
-                  Pesos en gramos, sumando todas las muestras. Cargá el par que mediste: bruto y
-                  limpio, antes y después de cocinar, o los dos.
-                </p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormInput
-                    id="mp-ren-bruto"
-                    label="Peso bruto (g)"
-                    name="gross_weight"
-                    inputMode="decimal"
-                  />
-                  <FormInput
-                    id="mp-ren-limpio"
-                    label="Peso limpio (g)"
-                    name="clean_weight"
-                    inputMode="decimal"
-                  />
-                  <FormInput
-                    id="mp-ren-antes"
-                    label="Antes de cocinar (g)"
-                    name="before_cooking_weight"
-                    inputMode="decimal"
-                  />
-                  <FormInput
-                    id="mp-ren-despues"
-                    label="Después de cocinar (g)"
-                    name="after_cooking_weight"
-                    inputMode="decimal"
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormInput
-                    id="mp-ren-muestras"
-                    label="Muestras"
-                    hint="Cuántas piezas o tandas pesaste en total."
-                    name="samples"
-                    inputMode="numeric"
-                    required
-                    defaultValue="1"
-                  />
-                  <FormInput
-                    id="mp-ren-responsable"
-                    label="Quién lo midió"
-                    name="responsible"
-                    maxLength={120}
-                  />
-                </div>
-                <Reason id="mp-motivo-ensayo" />
-              </ActionForm>
-            )}
-          </Disclosure>
-          <Disclosure summary="Proponer un estándar nuevo">
-            <p className="text-base text-ink">
-              No cambia nada hasta que lo apruebe un Chef de todo el grupo, distinto de vos.
-            </p>
-            <ActionForm
-              action={proposeYieldAction}
-              schema="yieldProposal"
-              submitLabel="Proponer estándar"
+                ),
+              },
+              ...(processes.length > 0
+                ? [
+                    {
+                      value: "rendimiento",
+                      label: "Rendimiento por proceso",
+                      content: <YieldProposalForm ingredient={ingredient} processes={processes} />,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+          {processes.length > 0 ? (
+            <ActionModal
+              label="Registrar un ensayo"
+              title="Registrar un ensayo"
+              description="Lo que se midió en la cocina. No cambia el estándar: si hace falta, proponé uno nuevo."
             >
-              <input type="hidden" name="ingredientId" value={ingredient.id} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormSelect
-                  id="mp-est-proceso"
-                  label="Proceso"
-                  name="process_id"
-                  required
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Elegí el proceso
-                  </option>
-                  {processes.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </FormSelect>
-                <FormInput
-                  id="mp-est-corte"
-                  label="Corte o presentación"
-                  hint="Solo si cambia el rendimiento. Por ejemplo, «en cubos»."
-                  name="cut"
-                  maxLength={80}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormInput
-                  id="mp-est-limpieza"
-                  label="Limpieza (%)"
-                  hint="Peso limpio sobre peso bruto. 100 si no hay limpieza."
-                  name="cleaning_percent"
-                  inputMode="decimal"
-                  required
-                />
-                <FormInput
-                  id="mp-est-coccion"
-                  label="Factor de cocción"
-                  hint="Peso después sobre peso antes: 0,85 si pierde, 2,5 si se hidrata, 1 si no se cocina."
-                  name="cooking_factor"
-                  inputMode="decimal"
-                  required
-                  defaultValue="1"
-                />
-              </div>
-              <FormTextarea
-                id="mp-est-metodo"
-                label="Cómo se midió"
-                name="method"
-                maxLength={500}
+              <YieldTestForm
+                ingredient={ingredient}
+                processes={processes}
+                restaurants={restaurants}
               />
-              <FormCheckbox
-                id="mp-est-sin-merma"
-                name="declared_no_loss"
-                label="No tiene merma"
-                hint="Obligatorio si la limpieza es 100 % y el factor 1: sin esta marca, el sistema nunca supone que no hay merma."
-              />
-              <Reason id="mp-motivo-estandar" />
-            </ActionForm>
-          </Disclosure>
+            </ActionModal>
+          ) : null}
         </div>
       ) : null}
-    </Card>
+    </section>
+  );
+}
+
+// Proponer mermas (ADR-0040): limpieza y descongelado en %, con la vista previa del costo. Lo aprueba un Chef de todo
+// el grupo.
+function WasteForm({
+  ingredient,
+  rows,
+  processes,
+  netCost,
+}: {
+  ingredient: IngredientDetail;
+  rows: YieldRow[];
+  processes: { cleaning: string | null; thawing: string | null };
+  netCost: IngredientNetCost | null;
+}) {
+  const general = (processId: string | null) =>
+    rows.find((r) => r.processId === processId && r.cut === null && r.supplier === null);
+  const thaws = ingredient.requiresThawing;
+  // Sin los dos procesos, la propuesta fallaría: se avisa y no se ofrece el formulario.
+  const missing = [
+    processes.cleaning === null ? "limpieza (LIMPIEZA)" : null,
+    processes.thawing === null ? "descongelado (DESCONGELADO)" : null,
+  ].filter((p): p is string => p !== null);
+  if (missing.length > 0)
+    return (
+      <Notice status="warn">
+        Al grupo le falta el proceso de {missing.join(" y el de ")}. Lo crea un Chef de todo el
+        grupo en la configuración del catálogo.
+      </Notice>
+    );
+  return (
+    <ActionForm action={proposeWasteAction} schema="waste" submitLabel="Proponer mermas">
+      <input type="hidden" name="ingredientId" value={ingredient.id} />
+      <FormInput
+        id="mp-merma-limpieza"
+        label="Merma de limpieza (%)"
+        hint="Lo que se descarta al limpiar: 20 si de 1 kg quedan 800 g."
+        name="cleaning_loss"
+        inputMode="decimal"
+      />
+      <FormInput
+        id="mp-merma-descongelado"
+        label="Merma de descongelado (%)"
+        hint={
+          thaws ? "El agua que pierde al descongelarse." : "Solo cuenta si se compra congelada."
+        }
+        name="thawing_loss"
+        inputMode="decimal"
+      />
+      <WastePreview
+        requiresThawing={thaws}
+        approvedCleaning={general(processes.cleaning)?.standardCleaning ?? null}
+        approvedThawing={general(processes.thawing)?.standardCleaning ?? null}
+        grossCost={netCost?.gross ?? null}
+        per={netCost?.per ?? ""}
+      />
+      <FormCheckbox
+        id="mp-merma-sin"
+        name="declared_no_loss"
+        label="No tiene merma"
+        hint="Obligatorio para cargar 0 %: el sistema nunca supone que no hay merma."
+      />
+      <FormTextarea id="mp-merma-metodo" label="Cómo se midió" name="method" maxLength={500} />
+      <Reason id="mp-motivo-merma" />
+    </ActionForm>
+  );
+}
+
+function YieldProposalForm({
+  ingredient,
+  processes,
+}: {
+  ingredient: IngredientDetail;
+  processes: { id: string; name: string }[];
+}) {
+  return (
+    <ActionForm action={proposeYieldAction} schema="yieldProposal" submitLabel="Proponer estándar">
+      <input type="hidden" name="ingredientId" value={ingredient.id} />
+      <FormSelect id="mp-est-proceso" label="Proceso" name="process_id" required defaultValue="">
+        <option value="" disabled>
+          Elegí el proceso
+        </option>
+        {processes.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </FormSelect>
+      <FormInput
+        id="mp-est-corte"
+        label="Corte o presentación"
+        hint="Solo si cambia el rendimiento. Por ejemplo, «en cubos»."
+        name="cut"
+        maxLength={80}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormInput
+          id="mp-est-limpieza"
+          label="Limpieza (%)"
+          hint="Peso limpio sobre peso bruto. 100 si no hay limpieza."
+          name="cleaning_percent"
+          inputMode="decimal"
+          required
+        />
+        <FormInput
+          id="mp-est-coccion"
+          label="Factor de cocción"
+          hint="Peso después sobre peso antes: 0,85 si pierde, 2,5 si se hidrata, 1 si no se cocina."
+          name="cooking_factor"
+          inputMode="decimal"
+          required
+          defaultValue="1"
+        />
+      </div>
+      <FormTextarea id="mp-est-metodo" label="Cómo se midió" name="method" maxLength={500} />
+      <FormCheckbox
+        id="mp-est-sin-merma"
+        name="declared_no_loss"
+        label="No tiene merma"
+        hint="Obligatorio si la limpieza es 100 % y el factor 1: sin esta marca, el sistema nunca supone que no hay merma."
+      />
+      <Reason id="mp-motivo-estandar" />
+    </ActionForm>
+  );
+}
+
+function YieldTestForm({
+  ingredient,
+  processes,
+  restaurants,
+}: {
+  ingredient: IngredientDetail;
+  processes: { id: string; name: string }[];
+  restaurants: { id: string; name: string }[];
+}) {
+  if (restaurants.length === 0)
+    return <p className="text-base text-ink">No tenés locales donde registrar ensayos.</p>;
+  const day = today();
+  return (
+    <ActionForm action={recordYieldTestAction} schema="yieldTest" submitLabel="Registrar ensayo">
+      <input type="hidden" name="ingredientId" value={ingredient.id} />
+      <FormSelect id="mp-ren-proceso" label="Proceso" name="process_id" required defaultValue="">
+        <option value="" disabled>
+          Elegí el proceso
+        </option>
+        {processes.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </FormSelect>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormSelect
+          id="mp-ren-local"
+          label="Local donde se midió"
+          name="restaurant_id"
+          required
+          defaultValue={restaurants.length === 1 ? restaurants[0]?.id : ""}
+        >
+          <option value="" disabled>
+            Elegí el local
+          </option>
+          {restaurants.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </FormSelect>
+        <FormInput
+          id="mp-ren-fecha"
+          label="Fecha"
+          name="tested_on"
+          type="date"
+          required
+          max={day}
+          defaultValue={day}
+        />
+      </div>
+      <FormInput
+        id="mp-ren-corte"
+        label="Corte o presentación"
+        hint="Solo si el estándar es de un corte. Por ejemplo, «en cubos»."
+        name="cut"
+        maxLength={80}
+      />
+      <p className="text-sm text-ink-muted">
+        Pesos en gramos, sumando todas las muestras. Cargá el par que mediste: bruto y limpio, antes
+        y después de cocinar, o los dos.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormInput
+          id="mp-ren-bruto"
+          label="Peso bruto (g)"
+          name="gross_weight"
+          inputMode="decimal"
+        />
+        <FormInput
+          id="mp-ren-limpio"
+          label="Peso limpio (g)"
+          name="clean_weight"
+          inputMode="decimal"
+        />
+        <FormInput
+          id="mp-ren-antes"
+          label="Antes de cocinar (g)"
+          name="before_cooking_weight"
+          inputMode="decimal"
+        />
+        <FormInput
+          id="mp-ren-despues"
+          label="Después de cocinar (g)"
+          name="after_cooking_weight"
+          inputMode="decimal"
+        />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormInput
+          id="mp-ren-muestras"
+          label="Muestras"
+          hint="Cuántas piezas o tandas pesaste en total."
+          name="samples"
+          inputMode="numeric"
+          required
+          defaultValue="1"
+        />
+        <FormInput
+          id="mp-ren-responsable"
+          label="Quién lo midió"
+          name="responsible"
+          maxLength={120}
+        />
+      </div>
+      <Reason id="mp-motivo-ensayo" />
+    </ActionForm>
   );
 }

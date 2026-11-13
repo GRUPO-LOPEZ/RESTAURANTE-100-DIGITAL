@@ -1,9 +1,10 @@
 // Rendimientos (Fase 2, etapa 2.1 B): un ensayo no cambia el estándar; el estándar se propone y
-// lo aprueba un Chef de todo el grupo. En celular y computadora, con axe.
+// lo aprueba un Chef de todo el grupo. En celular y computadora, con axe. Ficha única (ADR-0043): los ensayos y las
+// propuestas se cargan en la computadora, en un panel; en el celular la ficha es de consulta.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, notice, openAction, openSection } from "./helpers";
+import { login, logout, notice, openSection, sheetRows } from "./helpers";
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page })
@@ -16,36 +17,47 @@ async function openIngredient(page: Page, name: string) {
   await page.goto(`/materias-primas?q=${encodeURIComponent(name)}`);
   await page.getByRole("link", { name, exact: true }).first().click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-  await openSection(page, "Rendimientos", "materia prima");
+  await openSection(page, "Mermas y rendimientos", "materia prima");
 }
 
-test("el Jefe de Cocina registra un ensayo y el estándar no cambia", async ({ page }) => {
+// Los paneles de la ficha: «Registrar un ensayo» y «Proponer merma o rendimiento» (con «Rendimiento por proceso»).
+async function openPanel(page: Page, name: string) {
+  await page.getByRole("button", { name, exact: true }).click();
+  return page.getByRole("dialog", { name });
+}
+
+test("el Jefe de Cocina registra un ensayo y el estándar no cambia", async ({ page, isMobile }) => {
   await login(page, "jefecocina@ejemplo.test");
   await openIngredient(page, "Tomate perita");
-  const pelado = page
-    .getByRole("list", { name: "Rendimientos por proceso" })
-    .getByRole("listitem")
-    .first();
+  const pelado = sheetRows(page, "Rendimientos por proceso").filter({ hasText: "Pelado" }).first();
   await expect(pelado).toContainText("Limpieza 80,0 %");
   await axe(page);
+  // En el celular, la ficha es de consulta: se lee el estándar, sin cargar.
+  if (isMobile) {
+    await expect(page.getByRole("button", { name: "Registrar un ensayo" })).toBeHidden();
+    return;
+  }
 
-  await openAction(page, "Registrar un ensayo");
+  await openPanel(page, "Registrar un ensayo");
   await page.locator("#mp-ren-proceso").selectOption({ label: "Pelado" });
   await page.getByLabel("Peso bruto (g)").fill("1000");
   await page.getByLabel("Peso limpio (g)").fill("700");
   await page.locator("#mp-motivo-ensayo").fill("Ensayo de prueba automática");
   await page.getByRole("button", { name: "Registrar ensayo" }).click();
   await expect(notice(page)).toContainText("Ensayo registrado. El estándar no cambia");
+  await axe(page);
+  await page.keyboard.press("Escape");
   // El estándar sigue en 80 %: el ensayo solo suma al promedio.
   await expect(pelado).toContainText("Limpieza 80,0 %");
-  await axe(page);
 });
 
 test("el Chef propone un estándar y el Chef del grupo lo aprueba", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "celular", "Las propuestas se cargan en la computadora.");
   const cut = `prueba ${testInfo.project.name} ${Date.now() % 1_000_000}`;
   await login(page, "chef@ejemplo.test");
   await openIngredient(page, "Zanahoria");
-  await openAction(page, "Proponer un estándar nuevo");
+  const panel = await openPanel(page, "Proponer merma o rendimiento");
+  await panel.getByText("Rendimiento por proceso", { exact: true }).click();
   await page.locator("#mp-est-proceso").selectOption({ label: "Pelado" });
   await page.locator("#mp-est-corte").fill(cut);
   await page.locator("#mp-est-limpieza").fill("85");
@@ -54,10 +66,8 @@ test("el Chef propone un estándar y el Chef del grupo lo aprueba", async ({ pag
   await expect(notice(page)).toContainText(
     "Queda pendiente: lo tiene que aprobar un Chef de todo el grupo",
   );
-  const row = page
-    .getByRole("list", { name: "Rendimientos por proceso" })
-    .getByRole("listitem")
-    .filter({ hasText: cut });
+  await page.keyboard.press("Escape");
+  const row = sheetRows(page, "Rendimientos por proceso").filter({ hasText: cut });
   await expect(row.getByText("Propuesta en revisión")).toBeVisible();
   await expect(row.getByText("Sin estándar aprobado")).toBeVisible();
   await logout(page);
@@ -82,19 +92,19 @@ test("el Chef propone un estándar y el Chef del grupo lo aprueba", async ({ pag
   ).toBeVisible();
 
   await openIngredient(page, "Zanahoria");
-  const approved = page
-    .getByRole("list", { name: "Rendimientos por proceso" })
-    .getByRole("listitem")
-    .filter({ hasText: cut });
+  const approved = sheetRows(page, "Rendimientos por proceso").filter({ hasText: cut });
   await expect(approved).toContainText("Limpieza 85,0 %");
   await expect(approved.getByText("Propuesta en revisión")).toHaveCount(0);
 });
 
 // Aviso de rendimiento (ADR-0035): un ensayo que se desvía del estándar más que el umbral avisa al Chef.
-test("un ensayo desviado avisa al Chef, que lo ve marcado en la ficha", async ({ page }) => {
+test("un ensayo desviado avisa al Chef, que lo ve marcado en la ficha", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "celular", "Los ensayos se cargan en la computadora.");
   await login(page, "jefecocina@ejemplo.test");
   await openIngredient(page, "Tomate perita");
-  await openAction(page, "Registrar un ensayo");
+  await openPanel(page, "Registrar un ensayo");
   await page.locator("#mp-ren-proceso").selectOption({ label: "Pelado" });
   // 500 g limpios de 1000: 50 % contra el 80 % del estándar, un desvío de −37,5 %.
   await page.getByLabel("Peso bruto (g)").fill("1000");
@@ -102,6 +112,7 @@ test("un ensayo desviado avisa al Chef, que lo ve marcado en la ficha", async ({
   await page.locator("#mp-motivo-ensayo").fill("Ensayo desviado de prueba automática");
   await page.getByRole("button", { name: "Registrar ensayo" }).click();
   await expect(notice(page)).toContainText("Ensayo registrado");
+  await page.keyboard.press("Escape");
   await logout(page);
 
   await login(page, "chef@ejemplo.test");
@@ -116,8 +127,7 @@ test("un ensayo desviado avisa al Chef, que lo ve marcado en la ficha", async ({
   await card.getByRole("link", { name: /Ver la materia prima/ }).click();
   await expect(page.getByRole("heading", { name: "Tomate perita", exact: true })).toBeVisible();
   await expect(
-    page
-      .getByRole("list", { name: "Rendimientos por proceso" })
+    sheetRows(page, "Rendimientos por proceso")
       .getByText("El promedio se desvía más del 10 % del estándar")
       .first(),
   ).toBeVisible();

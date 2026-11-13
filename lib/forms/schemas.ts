@@ -766,6 +766,81 @@ export const recipeSheetDraftSchema = z.object({
   change_summary: sheetText(1000, "Hasta 1.000 caracteres."),
 });
 
+// Ficha única de materia prima (ADR-0043): lo que se guarda en lote. Cada bloque es opcional (solo viaja lo que
+// cambió); la base vuelve a controlar todo y decide los permisos.
+const SHEET_SOURCES = [
+  "manual",
+  "excel_import",
+  "measured",
+  "supplier",
+  "calculated",
+  "estimated",
+  "verified",
+] as const;
+export const ingredientSheetSchema = z.object({
+  ingredientId: z.string().uuid(),
+  expectedStamp: z.string().min(1, "Recargá la página."),
+  reason: reasonField,
+  data: z
+    .object({
+      name: catalogName,
+      category_id: z.string().uuid("Elegí el rubro."),
+      recipe_unit: z
+        .string()
+        .trim()
+        .regex(/^[a-z_]{1,20}$/, "Elegí en qué se usa en las recetas."),
+      // Vacía: sin unidad de compra.
+      purchase_unit: z.union([
+        z
+          .string()
+          .trim()
+          .regex(/^[a-z_]{1,20}$/),
+        z.literal(""),
+      ]),
+      notes: z.string().trim().max(1000, "Las observaciones tienen hasta 1.000 caracteres."),
+    })
+    .partial()
+    .nullable(),
+  aliases: z
+    .array(z.string().trim().min(1).max(80, "Cada nombre tiene hasta 80 caracteres."))
+    .max(30, "Hasta 30 nombres.")
+    .nullable(),
+  requiresThawing: z.boolean().nullable(),
+  conversions: z
+    .array(
+      z.discriminatedUnion("removed", [
+        z.object({ removed: z.literal(true), kind: z.enum(["density", "unit_weight"]) }),
+        z.object({
+          removed: z.literal(false),
+          kind: z.enum(["density", "unit_weight"]),
+          factor: positiveNumber,
+          source: z.enum(SHEET_SOURCES, { message: "Elegí de dónde sale la conversión." }),
+          measured_on: z
+            .string({ message: "Elegí la fecha de la medición." })
+            .regex(/^\d{4}-\d{2}-\d{2}$/, "Elegí la fecha de la medición."),
+          measured_by: z.string().trim().max(120, "Quién lo midió tiene hasta 120 caracteres."),
+        }),
+      ]),
+    )
+    .max(2)
+    .nullable(),
+  allergens: z
+    .array(
+      z
+        .object({
+          allergen_id: z.string().uuid(),
+          status: z.enum(["contains", "may_contain", "free_verified"]).nullable(),
+          source: z.enum(SHEET_SOURCES).nullable(),
+        })
+        // Un estado sin su fuente no se acepta: nunca se supone (la base también lo controla).
+        .refine((a) => a.status === null || a.source !== null, {
+          message: "Elegí de dónde sale el dato del alérgeno.",
+        }),
+    )
+    .max(100)
+    .nullable(),
+});
+
 // Los errores de un esquema, uno por campo (el primero), para mostrarlos debajo de cada campo.
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};

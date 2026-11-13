@@ -6,6 +6,11 @@ import { Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+// Cada opción: la elegida, con borde y fondo del ítem activo y una marca (no solo color). La usa también Segmented. La
+// marca mira solo su propia opción (grupo «opcion»): el contenedor también tiene una opción elegida.
+export const SEGMENT_OPTION =
+  "group/opcion inline-flex min-h-touch cursor-pointer items-center rounded-sm border border-line bg-surface px-3 text-base text-ink has-checked:border-primary has-checked:bg-nav-active has-checked:font-medium has-checked:text-nav-active-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary desk:min-h-control";
+
 // Pocas opciones (hasta 5) como botones a la vista, no un desplegable (edición directa, ADR-0039). Son radios nativos
 // dentro de un <fieldset>: se usan con el teclado (flechas) y el lector los anuncia como grupo. Registrados en el
 // formulario: se validan con su esquema y muestran el error debajo.
@@ -39,10 +44,7 @@ export function SegmentedField({
       <legend className="mb-1 text-sm font-medium text-ink">{label}</legend>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
-          <label
-            key={o.value}
-            className="inline-flex min-h-touch cursor-pointer items-center rounded-sm border border-line bg-surface px-3 text-base text-ink has-checked:border-primary has-checked:bg-nav-active has-checked:font-medium has-checked:text-nav-active-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary desk:min-h-control"
-          >
+          <label key={o.value} className={SEGMENT_OPTION}>
             <input
               type="radio"
               value={o.value}
@@ -51,7 +53,10 @@ export function SegmentedField({
               {...(form ? form.register(name) : { name })}
             />
             {/* La elegida lleva una marca, además del color. */}
-            <Check aria-hidden="true" className="mr-1 hidden size-4 in-has-checked:inline" />
+            <Check
+              aria-hidden="true"
+              className="mr-1 hidden size-4 group-has-checked/opcion:inline"
+            />
             {o.label}
           </label>
         ))}

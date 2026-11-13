@@ -23,7 +23,7 @@ async function noHorizontalScroll(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
-// La ficha, en la pestaña «Precios y compra» (rediseño, ADR-0036).
+// La ficha, en la sección de precios (el enlace de antes, ?seccion=compra, baja a «Precios de compra»: ADR-0043).
 const ingredient = (n: number) =>
   `/materias-primas/00000000-0000-4000-8000-${String(800 + n).padStart(12, "0")}?seccion=compra`;
 
@@ -54,7 +54,7 @@ test("Compras propone, el Controller aprueba y una suba grande pasa a Dirección
 
   await login(page, "compras@ejemplo.test");
   await page.goto(ingredient(n));
-  await expect(page.getByRole("heading", { name: "Precios" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Precios", exact: true })).toBeVisible();
   await propose(page, "9000");
   await noHorizontalScroll(page);
   await axe(page);
@@ -112,7 +112,8 @@ test("el Chef no ve precios", async ({ page }) => {
   await login(page, "chef@ejemplo.test");
   await page.goto(ingredient(19));
   await expect(page.getByRole("heading", { name: "Mozzarella" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Precios" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Precios", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Precios de compra" })).toHaveCount(0);
   await expect(page.getByText("36.000")).toHaveCount(0);
 });
 

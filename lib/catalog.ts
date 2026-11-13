@@ -207,6 +207,7 @@ export type IngredientDetail = {
   unit: string;
   unitCode: string;
   purchaseUnit: string | null;
+  purchaseUnitCode: string | null;
   notes: string | null;
   isActive: boolean;
   // Se compra congelada: su costo suma la merma de descongelado (ADR-0040).
@@ -226,6 +227,9 @@ export type IngredientDetail = {
     brandName: string | null;
     supplier: string | null;
     contents: string;
+    // Para la tabla de la ficha (ADR-0043): en qué viene («Cajón») y cuánto trae («10 kg», «12 × 500 ml»).
+    packageUnit: string;
+    content: string;
     isActive: boolean;
   }[];
   allergens: {
@@ -240,6 +244,12 @@ export type IngredientDetail = {
 const quantity = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 3 });
 
 // "caja de 12 × 500 ml" o "bolsa de 25.000 g".
+// "12 × 500 ml" o "10 kg": lo que trae el envase, sin su nombre.
+function describeContent(units: number, content: number, contentUnit: string): string {
+  const each = `${quantity.format(content)} ${contentUnit}`;
+  return units > 1 ? `${units} × ${each}` : each;
+}
+
 function describeContents(
   packageName: string,
   units: number,
@@ -314,6 +324,7 @@ export async function getIngredient(id: string): Promise<IngredientDetail | null
     unit: unit.get(i.recipe_unit_id)?.name ?? "",
     unitCode: unit.get(i.recipe_unit_id)?.code ?? "",
     purchaseUnit: i.purchase_unit_id ? (unit.get(i.purchase_unit_id)?.name ?? null) : null,
+    purchaseUnitCode: i.purchase_unit_id ? (unit.get(i.purchase_unit_id)?.code ?? null) : null,
     notes: i.notes,
     isActive: i.is_active,
     requiresThawing: i.requires_thawing,
@@ -333,6 +344,12 @@ export async function getIngredient(id: string): Promise<IngredientDetail | null
       supplier: p.supplier_id ? (supplierNames.get(p.supplier_id) ?? null) : null,
       contents: describeContents(
         unit.get(p.package_unit_id)?.name ?? "",
+        p.units_per_package,
+        p.content_per_unit,
+        unit.get(p.content_unit_id)?.name ?? "",
+      ),
+      packageUnit: unit.get(p.package_unit_id)?.label ?? "",
+      content: describeContent(
         p.units_per_package,
         p.content_per_unit,
         unit.get(p.content_unit_id)?.name ?? "",
@@ -591,4 +608,24 @@ export async function getSettingsProcesses(groupId: string): Promise<SettingsPro
   if (usage.error) failed("los rendimientos");
   const used = new Map(usage.data.map((u) => [u.process_id, u.standards]));
   return processes.data.map((p) => ({ ...p, standards: used.get(p.id) ?? 0 }));
+}
+
+// Lo que la ficha de una materia prima necesita para editar sin que la base la rechace después (ADR-0043): el sello
+// del último cambio (para no pisar lo de otra persona), si tiene precios (su unidad de recetas no cambia) y si el
+// rubro se traba para esta persona. Solo para quien la puede editar (catalog.manage); si no, null.
+export type IngredientSheetState = { stamp: string; hasPrices: boolean; categoryLocked: boolean };
+
+export async function getIngredientSheetState(id: string): Promise<IngredientSheetState | null> {
+  const client = await createClient();
+  const { data, error } = await client
+    .schema("catalog")
+    .rpc("ingredient_sheet_state", { p_id: id });
+  if (error) failed("la materia prima");
+  const state = data as { stamp?: string; has_prices?: boolean; category_locked?: boolean } | null;
+  if (!state?.stamp) return null;
+  return {
+    stamp: state.stamp,
+    hasPrices: state.has_prices === true,
+    categoryLocked: state.category_locked === true,
+  };
 }

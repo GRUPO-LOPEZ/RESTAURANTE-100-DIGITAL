@@ -5,24 +5,20 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { toActionState, type ActionState } from "@/lib/auth/results";
-import type { AllergenStatus, ConversionKind, DataSource } from "@/lib/catalog";
 import { codeChangedHref } from "@/lib/codes";
-import { fieldErrors, formValues, isChecked, schemas } from "@/lib/forms/schemas";
+import {
+  fieldErrors,
+  formValues,
+  ingredientSheetSchema,
+  isChecked,
+  schemas,
+} from "@/lib/forms/schemas";
+import { parseAmount } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del catálogo. Cada una llama a una función de la base que valida catalog.manage, pide
 // el motivo y deja la auditoría (ADR-0012): la pantalla solo valida la forma y traduce la respuesta.
 const uuid = z.string().uuid();
-const SOURCES = [
-  "manual",
-  "excel_import",
-  "measured",
-  "supplier",
-  "calculated",
-  "estimated",
-  "verified",
-] as const;
-const source = z.enum(SOURCES);
 
 function invalid(error: z.ZodError): ActionState {
   return { status: "bad", message: "Revisá los campos marcados.", fieldErrors: fieldErrors(error) };
@@ -75,28 +71,6 @@ export async function createIngredientAction(
   );
 }
 
-export async function updateIngredientAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const fields = schemas.ingredientEdit.safeParse(formValues(formData));
-  if (!fields.success) return invalid(fields.error);
-  const id = ingredientId(formData);
-  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
-  const supabase = await createClient();
-  const { error } = await supabase.schema("catalog").rpc("update_ingredient", {
-    p_id: id.data,
-    p_changes: {
-      name: fields.data.name,
-      category_id: fields.data.category_id,
-      notes: fields.data.notes ?? "",
-    },
-    p_reason: fields.data.reason,
-  });
-  revalidatePath(`/materias-primas/${id.data}`);
-  return done(error, "Datos guardados.");
-}
-
 export async function setActiveAction(
   _prev: ActionState,
   formData: FormData,
@@ -119,82 +93,6 @@ export async function setActiveAction(
     error,
     active === "true" ? "Se puede volver a usar." : "Desactivada. No se borró nada.",
   );
-}
-
-export async function setAliasesAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const fields = schemas.aliases.safeParse(formValues(formData));
-  if (!fields.success) return invalid(fields.error);
-  const id = ingredientId(formData);
-  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
-  // Uno por línea o separados por coma.
-  const aliases = (fields.data.aliases ?? "")
-    .split(/[\n,]/)
-    .map((a) => a.trim())
-    .filter(Boolean);
-  const supabase = await createClient();
-  const { error } = await supabase.schema("catalog").rpc("set_aliases", {
-    p_ingredient_id: id.data,
-    p_aliases: aliases,
-    p_reason: fields.data.reason,
-  });
-  revalidatePath(`/materias-primas/${id.data}`);
-  return done(error, "Otros nombres guardados.");
-}
-
-export async function setConversionAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const fields = schemas.conversion.safeParse(formValues(formData));
-  if (!fields.success) return invalid(fields.error);
-  const id = ingredientId(formData);
-  const parsedSource = source.safeParse(fields.data.source);
-  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
-  if (!parsedSource.success)
-    return { status: "bad", fieldErrors: { source: "Elegí de dónde sale el dato." } };
-  const supabase = await createClient();
-  const { error } = await supabase.schema("catalog").rpc("set_unit_conversion", {
-    p_ingredient_id: id.data,
-    p_kind: fields.data.kind satisfies ConversionKind,
-    p_factor: decimal(fields.data.factor),
-    p_source: parsedSource.data satisfies DataSource,
-    p_measured_on: fields.data.measured_on,
-    p_measured_by: fields.data.measured_by ?? "",
-    p_reason: fields.data.reason,
-  });
-  revalidatePath(`/materias-primas/${id.data}`);
-  return done(error, "Conversión guardada.");
-}
-
-export async function setAllergenAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const fields = schemas.allergen.safeParse(formValues(formData));
-  if (!fields.success) return invalid(fields.error);
-  const id = ingredientId(formData);
-  const allergenId = uuid.safeParse(fields.data.allergen_id);
-  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
-  if (!allergenId.success)
-    return { status: "bad", fieldErrors: { allergen_id: "Elegí el alérgeno." } };
-  const status = fields.data.status === "" ? null : (fields.data.status satisfies AllergenStatus);
-  const parsedSource = source.safeParse(fields.data.source);
-  if (status && !parsedSource.success)
-    return { status: "bad", fieldErrors: { source: "Elegí de dónde sale el dato." } };
-  const supabase = await createClient();
-  const { error } = await supabase.schema("catalog").rpc("set_allergen_status", {
-    p_ingredient_id: id.data,
-    p_allergen_id: allergenId.data,
-    // "Sin dato" vuelve a dejar la fila vacía: la función acepta null en estado y fuente.
-    p_status: status as AllergenStatus,
-    p_source: (status ? parsedSource.data : null) as DataSource,
-    p_reason: fields.data.reason,
-  });
-  revalidatePath(`/materias-primas/${id.data}`);
-  return done(error, "Alérgeno guardado.");
 }
 
 export async function createProductAction(
@@ -398,39 +296,6 @@ export async function archiveUnitAction(
   return done(error, "Unidad dada de baja.");
 }
 
-// Se compra congelada (ADR-0040): cambia el costo de sus recetas (la base anota el recálculo).
-export async function setThawingAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const fields = schemas.thawing.safeParse(formValues(formData));
-  if (!fields.success) return invalid(fields.error);
-  const id = ingredientId(formData);
-  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
-  const value = fields.data.requires_thawing === "true";
-  const supabase = await createClient();
-  const { data, error } = await supabase.schema("catalog").rpc("set_requires_thawing", {
-    p_ingredient_id: id.data,
-    p_value: value,
-    p_reason: fields.data.reason,
-  });
-  revalidatePath(`/materias-primas/${id.data}`);
-  if (error) return toActionState(null, error);
-  // Dejar de comprarla congelada baja el costo: lo aprueba un Chef de todo el grupo (decisión de Joaco, ADR-0040).
-  const result = (data as { result?: string } | null)?.result;
-  if (result === "pending_approval")
-    return {
-      status: "info",
-      message:
-        "Queda pendiente: dejar de comprarla congelada lo tiene que aprobar un Chef de todo el grupo.",
-    };
-  if (result === "unchanged") return { status: "ok", message: "No había nada que cambiar." };
-  return {
-    status: "ok",
-    message: "Guardado: se compra congelada. Los costos se actualizan en un minuto.",
-  };
-}
-
 // Proponer un precio (ADR-0029). La base controla prices.propose en el lugar elegido, calcula la
 // variación y crea la solicitud: la aprueba el Controller y, si la variación supera el % del grupo,
 // también Dirección General.
@@ -607,4 +472,57 @@ export async function previewIngredientCodeAction(categoryId: string): Promise<s
     .schema("catalog")
     .rpc("preview_ingredient_code", { p_category_id: category.data });
   return error ? null : (data ?? null);
+}
+
+// Ficha única (ADR-0043): todo lo que se editó en la ficha, en un solo guardado con un motivo. La base
+// (catalog.save_ingredient_sheet) llama a las funciones de siempre en una transacción: si algo falla, no guarda nada.
+export async function saveIngredientSheetAction(
+  payload: z.input<typeof ingredientSheetSchema>,
+): Promise<ActionState> {
+  const parsed = ingredientSheetSchema.safeParse(payload);
+  if (!parsed.success)
+    return { status: "bad", message: parsed.error.issues[0]?.message ?? "Revisá los datos." };
+  const p = parsed.data;
+  const client = await createClient();
+  const { data, error } = await client.schema("catalog").rpc("save_ingredient_sheet", {
+    p_id: p.ingredientId,
+    p_expected_stamp: p.expectedStamp,
+    // Los bloques que no cambiaron van vacíos: la base no los toca.
+    p_data: p.data as unknown as string,
+    p_aliases: p.aliases as unknown as string[],
+    p_conversions: (p.conversions
+      ? p.conversions.map((c) =>
+          c.removed
+            ? { kind: c.kind, factor: null }
+            : {
+                kind: c.kind,
+                // parseAmount entiende «0,92» y «1.500»; el esquema ya controló que sea un número.
+                factor: String(parseAmount(c.factor)),
+                source: c.source,
+                measured_on: c.measured_on,
+                measured_by: c.measured_by,
+              },
+        )
+      : null) as unknown as string,
+    p_allergens: p.allergens as unknown as string,
+    p_requires_thawing: p.requiresThawing as unknown as boolean,
+    p_reason: p.reason,
+  });
+  revalidatePath(`/materias-primas/${p.ingredientId}`);
+  revalidatePath("/materias-primas");
+  const result = data as { result?: string; message?: string; thawing?: string } | null;
+  if (error || result?.result !== "applied") return toActionState(result, error);
+  // Dejar de comprarla congelada baja el costo: lo aprueba un Chef de todo el grupo (ADR-0040).
+  if (result.thawing === "pending_approval")
+    return {
+      status: "info",
+      message:
+        "Cambios guardados. Queda pendiente: dejar de comprarla congelada lo tiene que aprobar un Chef de todo el grupo.",
+    };
+  if (result.thawing === "applied")
+    return {
+      status: "ok",
+      message: "Guardado: se compra congelada. Los costos se actualizan en un minuto.",
+    };
+  return { status: "ok", message: "Cambios guardados." };
 }

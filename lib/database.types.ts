@@ -1313,6 +1313,10 @@ export type Database = {
       archive_yield_process: { Args: { p_id: string; p_reason: string }; Returns: undefined };
       category_first_word: { Args: { p_name: string }; Returns: string };
       category_group: { Args: { p_category_id: string }; Returns: string };
+      category_locked_by_prices: {
+        Args: { p_group_id: string; p_old_category_id: string };
+        Returns: boolean;
+      };
       category_match_name: { Args: { p_name: string }; Returns: string };
       category_usage: {
         Args: Record<PropertyKey, never>;
@@ -1424,6 +1428,8 @@ export type Database = {
       group_yield_alert_pct: { Args: { p_group_id: string }; Returns: number };
       ingredient_code_prefix: { Args: { p_category_id: string }; Returns: string };
       ingredient_group: { Args: { p_ingredient_id: string }; Returns: string };
+      ingredient_sheet_stamp_internal: { Args: { p_id: string }; Returns: string };
+      ingredient_sheet_state: { Args: { p_id: string }; Returns: Json };
       ingredient_unit_options: {
         Args: { p_ids: string[] };
         Returns: {
@@ -1514,6 +1520,19 @@ export type Database = {
         Returns: undefined;
       };
       require_name: { Args: { p_name: string }; Returns: undefined };
+      save_ingredient_sheet: {
+        Args: {
+          p_aliases: string[];
+          p_allergens: Json;
+          p_conversions: Json;
+          p_data: Json;
+          p_expected_stamp: string;
+          p_id: string;
+          p_reason: string;
+          p_requires_thawing: boolean;
+        };
+        Returns: Json;
+      };
       search_components: {
         Args: { p_limit?: number; p_query: string };
         Returns: {
@@ -3574,6 +3593,24 @@ export type Database = {
           purchase_quantity: number;
           status: string;
           unit_cost: number;
+        }[];
+      };
+      ingredient_product_prices: {
+        Args: { p_ingredient_id: string; p_restaurant_id: string };
+        Returns: {
+          base_unit: string;
+          days_old: number;
+          inherited: boolean;
+          is_active: boolean;
+          package_cost: number;
+          price_level: string;
+          price_record_id: string;
+          purchase_product_id: string;
+          stale: boolean;
+          stale_days: number;
+          status: string;
+          unit_cost: number;
+          valid_from: string;
         }[];
       };
       insert_approved_price: {
@@ -5979,6 +6016,7 @@ export type Database = {
       };
       reopen_returned: { Args: { p_version_id: string }; Returns: undefined };
       request_review: { Args: { p_reason: string; p_version_id: string }; Returns: Json };
+      require_applied: { Args: { p_res: Json }; Returns: undefined };
       save_draft: {
         Args: {
           p_data: Json;

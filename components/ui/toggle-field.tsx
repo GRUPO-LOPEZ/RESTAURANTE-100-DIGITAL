@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 // Sí o no de un clic dentro de un formulario (edición directa, ADR-0039). Es un <button> con aria-pressed que cambia
 // un campo del formulario ("true" o "false"): lo que se guarda lo decide el botón Guardar de ese formulario, con su
 // motivo. Cuando el valor ya no es el original, el borde queda punteado, como en la matriz de permisos.
+// Con value y onChange es controlado: lo usa una ficha que guarda todo junto (ficha de materia prima, ADR-0043).
 export function ToggleField({
   name,
   id,
@@ -17,6 +18,9 @@ export function ToggleField({
   yesLabel = "Sí",
   noLabel = "No",
   className,
+  value,
+  onChange,
+  disabled,
 }: {
   name: string;
   id: string;
@@ -25,10 +29,14 @@ export function ToggleField({
   yesLabel?: string;
   noLabel?: string;
   className?: string;
+  value?: boolean;
+  onChange?: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   // Fuera de un formulario no hay nada que avisar: solo el campo oculto.
   const form = useFormContext() as ReturnType<typeof useFormContext> | null;
-  const [on, setOn] = React.useState(defaultValue);
+  const [own, setOwn] = React.useState(defaultValue);
+  const on = value ?? own;
   // Al guardar, la página vuelve con el valor nuevo: quien lo usa le pone key={String(valor)}, así el original se
   // vuelve a tomar. El formulario valida con su copia (setValue); lo que se envía es el campo oculto, que siempre
   // tiene lo que se ve.
@@ -49,12 +57,14 @@ export function ToggleField({
         // Nombre fijo (la pregunta); el estado lo anuncia aria-pressed, como en la matriz de permisos (APG).
         aria-labelledby={`${id}-etiqueta`}
         aria-describedby={changed ? `${id}-cambio` : undefined}
+        disabled={disabled}
         onClick={() => {
-          setOn(!on);
+          setOwn(!on);
+          onChange?.(!on);
           form?.setValue(name, on ? "false" : "true", { shouldDirty: true });
         }}
         className={cn(
-          "inline-flex size-touch items-center justify-center rounded-sm border-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary desk:size-control",
+          "inline-flex size-touch items-center justify-center rounded-sm border-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed desk:size-control",
           on ? "border-ok bg-ok text-ok-ink" : "border-line bg-none text-none-ink",
           changed && "border-dashed border-ink",
         )}
