@@ -149,3 +149,13 @@ export async function saveSheet(page: Page, reason: string, submit = false) {
     notice(page).filter({ hasText: submit ? "enviados a revisión" : "Cambios guardados" }),
   ).toBeVisible();
 }
+
+// Las filas de una tabla de la ficha de materia prima (ADR-0043): en la computadora, una tabla; en el celular, tarjetas
+// con el mismo nombre. Solo las que se ven (la otra versión está oculta).
+export function sheetRows(page: Page, name: string) {
+  return page
+    .getByRole("table", { name })
+    .getByRole("row")
+    .or(page.getByRole("list", { name }).getByRole("listitem"))
+    .filter({ visible: true });
+}

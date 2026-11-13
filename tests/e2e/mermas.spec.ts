@@ -1,6 +1,7 @@
 // Medidas, mermas y rendimientos (ADR-0040, pedido de Soy): «se compra congelada» de un clic con motivo, mermas en %
 // con vista previa y aprobación, unidades «Kilogramo (kg)» y el rendimiento final destacado de una sub-receta. En
-// celular y computadora, con axe. Cada proyecto usa su propia materia prima, así no se pisan.
+// celular y computadora, con axe. Cada proyecto usa su propia materia prima, así no se pisan. Ficha única (ADR-0043):
+// se carga en la computadora (la barra de abajo y los paneles); en el celular la ficha es de consulta.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -13,7 +14,7 @@ async function axe(page: Page) {
   expect(results.violations).toEqual([]);
 }
 
-async function openIngredient(page: Page, name: string, section = "Rendimientos") {
+async function openIngredient(page: Page, name: string, section = "Mermas y rendimientos") {
   await page.goto(`/materias-primas?q=${encodeURIComponent(name)}`);
   await page.getByRole("link", { name, exact: true }).first().click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
@@ -25,21 +26,30 @@ const kpi = (page: Page, label: string) =>
 
 test("Compras marca una materia prima como congelada (falta su merma, nunca se supone) y desmarcarla pide aprobación", async ({
   page,
-}, testInfo) => {
-  const name = testInfo.project.name === "celular" ? "Bola de lomo" : "Nalga";
+  isMobile,
+}) => {
+  const name = isMobile ? "Bola de lomo" : "Nalga";
   await login(page, "compras@ejemplo.test");
   await openIngredient(page, name);
   await expect(kpi(page, "Merma de descongelado")).toContainText("No aplica");
   await axe(page);
+  if (isMobile) {
+    // En el celular se lee, sin el interruptor ni la barra para guardar.
+    await expect(page.getByText(/^¿Se compra congelada\? No$/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^¿Se compra congelada?/ })).toBeHidden();
+    return;
+  }
 
   const toggle = page.getByRole("button", { name: /^¿Se compra congelada?/ });
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   // La palabra va al lado del botón: el estado nunca es solo color.
-  await expect(page.locator("#mp-congelada + span")).toHaveText("Sí");
-  await page.locator("#mp-motivo-congelada").fill("Viene congelada (prueba)");
-  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await expect(page.locator("[id$='-congelada'] + span")).toHaveText("Sí");
+  // Se guarda con la barra de abajo, con el resto de la ficha (ADR-0039).
+  await expect(page.getByText("1 cambio sin guardar")).toBeVisible();
+  await page.getByLabel("Motivo de los cambios", { exact: true }).fill("Viene congelada (prueba)");
+  await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
   await expect(notice(page)).toContainText("Guardado: se compra congelada.");
   // Congelada y sin merma de descongelado aprobada: «—» y el motivo, nunca 0 %.
   const thawing = kpi(page, "Merma de descongelado");
@@ -49,8 +59,10 @@ test("Compras marca una materia prima como congelada (falta su merma, nunca se s
 
   // Desmarcarla baja el costo: queda pendiente hasta que la apruebe un Chef de todo el grupo (decisión de Joaco).
   await page.getByRole("button", { name: /^¿Se compra congelada?/ }).click();
-  await page.locator("#mp-motivo-congelada").fill("Ahora viene fresca (prueba)");
-  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await page
+    .getByLabel("Motivo de los cambios", { exact: true })
+    .fill("Ahora viene fresca (prueba)");
+  await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
   await expect(notice(page)).toContainText("Queda pendiente: dejar de comprarla congelada");
   await expect(page.getByText("Pedido pendiente: dejar de comprarla congelada")).toBeVisible();
   // Hasta que lo aprueben, sigue congelada.
@@ -63,12 +75,19 @@ test("Compras marca una materia prima como congelada (falta su merma, nunca se s
 
 test("la Chef propone una merma con vista previa y queda en revisión", async ({
   page,
-}, testInfo) => {
-  const name = testInfo.project.name === "celular" ? "Panceta" : "Comino";
+  isMobile,
+}) => {
+  const name = isMobile ? "Panceta" : "Comino";
   await login(page, "chef@ejemplo.test");
   await openIngredient(page, name);
   await expect(kpi(page, "Merma de limpieza")).toContainText("Sin merma de limpieza aprobada.");
-  await openAction(page, "Proponer mermas");
+  if (isMobile) {
+    await expect(page.getByRole("button", { name: "Proponer merma o rendimiento" })).toBeHidden();
+    return;
+  }
+  // Un solo botón para mermas y rendimientos; de entrada, la merma.
+  await page.getByRole("button", { name: "Proponer merma o rendimiento" }).click();
+  await expect(page.getByRole("radio", { name: "Merma" })).toBeChecked();
   const preview = page.getByRole("status").filter({ hasText: "Vista previa" });
   await expect(preview).toContainText("Falta la merma de limpieza.");
   await page.getByLabel("Merma de limpieza (%)").fill("12,5");
@@ -81,6 +100,8 @@ test("la Chef propone una merma con vista previa y queda en revisión", async ({
   await page.getByLabel("Merma de limpieza (%)").fill("12,5");
   await page.getByRole("button", { name: "Proponer mermas" }).click();
   await expect(notice(page)).toContainText("Queda pendiente: la tiene que aprobar un Chef");
+  await axe(page);
+  await page.keyboard.press("Escape");
   await expect(page.getByText("1 merma en revisión")).toBeVisible();
   // Hasta que la aprueben, el costo no cambia: la limpieza sigue sin dato.
   await expect(kpi(page, "Merma de limpieza")).toContainText("—");
@@ -89,13 +110,17 @@ test("la Chef propone una merma con vista previa y queda en revisión", async ({
 
 test("las unidades se eligen como «Kilogramo (kg)» y Compras suma una nueva", async ({
   page,
+  isMobile,
 }, testInfo) => {
   await login(page, "compras@ejemplo.test");
-  await openIngredient(page, "Comino", "Precios y compra");
-  await openAction(page, "Agregar un producto de compra");
-  const content = page.locator("#mp-content_unit");
-  await expect(content.locator("optgroup[label='Volumen']")).toContainText("Cucharada (cda)");
-  await expect(content.locator("option", { hasText: "Kilogramo (kg)" })).toHaveCount(1);
+  if (!isMobile) {
+    await openIngredient(page, "Comino", "Precios de compra");
+    await page.getByRole("button", { name: "Agregar producto de compra" }).click();
+    const content = page.locator("#mp-content_unit");
+    await expect(content.locator("optgroup[label='Volumen']")).toContainText("Cucharada (cda)");
+    await expect(content.locator("option", { hasText: "Kilogramo (kg)" })).toHaveCount(1);
+    await page.keyboard.press("Escape");
+  }
 
   await page.goto("/materias-primas/configuracion");
   const units = page.getByRole("list", { name: "Unidades de volumen" });

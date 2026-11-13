@@ -208,3 +208,50 @@ export async function getPriceSettings(groupId: string): Promise<PriceSettings> 
     yieldAlertPct: data ? Number(data.yield_alert_pct) : 10,
   };
 }
+
+// ---------------------------------------------------------------------------
+// La tabla de productos de compra de la ficha (ADR-0043)
+// ---------------------------------------------------------------------------
+// Por producto activo, el precio que vale en el local elegido arriba, con la misma regla que el motor de costos. Sin
+// prices.view en ese local, la base no devuelve filas.
+export type ProductPrice = {
+  productId: string;
+  priceRecordId: string | null;
+  priceLevel: string | null;
+  inherited: boolean | null;
+  validFrom: string | null;
+  packageCost: number | null;
+  unitCost: number | null;
+  baseUnit: string;
+  stale: boolean | null;
+  daysOld: number | null;
+  status: string;
+  // Un producto que ya no se compra aparece solo si tiene el precio que vale (puede ser el que usa el costo).
+  isActive: boolean;
+};
+
+export async function getProductPrices(
+  ingredientId: string,
+  restaurantId: string,
+): Promise<ProductPrice[]> {
+  const client = await createClient();
+  const { data, error } = await client.schema("costing").rpc("ingredient_product_prices", {
+    p_ingredient_id: ingredientId,
+    p_restaurant_id: restaurantId,
+  });
+  if (error) failed("los precios de los productos");
+  return data.map((r) => ({
+    productId: r.purchase_product_id,
+    priceRecordId: r.price_record_id,
+    priceLevel: r.price_level,
+    inherited: r.inherited,
+    validFrom: r.valid_from,
+    packageCost: r.package_cost,
+    unitCost: r.unit_cost,
+    baseUnit: r.base_unit,
+    stale: r.stale,
+    daysOld: r.days_old,
+    status: r.status,
+    isActive: r.is_active,
+  }));
+}

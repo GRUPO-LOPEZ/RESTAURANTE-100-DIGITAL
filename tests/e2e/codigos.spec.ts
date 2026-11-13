@@ -114,7 +114,11 @@ test("alta de una materia prima en kilos: MPR y el rubro, y se calcula en gramos
   await axe(page);
   await dialog.getByRole("button", { name: "Crear materia prima" }).click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-  await expect(page.getByText(`${code} · Carnes`, { exact: true })).toBeVisible();
+  // Ficha única (ADR-0043): el código va solo y, al lado, el rubro y la unidad que guardó la base (kg → g).
+  await expect(page.getByText(code, { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Rubro: Carnes · Se usa en recetas en Gramo (g)", { exact: true }),
+  ).toBeVisible();
 });
 
 test("las tarjetas de rubros filtran la tabla: un clic filtra, otro clic o la ✕ lo quitan", async ({

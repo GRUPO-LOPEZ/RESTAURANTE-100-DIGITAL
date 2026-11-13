@@ -1,8 +1,36 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59). En curso: ficha única de receta (ADR-0042, rama `feat/ficha-unica-receta`), Prompt 2 de 3._
+_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). En curso: ficha única de materia prima (ADR-0043, rama `feat/ficha-unica-materia-prima`), Prompt 3 de 3._
 
-## Al retomar: ficha única de receta (rama `feat/ficha-unica-receta`)
+## Al retomar: ficha única de materia prima (rama `feat/ficha-unica-materia-prima`)
+
+- **Qué se hizo** (ADR-0043, Prompt 3 de Soy): las 6 pestañas de la materia prima pasan a una sola ficha con índice, con la misma forma que la receta.
+  - Se editan donde se ven, con una barra que guarda todo junto con un motivo: datos generales, otros nombres, congelada, conversiones y alérgenos.
+  - Las altas y las propuestas van en un panel al costado: producto, proveedor, merma o rendimiento, ensayo y precio.
+  - En el celular, la ficha es de consulta.
+  - Lista para Soy: `docs/modulos/08-ficha-unica-materia-prima-lista-de-cambios.md`.
+- **Base** (`20261129120000_ingredient_sheet.sql`): `catalog.save_ingredient_sheet` (guardado en lote), `catalog.ingredient_sheet_state` (sello, precios y rubro trabado), `catalog.category_locked_by_prices` (la regla del rubro, que comparte con el trigger, redefinido) y `costing.ingredient_product_prices` (la tabla de productos con su precio).
+- **Pruebas:** pgTAP nueva `300_ingredient_sheet` (49) y `050` ajustada; Vitest nueva `ingredient-sheet.test.ts`; Playwright nueva `ficha-materia-prima.spec.ts` y ajustadas `materias-primas`, `mermas`, `rendimientos` y `precios`.
+- **Revisores (2026-11-12):** seguridad apta, base sin graves (3 medios corregidos) y diseño aprobable con cambios (los medios y casi todos los menores corregidos). Lo que queda está en el ADR-0043, «Lo que queda».
+- **Para decidir con Soy:** hoy ningún rol puede cambiar el rubro de una materia prima con precios (hacen falta `catalog.manage` y `prices.configure` juntos). Y «Proponer precio» sigue en el celular.
+- **Aprendido:** no recrear la base (`db:reset`) mientras corre Playwright, y no lanzar revisores que corran pruebas en paralelo a una corrida propia: se pisan y la corrida no sirve.
+- **Retomado el 2026-11-13:**
+  - La falla era la prevista: Compras no tiene `yields.record`, así que no ve «Proponer merma o rendimiento» (es lo correcto: lo decide la base). La prueba ahora controla que Compras no vea el botón y la merma la propone la Chef en la misma ficha.
+  - Arreglado en el camino:
+    - la ficha ya no se rearma al guardar (se perdían cambios hechos enseguida);
+    - un pedido para dejar de comprarla congelada muestra lo vigente;
+    - un solo aviso de guardado y la etiqueta del motivo;
+    - la marca ✓ de los botones segmentados salía en todas las opciones (también en otras pantallas que usan `SegmentedField`): ahora solo en la elegida;
+    - los alérgenos entran en una línea a 1440.
+  - Las capturas de la ficha se toman como Compras (con la barra), en 1440, 1600 y 1920.
+  - **Corrida completa (2026-11-13):**
+    - formato, lint y tipos: en verde;
+    - pgTAP sobre la base recién recreada: 2503 de 2503 (52 archivos);
+    - Playwright: 263 en verde, 15 salteadas y 2 fallas, en `codigos.spec` (celular y computadora). Buscaba «código · rubro» juntos y el encabezado nuevo los separa. Ahora controla el código, el rubro y que la unidad quedó en gramos: 11 en verde y 1 salteada.
+  - Capturas mirando la pantalla real: 1440, 1600, 1920 y celular, en `test-results/ficha-materia-prima-*`.
+- **Sigue:** commit, push y PR, con la aprobación de Joaco.
+
+## Ficha única de receta (rama `feat/ficha-unica-receta`, PR #60 fusionado)
 
 - **Qué se hizo** (Prompt 2; ADR-0042; lista para Soy en `docs/modulos/07-ficha-unica-receta-lista-de-cambios.md`):
   - **Base** (`20261128120000_recipe_sheet.sql`):
