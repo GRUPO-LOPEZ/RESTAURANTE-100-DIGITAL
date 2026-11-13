@@ -93,8 +93,9 @@ PRUEBAS
 
 ENTREGA
 ui-reviewer (y security-auditor si cambia qué ve cada rol). Capturas reales en 1440, 1600, 1920
-y celular. ADR nuevo. Lista de cambios para Soy en docs/modulos/. docs/estado.md. PR chico.
-Commit: «feat(materias-primas): ficha en una pantalla sin scroll».
+y celular, guardadas como PNG en docs/capturas/ficha-materia-prima-sin-scroll/ y commiteadas en
+el PR (Soy las revisa desde GitHub). ADR nuevo. Lista de cambios para Soy en docs/modulos/.
+docs/estado.md. PR chico. Commit: «feat(materias-primas): ficha en una pantalla sin scroll».
 ```
 
 ---
@@ -164,6 +165,7 @@ PRUEBAS
 
 ENTREGA
 ui-reviewer y security-auditor. Capturas reales en 1440, 1600, 1920 y celular, de un Plato y de
-una Preparación, en edición y en revisión. ADR nuevo. Lista de cambios para Soy en docs/modulos/.
+una Preparación, en edición y en revisión, guardadas como PNG en
+docs/capturas/ficha-receta-sin-scroll/ y commiteadas en el PR. ADR nuevo. Lista de cambios para Soy en docs/modulos/.
 docs/estado.md. PR chico. Commit: «feat(recetas): ficha en una pantalla con planilla con scroll propio».
 ```

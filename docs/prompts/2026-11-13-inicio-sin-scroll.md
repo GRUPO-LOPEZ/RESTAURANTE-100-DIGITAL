@@ -121,7 +121,8 @@ PRUEBAS
 
 ENTREGA
 - Revisión de ui-reviewer (y security-auditor si cambiaste qué se muestra a cada rol).
-- Capturas reales en 1440, 1600, 1920 y celular, con el seed.
+- Capturas reales en 1440, 1600, 1920 y celular, con el seed. Guardalas como PNG en
+  docs/capturas/inicio-sin-scroll/ y commitealas en el PR: Soy las revisa desde GitHub.
 - ADR nuevo en docs/decisiones/ (siguiente número libre): «Inicio en una pantalla».
 - docs/modulos/: lista de cambios para Soy, corta y en simple, como la 08.
 - docs/estado.md actualizado (y corregí el encabezado, que todavía dice que la ficha de materia
