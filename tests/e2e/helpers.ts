@@ -108,6 +108,44 @@ export async function openSection(page: Page, name: string, of = "receta") {
   const tab = page
     .getByRole("navigation", { name: label })
     .getByRole("link", { name, exact: true });
+  // La receta es una ficha única (ADR-0042): el índice baja a la sección, que queda a la vista.
+  const href = await tab.getAttribute("href");
   await tab.click();
+  if (href?.startsWith("#")) {
+    // Next guarda ocultas las páginas anteriores: la sección que cuenta es la visible.
+    await expect(page.locator(`${href}:visible`)).toBeInViewport();
+    return;
+  }
   await expect(tab).toHaveAttribute("aria-current", "page");
+}
+
+// Una fila de la grilla de la ficha de receta (ADR-0042): busca por nombre (o código), elige la sugerencia y carga
+// la cantidad y la medida.
+export async function fillSheetRow(
+  page: Page,
+  row: number,
+  search: string,
+  option: string | RegExp,
+  quantity: string,
+  unit?: string,
+) {
+  await page.getByLabel(`Ingrediente, fila ${row}`, { exact: true }).fill(search);
+  await page
+    .getByRole("listbox", { name: "Sugerencias" })
+    .getByRole("option", { name: option })
+    .first()
+    .click();
+  await page.getByLabel(`Cantidad, fila ${row}`, { exact: true }).fill(quantity);
+  if (unit) await page.getByLabel(`Medida, fila ${row}`, { exact: true }).selectOption(unit);
+}
+
+// Guarda la ficha con la barra de abajo (un solo motivo para todo) y espera el aviso.
+export async function saveSheet(page: Page, reason: string, submit = false) {
+  await page.getByLabel("Motivo de los cambios", { exact: true }).fill(reason);
+  await page
+    .getByRole("button", { name: submit ? "Enviar a revisión" : "Guardar cambios", exact: true })
+    .click();
+  await expect(
+    notice(page).filter({ hasText: submit ? "enviados a revisión" : "Cambios guardados" }),
+  ).toBeVisible();
 }

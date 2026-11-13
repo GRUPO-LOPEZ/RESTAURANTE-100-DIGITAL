@@ -326,9 +326,13 @@ export type RecipeLine = {
   // Una preparación (subreceta) en lugar de una materia prima; usa siempre su versión vigente.
   subRecipeId: string | null;
   ingredient: string;
+  // El código de la materia prima o de la preparación (la grilla de la ficha lo muestra y lo busca).
+  code: string;
   quantity: number;
   unit: string;
   basis: QuantityBasis;
+  // El perfil de merma de una línea limpia o cocida: se conserva al guardar la ficha.
+  yieldProfileId: string | null;
   noScale: boolean;
   notes: string | null;
 };
@@ -562,7 +566,7 @@ export async function getVersionContent(
       .schema("recipes")
       .from("recipe_components")
       .select(
-        "ingredient_id, sub_recipe_id, quantity, unit_id, quantity_basis, no_scale, notes, line_order",
+        "ingredient_id, sub_recipe_id, quantity, unit_id, quantity_basis, yield_profile_id, no_scale, notes, line_order",
       )
       .eq("recipe_version_id", versionId)
       .order("line_order"),
@@ -586,10 +590,14 @@ export async function getVersionContent(
   const stepIds = steps.data.map((s) => s.id);
   const [ingredients, subs, units, deps] = await Promise.all([
     ingredientIds.length
-      ? supabase.schema("catalog").from("ingredients").select("id, name").in("id", ingredientIds)
+      ? supabase
+          .schema("catalog")
+          .from("ingredients")
+          .select("id, name, code")
+          .in("id", ingredientIds)
       : Promise.resolve({ data: [], error: null }),
     subIds.length
-      ? supabase.schema("recipes").from("recipes").select("id, name").in("id", subIds)
+      ? supabase.schema("recipes").from("recipes").select("id, name, code").in("id", subIds)
       : Promise.resolve({ data: [], error: null }),
     supabase.schema("catalog").from("units").select("id, code"),
     stepIds.length
@@ -604,6 +612,9 @@ export async function getVersionContent(
   const name = new Map(
     [...(ingredients.data ?? []), ...(subs.data ?? [])].map((i) => [i.id, i.name]),
   );
+  const code = new Map(
+    [...(ingredients.data ?? []), ...(subs.data ?? [])].map((i) => [i.id, i.code]),
+  );
   const unit = new Map((units.data ?? []).map((u) => [u.id, u.code]));
   const number = new Map(steps.data.map((s) => [s.id, s.step_number]));
   return {
@@ -613,9 +624,11 @@ export async function getVersionContent(
       ingredient:
         name.get(l.ingredient_id ?? l.sub_recipe_id ?? "") ??
         (l.sub_recipe_id ? "Preparación" : "Materia prima"),
+      code: code.get(l.ingredient_id ?? l.sub_recipe_id ?? "") ?? "",
       quantity: l.quantity,
       unit: unit.get(l.unit_id) ?? "g",
       basis: l.quantity_basis,
+      yieldProfileId: l.yield_profile_id,
       noScale: l.no_scale,
       notes: l.notes,
     })),
@@ -680,6 +693,16 @@ export async function getCookingLoss(versionId: string): Promise<CookingLoss> {
   if (!row || row.factor === null)
     return { factor: null, missing: COOKING_LOSS_MISSING[row?.status ?? ""] ?? "Falta un dato." };
   return { factor: Number(row.factor), missing: null };
+}
+
+// Un permiso en un local, con la misma función de la base que usan las políticas (core.has_permission). La
+// interfaz solo lo usa para no mostrar una columna vacía: la base vuelve a controlar al devolver los datos.
+export async function hasPermissionIn(permission: string, restaurantId: string): Promise<boolean> {
+  const client = await createClient();
+  const { data, error } = await client
+    .schema("core")
+    .rpc("has_permission", { p_permission: permission, p_restaurant_id: restaurantId });
+  return !error && data === true;
 }
 
 export type DiffRow = {

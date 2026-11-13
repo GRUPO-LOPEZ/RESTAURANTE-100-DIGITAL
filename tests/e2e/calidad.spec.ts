@@ -54,12 +54,12 @@ test("el Controller abre un indicador y llega a la ficha", async ({ page }) => {
   await axe(page);
   await noOverflow(page);
 
-  await list
-    .getByRole("link", { name: /^Ir a / })
-    .first()
-    .click();
-  // «Ir» abre la ficha en la pestaña donde se corrige: la de fotos.
-  await expect(page).toHaveURL(/\/recetas\/[0-9a-f-]{36}\?seccion=fotos/);
+  const go = list.getByRole("link", { name: /^Ir a / }).first();
+  // «Ir» apunta a la sección donde se corrige: las fotos de la ficha (ADR-0042).
+  await expect(go).toHaveAttribute("href", /\/recetas\/[0-9a-f-]{36}\?seccion=fotos$/);
+  await go.click();
+  // El Controller solo lee recetas: la ficha lo lleva a la vista de cocina, como antes de la ficha única.
+  await expect(page).toHaveURL(/\/recetas\/[0-9a-f-]{36}\/cocina$/);
 });
 
 test("quien no ve borradores los cuenta, sin ver sus nombres", async ({ page }) => {

@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, notice, openAction, openSection } from "./helpers";
+import { login, openAction, openSection, saveSheet } from "./helpers";
 
 async function noHorizontalScroll(page: Page) {
   const overflow = await page.evaluate(
@@ -58,41 +58,53 @@ test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", a
   await page.getByRole("button", { name: "Crear receta" }).click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 
-  // El buscador separa materias primas y preparaciones (pestaña «Ingredientes y subrecetas»).
-  await openSection(page, "Ingredientes y subrecetas");
-  await page.getByLabel("Agregar materia prima o preparación").fill("bolognesa");
-  const preparations = page.getByRole("list", { name: /^Preparaciones/ });
-  await expect(preparations).toBeVisible();
-  await axe(page);
-  await preparations.getByRole("button", { name: /Salsa bolognesa/ }).click();
-  const lines = page.getByRole("list", { name: "Componentes del borrador" });
-  await expect(lines.getByText("Preparación", { exact: true })).toBeVisible();
-  // Rinde en kilos: se sugiere gramos, y no se pregunta la base de la cantidad.
-  await expect(lines.getByLabel("Unidad", { exact: true }).first()).toHaveValue("g");
-  await expect(lines.getByLabel("La cantidad es")).toHaveCount(0);
-  await expect(lines.getByText("Cantidad terminada")).toBeVisible();
-  // Solo unidades de peso, como su rendimiento: no se puede elegir una que la base rechace.
-  await expect(lines.getByLabel("Unidad", { exact: true }).first().locator("option")).toHaveText([
-    "Gramo (g)",
-    "Kilogramo (kg)",
-    "Miligramo (mg)",
-    "Libra (lb)",
-    "Onza (oz)",
-    "Pizca",
-  ]);
-  await lines.getByLabel("Cantidad", { exact: true }).first().fill("180");
-  await page.getByLabel("Motivo de los cambios").first().fill("Lleva la bolognesa de la casa");
-  await page.getByRole("button", { name: "Guardar componentes" }).click();
-  await expect(notice(page).filter({ hasText: "Componentes guardados (1)" })).toBeVisible();
-  await noRepeatedIds(page);
-  await noHorizontalScroll(page);
+  // La grilla de la ficha (ADR-0042) busca materias primas y preparaciones en la misma lista de sugerencias; la
+  // preparación lleva su etiqueta. En el celular la ficha es de consulta: la carga se prueba en la computadora.
+  if (testInfo.project.name !== "celular") {
+    await openSection(page, "Ingredientes y costos");
+    await page.getByLabel("Ingrediente, fila 1", { exact: true }).fill("bolognesa");
+    const suggestions = page.getByRole("listbox", { name: "Sugerencias" });
+    await expect(
+      suggestions.getByRole("option", { name: /Salsa bolognesa.*Preparación/ }),
+    ).toBeVisible();
+    await axe(page);
+    await suggestions
+      .getByRole("option", { name: /Salsa bolognesa/ })
+      .first()
+      .click();
+    await expect(
+      page.getByRole("link", { name: "Abrir la preparación Salsa bolognesa" }),
+    ).toBeVisible();
+    // Rinde en kilos: se sugiere gramos, y solo unidades de peso, como su rendimiento: no se puede elegir una
+    // que la base rechace.
+    const unit = page.getByLabel("Medida, fila 1", { exact: true });
+    await expect(unit).toHaveValue("g");
+    await expect(unit.locator("option")).toHaveText([
+      "Elegí",
+      "Gramo (g)",
+      "Kilogramo (kg)",
+      "Miligramo (mg)",
+      "Libra (lb)",
+      "Onza (oz)",
+      "Pizca",
+    ]);
+    await page.getByLabel("Cantidad, fila 1", { exact: true }).fill("180");
+    // Una preparación va siempre en cantidad terminada: no se pregunta la base.
+    await page.getByRole("button", { name: "Más opciones de la fila 1" }).click();
+    await expect(page.getByLabel("La cantidad es")).toHaveCount(0);
+    await saveSheet(page, "Lleva la bolognesa de la casa");
+    await noRepeatedIds(page);
+    await noHorizontalScroll(page);
+  }
 
   // En una receta publicada, la preparación es un enlace a su ficha.
   await openRecipe(page, "Lasaña bolognesa");
-  await openSection(page, "Ingredientes y subrecetas");
-  const components = page.getByRole("list", { name: "Componentes", exact: true });
-  await expect(components.getByRole("link", { name: "Salsa blanca" })).toBeVisible();
-  await expect(components.getByText("Preparación").first()).toBeVisible();
+  await openSection(page, "Ingredientes y costos");
+  const prep =
+    testInfo.project.name === "celular"
+      ? page.getByRole("list", { name: "Ingredientes" }).getByRole("link", { name: "Salsa blanca" })
+      : page.getByRole("link", { name: "Abrir la preparación Salsa blanca" });
+  await expect(prep).toBeVisible();
   await axe(page);
 });
 
@@ -154,7 +166,8 @@ test("la Chef crea una variante para un local y la ve contra la maestra", async 
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   await expect(page.getByText("Variante", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Ravioles de ricota", exact: true })).toBeVisible();
-  await openSection(page, "Ingredientes y subrecetas");
+  // Las diferencias con la maestra van en «Dónde se usa» (ficha única, ADR-0042).
+  await openSection(page, "Dónde se usa");
   await expect(page.getByRole("heading", { name: "Diferencias con la maestra" })).toBeVisible();
   await axe(page);
   await noRepeatedIds(page);

@@ -53,7 +53,7 @@ El rediseño no modifica la base, la autenticación, los permisos, los alcances,
 - **Orden por columna en Costos:** `costing.restaurant_costs` suma `p_order`, con una lista cerrada de órdenes y sin SQL dinámico (migración `20261123120000_restaurant_costs_order.sql`, autorizada por Joaco). La lista se pagina en la base, así que ordenar en la pantalla ordenaría solo la página visible. Es solo de lectura: no cambian permisos, datos ni fórmulas. Un cambio chico: el orden por nombre ya no separa mayúsculas de minúsculas.
 - **Recetas:**
   - el orden (nombre, código y tipo) y las pestañas de estado (Vigentes y Requieren atención) se resuelven en la consulta de PostgREST, con la sesión de la persona, sin tocar la base;
-  - la ficha va en 9 pestañas, con la sección en la dirección (`?seccion=`);
+  - la ficha va en 9 pestañas, con la sección en la dirección (`?seccion=`). **Reemplazado por el ADR-0042 (2026-11-12):** la receta es una ficha única con un índice de anclas;
   - las acciones y los formularios son los mismos que antes: solo cambia dónde están.
 - **«Crítico» gana sobre «Desactualizado»** cuando un dato vencido además es crítico (Joaco, 2026-11-09).
 - **El selector de local único:** Inicio, Costos y Escenarios ya no tienen el suyo. Con «Todos mis locales», la pantalla pide elegir uno y ofrece los enlaces.

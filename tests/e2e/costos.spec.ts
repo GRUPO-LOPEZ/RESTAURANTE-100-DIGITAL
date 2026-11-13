@@ -90,7 +90,7 @@ test("el Gerente ve solo su local", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Ravioles de ricota" })).toBeVisible();
 });
 
-test("el Chef ve el costo por línea, sin precios", async ({ page }) => {
+test("el Chef ve el costo por línea, sin precios", async ({ page }, testInfo) => {
   await login(page, "chef@ejemplo.test");
   await page.goto(`/costos/${RAVIOLES}?local=${PASTAS_CENTRO}`);
   await expect(page.getByRole("list", { name: "Costo de cada línea" })).toBeVisible();
@@ -106,13 +106,19 @@ test("el Chef ve el costo por línea, sin precios", async ({ page }) => {
   // En la ficha de la receta, con su local elegido.
   await page.getByLabel("Local activo").selectOption(PASTAS_CENTRO);
   await page.getByRole("button", { name: "Cambiar" }).click();
-  // Cambiar de local recarga la pantalla: la primera vez tarda. El costo está en su pestaña.
+  // Cambiar de local recarga la pantalla: la primera vez tarda. El costo está en la grilla de la ficha (ADR-0042).
   await expect(page.getByLabel("Local activo")).toHaveValue(PASTAS_CENTRO, { timeout: 20_000 });
-  await openSection(page, "Costos");
-  await expect(page.getByRole("heading", { name: "Costo en Demo Pastas Centro" })).toBeVisible({
-    timeout: 20_000,
-  });
-  await expect(page.getByText(/4\.506,27/).first()).toBeVisible();
+  await openSection(page, "Ingredientes y costos");
+  const total = page
+    .locator('[data-slot="kpi"]')
+    .filter({ hasText: "Costo total de la receta, sin IVA" });
+  await expect(total).toContainText("4.506,27", { timeout: 20_000 });
+  await expect(total).toContainText("Demo Pastas Centro");
+  if (testInfo.project.name !== "celular") {
+    // Costo por renglón sí; el precio de compra, no (sin prices.view, ADR-0032).
+    await expect(page.getByRole("columnheader", { name: "Costo en la receta" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Precio por kg o l" })).toHaveCount(0);
+  }
   await axe(page);
   await page.goto("/recetas");
   await expect(page.getByText(/Costo sin IVA en Demo Pastas Centro/).first()).toBeAttached();

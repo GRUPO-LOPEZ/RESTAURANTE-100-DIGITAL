@@ -1424,6 +1424,15 @@ export type Database = {
       group_yield_alert_pct: { Args: { p_group_id: string }; Returns: number };
       ingredient_code_prefix: { Args: { p_category_id: string }; Returns: string };
       ingredient_group: { Args: { p_ingredient_id: string }; Returns: string };
+      ingredient_unit_options: {
+        Args: { p_ids: string[] };
+        Returns: {
+          dimension: Database["catalog"]["Enums"]["dimension"];
+          has_density: boolean;
+          has_unit_weight: boolean;
+          ingredient_id: string;
+        }[];
+      };
       ingredient_usage: {
         Args: { p_ingredient_id: string };
         Returns: {
@@ -3603,6 +3612,18 @@ export type Database = {
           net_amount: number;
         }[];
       };
+      preview_sheet_lines: {
+        Args: { p_lines: Json; p_restaurant_id: string; p_version_id: string };
+        Returns: {
+          cost_unit: string;
+          grams: number;
+          line_cost: number;
+          line_order: number;
+          status: string;
+          unit_cost: number;
+          weight_status: string;
+        }[];
+      };
       price_impact: {
         Args: { p_limit?: number; p_offset?: number; p_price_record_id: string };
         Returns: {
@@ -5526,6 +5547,7 @@ export type Database = {
           review_requested_by: string | null;
           status: Database["core"]["Enums"]["version_status"];
           storage_notes: string | null;
+          target_yield_ratio: number | null;
           updated_at: string;
           updated_by: string | null;
           version_number: number;
@@ -5555,6 +5577,7 @@ export type Database = {
           review_requested_by?: string | null;
           status?: Database["core"]["Enums"]["version_status"];
           storage_notes?: string | null;
+          target_yield_ratio?: number | null;
           updated_at?: string;
           updated_by?: string | null;
           version_number: number;
@@ -5583,6 +5606,7 @@ export type Database = {
           review_requested_by?: string | null;
           status?: Database["core"]["Enums"]["version_status"];
           storage_notes?: string | null;
+          target_yield_ratio?: number | null;
           updated_at?: string;
           updated_by?: string | null;
           version_number?: number;
@@ -5886,6 +5910,7 @@ export type Database = {
           review_requested_by: string | null;
           status: Database["core"]["Enums"]["version_status"];
           storage_notes: string | null;
+          target_yield_ratio: number | null;
           updated_at: string;
           updated_by: string | null;
           version_number: number;
@@ -5959,6 +5984,20 @@ export type Database = {
           p_data: Json;
           p_expected_updated_at?: string;
           p_reason: string;
+          p_version_id: string;
+        };
+        Returns: Json;
+      };
+      save_sheet: {
+        Args: {
+          p_draft: Json;
+          p_expected_updated_at: string;
+          p_lines: Json;
+          p_reason: string;
+          p_recipe: Json;
+          p_recipe_id: string;
+          p_steps: Json;
+          p_submit?: boolean;
           p_version_id: string;
         };
         Returns: Json;

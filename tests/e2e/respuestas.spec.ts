@@ -4,7 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, notice, openAction, openSection } from "./helpers";
+import { login, logout, notice, openAction, openSection, saveSheet } from "./helpers";
 
 const COOK = "/usuarios/00000000-0000-4000-8000-000000000409";
 
@@ -79,12 +79,16 @@ test("quien mandó una receta a revisión no la aprueba: la aprueba otra persona
     await page.locator('[id$="-motivo-version"]').fill("Prueba de revisión");
     await page.getByRole("button", { name: "Crear versión nueva" }).click();
   }
-  await openSection(page, "Rendimientos");
   await expect(page.getByText("Versión en preparación", { exact: false })).toBeVisible();
-  await openSection(page, "Versiones y aprobaciones");
-  await openAction(page, "Pedir la revisión");
-  await page.locator('[id$="-motivo-revision"]').fill("Lista para revisar");
-  await page.getByRole("button", { name: "Pedir la revisión" }).click();
+  // En la computadora se envía con la barra de la ficha (ADR-0042); en el celular, desde «Versiones».
+  if (testInfo.project.name === "celular") {
+    await openSection(page, "Versiones y aprobaciones");
+    await openAction(page, "Pedir la revisión");
+    await page.locator('[id$="-motivo-revision"]').fill("Lista para revisar");
+    await page.getByRole("button", { name: "Pedir la revisión" }).click();
+  } else {
+    await saveSheet(page, "Lista para revisar", true);
+  }
   await expect(notice(page).filter({ hasText: "Está en revisión" })).toBeVisible();
   await axe(page);
   const recipe = page.url();

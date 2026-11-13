@@ -10,18 +10,26 @@ import {
   fieldErrors,
   formValues,
   recipeLinesSchema,
+  recipeSheetDataSchema,
+  recipeSheetDraftSchema,
   recipeStepsSchema,
   schemas,
 } from "@/lib/forms/schemas";
 import { codeChangedHref } from "@/lib/codes";
-import { PHOTO_MAX_BYTES, PHOTO_TYPES, type NewRecipeType } from "@/lib/recipe-format";
+import {
+  LINE_UNIT_CODES,
+  PHOTO_MAX_BYTES,
+  PHOTO_TYPES,
+  type NewRecipeType,
+  type UnitDimension,
+} from "@/lib/recipe-format";
+import { compatibleDimensions, type PreviewLine } from "@/lib/recipe-sheet";
 import { parseAmount } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del recetario (ADR-0023). Cada una llama a una función de la base, que controla el
 // permiso, pide el motivo y deja la auditoría: la pantalla solo valida la forma y traduce la respuesta.
 const uuid = z.string().uuid();
-const decimal = (value: string) => Number(value.replace(",", "."));
 
 function invalid(error: z.ZodError): ActionState {
   return { status: "bad", message: "Revisá los campos marcados.", fieldErrors: fieldErrors(error) };
@@ -67,121 +75,6 @@ export async function createRecipeAction(
   revalidatePath("/recetas");
   // Si salió otro código que el de la vista previa, la ficha lo avisa (ADR-0041).
   redirect(codeChangedHref(`/recetas/${result.id}`, fields.data.expected_code, result.code));
-}
-
-export async function updateRecipeAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const fields = schemas.recipeEdit.safeParse(formValues(formData));
-  if (!fields.success) return invalid(fields.error);
-  const { recipe } = ids(formData);
-  if (!recipe.success) return { status: "bad", message: "Falta la receta." };
-  const supabase = await createClient();
-  const { data, error } = await supabase.schema("recipes").rpc("update_recipe", {
-    p_id: recipe.data,
-    p_changes: {
-      name: fields.data.name,
-      short_name: fields.data.short_name ?? "",
-      category_id: fields.data.category_id ?? "",
-      sector: fields.data.sector ?? "",
-      station: fields.data.station ?? "",
-    },
-    p_reason: fields.data.reason,
-  });
-  refresh(recipe.data);
-  return toActionState(data, error);
-}
-
-export async function saveDraftAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const fields = schemas.recipeDraft.safeParse(formValues(formData));
-  if (!fields.success) return invalid(fields.error);
-  const { recipe, version, expected } = ids(formData);
-  if (!recipe.success || !version.success) return { status: "bad", message: "Falta la versión." };
-  const supabase = await createClient();
-  const { data, error } = await supabase.schema("recipes").rpc("save_draft", {
-    p_version_id: version.data,
-    p_data: {
-      yield_quantity: String(decimal(fields.data.yield_quantity)),
-      yield_unit: fields.data.yield_unit,
-      portions: fields.data.portions ?? "",
-      portion_grams: fields.data.portion_grams ? String(decimal(fields.data.portion_grams)) : "",
-      description: fields.data.description ?? "",
-      storage_notes: fields.data.storage_notes ?? "",
-      presentation_notes: fields.data.presentation_notes ?? "",
-      change_summary: fields.data.change_summary ?? "",
-    },
-    p_reason: fields.data.reason,
-    ...(expected.success ? { p_expected_updated_at: expected.data } : {}),
-  });
-  refresh(recipe.data);
-  return toActionState(data, error);
-}
-
-// Líneas y pasos: vienen como objetos desde los editores (listas que la persona arma en la pantalla).
-// Todo el argumento se valida con un solo esquema: nunca se confía en lo que manda el navegador.
-const editorBase = z.object({
-  recipeId: z.string().uuid(),
-  versionId: z.string().uuid(),
-  expectedUpdatedAt: z.string().min(1).max(40),
-  reason: schemas.reason.shape.reason,
-});
-const linesPayload = editorBase.extend({ lines: recipeLinesSchema });
-const stepsPayload = editorBase.extend({ steps: recipeStepsSchema });
-
-function invalidList(error: z.ZodError, what: string): ActionState {
-  const issue = error.issues[0];
-  const index = issue?.path[1];
-  const where = typeof index === "number" ? `${what} ${index + 1}: ` : "";
-  return { status: "bad", message: `${where}${issue?.message ?? "Revisá los datos."}` };
-}
-
-export async function saveLinesAction(payload: z.input<typeof linesPayload>): Promise<ActionState> {
-  const parsed = linesPayload.safeParse(payload);
-  if (!parsed.success) return invalidList(parsed.error, "Línea");
-  const supabase = await createClient();
-  const { data, error } = await supabase.schema("recipes").rpc("set_components", {
-    p_version_id: parsed.data.versionId,
-    p_lines: parsed.data.lines.map((l) => ({
-      ingredient_id: l.ingredient_id,
-      sub_recipe_id: l.sub_recipe_id,
-      quantity: decimal(l.quantity),
-      unit: l.unit,
-      basis: l.basis,
-      no_scale: l.no_scale,
-      notes: l.notes,
-    })),
-    p_reason: parsed.data.reason,
-    p_expected_updated_at: parsed.data.expectedUpdatedAt,
-  });
-  refresh(parsed.data.recipeId);
-  return toActionState(data, error);
-}
-
-export async function saveStepsAction(payload: z.input<typeof stepsPayload>): Promise<ActionState> {
-  const parsed = stepsPayload.safeParse(payload);
-  if (!parsed.success) return invalidList(parsed.error, "Paso");
-  const supabase = await createClient();
-  const { data, error } = await supabase.schema("recipes").rpc("set_steps", {
-    p_version_id: parsed.data.versionId,
-    p_steps: parsed.data.steps.map((s) => ({
-      equipment: s.equipment,
-      equipment_capacity: s.equipment_capacity ? String(parseAmount(s.equipment_capacity)) : "",
-      equipment_capacity_unit: s.equipment_capacity_unit,
-      kind: s.kind,
-      instructions: s.instructions,
-      active_minutes: Number(s.active_minutes),
-      passive_minutes: Number(s.passive_minutes),
-      depends_on: s.depends_on,
-    })),
-    p_reason: parsed.data.reason,
-    p_expected_updated_at: parsed.data.expectedUpdatedAt,
-  });
-  refresh(parsed.data.recipeId);
-  return toActionState(data, error);
 }
 
 // Buscador del editor: desde 3 letras, materias primas (por nombre, alias o código) y preparaciones
@@ -268,6 +161,7 @@ async function versionCall(
   return toActionState(data, error);
 }
 
+// En el celular no está la barra de la ficha: la revisión se pide desde «Versiones y aprobaciones».
 export async function requestReviewAction(
   _prev: ActionState,
   formData: FormData,
@@ -498,4 +392,184 @@ export async function previewRecipeCodeAction(
     .schema("recipes")
     .rpc("preview_code", { p_category_id: category.data, p_type: type });
   return error ? null : (data ?? null);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Ficha única de receta (ADR-0042)
+// ---------------------------------------------------------------------------------------------------------------
+
+// La grilla mientras se escribe: la base calcula cada fila con el mismo motor que el costo oficial y devuelve solo
+// lo que la sesión puede ver (pesos; costos con recipes.view_costs; precios con prices.view).
+const previewLine = z.object({
+  ingredient_id: uuid.nullable(),
+  sub_recipe_id: uuid.nullable(),
+  quantity: z.number().positive().max(1e9),
+  unit: z.enum(LINE_UNIT_CODES),
+  basis: z.enum(["purchase", "clean", "cooked", "finished"]),
+  yield_profile_id: uuid.nullable().optional(),
+});
+export type SheetPreview = { status: "ok"; lines: PreviewLine[] } | { status: "error" };
+
+export async function previewSheetLinesAction(
+  versionId: unknown,
+  restaurantId: unknown,
+  lines: unknown,
+): Promise<SheetPreview> {
+  const version = uuid.safeParse(versionId);
+  const place = uuid.nullable().safeParse(restaurantId ?? null);
+  // Las filas sin completar van como null: así cada respuesta conserva la posición en la grilla.
+  const rows = z.array(previewLine.nullable()).max(200).safeParse(lines);
+  if (!version.success || !place.success || !rows.success) return { status: "error" };
+  const client = await createClient();
+  const { data, error } = await client.schema("costing").rpc("preview_sheet_lines", {
+    p_version_id: version.data,
+    // Sin local: solo pesos. El tipo generado no admite null (argumento sin valor por defecto).
+    p_restaurant_id: place.data as string,
+    p_lines: rows.data.map((r) => r ?? {}),
+  });
+  if (error) return { status: "error" };
+  const num = (v: number | null) => (v === null ? null : Number(v));
+  return {
+    status: "ok",
+    lines: data.map((l) => ({
+      lineOrder: l.line_order,
+      grams: num(l.grams),
+      weightStatus: l.weight_status,
+      lineCost: num(l.line_cost),
+      unitCost: num(l.unit_cost),
+      costUnit: l.cost_unit,
+      status: l.status,
+    })),
+  };
+}
+
+// Medidas que admite cada materia prima de la grilla (para ofrecer solo unidades que se pueden convertir).
+export async function unitOptionsAction(
+  ingredientIds: unknown,
+): Promise<Record<string, UnitDimension[]>> {
+  const list = z.array(uuid).max(200).safeParse(ingredientIds);
+  if (!list.success || list.data.length === 0) return {};
+  const client = await createClient();
+  const { data, error } = await client
+    .schema("catalog")
+    .rpc("ingredient_unit_options", { p_ids: list.data });
+  if (error) return {};
+  return Object.fromEntries(
+    data.map((o) => [
+      o.ingredient_id,
+      compatibleDimensions(o.dimension as UnitDimension, o.has_density, o.has_unit_weight),
+    ]),
+  );
+}
+
+// Guardado en lote: datos, rendimiento, líneas y pasos en una sola transacción, con un solo motivo. Con submit,
+// además pide la revisión. Todo el argumento se valida con un esquema: nunca se confía en lo que manda el navegador.
+const sheetPayload = z.object({
+  recipeId: uuid,
+  versionId: uuid,
+  expectedUpdatedAt: z.string().min(1).max(40),
+  reason: schemas.reason.shape.reason,
+  submit: z.boolean(),
+  recipe: recipeSheetDataSchema.nullable(),
+  draft: recipeSheetDraftSchema.nullable(),
+  lines: recipeLinesSchema.nullable(),
+  steps: recipeStepsSchema.nullable(),
+});
+// warning: se guardó, pero algo no se pudo calcular (por ejemplo, las porciones de un plato).
+export type SheetResult = ActionState & { versionId?: string; warning?: string };
+
+export async function saveSheetAction(payload: z.input<typeof sheetPayload>): Promise<SheetResult> {
+  const parsed = sheetPayload.safeParse(payload);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const [block, index] = issue?.path ?? [];
+    const where =
+      block === "lines" && typeof index === "number"
+        ? `Fila ${index + 1}: `
+        : block === "steps" && typeof index === "number"
+          ? `Paso ${index + 1}: `
+          : "";
+    return { status: "bad", message: `${where}${issue?.message ?? "Revisá los datos."}` };
+  }
+  const p = parsed.data;
+  const draft = p.draft
+    ? Object.fromEntries(
+        Object.entries(p.draft).map(([k, v]) => [
+          k,
+          // parseAmount entiende «1.500» y «2,5» (es-AR); el esquema ya controló que sea un número.
+          (k === "yield_quantity" || k === "portion_grams") && v
+            ? String(parseAmount(v))
+            : (v ?? ""),
+        ]),
+      )
+    : null;
+  const client = await createClient();
+  const { data, error } = await client.schema("recipes").rpc("save_sheet", {
+    p_recipe_id: p.recipeId,
+    p_version_id: p.versionId,
+    p_expected_updated_at: p.expectedUpdatedAt,
+    // Los bloques que no cambiaron van vacíos: la base no los toca.
+    p_recipe: p.recipe as unknown as string,
+    p_draft: draft as unknown as string,
+    p_lines: (p.lines
+      ? p.lines.map((l) => ({
+          ingredient_id: l.ingredient_id,
+          sub_recipe_id: l.sub_recipe_id,
+          quantity: parseAmount(l.quantity),
+          unit: l.unit,
+          basis: l.basis,
+          yield_profile_id: l.yield_profile_id ?? null,
+          no_scale: l.no_scale,
+          notes: l.notes,
+        }))
+      : null) as unknown as string,
+    p_steps: (p.steps
+      ? p.steps.map((s) => ({
+          equipment: s.equipment,
+          equipment_capacity: s.equipment_capacity ? String(parseAmount(s.equipment_capacity)) : "",
+          equipment_capacity_unit: s.equipment_capacity_unit,
+          kind: s.kind,
+          instructions: s.instructions,
+          active_minutes: Number(s.active_minutes),
+          passive_minutes: Number(s.passive_minutes),
+          depends_on: s.depends_on,
+        }))
+      : null) as unknown as string,
+    p_reason: p.reason,
+    p_submit: p.submit,
+  });
+  refresh(p.recipeId);
+  const result = toActionState(data, error);
+  const out = data as { version_id?: string; warning?: string | null } | null;
+  return {
+    ...result,
+    ...(out?.version_id ? { versionId: out.version_id } : {}),
+    ...(out?.warning ? { warning: out.warning } : {}),
+  };
+}
+
+// Quien revisa decide desde la ficha (la base vuelve a controlar que tenga permiso y que no sea quien la pidió).
+const decisionPayload = z.object({
+  recipeId: uuid,
+  requestId: uuid,
+  decision: z.enum(["approved", "rejected"]),
+  comment: z.string().trim().max(1000, "Hasta 1.000 caracteres."),
+});
+export async function decideReviewAction(
+  payload: z.input<typeof decisionPayload>,
+): Promise<ActionState> {
+  const parsed = decisionPayload.safeParse(payload);
+  if (!parsed.success) return { status: "bad", message: "Elegí aprobar o no aprobar." };
+  if (parsed.data.decision === "rejected" && !parsed.data.comment) {
+    return { status: "bad", message: "Para no aprobarla, escribí la observación." };
+  }
+  const client = await createClient();
+  const { data, error } = await client.schema("workflow").rpc("decide_approval", {
+    p_request_id: parsed.data.requestId,
+    p_decision: parsed.data.decision,
+    p_comment: parsed.data.comment || undefined,
+  });
+  refresh(parsed.data.recipeId);
+  revalidatePath("/aprobaciones");
+  return toActionState(data, error);
 }

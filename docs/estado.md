@@ -1,8 +1,32 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). En curso: códigos automáticos y listados por rubro (ADR-0041, rama `feat/codigos-y-listados-por-rubro`), Prompt 1 de 3._
+_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59). En curso: ficha única de receta (ADR-0042, rama `feat/ficha-unica-receta`), Prompt 2 de 3._
 
-## Al retomar: códigos automáticos y listados por rubro (rama `feat/codigos-y-listados-por-rubro`)
+## Al retomar: ficha única de receta (rama `feat/ficha-unica-receta`)
+
+- **Qué se hizo** (Prompt 2; ADR-0042; lista para Soy en `docs/modulos/07-ficha-unica-receta-lista-de-cambios.md`):
+  - **Base** (`20261128120000_recipe_sheet.sql`):
+    - `recipes.save_sheet`: datos, rendimiento, líneas y pasos en una transacción con un motivo; crea el borrador si se edita la vigente; con `p_submit` pide la revisión; en un plato con peso de porción calcula las porciones;
+    - `costing.preview_sheet_lines`: la grilla con el mismo motor (`recipe_line_costs_internal` acepta `p_memo.lines`); pesos para quien trabaja la receta, costos con `recipes.view_costs`, precio solo con `prices.view`;
+    - `catalog.ingredient_unit_options` (medidas que admite cada materia prima);
+    - `recipe_versions.target_yield_ratio`, congelado al pedir la revisión de una preparación (para el control de lotes).
+  - **Pantalla:** `/recetas/[id]` es una sola ficha con índice de anclas (`?seccion=` redirige), carrusel de fotos, grilla tipo planilla (`components/recipe-sheet/`), rendimiento de plato o preparación, pasos, barra fija con contador, motivo, Descartar, Guardar y Enviar a revisión. Quien revisa decide desde la ficha. En el celular, consulta.
+  - Se borraron los editores viejos (`recipe-lines-editor`, `recipe-steps-editor`) y sus acciones.
+- **Decisiones de Joaco (2026-11-12):** precio por kg solo con `prices.view`; los platos viejos conservan sus porciones hasta cargar el peso de la porción; el costo de filas sin guardar solo para quien edita o publica; un plato sin gramos se guarda igual y avisa.
+- **Pruebas:** pgTAP nueva `290_recipe_sheet` (48) y `050` ajustada; Vitest nueva `recipe-sheet.test.ts` (347 en total); Playwright nueva `ficha-receta.spec.ts` y ajustadas recetas, subrecetas, escalado, respuestas, costos, mermas y calidad. La carga de la ficha se prueba en la computadora; en el celular, la consulta.
+- **Revisores (2026-11-12):** base sin graves; seguridad «no apto» por un grave (la grilla dejaba deducir precios) y diseño con 4 graves. Todo lo grave y lo medio, corregido; Joaco decidió el costo de la grilla y las porciones (ADR-0042, decisiones 3 y 4). Los menores que quedan están en el ADR.
+- **Corrida completa (2026-11-12):**
+  - formato ✅; pgTAP 2.454 en 51 archivos ✅, desde una base recién creada;
+  - Playwright: 238 en verde, 10 omitidas a propósito y 26 en rojo;
+  - **causa de casi todas:** la página le pasaba una función (`anchor`) a un componente de cliente, y en la versión armada para producción la ficha no cargaba («Functions cannot be passed directly to Client Components»). Ahora pasa un texto (`anchorSuffix`);
+  - otras dos se corrigieron en la prueba, sin aflojarlas:
+    - `calidad`: el Controller solo lee recetas y la ficha lo manda a la vista de cocina, igual que en `main`. La prueba vieja miraba la dirección intermedia; ahora controla el enlace (`?seccion=fotos`) y la llegada a la cocina;
+    - `recetas`: el carrusel buscaba la flecha antes de que se viera la única foto;
+  - las 9 specs afectadas se corrieron de nuevo: 82 en verde y 3 en rojo (las dos de arriba). Corregidas, pasaron solas (3 de 3).
+  - pgTAP falló en la corrida completa porque corrió sobre la base que dejaron las pruebas de Playwright, sin recrearla. Recreada, pasó todo.
+- **Sigue:** el PR. Después, el Prompt 3 (ficha única de materia prima).
+
+## Antes: códigos automáticos y listados por rubro (fusionado, PR #59)
 
 - **Qué se hizo** (Prompt 1 de `docs/prompts/2026-11-12-fichas-unicas-recetas-y-materias-primas.md`; ADR-0041; lista para Soy en `docs/modulos/06-codigos-y-listados-lista-de-cambios.md`):
   - **Base** (`20261127120000_auto_codes.sql`):
