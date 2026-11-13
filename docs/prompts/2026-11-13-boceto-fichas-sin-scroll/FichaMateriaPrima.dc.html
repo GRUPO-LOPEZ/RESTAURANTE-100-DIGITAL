@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha de materia prima</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:7px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:14px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;font-weight:500;color:#1F2937;display:flex;flex-direction:column;gap:4px}
+.in{height:36px;border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;font:inherit;font-size:14px;font-weight:400;color:#1F2937;background:#FFFFFF;box-sizing:border-box;width:100%}
+.sec{font-size:16px;font-weight:600;margin:0}
+.add{height:32px;padding:0 10px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer;white-space:nowrap}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:30px;border-bottom:1px solid #E5E7EB;font-size:13px}
+.more{font-size:13px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box; display: flex; flex-direction: column;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#" class="on">Materias primas</a><a href="#">Rubros</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Usuarios</a><a href="#">Roles y permisos</a><a href="#">Historial</a>
+    <div style="margin-top: auto; border-top: 1px solid #34445F; padding-top: 10px;"><span style="display: block; padding: 0 12px 4px; font-size: 12px; color: #D6DEEC;">Sofía Admin</span><a href="#">Mi cuenta</a></div>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › <a href="#">Materias primas</a> › <span style="color: #1F2937; font-weight: 500;">{{name}}</span></span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="color: #6B7280;">Local</span>
+        <span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Demo Café Centro ▾</span>
+        <span style="height: 36px; width: 260px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center; color: #6B7280;">Buscar recetas y materias primas</span>
+        <span style="width: 32px; height: 32px; border-radius: 16px; background: #EAF0FB; color: #2F4F8F; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center;">SA</span>
+      </div>
+    </div>
+
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <!-- 1. Encabezado en una línea -->
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <a href="#" style="font-size: 14px;">← Materias primas</a>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600;">{{name}}</h1>
+          <span style="font-size: 13px; color: #6B7280; font-variant-numeric: tabular-nums;">{{code}} · {{rubro}} · se usa en {{unit}}</span>
+          <span class="chip" style="background: #DCFCE7; color: #166534;">Activa</span>
+        </div>
+        <button class="add" style="height: 36px;">Desactivar</button>
+      </div>
+
+      <!-- 2. Cuatro indicadores -->
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+          <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 2px;">
+            <span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; color: #6B7280;"><span>{{k.label}}</span><span style="font-weight: 400; font-size: 12px;">{{k.scope}}</span></span>
+            <span style="font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2;">{{k.value}}</span>
+            <span style="display: flex; justify-content: space-between; align-items: center; gap: 8px;"><span style="font-size: 12px; color: #6B7280;">{{k.note}}</span><span class="chip" style="background: {{k.bg}}; color: {{k.ink}};">{{k.state}}</span></span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- 3. Tres columnas: todo a la vista -->
+      <div style="display: grid; grid-template-columns: 4fr 5fr 4fr; gap: 14px; flex: 1 1 0; min-height: 0;">
+        <!-- Columna 1: datos generales, editables donde se ven -->
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <h2 class="sec">Datos generales</h2>
+          <label class="lbl">Nombre *<input class="in" value="{{name}}" onChange="{{onName}}" style="border: {{nameBorder}};"></label>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+            <label class="lbl">Rubro<select class="in"><option>{{rubro}}</option></select></label>
+            <label class="lbl">Se usa en recetas en<select class="in"><option>{{unitLong}}</option></select></label>
+          </div>
+          <label class="lbl">Se compra en<select class="in"><option>{{buyUnit}}</option></select></label>
+          <div style="display: flex; align-items: center; justify-content: space-between; min-height: 36px; font-size: 13px; font-weight: 500;">
+            <span>¿Se compra congelada? <span title="Si se compra congelada, el costo suma la merma de descongelado." style="color: #6B7280; font-weight: 400;">ⓘ</span></span>
+            <button onClick="{{toggleFrozen}}" aria-pressed="{{frozen}}" aria-label="Se compra congelada" style="height: 32px; min-width: 64px; border-radius: 8px; border: {{frozenBorder}}; font: inherit; font-size: 13px; font-weight: 500; background: {{frozenBg}}; color: {{frozenInk}}; cursor: pointer;">{{frozenText}}</button>
+          </div>
+          <div class="lbl">Otros nombres
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+              <sc-for list="{{aliases}}" as="a" hint-placeholder-count="2"><span class="chip" style="background: #F1F2F4; color: #4B5563; font-weight: 400;">{{a}} ✕</span></sc-for>
+              <button class="add">+ Agregar</button>
+            </div>
+          </div>
+          <label class="lbl" style="flex: 1 1 auto;">Observaciones<textarea class="in" style="height: 100%; min-height: 56px; padding: 8px 10px; resize: none;">{{obs}}</textarea></label>
+        </section>
+
+        <!-- Columna 2: compra, precio y mermas -->
+        <div style="display: flex; flex-direction: column; gap: 14px; min-height: 0;">
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1 1 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;"><h2 class="sec">Precios de compra</h2><span style="font-size: 12px; color: #6B7280;">Demo Café Centro</span></div>
+            <sc-if value="{{noPrice}}" hint-placeholder-val="{{true}}">
+              <p style="margin: 0; padding: 6px 10px; border-radius: 8px; background: #FEF3C7; color: #92400E; font-size: 13px;">Todavía no tiene productos de compra ni un precio que valga en este local.</p>
+            </sc-if>
+            <sc-for list="{{products}}" as="p" hint-placeholder-count="3">
+              <div class="row"><span>{{p.supplier}} · {{p.pack}}</span><span style="display: flex; gap: 8px; align-items: center;"><span style="font-variant-numeric: tabular-nums;">{{p.price}}</span><span class="chip" style="background: {{p.bg}}; color: {{p.ink}};">{{p.state}}</span></span></div>
+            </sc-for>
+            <sc-if value="{{hasMoreProducts}}" hint-placeholder-val="{{false}}"><a href="#" class="more">Ver los 5 productos</a></sc-if>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto;"><button class="add">+ Producto de compra</button><button class="add">+ Proveedor</button><button class="add">Proponer precio</button></div>
+          </section>
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1 1 0;">
+            <h2 class="sec">Mermas y rendimientos</h2>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px;">
+              <sc-for list="{{waste}}" as="w" hint-placeholder-count="2">
+                <div class="row"><span>{{w.label}}</span><span style="display: flex; gap: 6px; align-items: center;"><span style="font-variant-numeric: tabular-nums;">{{w.value}}</span><span class="chip" style="background: {{w.bg}}; color: {{w.ink}};">{{w.state}}</span></span></div>
+              </sc-for>
+            </div>
+            <span style="font-size: 12px; color: #6B7280;">{{yieldsText}}</span>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto;"><button class="add">Proponer merma o rendimiento</button><button class="add">Registrar un ensayo</button></div>
+          </section>
+        </div>
+
+        <!-- Columna 3: conversiones, alérgenos y uso -->
+        <div style="display: flex; flex-direction: column; gap: 14px; min-height: 0;">
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;"><h2 class="sec">Conversiones <span title="Solo hacen falta si se compra en una unidad y se usa en otra. Nunca se supone que 1 litro pesa 1 kilo." style="color: #6B7280; font-weight: 400; font-size: 13px;">ⓘ</span></h2></div>
+            <sc-for list="{{conversions}}" as="c" hint-placeholder-count="1"><div class="row"><span>{{c.label}}</span><span style="font-variant-numeric: tabular-nums;">{{c.value}}</span></div></sc-for>
+            <sc-if value="{{noConversions}}" hint-placeholder-val="{{true}}"><p style="margin: 0; font-size: 13px; color: #4B5563;"><span class="chip" style="background: #F1F2F4; color: #4B5563;">No aplica</span> Se compra y se usa en peso.</p></sc-if>
+            <div style="display: flex; gap: 6px;"><button class="add">+ Densidad (g por ml)</button><button class="add">+ Peso por unidad</button></div>
+          </section>
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1 1 0; min-height: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;"><h2 class="sec">Alérgenos</h2><span style="font-size: 12px; color: #6B7280;">{{allergenSummary}}</span></div>
+            <div role="group" aria-label="Alérgenos" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+              <sc-for list="{{allergens}}" as="g" hint-placeholder-count="14">
+                <button onClick="{{g.cycle}}" aria-label="{{g.aria}}" style="height: 30px; display: flex; justify-content: space-between; align-items: center; padding: 0 8px; border-radius: 6px; border: {{g.border}}; background: {{g.bg}}; color: {{g.ink}}; font: inherit; font-size: 12px; cursor: pointer;"><span>{{g.name}}</span><span style="font-weight: 500;">{{g.state}}</span></button>
+              </sc-for>
+            </div>
+          </section>
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+            <h2 class="sec">Dónde se usa</h2>
+            <sc-for list="{{usedIn}}" as="u" hint-placeholder-count="3"><a href="#" class="row" style="text-decoration: none;"><span>{{u.name}}</span><span style="color: #1F2937; font-variant-numeric: tabular-nums;">{{u.qty}}</span></a></sc-for>
+            <sc-if value="{{notUsed}}" hint-placeholder-val="{{false}}"><p style="margin: 0; font-size: 13px; color: #4B5563;">Todavía no está en ninguna receta.</p></sc-if>
+            <sc-if value="{{hasMoreUses}}" hint-placeholder-val="{{false}}"><a href="#" class="more">Ver las 7 recetas</a></sc-if>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Barra fija de guardado en lote -->
+    <div style="height: 56px; flex: 0 0 56px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; box-sizing: border-box; font-size: 14px;">
+      <span style="font-weight: 500;">{{pendingText}}</span>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <label style="font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;">Motivo *<input class="in" placeholder="Obligatorio: por qué cambia" style="width: 300px;"></label>
+        <button onClick="{{discard}}" class="add" style="height: 36px;">Descartar</button>
+        <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: {{saveBg}}; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 500;">Guardar cambios</button>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"escenario":{"editor":"enum","options":["Frambuesas hoy","Con datos"],"default":"Frambuesas hoy"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { name: null, frozen: null, allergens: {} }; }
+  renderVals() {
+    const full = (this.props.escenario ?? 'Frambuesas hoy') === 'Con datos';
+    const ST = { ok: ['#DCFCE7', '#166534'], warn: ['#FEF3C7', '#92400E'], bad: ['#FEE2E2', '#991B1B'], none: ['#F1F2F4', '#4B5563'], info: ['#DBEAFE', '#1E40AF'] };
+    const base = full
+      ? { name: 'Frambuesas', code: 'MPR-CGL-0001', rubro: 'Congelados', frozen: true, buy: 'Kilogramo (kg)', aliases: ['Frambuesa IQF', 'Raspberry'], obs: 'Se descongela en heladera 12 h antes.' }
+      : { name: 'frambuesas', code: 'MPR-CGL-0001', rubro: 'Congelados', frozen: false, buy: 'Sin indicar', aliases: [], obs: '' };
+    const name = this.state.name ?? base.name;
+    const frozen = this.state.frozen ?? base.frozen;
+    const A = ['Gluten', 'Crustáceos', 'Huevo', 'Pescado', 'Maní', 'Soja', 'Leche', 'Frutos de cáscara', 'Apio', 'Mostaza', 'Sésamo', 'Sulfitos', 'Altramuces', 'Moluscos'];
+    const CYCLE = ['Sin dato', 'No contiene', 'Puede contener', 'Contiene'];
+    const COL = { 'Sin dato': ST.none, 'No contiene': ST.ok, 'Puede contener': ST.warn, 'Contiene': ST.bad };
+    const baseAll = full ? Object.fromEntries(A.map(n => [n, n === 'Frutos de cáscara' ? 'Puede contener' : 'No contiene'])) : {};
+    const changedAll = Object.keys(this.state.allergens).filter(n => this.state.allergens[n] !== (baseAll[n] ?? 'Sin dato'));
+    const pending = (name !== base.name ? 1 : 0) + (frozen !== base.frozen ? 1 : 0) + changedAll.length;
+    const allergens = A.map(n => {
+      const s = this.state.allergens[n] ?? baseAll[n] ?? 'Sin dato';
+      const changed = changedAll.includes(n);
+      return { name: n, state: s, bg: COL[s][0], ink: COL[s][1], border: changed ? '1px dashed #2F4F8F' : '1px solid transparent', aria: n + ': ' + s + '. Cambiar',
+        cycle: () => this.setState({ allergens: { ...this.state.allergens, [n]: CYCLE[(CYCLE.indexOf(s) + 1) % 4] } }) };
+    });
+    const nData = allergens.filter(a => a.state !== 'Sin dato').length;
+    const kpi = (label, value, note, state, c, scope) => ({ label, value, note, state, bg: c[0], ink: c[1], scope: scope || '' });
+    return {
+      name, code: base.code, rubro: base.rubro, unit: 'gramos', unitLong: 'Gramo (g)', buyUnit: base.buy, aliases: base.aliases, obs: base.obs,
+      onName: (e) => this.setState({ name: e.target.value }), nameBorder: name !== base.name ? '1px dashed #2F4F8F' : '1px solid #E5E7EB',
+      frozen, toggleFrozen: () => this.setState({ frozen: !frozen }), frozenText: frozen ? '✓ Sí' : '✕ No',
+      frozenBg: frozen ? ST.ok[0] : ST.bad[0], frozenInk: frozen ? ST.ok[1] : ST.bad[1], frozenBorder: frozen !== base.frozen ? '1px dashed #2F4F8F' : '1px solid transparent',
+      kpis: full
+        ? [kpi('Precio vigente', '$ 9.800 / kg', 'Frutas del Sur · 10/11', 'Al día', ST.ok, 'Demo Café Centro'), kpi('Costo neto por kg', '$ 10.650', 'con merma y descongelado', 'Al día', ST.ok, 'Demo Café Centro'), kpi('Rinde neto', '92 %', 'descongelado 8 %', 'Al día', ST.ok), kpi('Recetas que la usan', '7', '3 platos · 4 preparaciones', 'Vigentes', ST.info)]
+        : [kpi('Precio vigente', '—', 'Falta el precio', 'Sin datos', ST.none, 'Demo Café Centro'), kpi('Costo neto por kg', '—', 'Falta el rendimiento', 'Sin datos', ST.none, 'Demo Café Centro'), kpi('Rinde neto', '—', 'Falta la merma de limpieza', 'Sin datos', ST.none), kpi('Recetas que la usan', '0', 'No está en ninguna receta', 'Sin uso', ST.none)],
+      noPrice: !full,
+      products: full ? [
+        { supplier: 'Frutas del Sur', pack: 'Caja 5 kg', price: '$ 9.800 / kg', state: 'Vigente', bg: ST.ok[0], ink: ST.ok[1] },
+        { supplier: 'Congelados Patagonia', pack: 'Bolsa 1 kg', price: '$ 11.200 / kg', state: 'Atención: 22 días', bg: ST.warn[0], ink: ST.warn[1] },
+        { supplier: 'Distribuidora Norte', pack: 'Caja 10 kg', price: '$ 9.100 / kg', state: 'Heredado', bg: ST.info[0], ink: ST.info[1] }] : [],
+      hasMoreProducts: full,
+      waste: full
+        ? [{ label: 'Merma de limpieza', value: '0 %', state: 'Aprobada', bg: ST.ok[0], ink: ST.ok[1] }, { label: 'Merma de descongelado', value: '8 %', state: 'Aprobada', bg: ST.ok[0], ink: ST.ok[1] }]
+        : [{ label: 'Merma de limpieza', value: '—', state: 'Sin datos', bg: ST.none[0], ink: ST.none[1] }, { label: 'Merma de descongelado', value: '—', state: frozen ? 'Sin datos' : 'No aplica', bg: ST.none[0], ink: ST.none[1] }],
+      yieldsText: full ? 'Rendimientos por proceso: 2 estándar · 1 ensayo en revisión · Ver todos' : 'Todavía no tiene rendimientos por proceso.',
+      conversions: [], noConversions: true,
+      allergens, allergenSummary: nData + ' de 14 con dato',
+      usedIn: full ? [{ name: 'PRE-SAL-0004 Coulis de frutos rojos', qty: '400 g' }, { name: 'PLA-POS-0003 Cheesecake', qty: '60 g' }, { name: 'PLA-CAF-0007 Licuado de frutos rojos', qty: '120 g' }] : [],
+      notUsed: !full, hasMoreUses: full,
+      pendingText: pending === 0 ? 'Sin cambios' : pending + (pending === 1 ? ' cambio sin guardar' : ' cambios sin guardar'),
+      saveBg: pending ? '#4A6FB8' : '#A9B9DA',
+      discard: () => this.setState({ name: null, frozen: null, allergens: {} })
+    };
+  }
+}
+</script>
+</body>
+</html>

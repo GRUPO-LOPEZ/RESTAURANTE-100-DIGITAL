@@ -1,6 +1,14 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Próximo: Inicio sin scroll._
+_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Próximo: Inicio sin scroll y, después, las fichas sin scroll._
+
+## Después del Inicio: fichas sin scroll (pedido de Soy, 2026-11-13)
+
+- **Prompts:** `docs/prompts/2026-11-13-fichas-sin-scroll.md`, dos en orden: 1) ficha de materia prima (rama `feat/ficha-materia-prima-sin-scroll`); 2) ficha de receta (rama `feat/ficha-receta-sin-scroll`). Boceto aprobado de la materia prima en `docs/prompts/2026-11-13-boceto-fichas-sin-scroll/`.
+- **Qué pide:** las dos fichas entran en 1440 × 900 sin scroll de página, con el mismo patrón que el Inicio. En la receta, la planilla de ingredientes es la única parte con scroll propio. Los alérgenos pasan a un botón por alérgeno que cambia de estado con cada clic.
+- **Orden:** primero el Inicio (reutilizan su regla de estado), después Prompt 1 y después Prompt 2.
+- **La ficha de receta no tiene boceto:** el plan de Joaco trae un esquema para que Soy lo vea antes de programar.
+- **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
 
 ## Próximo: Inicio sin scroll (pedido de Soy, 2026-11-13)
 
