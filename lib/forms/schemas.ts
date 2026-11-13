@@ -314,6 +314,29 @@ export const schemas = {
     content_unit: choice("Elegí la unidad del contenido."),
     reason: reasonField,
   }),
+  // Editar un producto de compra (ADR-0044): el código y la materia prima no cambian. Con precios, el envase y el
+  // contenido llegan deshabilitados (no viajan): por eso son opcionales; si llegan, se validan como en el alta.
+  productEdit: z.object({
+    description: z
+      .string({ message: "Escribí la descripción." })
+      .trim()
+      .min(1, "Escribí la descripción.")
+      .max(200, "Hasta 200 caracteres."),
+    brand_name: z.string().trim().max(80, "Hasta 80 caracteres.").optional(),
+    supplier_id: z.string().max(60).optional(),
+    notes: notesField,
+    is_active: z.enum(["true", "false"]).optional(),
+    package_unit: z.string().max(30).optional(),
+    units_per_package: z
+      .string()
+      .trim()
+      .regex(/^[0-9]{1,5}$/, "Escribí cuántas unidades trae, por ejemplo 12.")
+      .refine((v) => Number(v) >= 1 && Number(v) <= 10000, "De 1 a 10.000.")
+      .optional(),
+    content_per_unit: positiveNumber.optional(),
+    content_unit: z.string().max(30).optional(),
+    reason: reasonField,
+  }),
   supplier: z.object({
     code: catalogCode,
     name: catalogName,

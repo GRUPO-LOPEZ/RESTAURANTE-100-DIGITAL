@@ -9,6 +9,7 @@ import {
   proposeYieldAction,
   recordYieldTestAction,
   setActiveAction,
+  updateProductAction,
 } from "@/app/materias-primas/actions";
 import { ActionForm } from "@/components/action-form";
 import { ActionModal, ProposalModal } from "@/components/action-modal";
@@ -28,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { InfoTip } from "@/components/ui/info-tip";
+import { ToggleField } from "@/components/ui/toggle-field";
 import { Metric } from "@/components/ui/metric";
 import { Notice } from "@/components/ui/notice";
 import { WastePreview } from "@/components/waste-preview";
@@ -121,6 +123,7 @@ const SECTIONS = [
 // Los avisos después de guardar (la ficha vuelve con lo guardado y el aviso va arriba).
 const NOTICES: Record<string, { status: "ok" | "info"; text: string }> = {
   guardado: { status: "ok", text: "Cambios guardados." },
+  producto: { status: "ok", text: "Producto de compra guardado." },
   congelada: {
     status: "ok",
     text: "Guardado: se compra congelada. Los costos se actualizan en un minuto.",
@@ -370,7 +373,6 @@ async function Ingredient({
         stamp={sheetState?.stamp ?? null}
         editable={editable}
         hasPrices={sheetState?.hasPrices ?? false}
-        categoryLocked={sheetState?.categoryLocked ?? true}
         initial={initial}
         options={options}
       >
@@ -390,6 +392,8 @@ async function Ingredient({
             netCost={netCost}
             productPrices={productPrices}
             canManage={canManage}
+            pricedProducts={sheetState?.pricedProducts ?? null}
+            volver={back}
             units={units}
             suppliers={suppliers}
           />
@@ -483,6 +487,154 @@ function Usage({ rows, canOpen }: { rows: IngredientUsage[]; canOpen: boolean })
 // ---------------------------------------------------------------------------
 // Precios de compra: el precio vigente y el costo neto destacados, y la tabla de productos
 // ---------------------------------------------------------------------------
+// Editar un producto de compra (ADR-0044). El código y la materia prima no cambian. Con precios, el envase y el
+// contenido se ven deshabilitados y el tooltip dice por qué: la base los rechaza igual (guard_priced_product).
+function ProductEdit({
+  ingredientId,
+  product: p,
+  priced,
+  volver,
+  units,
+  suppliers,
+}: {
+  ingredientId: string;
+  product: IngredientDetail["products"][number];
+  priced: boolean;
+  volver: string;
+  units: Unit[];
+  suppliers: Awaited<ReturnType<typeof getSuppliers>>;
+}) {
+  const key = p.id.slice(0, 8);
+  const original = {
+    description: p.description,
+    brand_name: p.brandName ?? "",
+    supplier_id: p.supplierId ?? "",
+    notes: p.notes ?? "",
+    is_active: String(p.isActive),
+    package_unit: p.packageUnitCode,
+    units_per_package: String(p.unitsPerPackage),
+    content_per_unit: String(p.contentPerUnit).replace(".", ","),
+    content_unit: p.contentUnitCode,
+  };
+  return (
+    <ActionModal
+      label="Editar"
+      accessibleName={`Editar «${p.description}»`}
+      icon="pencil"
+      title="Editar producto de compra"
+      description={`${p.code}. El código y la materia prima no cambian.`}
+    >
+      <ActionForm action={updateProductAction} schema="productEdit" submitLabel="Guardar producto">
+        <input type="hidden" name="ingredientId" value={ingredientId} />
+        <input type="hidden" name="productId" value={p.id} />
+        <input type="hidden" name="volver" value={volver} />
+        <input type="hidden" name="original" value={JSON.stringify(original)} />
+        <FormInput
+          id={`pe-${key}-description`}
+          label="Descripción"
+          hint="Como lo vende el proveedor."
+          name="description"
+          required
+          maxLength={200}
+          defaultValue={original.description}
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormSelect
+            id={`pe-${key}-supplier_id`}
+            label="Proveedor habitual"
+            name="supplier_id"
+            defaultValue={original.supplier_id}
+          >
+            <option value="">Sin proveedor fijo</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </FormSelect>
+          <FormInput
+            id={`pe-${key}-brand_name`}
+            label="Marca"
+            name="brand_name"
+            maxLength={80}
+            defaultValue={original.brand_name}
+          />
+        </div>
+        <fieldset
+          className="flex flex-col gap-4"
+          aria-describedby={priced ? `pe-${key}-envase-fijo` : undefined}
+        >
+          <legend className="mb-2 text-sm font-medium text-ink">Envase y contenido</legend>
+          {/* Con precios, se dice a la vista (los campos deshabilitados salen del orden del teclado); el detalle, en
+              el tooltip. */}
+          {priced ? (
+            <p
+              id={`pe-${key}-envase-fijo`}
+              className="-mt-2 flex items-center gap-1 text-sm text-ink-muted"
+            >
+              No se cambia: ya tiene precios.
+              <InfoTip label="por qué no se cambia el envase">
+                Ya tiene precios: el precio se guardó por envase. Si cambió el envase o el
+                contenido, agregá otro producto de compra y marcá este como que ya no se compra.
+              </InfoTip>
+            </p>
+          ) : null}
+          <FormSelect
+            id={`pe-${key}-package_unit`}
+            label="Viene en"
+            name="package_unit"
+            disabled={priced}
+            defaultValue={original.package_unit}
+          >
+            <UnitOptions units={units} />
+          </FormSelect>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormInput
+              id={`pe-${key}-units_per_package`}
+              label="Unidades por envase"
+              name="units_per_package"
+              inputMode="numeric"
+              disabled={priced}
+              defaultValue={original.units_per_package}
+            />
+            <FormInput
+              id={`pe-${key}-content_per_unit`}
+              label="Contenido de cada unidad"
+              name="content_per_unit"
+              inputMode="decimal"
+              disabled={priced}
+              defaultValue={original.content_per_unit}
+            />
+          </div>
+          <FormSelect
+            id={`pe-${key}-content_unit`}
+            label="Unidad del contenido"
+            name="content_unit"
+            disabled={priced}
+            defaultValue={original.content_unit}
+          >
+            <UnitOptions units={units.filter((u) => u.dimension !== "package")} />
+          </FormSelect>
+        </fieldset>
+        <FormTextarea
+          id={`pe-${key}-notes`}
+          label="Observaciones"
+          name="notes"
+          maxLength={1000}
+          defaultValue={original.notes}
+        />
+        <ToggleField
+          id={`pe-${key}-activo`}
+          name="is_active"
+          label="¿Se sigue comprando?"
+          defaultValue={p.isActive}
+        />
+        <Reason id={`pe-${key}-motivo`} />
+      </ActionForm>
+    </ActionModal>
+  );
+}
+
 function PurchaseSection({
   ingredient,
   prices,
@@ -492,6 +644,8 @@ function PurchaseSection({
   netCost,
   productPrices,
   canManage,
+  pricedProducts,
+  volver,
   units,
   suppliers,
 }: {
@@ -503,6 +657,9 @@ function PurchaseSection({
   netCost: IngredientNetCost | null;
   productPrices: ProductPrice[];
   canManage: boolean;
+  // Productos con precios: su envase y su contenido no cambian (ADR-0044). null: no lo puede editar.
+  pricedProducts: string[] | null;
+  volver: string;
   units: Unit[];
   suppliers: Awaited<ReturnType<typeof getSuppliers>>;
 }) {
@@ -511,6 +668,20 @@ function PurchaseSection({
   const products = ingredient.products.filter(
     (p) => p.isActive || priceOf.get(p.id)?.priceRecordId != null,
   );
+  // Quien edita también ve los que ya no se compran y no tienen precio, para corregirlos o volver a activarlos.
+  const priced = canManage ? pricedProducts : null;
+  const retired = priced ? ingredient.products.filter((p) => !products.includes(p)) : [];
+  const edit = (p: IngredientDetail["products"][number]) =>
+    priced ? (
+      <ProductEdit
+        ingredientId={ingredient.id}
+        product={p}
+        priced={priced.includes(p.id)}
+        volver={volver}
+        units={units}
+        suppliers={suppliers}
+      />
+    ) : null;
   const current = localCost ? bigUnitPrice(localCost.unit_cost, localCost.base_unit) : null;
   const missingPlace = "Elegí un local arriba para ver el precio.";
   return (
@@ -599,6 +770,11 @@ function PurchaseSection({
                       </th>
                     </>
                   ) : null}
+                  {priced ? (
+                    <th scope="col" className="py-2 pl-3 font-medium">
+                      <span className="sr-only">Acciones</span>
+                    </th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
@@ -640,6 +816,7 @@ function PurchaseSection({
                           </td>
                         </>
                       ) : null}
+                      {priced ? <td className="py-2 pl-3 text-right">{edit(p)}</td> : null}
                     </tr>
                   );
                 })}
@@ -678,6 +855,31 @@ function PurchaseSection({
           </ul>
         </>
       )}
+
+      {retired.length > 0 ? (
+        <div className="hidden desk:block">
+          <Disclosure summary={`Ya no se compran (${retired.length})`}>
+            <ul className="flex flex-col gap-2" aria-label="Productos que ya no se compran">
+              {retired.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2 last:border-b-0 last:pb-0"
+                >
+                  <span className="text-base font-medium text-ink">
+                    {p.description}
+                    <span className="block text-sm text-ink-muted tabular-nums">
+                      {[p.code, p.supplier, `${p.packageUnit} de ${p.content}`]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </span>
+                  {edit(p)}
+                </li>
+              ))}
+            </ul>
+          </Disclosure>
+        </div>
+      ) : null}
 
       {canManage ? (
         <div className="hidden flex-wrap gap-2 desk:flex">

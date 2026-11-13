@@ -49,7 +49,6 @@ type Ctx = {
   prefix: string;
   editable: boolean;
   hasPrices: boolean;
-  categoryLocked: boolean;
   options: SheetOptions;
   saved: IngredientSheetDraft;
   draft: IngredientSheetDraft;
@@ -139,7 +138,6 @@ export function IngredientSheetProvider({
   stamp,
   editable,
   hasPrices,
-  categoryLocked,
   initial,
   options,
   children,
@@ -149,7 +147,6 @@ export function IngredientSheetProvider({
   stamp: string | null;
   editable: boolean;
   hasPrices: boolean;
-  categoryLocked: boolean;
   initial: IngredientSheetDraft;
   options: SheetOptions;
   children: React.ReactNode;
@@ -254,7 +251,6 @@ export function IngredientSheetProvider({
     prefix,
     editable,
     hasPrices,
-    categoryLocked,
     options,
     saved,
     draft,
@@ -331,7 +327,6 @@ export function DataSection() {
     changed,
     options,
     hasPrices,
-    categoryLocked,
     aliasText: alias,
     setAliasText: setAlias,
     invalid,
@@ -390,18 +385,11 @@ export function DataSection() {
           <label htmlFor={id("rubro")} className="text-sm font-medium text-ink">
             Rubro
           </label>
-          {categoryLocked ? (
-            <InfoTip label="por qué no se cambia el rubro">
-              Ya tiene precios: el rubro decide cuándo un precio está desactualizado, y eso lo
-              cambia Dirección General (precios).
-            </InfoTip>
-          ) : null}
         </span>
         <Select
           id={id("rubro")}
           aria-invalid={bad("rubro")}
           value={draft.data.category_id}
-          disabled={categoryLocked}
           onChange={(e) => set("category_id", e.target.value)}
           className={cn(is("category_id") && changedRing)}
         >

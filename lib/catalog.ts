@@ -231,6 +231,13 @@ export type IngredientDetail = {
     packageUnit: string;
     content: string;
     isActive: boolean;
+    // Para editarlo (ADR-0044): los valores tal como los guarda la base.
+    supplierId: string | null;
+    notes: string | null;
+    packageUnitCode: string;
+    unitsPerPackage: number;
+    contentPerUnit: number;
+    contentUnitCode: string;
   }[];
   allergens: {
     id: string;
@@ -282,7 +289,7 @@ export async function getIngredient(id: string): Promise<IngredientDetail | null
       catalog
         .from("purchase_products")
         .select(
-          "id, code, description, brand_name, supplier_id, package_unit_id, units_per_package, content_per_unit, content_unit_id, is_active",
+          "id, code, description, brand_name, supplier_id, notes, package_unit_id, units_per_package, content_per_unit, content_unit_id, is_active",
         )
         .eq("ingredient_id", id)
         .order("is_active", { ascending: false })
@@ -355,6 +362,12 @@ export async function getIngredient(id: string): Promise<IngredientDetail | null
         unit.get(p.content_unit_id)?.name ?? "",
       ),
       isActive: p.is_active,
+      supplierId: p.supplier_id,
+      notes: p.notes,
+      packageUnitCode: unit.get(p.package_unit_id)?.code ?? "",
+      unitsPerPackage: p.units_per_package,
+      contentPerUnit: p.content_per_unit,
+      contentUnitCode: unit.get(p.content_unit_id)?.code ?? "",
     })),
     allergens: (allergens.data ?? []).map((a) => ({
       id: a.id,
@@ -611,9 +624,10 @@ export async function getSettingsProcesses(groupId: string): Promise<SettingsPro
 }
 
 // Lo que la ficha de una materia prima necesita para editar sin que la base la rechace después (ADR-0043): el sello
-// del último cambio (para no pisar lo de otra persona), si tiene precios (su unidad de recetas no cambia) y si el
-// rubro se traba para esta persona. Solo para quien la puede editar (catalog.manage); si no, null.
-export type IngredientSheetState = { stamp: string; hasPrices: boolean; categoryLocked: boolean };
+// del último cambio (para no pisar lo de otra persona), si tiene precios (su unidad de recetas no cambia) y qué
+// productos de compra tienen precios (su envase y su contenido no cambian, ADR-0044). Solo para quien la puede editar
+// (catalog.manage); si no, null.
+export type IngredientSheetState = { stamp: string; hasPrices: boolean; pricedProducts: string[] };
 
 export async function getIngredientSheetState(id: string): Promise<IngredientSheetState | null> {
   const client = await createClient();
@@ -621,11 +635,11 @@ export async function getIngredientSheetState(id: string): Promise<IngredientShe
     .schema("catalog")
     .rpc("ingredient_sheet_state", { p_id: id });
   if (error) failed("la materia prima");
-  const state = data as { stamp?: string; has_prices?: boolean; category_locked?: boolean } | null;
+  const state = data as { stamp?: string; has_prices?: boolean; priced_products?: string[] } | null;
   if (!state?.stamp) return null;
   return {
     stamp: state.stamp,
     hasPrices: state.has_prices === true,
-    categoryLocked: state.category_locked === true,
+    pricedProducts: Array.isArray(state.priced_products) ? state.priced_products : [],
   };
 }

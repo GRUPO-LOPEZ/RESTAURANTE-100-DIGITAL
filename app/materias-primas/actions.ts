@@ -14,6 +14,7 @@ import {
   schemas,
 } from "@/lib/forms/schemas";
 import { parseAmount } from "@/lib/money";
+import { productChanges } from "@/lib/purchase-product";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del catálogo. Cada una llama a una función de la base que valida catalog.manage, pide
@@ -123,6 +124,72 @@ export async function createProductAction(
   });
   revalidatePath(`/materias-primas/${id.data}`);
   return done(error, "Producto de compra agregado.");
+}
+
+// Editar un producto de compra (ADR-0044). Solo viaja lo que cambió respecto de lo que el panel mostró al abrirse.
+// Con precios, el envase y el contenido llegan deshabilitados; si igual llegaran cambiados, la base los rechaza.
+export async function updateProductAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const values = formValues(formData);
+  const fields = schemas.productEdit.safeParse(values);
+  if (!fields.success) return invalid(fields.error);
+  const id = ingredientId(formData);
+  const productId = uuid.safeParse(formData.get("productId"));
+  if (!id.success || !productId.success) return { status: "bad", message: "Falta el producto." };
+  if (fields.data.supplier_id && !uuid.safeParse(fields.data.supplier_id).success)
+    return { status: "bad", fieldErrors: { supplier_id: "Elegí un proveedor de la lista." } };
+  const original = productOriginal.safeParse(parseJson(formData.get("original")));
+  if (!original.success) return { status: "bad", message: "Recargá la página y volvé a intentar." };
+  const { reason, ...submitted } = fields.data;
+  const changes = productChanges(original.data, submitted);
+  if (Object.keys(changes).length === 0) return { status: "bad", message: "No cambiaste nada." };
+  const supabase = await createClient();
+  // El producto tiene que ser de esta materia prima (si no, el aviso y la recarga irían a otra ficha). El permiso lo
+  // decide la base igual, sobre la materia prima real del producto.
+  const { data: owner } = await supabase
+    .schema("catalog")
+    .from("purchase_products")
+    .select("id")
+    .eq("id", productId.data)
+    .eq("ingredient_id", id.data)
+    .maybeSingle();
+  if (!owner) return { status: "bad", message: "Ese producto no es de esta materia prima." };
+  const { error } = await supabase.schema("catalog").rpc("update_purchase_product", {
+    p_id: productId.data,
+    p_changes: changes,
+    p_reason: reason,
+  });
+  if (error) return toActionState(null, error);
+  revalidatePath(`/materias-primas/${id.data}`);
+  // El aviso va arriba de la ficha: si deja de comprarse, sale de la tabla y su panel se cierra con la fila.
+  const query = new URLSearchParams({ aviso: "producto" });
+  const volver = formData.get("volver");
+  if (typeof volver === "string" && /^\/materias-primas(\?|$)/.test(volver))
+    query.set("volver", volver);
+  redirect(`/materias-primas/${id.data}?${query}`);
+}
+
+const productOriginal = z.object({
+  description: z.string(),
+  brand_name: z.string(),
+  supplier_id: z.string(),
+  notes: z.string(),
+  is_active: z.string(),
+  package_unit: z.string(),
+  units_per_package: z.string(),
+  content_per_unit: z.string(),
+  content_unit: z.string(),
+});
+
+function parseJson(value: FormDataEntryValue | null): unknown {
+  if (typeof value !== "string") return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
 
 export async function createSupplierAction(

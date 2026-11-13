@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/dialog";
@@ -10,17 +10,22 @@ import { Segmented } from "@/components/ui/segmented";
 // Un alta o una propuesta con su propio flujo (su motivo, su aprobación), en un panel corto al lado (ADR-0036). La
 // ficha única la usa para lo que no entra en el guardado en lote: agregar un producto, proponer una merma (ADR-0043).
 // El formulario de adentro avisa el resultado; al cerrar, el foco vuelve al botón que lo abrió (WCAG 2.4.3).
+// «Editar» en una fila de tabla (ADR-0044) usa el lápiz y un nombre accesible que dice qué se edita.
 export function ActionModal({
   label,
   title,
   description,
   variant = "outline",
+  icon = "plus",
+  accessibleName,
   children,
 }: {
   label: string;
   title: string;
   description?: string;
   variant?: "default" | "outline";
+  icon?: "plus" | "pencil";
+  accessibleName?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -33,10 +38,11 @@ export function ActionModal({
         variant={variant}
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-label={accessibleName}
         onClick={() => setOpen(true)}
         className="self-start"
       >
-        <Plus aria-hidden="true" />
+        {icon === "pencil" ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
         {label}
       </Button>
       <Modal

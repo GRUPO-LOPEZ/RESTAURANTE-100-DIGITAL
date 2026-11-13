@@ -1313,10 +1313,6 @@ export type Database = {
       archive_yield_process: { Args: { p_id: string; p_reason: string }; Returns: undefined };
       category_first_word: { Args: { p_name: string }; Returns: string };
       category_group: { Args: { p_category_id: string }; Returns: string };
-      category_locked_by_prices: {
-        Args: { p_group_id: string; p_old_category_id: string };
-        Returns: boolean;
-      };
       category_match_name: { Args: { p_name: string }; Returns: string };
       category_usage: {
         Args: Record<PropertyKey, never>;
@@ -1495,6 +1491,7 @@ export type Database = {
         };
         Returns: string;
       };
+      purchase_product_has_prices_internal: { Args: { p_id: string }; Returns: boolean };
       raise_friendly: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
