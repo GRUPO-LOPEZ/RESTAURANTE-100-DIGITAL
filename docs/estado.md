@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). En curso: ficha única de materia prima (ADR-0043, rama `feat/ficha-unica-materia-prima`), Prompt 3 de 3._
+_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas._
 
-## Al retomar: ficha única de materia prima (rama `feat/ficha-unica-materia-prima`)
+## Ficha única de materia prima (rama `feat/ficha-unica-materia-prima`, PR #61 fusionado)
 
 - **Qué se hizo** (ADR-0043, Prompt 3 de Soy): las 6 pestañas de la materia prima pasan a una sola ficha con índice, con la misma forma que la receta.
   - Se editan donde se ven, con una barra que guarda todo junto con un motivo: datos generales, otros nombres, congelada, conversiones y alérgenos.
@@ -28,7 +28,21 @@ _Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
     - pgTAP sobre la base recién recreada: 2503 de 2503 (52 archivos);
     - Playwright: 263 en verde, 15 salteadas y 2 fallas, en `codigos.spec` (celular y computadora). Buscaba «código · rubro» juntos y el encabezado nuevo los separa. Ahora controla el código, el rubro y que la unidad quedó en gramos: 11 en verde y 1 salteada.
   - Capturas mirando la pantalla real: 1440, 1600, 1920 y celular, en `test-results/ficha-materia-prima-*`.
-- **Commit `9f33c51` subido (2026-11-13).** Sigue: Joaco abre el PR a mano (texto preparado en la sesión), mira que GitHub Actions dé verde y lo fusiona. Después, decidir con Soy los temas de «Para decidir con Soy».
+- **PR #61 fusionado (2026-11-13):** GitHub Actions en verde y publicado en staging.
+- **Decisiones de Joaco (2026-11-13), sobre lo que quedaba:**
+  - el rubro de una materia prima con precios **se tiene que poder cambiar** (falta definir quién);
+  - «Proponer precio» **sigue disponible en el celular**;
+  - **se arma la pantalla** para editar un producto de compra.
+  - Las tres van en una rama nueva, con su plan.
+- **Revisión de consumo de la nube (2026-11-13):**
+  - Se paga **USD 40 por mes, todo en Vercel**: plan Pro con 2 lugares en el equipo. Se gastaron USD 0,77 de los USD 20 de crédito.
+  - GitHub es gratis: el repo es público, y los ~3.350 minutos de pruebas de noviembre no se cobran.
+  - Supabase es gratis y está lejos de los límites: la base va por 48 MB de 500.
+  - Lo que puede decidir el dueño:
+    - pasar la clave de publicación de GitHub Actions a una del dueño y después sacar a Joaco del equipo de Vercel (de USD 40 a USD 20);
+    - activar la verificación en dos pasos en Vercel;
+    - decidir si el repo sigue público (privado, los minutos de pruebas costarían);
+    - el staging de Supabase gratis se pausa solo si pasa alrededor de una semana sin uso.
 
 ## Ficha única de receta (rama `feat/ficha-unica-receta`, PR #60 fusionado)
 
