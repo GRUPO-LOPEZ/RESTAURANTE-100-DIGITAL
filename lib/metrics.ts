@@ -29,6 +29,17 @@ export type MetricView = {
 
 const number = new Intl.NumberFormat("es-AR");
 
+// Lo que falta de un total (decisión de Soy, 2026-11-13): una sola regla para todo el sistema (Inicio, Calidad,
+// accesos y celular). Sin total no hay datos; sin faltas, completo; si falta más de la mitad, crítico; si no, atención.
+export type MissingState = { status: "ok" | "warn" | "bad" | "none"; label: string };
+
+export function missingState(missing: number, total: number): MissingState {
+  if (total <= 0) return { status: "none", label: "Sin datos" };
+  if (missing <= 0) return { status: "ok", label: "Completo" };
+  const label = missing === 1 ? "Falta 1" : `Faltan ${number.format(missing)}`;
+  return { status: missing * 2 > total ? "bad" : "warn", label };
+}
+
 export function metricView(m: MetricInput): MetricView {
   // Sin denominador no hay porcentaje ni "todo al día": no hay datos.
   if (m.total === 0) {

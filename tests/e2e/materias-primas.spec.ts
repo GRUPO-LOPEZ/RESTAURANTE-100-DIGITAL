@@ -133,7 +133,7 @@ test("el Cocinero no ve Materias primas y, si entra por la dirección, vuelve al
   await login(page, "cocinero@ejemplo.test");
   await expect(await menuLink(page, "Materias primas")).toHaveCount(0);
   await page.goto("/materias-primas");
-  await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
 });
 
 // Rediseño (ADR-0036): la lista se ordena por columna (en la base, no solo la página), se pagina de a 15

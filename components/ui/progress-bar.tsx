@@ -23,7 +23,7 @@ function ProgressBar({
 }) {
   if (total <= 0) {
     return (
-      <Badge status="none" className={className}>
+      <Badge status="none" aria-hidden={decorative || undefined} className={className}>
         Sin datos
       </Badge>
     );

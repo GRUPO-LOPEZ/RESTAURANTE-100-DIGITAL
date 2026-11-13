@@ -150,5 +150,5 @@ test("la Cocinera no ve el panel de control", async ({ page }) => {
   await login(page, "cocinero@ejemplo.test");
   await expect(page.getByRole("link", { name: "Panel de control" })).toHaveCount(0);
   await page.goto("/configuracion");
-  await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
 });

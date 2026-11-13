@@ -12,6 +12,7 @@ function Metric({
   href,
   hrefLabel,
   comparison,
+  compact,
   className,
   ...input
 }: MetricInput & {
@@ -22,6 +23,7 @@ function Metric({
   period?: string;
   href?: string;
   hrefLabel?: string;
+  compact?: boolean;
   className?: string;
 }) {
   const view = metricView(input);
@@ -36,6 +38,7 @@ function Metric({
       detail={view.detail ?? comparison}
       href={href}
       hrefLabel={hrefLabel}
+      compact={compact}
       className={className}
     />
   );

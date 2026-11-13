@@ -76,8 +76,12 @@ test.describe("ingreso", () => {
     await expect(notice(page)).toContainText("no es correcto");
     await page.getByLabel("Código de 6 números").fill(await freshTotp(page));
     await page.getByRole("button", { name: "Verificar" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
-    await expect(page.getByText("Gerente de Restaurante")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
+    // Los roles propios se ven en Mi cuenta (el Inicio es un tablero, ADR-0045).
+    await page.goto("/mi-cuenta");
+    await expect(page.getByRole("list", { name: "Tus roles" })).toContainText(
+      "Gerente de Restaurante",
+    );
     await logout(page);
   });
 

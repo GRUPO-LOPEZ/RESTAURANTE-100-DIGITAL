@@ -51,7 +51,7 @@ test.describe("ingreso", () => {
     await page.getByLabel("Contraseña").fill(PASSWORD);
     await expect(page.getByLabel("Recordar mi sesión en este dispositivo")).not.toBeChecked();
     await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
     const auth = (await page.context().cookies()).filter((c) => c.name.includes("auth-token"));
     expect(auth.length).toBeGreaterThan(0);
     // Cookie de sesión del navegador: sin fecha de vencimiento.
@@ -65,7 +65,7 @@ test.describe("ingreso", () => {
     await page.getByLabel("Contraseña").fill(PASSWORD);
     await page.getByLabel("Recordar mi sesión en este dispositivo").check();
     await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
     const auth = (await page.context().cookies()).filter((c) => c.name.includes("auth-token"));
     for (const c of auth) expect(c.expires).toBeGreaterThan(Date.now() / 1000);
     await logout(page);
@@ -115,14 +115,14 @@ test.describe("recuperar la contraseña y mi cuenta", () => {
     await page.getByLabel("Contraseña nueva").fill(first);
     await page.getByLabel("Repetí la contraseña").fill(first);
     await page.getByRole("button", { name: "Guardar y entrar" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
     await logout(page);
 
     // La contraseña vieja ya no sirve; la nueva sí.
     await fillLogin(page, email, PASSWORD);
     await expect(notice(page)).toHaveText("Correo o contraseña incorrectos.");
     await fillLogin(page, email, first);
-    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
 
     // Mi cuenta: datos, contraseña, doble verificación y sesiones.
     await (await menuLink(page, "Mi cuenta")).click();
@@ -147,7 +147,7 @@ test.describe("recuperar la contraseña y mi cuenta", () => {
     await expect(notice(page)).toContainText("tu contraseña cambió");
     await logout(page);
     await fillLogin(page, email, second);
-    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
     await logout(page);
   });
 

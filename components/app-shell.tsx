@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
 import { getActiveRestaurantId, getMyScopes, getUnreadCount } from "@/lib/data";
 import { SIDEBAR_COOKIE, mobileItems, navGroups } from "@/lib/nav";
+import { cn } from "@/lib/utils";
 
 // Layout global (ADR-0036), un solo componente para todo el sistema:
 // - barra lateral fija desde 800 px (240 o 68 px), con los grupos según los permisos;
@@ -27,14 +28,18 @@ export function AppShell({
   heading,
   description,
   actions,
+  fill = false,
   children,
 }: {
   title: string;
   // El h1 de una ficha: el nombre del registro (el título queda en la ruta de navegación).
   heading?: React.ReactNode;
-  description?: string;
+  description?: React.ReactNode;
   // La acción principal de la pantalla, a la derecha del título (mismo lugar en todo el sistema).
   actions?: React.ReactNode;
+  // Una pantalla de un solo vistazo (el Inicio, ADR-0045): en la computadora mide al menos el alto de la ventana y lo de
+  // adentro se reparte el espacio que sobra. No oculta ni encima nada: si algo no entra, la página crece como cualquier otra.
+  fill?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -42,7 +47,12 @@ export function AppShell({
       <Suspense fallback={<SidebarPlaceholder />}>
         <SessionSidebar />
       </Suspense>
-      <div className="lf-main flex min-h-full flex-1 flex-col">
+      <div
+        className={cn(
+          "lf-main flex min-h-full flex-1 flex-col",
+          fill && "desk:min-h-dvh desk:flex-none",
+        )}
+      >
         <header className="sticky top-0 z-40 border-b border-line bg-surface print:hidden">
           <div className="relative flex min-h-topbar flex-wrap items-center gap-2 px-4 py-2 desk:flex-nowrap desk:px-gutter desk:py-0 wide:px-gutter-wide">
             <Link
@@ -68,7 +78,12 @@ export function AppShell({
             </Suspense>
           </div>
         </header>
-        <main className="flex w-full flex-1 flex-col gap-6 px-4 pt-6 pb-24 desk:px-gutter desk:pb-8 wide:px-gutter-wide print:p-0">
+        <main
+          className={cn(
+            "flex w-full flex-1 flex-col gap-6 px-4 pt-6 pb-24 desk:px-gutter desk:pb-8 wide:px-gutter-wide print:p-0",
+            fill && "gap-4 desk:min-h-0 desk:pt-4 desk:pb-4",
+          )}
+        >
           <PageHeader title={title} heading={heading} description={description} actions={actions} />
           {children}
         </main>

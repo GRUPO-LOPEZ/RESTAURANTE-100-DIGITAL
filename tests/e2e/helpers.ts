@@ -56,7 +56,7 @@ export async function login(page: Page, email: string, { mfa = false }: { mfa?: 
     await page.getByLabel("Código de 6 números").fill(await freshTotp(page));
     await page.getByRole("button", { name: "Verificar" }).click();
   }
-  await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
 }
 
 // En el celular la navegación, Mi cuenta y "Salir" están plegados detrás de "Menú" (ADR-0036): se abre.

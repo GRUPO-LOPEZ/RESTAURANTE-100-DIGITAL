@@ -28,7 +28,10 @@ function PageHeader({
     >
       <div className="flex min-w-0 flex-col gap-1">
         <h1 className="text-2xl [overflow-wrap:anywhere] text-ink">{heading ?? title}</h1>
-        {description ? <p className="text-base text-ink-muted">{description}</p> : null}
+        {/* empty:hidden: una línea que llega vacía (en streaming) no deja hueco. */}
+        {description ? (
+          <p className="text-base text-ink-muted empty:hidden">{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
