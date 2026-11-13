@@ -127,17 +127,26 @@ test("las unidades se eligen como «Kilogramo (kg)» y Compras suma una nueva", 
 
 test("la sub-receta muestra su rendimiento final y la merma de cocción, sin suponer", async ({
   page,
+  isMobile,
 }) => {
   // El Chef del grupo trabaja las recetas del grupo (la Chef de marca solo ve su ficha de cocina).
   await login(page, "chefgrupo@ejemplo.test");
   await page.goto("/recetas/00000000-0000-4000-8000-000000001102");
   await expect(page.getByRole("heading", { name: "Salsa bolognesa", exact: true })).toBeVisible();
-  await openSection(page, "Rendimientos");
-  await expect(kpi(page, "Rendimiento final")).toContainText("3");
-  await expect(kpi(page, "Rendimiento final")).toContainText("kg");
-  // Lleva vino y aceite en ml sin densidad: la merma de cocción no se inventa.
-  const loss = kpi(page, "Merma de cocción");
+  // Ficha única (ADR-0042): el peso neto es el rendimiento final, y el rendimiento (neto ÷ bruto) reemplaza a la
+  // merma de cocción, con la misma cuenta.
+  await openSection(page, "Rendimiento");
+  if (isMobile) {
+    // En el celular la ficha es de consulta: el peso neto se lee.
+    await expect(page.locator('[id^="rendimiento-"]:visible')).toContainText("3 kg");
+  } else {
+    await expect(page.getByLabel("Peso neto total")).toHaveValue("3");
+    await expect(page.getByLabel("Unidad", { exact: true })).toHaveValue("kg");
+  }
+  // Lleva vino y aceite en ml sin densidad: el rendimiento no se inventa.
+  const loss = kpi(page, "Rendimiento (neto ÷ bruto)");
   await expect(loss).toContainText("—");
-  await expect(loss).toContainText("Falta pasar algún componente a gramos");
+  await expect(loss).toContainText("Falta pasar algún ingrediente a gramos");
+  await expect(kpi(page, "Peso bruto total")).toContainText("—");
   await axe(page);
 });

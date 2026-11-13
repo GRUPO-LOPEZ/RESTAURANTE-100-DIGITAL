@@ -113,15 +113,15 @@ export function qualityTop(
     .slice(0, limit);
 }
 
-// En qué pestaña de la ficha se corrige cada indicador (fichas por pestañas, ADR-0036). Sin pestaña: la de
-// datos generales.
+// Dónde se corrige cada indicador (?seccion=). En la receta, ficha única (ADR-0042), la página lleva a la sección con
+// su ancla; la materia prima sigue con pestañas (ADR-0036). Sin sección: el principio de la ficha.
 const QUALITY_SECTION: Record<string, string> = {
   recipe_approved: "versiones",
   recipe_review: "versiones",
-  recipe_yield: "rendimientos",
+  recipe_yield: "rendimiento",
   recipe_photo: "fotos",
   recipe_components: "ingredientes",
-  recipe_cost: "costos",
+  recipe_cost: "ingredientes",
   ingredient_price: "compra",
   price_stale: "compra",
   ingredient_unit: "compra",

@@ -671,6 +671,8 @@ export const recipeLinesSchema = z
         quantity: positiveNumber,
         unit: z.enum(LINE_UNIT_CODES, { message: "Elegí la unidad." }),
         basis: z.enum(["purchase", "clean", "cooked", "finished"]),
+        // El perfil de merma de una línea limpia o cocida: la ficha lo conserva al guardar (ADR-0042).
+        yield_profile_id: z.string().uuid().nullable().optional(),
         no_scale: z.boolean(),
         notes: z.string().trim().max(500, "Hasta 500 caracteres."),
       })
@@ -728,6 +730,41 @@ export const recipeStepsSchema = z
       }),
   )
   .max(100, "Hasta 100 pasos.");
+
+// Ficha única de receta (ADR-0042): los datos de la receta y de la versión que se editan en la ficha. Cada bloque
+// es opcional: solo viaja lo que cambió. En un plato se carga el peso de la porción (las porciones las calcula la
+// base); en una preparación, el peso neto con su unidad.
+const sheetText = (max: number, message: string) => z.string().trim().max(max, message).optional();
+export const recipeSheetDataSchema = z.object({
+  name: catalogName,
+  short_name: sheetText(40, "Hasta 40 caracteres."),
+  category_id: z.string().max(60).optional(),
+  sector: sheetText(60, "Hasta 60 caracteres."),
+  station: sheetText(60, "Hasta 60 caracteres."),
+});
+export const recipeSheetDraftSchema = z.object({
+  yield_quantity: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || (parseAmount(v) ?? 0) > 0, {
+      message: "Escribí un número mayor que cero, como 5 o 2,5.",
+    })
+    .optional(),
+  yield_unit: z.union([z.enum(LINE_UNIT_CODES), z.literal("")]).optional(),
+  portion_grams: z
+    .string()
+    .trim()
+    .regex(/^$|^[0-9]{1,6}([.,][0-9]{1,2})?$/, "Escribí el peso en gramos, por ejemplo 350.")
+    .refine(
+      (v) => v === "" || (parseAmount(v) ?? 0) > 0,
+      "El peso de la porción tiene que ser mayor que cero.",
+    )
+    .optional(),
+  description: sheetText(2000, "Hasta 2.000 caracteres."),
+  storage_notes: sheetText(2000, "Hasta 2.000 caracteres."),
+  presentation_notes: sheetText(2000, "Hasta 2.000 caracteres."),
+  change_summary: sheetText(1000, "Hasta 1.000 caracteres."),
+});
 
 // Los errores de un esquema, uno por campo (el primero), para mostrarlos debajo de cada campo.
 export function fieldErrors(error: z.ZodError): Record<string, string> {
