@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inicio en computadora</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;gap:10px;color:#D6DEEC;text-decoration:none;padding:7px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:14px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.go{display:flex;flex-direction:column;gap:6px;padding:14px 16px;text-decoration:none;color:#1F2937;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px}
+.go:hover{border-color:#4A6FB8;color:#1F2937}
+button:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box; display: flex; flex-direction: column;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#" class="on">Inicio</a><a href="#">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Rubros</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Usuarios</a><a href="#">Roles y permisos</a><a href="#">Historial</a>
+    <div style="margin-top: auto; border-top: 1px solid #34445F; padding-top: 10px;"><span style="display: block; padding: 0 12px 4px; font-size: 12px; color: #D6DEEC;">Sofía Admin</span><a href="#">Mi cuenta</a></div>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › <span style="color: #1F2937; font-weight: 500;">Inicio</span></span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="color: #6B7280;">Local</span>
+        <span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center; color: #1F2937;">Demo Café Centro ▾</span>
+        <span style="height: 36px; width: 260px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center; color: #6B7280;">Buscar recetas y materias primas</span>
+        <span style="width: 32px; height: 32px; border-radius: 16px; background: #EAF0FB; color: #2F4F8F; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center;">SA</span>
+      </div>
+    </div>
+
+    <div style="flex: 1 1 auto; padding: 20px 32px 24px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; min-height: 0;">
+      <!-- 1. Encabezado: saludo corto y la acción principal a la derecha -->
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+        <div>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Hola, Sofía · <span style="font-weight: 400; color: #6B7280;">Demo Café Centro</span></h1>
+          <p style="margin: 2px 0 0; font-size: 12px; color: #6B7280;">Datos al momento: 13/11/26 10:24 · {{summary}}</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <a href="#" style="height: 40px; padding: 0 16px; border-radius: 8px; background: #4A6FB8; color: #FFFFFF; font-size: 14px; font-weight: 500; display: flex; align-items: center; text-decoration: none;">Ver qué falta corregir</a>
+        </div>
+      </div>
+
+      <!-- 2. Aviso en una línea -->
+      <sc-if value="{{hasAlert}}" hint-placeholder-val="{{true}}">
+        <div role="status" style="display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 44px; border-radius: 10px; background: #FEF3C7; color: #92400E; font-size: 14px;">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          <span><b style="font-weight: 600;">Requiere atención:</b> {{alert}}</span>
+        </div>
+      </sc-if>
+
+      <!-- 3. Cuatro KPIs -->
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+          <div class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 14px; font-weight: 500; color: #6B7280;">{{k.label}}</span>
+            <span style="display: flex; align-items: baseline; gap: 8px;"><span style="font-size: 32px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15;">{{k.value}}</span><span style="font-size: 14px; color: #6B7280;">{{k.of}}</span></span>
+            <span style="display: flex; justify-content: space-between; align-items: center;"><span class="chip" style="background: {{k.bg}}; color: {{k.ink}};">{{k.state}}</span><a href="#" style="font-size: 14px;">Ver cuáles</a></span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- 4. Fila central: confiabilidad · locales · tareas -->
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex: 1 1 0; min-height: 0;">
+        <section class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 16px; font-weight: 600;">¿Qué tan confiable es el costo?</h2><span style="font-size: 12px; color: #6B7280;">{{recipeTotal}} recetas</span></div>
+          <sc-for list="{{reliability}}" as="r" hint-placeholder-count="5">
+            <a href="#" style="display: grid; grid-template-columns: 132px 1fr 28px; align-items: center; gap: 10px; font-size: 14px; color: #1F2937; text-decoration: none; min-height: 28px;">
+              <span>{{r.label}}</span>
+              <span style="height: 10px; border-radius: 5px; background: #F1F2F4; display: block;"><span style="display: block; height: 10px; border-radius: 5px; background: {{r.color}}; width: {{r.bar}};"></span></span>
+              <span style="text-align: right; font-variant-numeric: tabular-nums;">{{r.n}}</span>
+            </a>
+          </sc-for>
+          <a href="#" style="font-size: 14px; margin-top: auto;">Ver los números</a>
+        </section>
+
+        <section class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 16px; font-weight: 600;">Cómo está cada local</h2><span style="font-size: 12px; color: #6B7280;">costo confiable</span></div>
+          <sc-for list="{{places}}" as="p" hint-placeholder-count="4">
+            <a href="#" style="display: grid; grid-template-columns: 1fr 110px 44px; align-items: center; gap: 10px; font-size: 14px; color: {{p.ink}}; font-weight: {{p.weight}}; text-decoration: none; min-height: 32px;">
+              <span>{{p.name}}</span>
+              <span style="height: 10px; border-radius: 5px; background: #F1F2F4; display: block;"><span style="display: block; height: 10px; border-radius: 5px; background: #4F79C7; width: {{p.bar}};"></span></span>
+              <span style="text-align: right; font-variant-numeric: tabular-nums; color: #1F2937; font-weight: 400;">{{p.pct}}</span>
+            </a>
+          </sc-for>
+          <a href="#" style="font-size: 14px; margin-top: auto;">Comparar los locales</a>
+        </section>
+
+        <section class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 16px; font-weight: 600;">Tareas pendientes</h2><span style="font-size: 12px; color: #6B7280;">este local</span></div>
+          <sc-for list="{{tasks}}" as="t" hint-placeholder-count="3">
+            <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; border-bottom: 1px solid #E5E7EB; font-size: 14px; text-decoration: none;"><span>{{t.label}}</span><span style="color: #1F2937; font-variant-numeric: tabular-nums; font-weight: 500;">{{t.n}}</span></a>
+          </sc-for>
+          <div style="display: flex; justify-content: space-between; align-items: center; min-height: 36px; font-size: 14px;"><span>Revisiones esperando decisión</span><span class="chip" style="background: {{revBg}}; color: {{revInk}};">{{revText}}</span></div>
+          <p style="margin: 0; font-size: 12px; color: #6B7280;">Última importación: RECETARIO nonos.xlsx · Cancelada · 2/11/26</p>
+          <a href="#" style="font-size: 14px; margin-top: auto;">Ver las aprobaciones</a>
+        </section>
+      </div>
+
+      <!-- 5. Fila de abajo: ranking con botones + accesos con su número -->
+      <div style="display: grid; grid-template-columns: 5fr 7fr; gap: 16px; flex: 0 0 236px;">
+        <section class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div role="group" aria-label="Ranking" style="display: flex; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; width: max-content;">
+            <sc-for list="{{tabs}}" as="b" hint-placeholder-count="4">
+              <button onClick="{{b.pick}}" aria-pressed="{{b.on}}" style="height: 36px; padding: 0 12px; border: 0; border-right: 1px solid #E5E7EB; font: inherit; font-size: 13px; font-weight: 500; background: {{b.bg}}; color: {{b.ink}}; cursor: pointer;">{{b.label}}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{rankEmpty}}" hint-placeholder-val="{{false}}">
+            <p style="margin: 0; padding: 8px 0; font-size: 14px; color: #4B5563;"><span class="chip" style="background: #F1F2F4; color: #4B5563;">Sin datos</span> {{rankEmptyText}}</p>
+          </sc-if>
+          <sc-for list="{{rank}}" as="r" hint-placeholder-count="5">
+            <a href="#" style="display: flex; justify-content: space-between; min-height: 28px; align-items: center; font-size: 14px; border-bottom: 1px solid #E5E7EB; text-decoration: none;"><span>{{r.name}}</span><span style="color: #1F2937; font-variant-numeric: tabular-nums;">{{r.value}}</span></a>
+          </sc-for>
+        </section>
+
+        <nav aria-label="Accesos" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <sc-for list="{{shortcuts}}" as="s" hint-placeholder-count="6">
+            <a class="go" href="#">
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600;">
+                <span style="width: 32px; height: 32px; border-radius: 8px; background: #EAF0FB; color: #2F4F8F; display: flex; align-items: center; justify-content: center;">
+                  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{s.d1}}"/><path d="{{s.d2}}"/><path d="{{s.d3}}"/></svg>
+                </span>{{s.label}}</span>
+              <span style="display: flex; align-items: center; gap: 8px; font-size: 13px;"><span class="chip" style="background: {{s.bg}}; color: {{s.ink}};">{{s.state}}</span><span style="color: #6B7280;">{{s.text}}</span></span>
+            </a>
+          </sc-for>
+        </nav>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"escenario":{"editor":"enum","options":["Hoy","Con datos"],"default":"Hoy"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { tab: 'portion' }; }
+  renderVals() {
+    const full = (this.props.escenario ?? 'Hoy') === 'Con datos';
+    const ST = { ok: ['#DCFCE7', '#166534'], warn: ['#FEF3C7', '#92400E'], bad: ['#FEE2E2', '#991B1B'], none: ['#F1F2F4', '#4B5563'], info: ['#DBEAFE', '#1E40AF'] };
+    const kpi = (label, missing, total, noun) => {
+      if (total === 0) return { label, value: '—', of: 'Sin ' + noun, state: 'Sin datos', bg: ST.none[0], ink: ST.none[1] };
+      const s = missing === 0 ? ['Al día', ST.ok] : ['Faltan ' + missing, ST.warn];
+      return { label, value: String(missing), of: 'de ' + total, state: s[0], bg: s[1][0], ink: s[1][1] };
+    };
+    const D = full
+      ? { rec: 48, prep: 21, mp: 132, unap: 6, rev: 3, cost: 5, noprice: 9,
+          rel: [['Completo y verificado', 31, '#3E7D5B'], ['Con estimaciones', 8, '#4F79C7'], ['Desactualizado', 4, '#B7791F'], ['Incompleto', 3, '#B4553F'], ['Sin costo', 2, '#6B7280']],
+          places: [['Demo Café Centro', 85], ['Demo Parrilla Centro', 72], ['Demo Pastas Centro', 64], ['Demo Pastas Norte', 41]] }
+      : { rec: 4, prep: 0, mp: 3, unap: 4, rev: 0, cost: 4, noprice: 3,
+          rel: [['Completo y verificado', 0, '#3E7D5B'], ['Con estimaciones', 0, '#4F79C7'], ['Desactualizado', 0, '#B7791F'], ['Incompleto', 0, '#B4553F'], ['Sin costo', 4, '#6B7280']],
+          places: [['Demo Café Centro', 0], ['Demo Parrilla Centro', 0], ['Demo Pastas Centro', 0], ['Demo Pastas Norte', 0]] };
+    const RANK = {
+      portion: { label: 'Mayor costo por porción', empty: 'Todavía no hay costos por porción.', rows: [['Lomo a la pimienta', '$ 8.940'], ['Milanesa napolitana', '$ 5.320'], ['Sorrentinos de calabaza', '$ 3.980'], ['Tallarines al pomodoro', '$ 2.140'], ['Ñoquis de papa', '$ 1.870']] },
+      weight: { label: 'Materias primas que más pesan', empty: 'Todavía no hay costos para comparar.', rows: [['Lomo', '18,4 %'], ['Queso muzzarella', '9,7 %'], ['Aceite de oliva', '6,2 %'], ['Harina 000', '4,8 %'], ['Huevo', '4,1 %']] },
+      price: { label: 'Afectadas por precio', empty: 'Ningún precio cambió una receta en los últimos 30 días.', rows: [['Milanesa napolitana', '+ $ 410'], ['Sorrentinos de calabaza', '+ $ 220'], ['Flan con dulce de leche', '− $ 35']] },
+      used: { label: 'Lo más usado', empty: 'Todavía no hay recetas vigentes.', rows: [['Sal fina', '31'], ['Aceite de girasol', '24'], ['Salsa pomodoro', '12'], ['Cebolla', '11'], ['Ajo', '9']] }
+    };
+    const tab = this.state.tab;
+    const maxRel = Math.max(1, ...D.rel.map(r => r[1]));
+    const alerts = [];
+    if (D.cost) alerts.push(D.cost + ' recetas con costo por corregir');
+    if (D.noprice) alerts.push(D.noprice + ' materias primas sin precio');
+    if (D.rev) alerts.push(D.rev + ' revisiones esperan tu decisión');
+    const okOrWarn = (n, txt) => n === 0 ? { state: 'Al día', bg: ST.ok[0], ink: ST.ok[1], text: txt } : { state: String(n), bg: ST.warn[0], ink: ST.warn[1], text: txt };
+    const ic = {
+      book: ['M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z', 'M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z', ''],
+      box: ['M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z', 'm3.3 7 8.7 5 8.7-5', 'M12 22V12'],
+      cost: ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', ''],
+      check: ['M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2', 'M8 2h8v4H8z', 'm9 14 2 2 4-4'],
+      shield: ['M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z', 'm9 12 2 2 4-4', ''],
+      file: ['M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z', 'M14 2v4a2 2 0 0 0 2 2h4', 'M16 13H8']
+    };
+    const sc = (label, icon, s) => ({ label, d1: ic[icon][0], d2: ic[icon][1], d3: ic[icon][2], ...s });
+    const qualityMissing = D.unap + D.cost + D.noprice;
+    return {
+      summary: D.rec + ' recetas · ' + D.prep + ' preparaciones · ' + D.mp + ' materias primas',
+      hasAlert: alerts.length > 0, alert: alerts.join(' · ') + '.',
+      kpis: [kpi('Sin aprobar', D.unap, D.rec, 'recetas'), kpi('Pendientes de revisión', D.rev, D.rec, 'recetas'), kpi('Costo por corregir', D.cost, D.rec, 'recetas'), kpi('Materias primas sin precio', D.noprice, D.mp, 'materias primas')],
+      recipeTotal: D.rec,
+      reliability: D.rel.map(([label, n, color]) => ({ label, n, color, bar: Math.round(n * 100 / maxRel) + '%' })),
+      places: D.places.map(([name, pct], i) => ({ name, pct: pct + ' %', bar: pct + '%', ink: i === 0 ? '#1F2937' : '#3D5E9F', weight: i === 0 ? '600' : '400' })),
+      tasks: [{ label: 'Recetas con costo por corregir', n: D.cost }, { label: 'Recetas sin aprobar', n: D.unap }, { label: 'Materias primas sin precio', n: D.noprice }],
+      revText: D.rev ? D.rev + ' esperan' : 'Al día', revBg: D.rev ? ST.info[0] : ST.ok[0], revInk: D.rev ? ST.info[1] : ST.ok[1],
+      tabs: Object.entries(RANK).map(([k, v]) => ({ label: v.label, on: k === tab, bg: k === tab ? '#EAF0FB' : '#FFFFFF', ink: k === tab ? '#2F4F8F' : '#1F2937', pick: () => this.setState({ tab: k }) })),
+      rank: full ? RANK[tab].rows.map(([name, value]) => ({ name, value })) : [],
+      rankEmpty: !full, rankEmptyText: RANK[tab].empty,
+      shortcuts: [
+        sc('Recetas', 'book', okOrWarn(D.unap, D.unap ? 'sin aprobar' : D.rec + ' recetas')),
+        sc('Materias primas', 'box', okOrWarn(D.noprice, D.noprice ? 'sin precio' : D.mp + ' cargadas')),
+        sc('Costos', 'cost', okOrWarn(D.cost, D.cost ? 'por corregir' : 'todo con costo')),
+        sc('Aprobaciones', 'check', D.rev ? { state: String(D.rev), bg: ST.info[0], ink: ST.info[1], text: 'esperan tu decisión' } : { state: 'Al día', bg: ST.ok[0], ink: ST.ok[1], text: 'nada esperando' }),
+        sc('Calidad', 'shield', okOrWarn(qualityMissing, qualityMissing ? 'datos por completar' : 'todo completo')),
+        sc('Reportes', 'file', { state: 'Informes', bg: ST.none[0], ink: ST.none[1], text: 'costos y recetario' })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

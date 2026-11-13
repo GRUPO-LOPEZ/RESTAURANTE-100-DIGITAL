@@ -1,8 +1,16 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). En curso: ficha única de materia prima (ADR-0043, rama `feat/ficha-unica-materia-prima`), Prompt 3 de 3._
+_Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59), la ficha única de receta (PR #60) y la ficha única de materia prima (PR #61). Próximo: Inicio sin scroll._
 
-## Al retomar: ficha única de materia prima (rama `feat/ficha-unica-materia-prima`)
+## Próximo: Inicio sin scroll (pedido de Soy, 2026-11-13)
+
+- **Prompt:** `docs/prompts/2026-11-13-inicio-sin-scroll.md` (uno solo, rama `feat/inicio-sin-scroll`). Boceto aprobado en `docs/prompts/2026-11-13-boceto-inicio/`.
+- **Qué pide:** el Inicio entra entero en 1440 × 900 sin scroll: 4 KPIs, tres tarjetas compactas, un solo ranking con botones y 6 accesos grandes con su número del momento. Sin «+ Nueva receta».
+- **Para decidir con Soy:** si un indicador con muchas faltas pasa de Atención a Crítico. Hasta que decida, queda la regla de hoy.
+- **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
+- **Sigue:** Joaco fusiona el PR de este prompt y lo corre.
+
+## Antes: ficha única de materia prima (rama `feat/ficha-unica-materia-prima`, PR #61 fusionado)
 
 - **Qué se hizo** (ADR-0043, Prompt 3 de Soy): las 6 pestañas de la materia prima pasan a una sola ficha con índice, con la misma forma que la receta.
   - Se editan donde se ven, con una barra que guarda todo junto con un motivo: datos generales, otros nombres, congelada, conversiones y alérgenos.
