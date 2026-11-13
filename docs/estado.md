@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). En curso: Inicio sin scroll (ADR-0045)._
+_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). En curso: Inicio sin scroll (ADR-0045, PR #65); después, las fichas sin scroll._
 
 ## En curso: Inicio sin scroll (rama `feat/inicio-sin-scroll`, ADR-0045)
 
@@ -28,7 +28,15 @@ _Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - segunda corrida completa: 267 en verde, 15 salteadas y 2 fallas. (1) Con datos reales (importaciones y 26 recetas) el Inicio medía 923 px en 1440 × 900: se ajustaron la línea de importación (un renglón), la separación interna de las tarjetas y la línea de datos, y la prueba ahora controla también las 4 listas del ranking. (2) `recetas` «las fotos van con la versión»: «Salir» no navegó; no la toca este cambio y pasó al repetirla;
   - después del ajuste, `inicio` + `recetas` sobre la base que dejó la corrida completa: 20 en verde y 2 salteadas. **No se repitió la corrida completa entera después de ese último ajuste:** la confirma GitHub Actions en el PR.
 - **Capturas** (seed limpio, antes del último ajuste de 2 px): 1440, 1600, 1920 y celular.
-- **Sigue:** Joaco aprueba el commit, el push y el PR.
+- **PR #65 abierto (2026-11-13).** Se fusiona con GitHub Actions en verde.
+
+## Próximo: fichas sin scroll (pedido de Soy, 2026-11-13)
+
+- **Prompts:** `docs/prompts/2026-11-13-fichas-sin-scroll.md`, dos en orden: 1) ficha de materia prima (rama `feat/ficha-materia-prima-sin-scroll`); 2) ficha de receta (rama `feat/ficha-receta-sin-scroll`). Boceto aprobado de la materia prima en `docs/prompts/2026-11-13-boceto-fichas-sin-scroll/`.
+- **Qué pide:** las dos fichas entran en 1440 × 900 sin scroll de página, con el mismo patrón que el Inicio. En la receta, la planilla de ingredientes es la única parte con scroll propio. Los alérgenos pasan a un botón por alérgeno que cambia de estado con cada clic.
+- **Orden:** primero el Inicio (reutilizan su regla de estado), después Prompt 1 y después Prompt 2.
+- **Bocetos aprobados de las dos fichas** en `docs/prompts/2026-11-13-boceto-fichas-sin-scroll/` (materia prima y receta).
+- **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
 
 ## Antes: rubro con precios y edición de productos de compra (rama `feat/rubro-y-producto-de-compra`, PR #64 fusionado)
 
