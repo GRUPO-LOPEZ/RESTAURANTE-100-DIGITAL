@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import { BookOpen, ClipboardCheck, History, KeyRound, Users } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
-import { HomeBoardView } from "@/components/home-board";
+import { DataLine, HomeBoardView } from "@/components/home-board";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { pickCostPlace } from "@/lib/costs";
@@ -11,11 +11,25 @@ import { first, getActiveRestaurantId, getUser, scopeLabel } from "@/lib/data";
 import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
 import { getQualityPlaces } from "@/lib/quality";
 
-// Inicio (panel del rediseño, ADR-0036): entender el estado del recetario en 5 segundos.
+type Params = PageProps<"/">["searchParams"];
+
+// Inicio (ADR-0045, pedido de Soy del 2026-11-13): un tablero que entra entero en una pantalla de computadora y se
+// entiende en 5 segundos. Quien no ve la calidad de datos (el cocinero) sigue con el Inicio simple.
 export default function InicioPage({ searchParams }: PageProps<"/">) {
   return (
     <AppShell
       title="Inicio"
+      fill
+      heading={
+        <Suspense fallback="Inicio">
+          <Greeting searchParams={searchParams} />
+        </Suspense>
+      }
+      description={
+        <Suspense fallback={null}>
+          <Description searchParams={searchParams} />
+        </Suspense>
+      }
       actions={
         <Suspense fallback={null}>
           <Actions searchParams={searchParams} />
@@ -29,17 +43,46 @@ export default function InicioPage({ searchParams }: PageProps<"/">) {
   );
 }
 
-// La acción principal: ir a lo que falta corregir en el local elegido.
-async function Actions({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+// El local del tablero: el de ?local= o el del selector global. Sin calidad de datos, ninguno. Lo usan el saludo, la
+// línea de datos, la acción y el tablero: se lee una sola vez por pedido.
+const boardPlace = cache(async (searchParams: Params) => {
   const session = await requireOperable();
   const menus = await getMenus();
-  if (!menus.quality) return null;
+  if (!menus.quality)
+    return { session, menus, places: [], place: null, params: await searchParams };
   const [places, activeId, params] = await Promise.all([
     getQualityPlaces(),
     getActiveRestaurantId(session.user_id),
     searchParams,
   ]);
-  const place = pickCostPlace(places, first(params.local), activeId);
+  return {
+    session,
+    menus,
+    places,
+    place: pickCostPlace(places, first(params.local), activeId),
+    params,
+  };
+});
+
+// «Hola, Sofía · Demo Pastas Centro»: el h1 de la pantalla.
+async function Greeting({ searchParams }: { searchParams: Params }) {
+  const { session, place } = await boardPlace(searchParams);
+  return (
+    <>
+      Hola, {displayName(session)}
+      {place ? <span className="font-normal text-ink-muted"> · {place.name}</span> : null}
+    </>
+  );
+}
+
+async function Description({ searchParams }: { searchParams: Params }) {
+  const { place } = await boardPlace(searchParams);
+  return place ? <DataLine placeId={place.id} /> : null;
+}
+
+// La única acción del encabezado: ir a lo que falta corregir en el local elegido.
+async function Actions({ searchParams }: { searchParams: Params }) {
+  const { place } = await boardPlace(searchParams);
   if (!place) return null;
   return (
     <Button asChild>
@@ -48,19 +91,29 @@ async function Actions({ searchParams }: { searchParams: PageProps<"/">["searchP
   );
 }
 
-async function Home({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
-  const session = await requireOperable();
-  const [me, menus, params] = await Promise.all([
-    getUser(session.user_id ?? ""),
-    getMenus(),
-    searchParams,
-  ]);
-  // El tablero, para quien entra a la calidad de datos. El cocinero ve el Inicio de siempre.
-  const [places, activeId] = menus.quality
-    ? await Promise.all([getQualityPlaces(), getActiveRestaurantId(session.user_id)])
-    : [[], null];
-  const place = pickCostPlace(places, first(params.local), activeId);
+async function Home({ searchParams }: { searchParams: Params }) {
+  const { session, menus, places, place, params } = await boardPlace(searchParams);
 
+  if (places.length > 0) {
+    return (
+      <HomeBoardView
+        places={places}
+        place={place}
+        ranking={first(params.ranking) ?? ""}
+        menus={{
+          recipes: menus.recipes,
+          ingredients: menus.catalog,
+          costs: menus.costs,
+          approvals: menus.approvals,
+          quality: menus.quality,
+          reports: menus.reports,
+        }}
+      />
+    );
+  }
+
+  // El Inicio simple: los roles de la persona y sus accesos.
+  const me = await getUser(session.user_id ?? "");
   const shortcuts = [
     {
       href: "/recetas",
@@ -101,32 +154,18 @@ async function Home({ searchParams }: { searchParams: PageProps<"/">["searchPara
 
   return (
     <>
-      {places.length > 0 ? (
-        <p className="text-base text-ink">
-          Hola, {displayName(session)}
-          <span className="text-ink-muted">
-            {(me?.roles ?? []).map(
-              (r) => ` · ${r.role_name}, ${scopeLabel(r.scope_type, r.scope_name)}`,
-            )}
-          </span>
-        </p>
-      ) : (
-        <Card className="flex flex-col gap-2">
-          <CardTitle>Hola, {displayName(session)}</CardTitle>
-          <CardDescription>Estos son tus roles y dónde los tenés.</CardDescription>
-          <ul className="flex flex-col gap-1">
-            {(me?.roles ?? []).map((r) => (
-              <li key={r.assignment_id} className="text-base text-ink">
-                {r.role_name}{" "}
-                <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-      {places.length > 0 ? (
-        <HomeBoardView places={places} place={place} approvals={menus.approvals} />
-      ) : null}
+      <Card className="flex flex-col gap-2">
+        <CardTitle>Tus roles</CardTitle>
+        <CardDescription>Estos son tus roles y dónde los tenés.</CardDescription>
+        <ul className="flex flex-col gap-1">
+          {(me?.roles ?? []).map((r) => (
+            <li key={r.assignment_id} className="text-base text-ink">
+              {r.role_name}{" "}
+              <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
       {shortcuts.length > 0 ? (
         <nav aria-label="Accesos" className="grid gap-4 sm:grid-cols-3">
           {shortcuts.map(({ href, label, text, Icon }) => (

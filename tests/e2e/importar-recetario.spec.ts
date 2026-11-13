@@ -108,5 +108,5 @@ test("la Cocinera no ve la importación", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Recetas" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Importaciones" })).toHaveCount(0);
   await page.goto("/recetas/importar");
-  await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^Hola, / })).toBeVisible();
 });

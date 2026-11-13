@@ -81,6 +81,7 @@ Cada estado sale de una regla verificable y cada tarjeta enlaza a los registros 
 
 - Espaciado en múltiplos de 4 px. Radio de 10 px en tarjetas (`rounded-md`) y 8 px en controles (`rounded-sm`). Bordes de 1 px.
 - Controles de 36 a 40 px de alto en la computadora; **44 px como mínimo en el celular** (táctil).
+  - Excepción (ADR-0045, aprobada por Joaco el 2026-11-13): en los **paneles de una pantalla** (el Inicio), en la computadora las filas de lista pueden medir 28 px y los enlaces «Ver …» y los botones del ranking, 32 px. Nunca menos de 24 px (WCAG 2.5.8) y siempre 44 px en el celular.
 - Sin degradados, sin sombras pesadas, sin fondos con imágenes ni texturas.
 - Íconos de trazo, del mismo set en todo el sistema (Lucide), **siempre con texto al lado** o con nombre accesible.
 

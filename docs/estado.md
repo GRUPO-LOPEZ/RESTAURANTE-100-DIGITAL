@@ -1,8 +1,36 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Próximo: Inicio sin scroll._
+_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). En curso: Inicio sin scroll (ADR-0045)._
 
-## En curso: rubro con precios y edición de productos de compra (rama `feat/rubro-y-producto-de-compra`)
+## En curso: Inicio sin scroll (rama `feat/inicio-sin-scroll`, ADR-0045)
+
+- **Qué se hizo** (pedido de Soy, `docs/prompts/2026-11-13-inicio-sin-scroll.md`; boceto aprobado):
+  - el Inicio entra entero en 1440 × 900, 1600 × 900 y 1920 × 1080, sin scroll (en 1440 termina en 889 px);
+  - encabezado «Hola, {nombre} · {local}» con la línea de datos; solo «Ver qué falta corregir» (sin «+ Nueva receta»);
+  - aviso «Requiere atención» en una franja de 44 px (suma las revisiones y el recálculo);
+  - 4 KPIs compactos; tres tarjetas: confiabilidad (5 filas), cada local (hasta 5) y tareas;
+  - un solo ranking con botones (`aria-pressed`, formulario GET `?ranking=`) y 6 accesos con su número del momento;
+  - Usuarios, Roles e Historial salen del Inicio; la Cocinera sigue con el Inicio simple;
+  - celular: aviso, KPIs de a 2, «Para decidir» y locales, sin ranking ni accesos grandes.
+  - Lista para Soy: `docs/modulos/10-inicio-sin-scroll-lista-de-cambios.md`.
+- **Regla única de lo que falta** (decisión de Soy): `missingState` en `lib/metrics.ts`. Más de la mitad = Crítico; la mitad o menos = Atención. La usan el Inicio, Calidad (la lista de indicadores antes era siempre amarilla) y los accesos.
+- **Sin cambios en la base.** Se borró `components/reliability-chart.tsx` (Recharts), que ya no usaba nadie.
+- **Pruebas:** Vitest nueva `home-shortcuts.test.ts` (10); Playwright `inicio.spec.ts` reescrita (7 por proyecto, con axe); el ingreso de las pruebas ahora espera el h1 «Hola, …» en lugar de «Inicio» (10 lugares, misma exigencia).
+- **Mi cuenta** suma «Tus roles» (los roles salieron del Inicio y no se veían en ningún otro lado).
+- **Revisores (2026-11-13):** seguridad apta (3 menores, corregido «Este local» en Tareas); diseño aprobable con cambios: corregidos los 2 medios (rol ARIA del formulario del ranking y la fila del medio que no ocupaba el alto en 1920) y casi todos los menores. La excepción de 28 y 32 px en este panel la aprobó Joaco y quedó en `design.md` (ADR-0045).
+- **Aprendido:**
+  - En una corrida completa, las pruebas anteriores cambian los números del seed y crean recetas para todo el grupo (llegan a cualquier local nuevo). Las pruebas del Inicio controlan la regla con los números de la pantalla, no números fijos.
+  - `lf-main` con `flex-1` ignora su alto: para que una pantalla ocupe la ventana hace falta `min-h-dvh` y `flex-none`.
+  - El 1440 × 900 de la prueba es la ventana entera; en un monitor real quedan unos 790 px útiles y ahí la página hace scroll (no encima nada).
+- **Corridas (2026-11-13, base recién recreada):**
+  - formato, lint, tipos, Vitest 375 de 375 y pgTAP 2534 de 2534 (incluida la `100`, que antes había fallado por velocidad con la máquina cargada);
+  - Playwright, primera corrida completa: 8 fallas, todas de pruebas de este cambio con números fijos o del rol en el Inicio. Se cambiaron para que controlen la regla y para buscar el rol en Mi cuenta;
+  - segunda corrida completa: 267 en verde, 15 salteadas y 2 fallas. (1) Con datos reales (importaciones y 26 recetas) el Inicio medía 923 px en 1440 × 900: se ajustaron la línea de importación (un renglón), la separación interna de las tarjetas y la línea de datos, y la prueba ahora controla también las 4 listas del ranking. (2) `recetas` «las fotos van con la versión»: «Salir» no navegó; no la toca este cambio y pasó al repetirla;
+  - después del ajuste, `inicio` + `recetas` sobre la base que dejó la corrida completa: 20 en verde y 2 salteadas. **No se repitió la corrida completa entera después de ese último ajuste:** la confirma GitHub Actions en el PR.
+- **Capturas** (seed limpio, antes del último ajuste de 2 px): 1440, 1600, 1920 y celular.
+- **Sigue:** Joaco aprueba el commit, el push y el PR.
+
+## Antes: rubro con precios y edición de productos de compra (rama `feat/rubro-y-producto-de-compra`, PR #64 fusionado)
 
 - **Qué se hizo** (ADR-0044, decisiones de Joaco del 2026-11-13):
   - Compras cambia el rubro de una materia prima con precios desde la ficha, con motivo y auditoría. La unidad de recetas sigue fija.
@@ -16,15 +44,7 @@ _Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Corrida (2026-11-13):**
   - suite completa (con la versión previa a las correcciones de los revisores): Playwright 265 en verde y 15 salteadas; pgTAP con 1 falla de rendimiento en `100_features` (bandeja de aprobaciones, 842 ms con la máquina cargada; no la toca este cambio);
   - con la versión final, sobre la base recién recreada: pgTAP completo en verde (incluida la `100`), formato, lint, tipos, Vitest 365 de 365, y `ficha-materia-prima` + `codigos` 14 en verde y 4 salteadas.
-- **Sigue:** Joaco aprueba el commit, el push y el PR.
-
-## Próximo: Inicio sin scroll (pedido de Soy, 2026-11-13)
-
-- **Prompt:** `docs/prompts/2026-11-13-inicio-sin-scroll.md` (uno solo, rama `feat/inicio-sin-scroll`). Boceto aprobado en `docs/prompts/2026-11-13-boceto-inicio/`.
-- **Qué pide:** el Inicio entra entero en 1440 × 900 sin scroll: 4 KPIs, tres tarjetas compactas, un solo ranking con botones y 6 accesos grandes con su número del momento. Sin «+ Nueva receta».
-- **Decisión de Soy (2026-11-13):** un indicador pasa a Crítico (rojo) cuando falta más de la mitad; con la mitad o menos, Atención.
-- **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
-- **Sigue:** Joaco fusiona el PR de este prompt y lo corre.
+- **PR #64 fusionado (2026-11-13).** Las pruebas del PR fallaron por la máquina de GitHub (el puerto 54324 de Mailpit ya estaba ocupado al levantar Supabase), no por el código: las migraciones se aplicaron bien. Se fusionó sin esperar el resultado; la corrida sobre `main` es la que vale. **Conviene esperar el verde antes de fusionar.**
 
 ## Antes: ficha única de materia prima (rama `feat/ficha-unica-materia-prima`, PR #61 fusionado)
 

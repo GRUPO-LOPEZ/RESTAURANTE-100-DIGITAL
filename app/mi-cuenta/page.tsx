@@ -17,10 +17,10 @@ import { ErrorState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
 import { FormInput } from "@/components/ui/form";
 import { requireOperable } from "@/lib/auth/session";
-import { first, formatDateTime, getMyAccount } from "@/lib/data";
+import { first, formatDateTime, getMyAccount, getUser, scopeLabel } from "@/lib/data";
 
-// Mi cuenta (sección 9; pestañas del rediseño, ADR-0036): datos propios, contraseña, doble verificación y
-// sesiones abiertas. La pestaña va en la dirección (?seccion=).
+// Mi cuenta (sección 9; pestañas del rediseño, ADR-0036): datos propios y roles, contraseña, doble verificación y
+// sesiones abiertas. Los roles se ven acá desde que el Inicio es un tablero (ADR-0045). La pestaña va en la dirección (?seccion=).
 export default function MiCuentaPage({ searchParams }: PageProps<"/mi-cuenta">) {
   return (
     <AppShell
@@ -74,7 +74,11 @@ async function Account({
 }) {
   // Primero la sesión (que sea operable); después los datos de la cuenta.
   const session = await requireOperable();
-  const [account, query] = await Promise.all([getMyAccount(), searchParams]);
+  const [account, me, query] = await Promise.all([
+    getMyAccount(),
+    getUser(session.user_id ?? ""),
+    searchParams,
+  ]);
   const wanted = first(query.seccion);
   const section: Section = SECTIONS.find((t) => t.key === wanted)?.key ?? "datos";
   const show = (key: Section) => section === key;
@@ -146,6 +150,27 @@ async function Account({
           <p className="text-sm text-ink-muted">
             El correo, el puesto y el área los cambia quien administra tu local.
           </p>
+        </Card>
+      ) : null}
+
+      {show("datos") ? (
+        <Card className="flex max-w-3xl flex-col gap-2">
+          <CardTitle>Tus roles</CardTitle>
+          <CardDescription>
+            Qué podés hacer y dónde. Los asigna quien administra tu local.
+          </CardDescription>
+          {(me?.roles ?? []).length === 0 ? (
+            <p className="text-base text-ink-muted">Todavía no tenés roles asignados.</p>
+          ) : (
+            <ul className="flex flex-col gap-1" aria-label="Tus roles">
+              {(me?.roles ?? []).map((r) => (
+                <li key={r.assignment_id} className="text-base text-ink">
+                  {r.role_name}{" "}
+                  <span className="text-ink-muted">· {scopeLabel(r.scope_type, r.scope_name)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       ) : null}
 

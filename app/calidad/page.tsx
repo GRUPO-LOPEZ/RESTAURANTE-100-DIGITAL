@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/ui/states";
 import { requireMenu } from "@/lib/auth/session";
 import { pickCostPlace } from "@/lib/costs";
 import { first, formatDateTime, getActiveRestaurantId } from "@/lib/data";
+import { missingState } from "@/lib/metrics";
 import {
   getQuality,
   getQualityCompare,
@@ -64,6 +65,8 @@ function IndicatorRow({
   placeId: string;
 }) {
   const missing = count.total - count.done;
+  // La regla única (lib/metrics.ts): falta más de la mitad = Crítico.
+  const state = missingState(missing, count.total);
   const body = (
     <>
       <span className="flex min-w-0 flex-col gap-1">
@@ -75,11 +78,7 @@ function IndicatorRow({
       </span>
       <span className="flex shrink-0 flex-wrap items-center justify-end gap-3">
         <ProgressBar value={count.done} total={count.total} label={indicator.label} decorative />
-        {count.total === 0 ? null : missing === 0 ? (
-          <Badge status="ok">Completo</Badge>
-        ) : (
-          <Badge status="warn">{missing === 1 ? "Falta 1" : `Faltan ${missing}`}</Badge>
-        )}
+        {count.total === 0 ? null : <Badge status={state.status}>{state.label}</Badge>}
         {missing > 0 ? <ChevronRight aria-hidden="true" className="size-5 text-ink-muted" /> : null}
       </span>
     </>
