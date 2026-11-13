@@ -6,7 +6,7 @@ _Última actualización: 2026-11-12. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 
 - **Prompt:** `docs/prompts/2026-11-13-inicio-sin-scroll.md` (uno solo, rama `feat/inicio-sin-scroll`). Boceto aprobado en `docs/prompts/2026-11-13-boceto-inicio/`.
 - **Qué pide:** el Inicio entra entero en 1440 × 900 sin scroll: 4 KPIs, tres tarjetas compactas, un solo ranking con botones y 6 accesos grandes con su número del momento. Sin «+ Nueva receta».
-- **Para decidir con Soy:** si un indicador con muchas faltas pasa de Atención a Crítico. Hasta que decida, queda la regla de hoy.
+- **Decisión de Soy (2026-11-13):** un indicador pasa a Crítico (rojo) cuando falta más de la mitad; con la mitad o menos, Atención.
 - **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
 - **Sigue:** Joaco fusiona el PR de este prompt y lo corre.
 

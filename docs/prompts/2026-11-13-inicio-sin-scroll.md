@@ -8,6 +8,7 @@ Un solo prompt, un solo PR. Boceto aprobado: `docs/prompts/2026-11-13-boceto-ini
 - Los indicadores se ven como tablero: 4 KPIs arriba y, debajo, tarjetas compactas.
 - Los accesos a otras pantallas son **botones grandes que muestran su número del momento** (por ejemplo, «4 · sin aprobar» o «Al día»), así se ve dónde hay algo para hacer.
 - **No va «+ Nueva receta»** en el Inicio. La única acción del encabezado es «Ver qué falta corregir».
+- **Un indicador pasa a rojo (Crítico) cuando falta más de la mitad;** con faltas menores queda en amarillo (Atención).
 - Accesos, en este orden: Recetas, Materias primas, Costos, Aprobaciones, Calidad y Reportes. Usuarios, Roles e Historial salen del Inicio porque ya están en la barra lateral.
 
 ---
@@ -47,9 +48,15 @@ DISPOSICIÓN EN COMPUTADORA (de arriba hacia abajo, ver Main.dc.html)
    aparece, va en esa misma franja y no agrega otra fila.
 3. Fila de 4 KPIs con el componente Metric de hoy (Sin aprobar, Pendientes de revisión, Costo por
    corregir, Materias primas sin precio): número de 32 px, «de N», estado con palabra y
-   «Ver cuáles». Las reglas de estado NO cambian (faltan > 0 = Atención, 0 = Al día/Completo,
-   denominador 0 = Sin datos). Soy no decidió todavía si «faltan muchas» pasa a Crítico: no lo
-   inventes.
+   «Ver cuáles». Regla de estado (decisión de Soy, 2026-11-13):
+     - denominador 0 → «Sin datos» (nunca 0 % ni «Al día»);
+     - faltan 0 → «Completo» (ok);
+     - faltan más de la mitad del total → «Faltan N» en Crítico (bad);
+     - faltan la mitad o menos → «Faltan N» en Atención (warn).
+   La regla vive en una sola función (con su prueba de Vitest, incluidos los bordes: exactamente
+   la mitad = Atención) y la usan los KPIs, los accesos y el celular. Si la misma regla se usa
+   en Calidad (components/quality-board.tsx, Missing), se aplica igual ahí: una sola regla en
+   todo el sistema.
 4. Fila de 3 tarjetas de igual ancho, que ocupan el alto que queda:
    a. «¿Qué tan confiable es el costo?»: deja de ser el gráfico de ancho completo. Pasa a 5 filas
       compactas (estado, barra, cantidad), cada una enlaza a sus recetas. Barras con los tonos
@@ -72,9 +79,10 @@ DISPOSICIÓN EN COMPUTADORA (de arriba hacia abajo, ver Main.dc.html)
       Aprobaciones, Calidad y Reportes, en ese orden. Cada uno lleva su ícono Lucide en un
       cuadrado nav-active, el nombre en 16 px semibold y una línea de estado con su número del
       momento, siempre con palabra:
-        - Recetas: «N sin aprobar» (warn) o «Al día» (ok) con «N recetas».
-        - Materias primas: «N sin precio» (warn) o «Al día».
-        - Costos: «N por corregir» (warn) o «Al día».
+        - Recetas: «N sin aprobar» o «Al día» (ok) con «N recetas».
+        - Materias primas: «N sin precio» o «Al día».
+        - Costos: «N por corregir» o «Al día».
+        (warn o bad según la misma regla de los KPIs)
         - Aprobaciones: «N esperan tu decisión» (info) o «Al día».
         - Calidad: «N datos por completar» (warn) o «Al día».
         - Reportes: sin número, chip neutro «Informes».
@@ -99,6 +107,7 @@ PRUEBAS
   * en 1440 × 900, 1600 × 900 y 1920 × 1080: el área principal no tiene scroll vertical
     (scrollHeight <= clientHeight), con el seed;
   * con un local sin recetas: los KPIs dicen «Sin datos» y nunca 0 % ni «Al día»;
+  * con el seed (4 de 4 sin aprobar): el KPI dice «Faltan 4» como Crítico;
   * el ranking cambia de lista con sus botones y aria-pressed refleja la elección;
   * cada acceso muestra su estado con palabra y lleva a su pantalla;
   * no aparece «+ Nueva receta»;

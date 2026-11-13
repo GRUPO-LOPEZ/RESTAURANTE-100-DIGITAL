@@ -152,7 +152,7 @@ class Component extends DCLogic {
     const ST = { ok: ['#DCFCE7', '#166534'], warn: ['#FEF3C7', '#92400E'], bad: ['#FEE2E2', '#991B1B'], none: ['#F1F2F4', '#4B5563'], info: ['#DBEAFE', '#1E40AF'] };
     const kpi = (label, missing, total, noun) => {
       if (total === 0) return { label, value: '—', of: 'Sin ' + noun, state: 'Sin datos', bg: ST.none[0], ink: ST.none[1] };
-      const s = missing === 0 ? ['Al día', ST.ok] : ['Faltan ' + missing, ST.warn];
+      const s = missing === 0 ? ['Al día', ST.ok] : missing / total > 0.5 ? ['Faltan ' + missing, ST.bad] : ['Faltan ' + missing, ST.warn];
       return { label, value: String(missing), of: 'de ' + total, state: s[0], bg: s[1][0], ink: s[1][1] };
     };
     const D = full
