@@ -6,7 +6,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(114);
+select plan(115);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -233,17 +233,22 @@ select is(pg_temp.msg(pg_temp.u(408), $$select recipes.deactivate_top_category('
 select is(pg_temp.msg(pg_temp.u(408), $$select recipes.deactivate_top_category('purchase', pg_temp.rub('MP-CAR'), 'Prueba', pg_temp.rub('MP-CAR'))$$),
   'Elegí otro rubro activo de la misma clase como destino.', 'ni el mismo rubro');
 -- Las materias primas de Carnes tienen precios. Pasarlas a otro rubro cambia cuándo un precio está desactualizado:
--- fuera de una baja lo decide Dirección (ADR-0029, prueba 211). Al dar de baja el rubro, las pasa Compras o
--- Dirección, cada uno por su cuenta (decisión de Joaco, 2026-11-10).
+-- Compras lo hace también fuera de una baja, con motivo y auditoría (ADR-0044; antes lo decidía Dirección). Al dar de
+-- baja el rubro, las pasa Compras o Dirección, cada uno por su cuenta (decisión de Joaco, 2026-11-10).
+create temporary table moved (id uuid);
+insert into moved
+select i.id from catalog.ingredients i
+  join catalog.purchase_products pp on pp.ingredient_id = i.id
+  join costing.price_records p on p.purchase_product_id = pp.id
+ where i.category_id = pg_temp.u(702) and p.deleted_at is null and i.deleted_at is null
+ limit 1;
 select is(pg_temp.msg(pg_temp.u(408), format($$select catalog.update_ingredient(%L, '{"category_id": "%s"}', 'Otro rubro')$$,
-                                            (select i.id from catalog.ingredients i
-                                               join catalog.purchase_products pp on pp.ingredient_id = i.id
-                                               join costing.price_records p on p.purchase_product_id = pp.id
-                                              where i.category_id = pg_temp.u(702) and p.deleted_at is null and i.deleted_at is null
-                                              limit 1),
-                                            pg_temp.rub('MP-PES'))),
-  'Esta materia prima ya tiene precios: cambiar su categoría cambia cuándo un precio está desactualizado, y eso lo decide Dirección General.',
-  'fuera de una baja, Compras sigue sin pasar a otro rubro una materia prima con precios');
+                                            (select id from moved), pg_temp.rub('MP-PES'))),
+  'sin error', 'fuera de una baja, Compras pasa a otro rubro una materia prima con precios (ADR-0044)');
+-- Vuelve a Carnes, para que la baja de abajo la mueva con el resto.
+select is(pg_temp.msg(pg_temp.u(408), format($$select catalog.update_ingredient(%L, '{"category_id": "%s"}', 'Vuelve')$$,
+                                            (select id from moved), pg_temp.u(702))),
+  'sin error', 'y la vuelve a Carnes');
 select ok(pg_temp.q(pg_temp.u(408), $$select recipes.deactivate_top_category('purchase', pg_temp.rub('MP-CAR'), 'Se junta con pescados',
                                                                               pg_temp.rub('MP-PES'))::text$$) ~ '^[1-9][0-9]*$',
   'al dar de baja Carnes, Compras pasa sus materias primas con precios a otro rubro');

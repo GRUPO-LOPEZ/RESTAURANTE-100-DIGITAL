@@ -111,6 +111,38 @@ test.describe("en la computadora", () => {
       // Sin precio: «Sin precio» con un local elegido arriba, o «Elegí un local» si no hay ninguno (nunca $ 0).
     ).toContainText(/Sin precio|Elegí un local/);
 
+    // Editar el producto (ADR-0044): sin precios se cambia todo. Se corrige la descripción y se deja de comprar: sale de
+    // la tabla y queda en «Ya no se compran», desde donde se vuelve a activar.
+    await sheetRows(page, "Productos de compra")
+      .filter({ hasText: `${name}, bolsa de 5 kg` })
+      .getByRole("button", { name: `Editar «${name}, bolsa de 5 kg»` })
+      .click();
+    const editProduct = page.getByRole("dialog", { name: "Editar producto de compra" });
+    await expect(editProduct.getByLabel("Contenido de cada unidad")).toBeEnabled();
+    await editProduct.getByLabel("Descripción", { exact: true }).fill(`${name}, bolsa de 10 kg`);
+    await editProduct.getByLabel("Contenido de cada unidad").fill("10");
+    await editProduct.getByRole("button", { name: "¿Se sigue comprando?" }).click();
+    await editProduct.getByLabel("Motivo").fill("Era de 10 kg (prueba)");
+    await axe(page);
+    await editProduct.getByRole("button", { name: "Guardar producto" }).click();
+    await expect(notice(page).filter({ hasText: "Producto de compra guardado." })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(sheetRows(page, "Productos de compra").filter({ hasText: name })).toHaveCount(0);
+    await page.getByText("Ya no se compran (1)").click();
+    const retired = page.getByRole("list", { name: "Productos que ya no se compran" });
+    await expect(retired).toContainText(`${name}, bolsa de 10 kg`);
+    await expect(retired).toContainText("10 kg");
+    await retired.getByRole("button", { name: `Editar «${name}, bolsa de 10 kg»` }).click();
+    const reactivate = page.getByRole("dialog", { name: "Editar producto de compra" });
+    await reactivate.getByRole("button", { name: "¿Se sigue comprando?" }).click();
+    await reactivate.getByLabel("Motivo").fill("Se vuelve a comprar (prueba)");
+    await reactivate.getByRole("button", { name: "Guardar producto" }).click();
+    await expect(notice(page).filter({ hasText: "Producto de compra guardado." })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(
+      sheetRows(page, "Productos de compra").filter({ hasText: `${name}, bolsa de 10 kg` }),
+    ).toHaveCount(1);
+
     // Las capturas, con la ficha como la edita Compras (con la barra de abajo).
     await axe(page);
     for (const width of [1440, 1600, 1920]) {
@@ -145,19 +177,41 @@ test.describe("en la computadora", () => {
     await noHorizontalScroll(page);
   });
 
-  test("con precios, la unidad de recetas y el rubro no se cambian (lo explica, no lo esconde)", async ({
+  test("con precios, la unidad de recetas queda fija, el rubro se cambia y el envase del producto también queda fijo", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await login(page, "compras@ejemplo.test");
-    await page.goto("/materias-primas/00000000-0000-4000-8000-000000000801");
-    await expect(page.getByRole("heading", { name: "Tomate perita", exact: true })).toBeVisible();
+    // La Cebolla tiene precios y ninguna otra prueba la usa: se le cambia el rubro y se le devuelve.
+    await page.goto("/materias-primas/00000000-0000-4000-8000-000000000802");
+    await expect(page.getByRole("heading", { name: "Cebolla", exact: true })).toBeVisible();
     await expect(page.getByLabel("Se usa en recetas en", { exact: true })).toBeDisabled();
-    await expect(page.getByLabel("Rubro", { exact: true })).toBeDisabled();
-    await page.getByRole("button", { name: /por qué no se cambia el rubro/ }).focus();
-    await expect(page.getByRole("tooltip")).toContainText("Ya tiene precios");
-    // La tabla de productos muestra el precio por kg del local elegido, o pide elegir uno.
-    await expect(sheetRows(page, "Productos de compra").first()).toBeVisible();
+    // ADR-0044: el rubro lo cambia Compras, con motivo, aunque tenga precios.
+    const rubro = page.getByLabel("Rubro", { exact: true });
+    await expect(rubro).toBeEnabled();
+    await rubro.selectOption({ label: "Carnes" });
+    await saveSheet(page, "Rubro con precios (prueba)");
+    await expect(page.getByText(/^Rubro: Carnes · /)).toBeVisible();
+    await page.getByLabel("Rubro", { exact: true }).selectOption({ label: "Verduras y frutas" });
+    await saveSheet(page, "Vuelve a su rubro (prueba)");
+    await expect(page.getByText(/^Rubro: Verduras y frutas · /)).toBeVisible();
+
+    // El producto con precios se edita, pero el envase y el contenido no: el tooltip explica por qué.
+    const row = sheetRows(page, "Productos de compra")
+      .filter({ has: page.getByRole("button", { name: /^Editar «/ }) })
+      .first();
+    await row.getByRole("button", { name: /^Editar «/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Editar producto de compra" });
+    await expect(dialog.getByLabel("Viene en")).toBeDisabled();
+    await expect(dialog.getByLabel("Contenido de cada unidad")).toBeDisabled();
+    await expect(dialog.getByLabel("Descripción", { exact: true })).toBeEnabled();
+    await dialog.getByRole("button", { name: /por qué no se cambia el envase/ }).focus();
+    await expect(page.getByRole("tooltip")).toContainText("agregá otro producto de compra");
     await axe(page);
+    for (const width of [1440, 1600, 1920]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.screenshot({ path: testInfo.outputPath(`producto-editar-${width}.png`) });
+    }
+    await page.keyboard.press("Escape");
   });
 });
 
@@ -170,6 +224,9 @@ test("en el celular la ficha es de consulta", async ({ page, isMobile }, testInf
   await expect(page.getByRole("textbox", { name: "Nombre", exact: true })).toBeHidden();
   await expect(page.getByRole("button", { name: "Guardar cambios" })).toBeHidden();
   await expect(page.getByRole("button", { name: "Agregar producto de compra" })).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: /^Editar «/ }).filter({ visible: true }),
+  ).toHaveCount(0);
   await expect(page.getByText(/^¿Se compra congelada\? (Sí|No)$/)).toBeVisible();
   await expect(sheetRows(page, "Productos de compra").first()).toBeVisible();
   await axe(page);

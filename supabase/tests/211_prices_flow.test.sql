@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(72);
+select plan(73);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -324,11 +324,16 @@ select is(pg_temp.decide(407, (select id from reqs where k = 'marca')), 'approve
 select is(pg_temp.resolve(404, 8, 201, 'price_level || '' '' || round(unit_cost * 1000, 2)'), 'brand 3000.00',
   'el local de esa marca lo hereda');
 
--- El contenido del envase queda congelado en cada precio: cambiar el producto no mueve el costo
--- (decisión de Joaco; revisión de seguridad).
+-- Con precios, el envase y el contenido del producto no cambian (ADR-0044).
+select throws_ok(format('update catalog.purchase_products set content_per_unit = 500 where id = %L', pg_temp.u(9801)),
+  '23514', 'Este producto ya tiene precios: el envase y el contenido no cambian. Si cambió, agregá otro producto de compra.',
+  'un producto con precios no cambia su contenido');
+-- Y si igual cambiara (defensa en profundidad: se apaga el trigger solo dentro de esta prueba), el contenido queda
+-- congelado en cada precio y el costo no se mueve (decisión de Joaco; revisión de seguridad).
 create temporary table before_change (unit_cost numeric);
 insert into before_change
 select pg_temp.resolve(407, 1, 203, 'unit_cost')::numeric;
+alter table catalog.purchase_products disable trigger guard_priced_product;
 update catalog.purchase_products set content_per_unit = 500 where id = pg_temp.u(9801);
 select is(pg_temp.resolve(407, 1, 203, 'unit_cost')::numeric, (select unit_cost from before_change),
   'cambiar el contenido del producto no cambia el costo de un precio aprobado');
@@ -354,18 +359,19 @@ select pg_temp.ingredient(11);
 select pg_temp.price(11, 1000, 1);
 insert into reqs values ('contenido', pg_temp.propose(408, 11, 1050, 0));
 update catalog.purchase_products set content_per_unit = 100 where id = pg_temp.u(9811);
+alter table catalog.purchase_products enable trigger guard_priced_product;
 select is(pg_temp.msg(pg_temp.u(407), format('select workflow.decide_approval(%L, ''approved'', null)', (select id from reqs where k = 'contenido'))),
   'La solicitud ya no se puede aplicar: el contenido del producto cambió desde que se propuso; proponé de nuevo. Hay que pedirla de nuevo.',
   'si el contenido del producto cambió entre proponer y aprobar, no se aplica');
 
--- Una materia prima con precios no cambia su unidad de uso, y su categoría la cambia quien configura precios.
+-- Una materia prima con precios no cambia su unidad de uso; su categoría la cambia quien edita el catálogo (ADR-0044).
 select throws_ok(format('update catalog.ingredients set recipe_unit_id = %L where id = %L', pg_temp.unit('ml'), pg_temp.u(9901)),
   '23514', 'Esta materia prima ya tiene precios: su unidad de uso no cambia (los precios se guardaron en esa unidad).',
   'una materia prima con precios no cambia su unidad de uso');
 select is(pg_temp.msg(pg_temp.u(408), format($$select catalog.update_ingredient(%L, '{"category_id": "%s"}', 'Otra categoría')$$,
                                             pg_temp.u(9901), pg_temp.u(708))),
-  'Esta materia prima ya tiene precios: cambiar su categoría cambia cuándo un precio está desactualizado, y eso lo decide Dirección General.',
-  'Compras no cambia la categoría de una materia prima con precios');
+  'sin error',
+  'Compras cambia la categoría de una materia prima con precios (ADR-0044)');
 
 -- Un producto cuyo contenido no se pasa a la unidad de uso ni siquiera se puede cargar: lo frena el catálogo
 -- (catalog.enforce_product_content, etapa 2.1 A). propose_price y el trigger de precios lo vuelven a controlar.

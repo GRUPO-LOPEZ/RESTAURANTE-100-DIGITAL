@@ -97,6 +97,8 @@ Además: arriba un índice, se edita donde se ve, y abajo una barra con contador
 
 ## Lo que queda
 
+> **Actualizado el 2026-11-13 (ADR-0044):** Joaco decidió los tres primeros puntos. Compras cambia el rubro con precios directo, «Proponer precio» sigue en el celular, y se armó la pantalla para editar un producto de compra (con precios, el envase y el contenido quedan fijos).
+
 - **Nadie tiene hoy `catalog.manage` y `prices.configure` a la vez,** ni el Superadministrador.
   - Por eso el rubro de una materia prima con precios solo cambia dando de baja su rubro (ADR-0038).
   - Es igual que antes de la ficha única. La prueba 300 controla la regla dándole a Compras los dos permisos dentro de la prueba.

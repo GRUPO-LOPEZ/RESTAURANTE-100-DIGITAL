@@ -1,6 +1,6 @@
 -- Ficha única de materia prima (ADR-0043, Prompt 3 de Soy del 2026-11-12): guardado en lote en una transacción con un
--- solo motivo, sin pisar lo de otra persona, con las reglas de siempre (catalog.manage, unidad de recetas fija y rubro
--- con prices.configure si tiene precios, aprobación para dejar de comprarla congelada) y la tabla de productos con su
+-- solo motivo, sin pisar lo de otra persona, con las reglas de siempre (catalog.manage, unidad de recetas fija con
+-- precios y el rubro editable por Compras desde el ADR-0044, aprobación para dejar de comprarla congelada) y la tabla de productos con su
 -- precio en el local, igual que el motor de costos.
 -- Personas del seed: Dirección 402, Gerente 404 (Demo Pastas Centro, 201), Jefe de Cocina 406 (201), Compras 408,
 -- Cocinera 409 (201), una cuenta sin membresía 499.
@@ -137,28 +137,21 @@ select is(pg_temp.msg(pg_temp.u(408), format($$select catalog.save_ingredient_sh
           'con precios, la unidad de recetas no cambia');
 
 -- ---------------------------------------------------------------------------
--- Rubro con precios: lo cambia quien tiene prices.configure (y, para editar la ficha, catalog.manage)
+-- Rubro con precios: lo cambia quien edita el catálogo (catalog.manage), con motivo y auditoría (ADR-0044)
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(408), format($$select catalog.save_ingredient_sheet(pg_temp.u(801), %L,
             jsonb_build_object('category_id', (select category_id from catalog.ingredients where id = pg_temp.u(811))),
-            null, null, null, null, 'Otro rubro (prueba)')::text$$, pg_temp.stamp(801))),
-          'ERROR 42501', 'Compras no cambia el rubro de una materia prima con precios');
+            null, null, null, null, 'Otro rubro (prueba)') ->> 'result'$$, pg_temp.stamp(801))),
+          'applied', 'Compras cambia el rubro de una materia prima con precios');
 -- Dirección tiene prices.configure pero no catalog.manage: no edita la ficha (como antes de la ficha única).
 select is(pg_temp.q(pg_temp.u(402), format($$select catalog.save_ingredient_sheet(pg_temp.u(801), %L,
             jsonb_build_object('category_id', (select category_id from catalog.ingredients where id = pg_temp.u(811))),
             null, null, null, null, 'Otro rubro (prueba)') ->> 'result'$$, pg_temp.stamp(801))),
           'denied', 'Dirección, sin catalog.manage, no edita la ficha');
--- Hoy ningún rol tiene los dos permisos (ni el Superadministrador tiene prices.configure): para probar la regla, Compras
--- recibe prices.configure solo dentro de esta prueba (se deshace al final).
-insert into core.role_permissions (role_id, permission_id)
-select r.id, p.id from core.roles r, core.permissions p where r.code = 'purchasing' and p.code = 'prices.configure';
-select is(pg_temp.q(pg_temp.u(408), format($$select catalog.save_ingredient_sheet(pg_temp.u(801), %L,
-            jsonb_build_object('category_id', (select category_id from catalog.ingredients where id = pg_temp.u(811))),
-            null, null, null, null, 'Otro rubro (prueba)') ->> 'result'$$, pg_temp.stamp(801))),
-          'applied', 'con catalog.manage y prices.configure, el rubro cambia');
-delete from core.role_permissions
- where role_id = (select id from core.roles where code = 'purchasing')
-   and permission_id = (select id from core.permissions where code = 'prices.configure');
+select ok(exists (select 1 from audit.audit_events
+                   where table_name = 'ingredients' and record_id = pg_temp.u(801) and reason = 'Otro rubro (prueba)'
+                     and old_values ->> 'category_id' is distinct from new_values ->> 'category_id'),
+          'el cambio de rubro queda en la auditoría, con su motivo');
 
 -- ---------------------------------------------------------------------------
 -- Se compra congelada: marcarla se aplica; desmarcarla pide aprobación (ADR-0040)
@@ -206,8 +199,10 @@ select throws_ok($$select catalog.save_ingredient_sheet(pg_temp.u(828), now(), n
 reset role;
 select is(pg_temp.q(pg_temp.u(406), $$select catalog.ingredient_sheet_state(pg_temp.u(828))::text$$), null,
           'el estado de la ficha es solo para quien la puede editar');
-select is(pg_temp.q(pg_temp.u(408), $$select (catalog.ingredient_sheet_state(pg_temp.u(801)) ->> 'category_locked')$$), 'true',
-          'a Compras, con precios, la ficha le avisa que el rubro está trabado');
+-- El Tomate perita tiene dos productos y solo DEMO-PROD-001 tiene precio en el seed.
+select is(pg_temp.q(pg_temp.u(408), $$select (catalog.ingredient_sheet_state(pg_temp.u(801)) -> 'priced_products')::text$$),
+          (select jsonb_build_array(id)::text from catalog.purchase_products where code = 'DEMO-PROD-001'),
+          'a Compras, la ficha le dice qué productos tienen precios (su envase no cambia), y solo esos');
 select is(pg_temp.q(pg_temp.u(408), $$select (catalog.ingredient_sheet_state(pg_temp.u(828)) ->> 'has_prices')$$), 'false',
           'sin precios, la unidad de recetas se puede cambiar');
 select is(pg_temp.q(pg_temp.u(408), $$select (catalog.ingredient_sheet_state(pg_temp.u(828)) ->> 'stamp')::timestamptz::text$$),
@@ -230,11 +225,11 @@ select is(pg_temp.q(pg_temp.u(404), $$select count(*)::text from costing.ingredi
           '0', 'un local fuera de su alcance tampoco');
 
 -- ---------------------------------------------------------------------------
--- La excepción de ADR-0038: si su rubro está dado de baja, Compras la puede sacar de ahí (la ficha no lo traba)
+-- Con el rubro dado de baja (ADR-0038) también: Compras la saca de ahí
 -- ---------------------------------------------------------------------------
 update catalog.ingredient_categories set is_active = false where id = pg_temp.u(701);
-select is(pg_temp.q(pg_temp.u(408), $$select (catalog.ingredient_sheet_state(pg_temp.u(802)) ->> 'category_locked')$$),
-          'false', 'con su rubro dado de baja, la ficha no traba el rubro');
+select is(pg_temp.q(pg_temp.u(408), $$select (catalog.ingredient_sheet_state(pg_temp.u(828)) -> 'priced_products')::text$$),
+          '[]', 'sin precios, ningún producto queda con el envase fijo');
 select is(pg_temp.q(pg_temp.u(408), format($$select catalog.save_ingredient_sheet(pg_temp.u(802), %L,
             jsonb_build_object('category_id', (select category_id from catalog.ingredients where id = pg_temp.u(811))),
             null, null, null, null, 'Sale del rubro dado de baja (prueba)') ->> 'result'$$, pg_temp.stamp(802))),

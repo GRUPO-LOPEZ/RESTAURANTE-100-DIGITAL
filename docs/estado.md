@@ -2,6 +2,22 @@
 
 _Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Próximo: Inicio sin scroll._
 
+## En curso: rubro con precios y edición de productos de compra (rama `feat/rubro-y-producto-de-compra`)
+
+- **Qué se hizo** (ADR-0044, decisiones de Joaco del 2026-11-13):
+  - Compras cambia el rubro de una materia prima con precios desde la ficha, con motivo y auditoría. La unidad de recetas sigue fija.
+  - Cada producto de compra tiene «Editar» en la computadora. Con precios, el envase y el contenido no cambian (lo hace cumplir la base, por cualquier camino); lo demás sí.
+  - «Ya no se compran (N)»: los productos desactivados se ven debajo de la tabla y se pueden volver a activar.
+  - «Proponer precio» sigue en el celular.
+  - Lista para Soy: `docs/modulos/09-rubro-con-precios-y-producto-de-compra-lista-de-cambios.md`.
+- **Base** (`20261130120000_rubro_y_producto.sql`): `guard_priced_ingredient` redefinida (solo la unidad), `category_locked_by_prices` borrada, trigger nuevo `guard_priced_product`, `ingredient_sheet_state` con `priced_products` y `price_record_defaults` con `for share` (la carrera entre cambiar el envase y cargar el primer precio).
+- **Pruebas:** pgTAP nueva `310_rubro_y_producto` (29) y ajustadas `211`, `250` y `300`, sin borrar ninguna; Vitest nueva `purchase-product.test.ts`; Playwright `ficha-materia-prima.spec.ts` ampliada.
+- **Revisores (2026-11-13):** base sin graves ni medios, seguridad apta y diseño aprobable. Lo corregido y lo que queda está en el ADR-0044.
+- **Corrida (2026-11-13):**
+  - suite completa (con la versión previa a las correcciones de los revisores): Playwright 265 en verde y 15 salteadas; pgTAP con 1 falla de rendimiento en `100_features` (bandeja de aprobaciones, 842 ms con la máquina cargada; no la toca este cambio);
+  - con la versión final, sobre la base recién recreada: pgTAP completo en verde (incluida la `100`), formato, lint, tipos, Vitest 365 de 365, y `ficha-materia-prima` + `codigos` 14 en verde y 4 salteadas.
+- **Sigue:** Joaco aprueba el commit, el push y el PR.
+
 ## Próximo: Inicio sin scroll (pedido de Soy, 2026-11-13)
 
 - **Prompt:** `docs/prompts/2026-11-13-inicio-sin-scroll.md` (uno solo, rama `feat/inicio-sin-scroll`). Boceto aprobado en `docs/prompts/2026-11-13-boceto-inicio/`.
