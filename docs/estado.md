@@ -1,6 +1,13 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). En curso: Inicio sin scroll (ADR-0045, PR #65); después, las fichas sin scroll._
+_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045). Próximo: las fichas sin scroll y después Costos sin scroll._
+
+## Después de las fichas: Costos sin scroll y selector de local (pedido de Soy, 2026-11-14)
+
+- **Prompt:** `docs/prompts/2026-11-14-costos-sin-scroll.md` (uno solo, rama `feat/costos-sin-scroll`). Boceto en `docs/prompts/2026-11-14-boceto-costos/`.
+- **Qué pide:** lista y detalle de Costos en una pantalla, con la regla del rojo; y que el selector de local muestre siempre lo aplicado (Soy veía «Demo Café Centro» arriba y Costos le pedía elegir un local).
+- **Pendiente de Soy:** si las pantallas sin scroll se diseñan para el alto real de un monitor de 1440 × 900 (unos 790 px útiles).
+- **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
 
 ## En curso: Inicio sin scroll (rama `feat/inicio-sin-scroll`, ADR-0045)
 

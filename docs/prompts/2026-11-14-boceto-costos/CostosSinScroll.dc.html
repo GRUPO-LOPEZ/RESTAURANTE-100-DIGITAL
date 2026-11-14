@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Costos sin scroll</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:7px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:14px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.tbl{width:100%;border-collapse:separate;border-spacing:0}
+.tbl th{position:sticky;top:0;background:#F7F8FA;font-size:13px;font-weight:500;color:#4B5563;text-align:left;padding:8px 16px;border-bottom:1px solid #E5E7EB;white-space:nowrap;z-index:1}
+.tbl td{font-size:14px;color:#1F2937;padding:6px 16px;border-bottom:1px solid #E5E7EB;font-variant-numeric:tabular-nums;height:40px;box-sizing:border-box}
+.r{text-align:right}
+.lnk{background:none;border:0;padding:0;font:inherit;font-weight:500;color:#3D5E9F;cursor:pointer;text-align:left}
+.lnk:hover{text-decoration:underline}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;display:flex;align-items:center;text-decoration:none;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Rubros</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#" class="on">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Usuarios</a><a href="#">Roles y permisos</a><a href="#">Historial</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Costos<sc-if value="{{isDetail}}" hint-placeholder-val="{{false}}"> › <span style="color: #1F2937; font-weight: 500;">{{d.name}}</span></sc-if></span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: #6B7280;">Local</span>
+        <span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Demo Café Centro ▾</span>
+        <span class="chip" style="background: #DCFCE7; color: #166534;">Aplicado</span>
+      </div>
+    </div>
+
+    <!-- LISTA -->
+    <sc-if value="{{isList}}" hint-placeholder-val="{{true}}">
+      <div style="flex: 1 1 auto; min-height: 0; height: 836px; padding: 16px 32px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+          <div style="display: flex; align-items: baseline; gap: 12px;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 600;">¿Cuánto cuesta cada receta?</h1>
+            <span style="font-size: 13px; color: #6B7280;">Demo Café Centro · actualizado el {{updated}} · sin IVA</span>
+          </div>
+          <a href="#" class="btn">Escenarios</a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;">
+          <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+            <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 13px; font-weight: 500; color: #6B7280;">{{k.label}}</span>
+              <span style="display: flex; align-items: baseline; gap: 8px;"><span style="font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2;">{{k.value}}</span><span style="font-size: 13px; color: #6B7280;">{{k.of}}</span></span>
+              <span style="display: flex; justify-content: space-between; align-items: center; gap: 8px;"><span class="chip" style="background: {{k.bg}}; color: {{k.ink}};">{{k.state}}</span><sc-if value="{{k.link}}" hint-placeholder-val="{{true}}"><button class="lnk" onClick="{{k.go}}" style="font-size: 13px; font-weight: 400;">{{k.linkText}}</button></sc-if></span>
+            </div>
+          </sc-for>
+        </div>
+
+        <section class="card" style="flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500;">Buscar
+              <input value="{{q}}" onChange="{{onQ}}" placeholder="Nombre o código" style="height: 36px; width: 240px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 400;">
+            </label>
+            <div role="group" aria-label="Confiabilidad" style="display: flex; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden;">
+              <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+                <button onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="height: 36px; padding: 0 12px; border: 0; border-right: 1px solid #E5E7EB; font: inherit; font-size: 13px; font-weight: 500; background: {{t.bg}}; color: {{t.ink}}; cursor: pointer;">{{t.label}}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{hasFilter}}" hint-placeholder-val="{{false}}"><button onClick="{{clear}}" style="height: 30px; padding: 0 10px; border-radius: 15px; border: 1px solid #E5E7EB; background: #EAF0FB; color: #2F4F8F; font: inherit; font-size: 13px; cursor: pointer;">{{filterText}} ✕</button></sc-if>
+          </div>
+          <div style="flex: 1 1 0; min-height: 0; overflow: auto; border-top: 1px solid #E5E7EB;">
+            <table class="tbl">
+              <caption style="position: absolute; left: -9999px;">Costos de las recetas</caption>
+              <thead><tr><th>Receta</th><th>Tipo</th><th class="r">Costo sin IVA</th><th class="r">Con IVA</th><th class="r">Por porción</th><th class="r">Por kg</th><th>Confiabilidad</th><th class="r">Actualizado</th></tr></thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+                  <tr>
+                    <td><button class="lnk" onClick="{{r.open}}">{{r.name}}</button> <span style="font-size: 12px; color: #6B7280;">{{r.code}}</span></td>
+                    <td style="color: #4B5563;">{{r.type}}</td>
+                    <td class="r" title="{{r.why}}">{{r.total}}</td><td class="r">{{r.gross}}</td><td class="r">{{r.portion}}</td><td class="r">{{r.perKg}}</td>
+                    <td><span class="chip" style="background: {{r.bg}}; color: {{r.ink}};">{{r.rel}}</span></td>
+                    <td class="r" style="color: #4B5563;">{{r.at}}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            <sc-if value="{{noRows}}" hint-placeholder-val="{{false}}">
+              <p style="margin: 24px 16px; font-size: 14px; color: #4B5563;"><span class="chip" style="background: #F1F2F4; color: #4B5563;">Sin datos</span> {{emptyText}}</p>
+            </sc-if>
+          </div>
+          <div style="flex: 0 0 44px; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; border-top: 1px solid #E5E7EB; font-size: 13px; color: #4B5563;"><span>Filas 1 a {{rowCount}} de {{rowCount}}</span><span>Filas por página: 15 ▾ · ‹ 1 ›</span></div>
+        </section>
+      </div>
+    </sc-if>
+
+    <!-- DETALLE -->
+    <sc-if value="{{isDetail}}" hint-placeholder-val="{{false}}">
+      <div style="flex: 1 1 auto; min-height: 0; height: 836px; padding: 16px 32px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <button class="lnk" onClick="{{back}}" style="font-size: 14px; font-weight: 400;">← Costos</button>
+            <h1 style="margin: 0; font-size: 20px; font-weight: 600;">{{d.name}}</h1>
+            <span style="font-size: 13px; color: #6B7280; font-variant-numeric: tabular-nums;">{{d.code}} · {{d.type}} · actualizado el {{d.at}}</span>
+            <span class="chip" style="background: {{d.bg}}; color: {{d.ink}};">{{d.rel}}</span>
+          </div>
+          <a href="#" class="btn">Ver la receta</a>
+        </div>
+        <sc-if value="{{d.hasMissing}}" hint-placeholder-val="{{false}}">
+          <div role="status" style="display: flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 8px; background: #FEF3C7; color: #92400E; font-size: 14px;"><b style="font-weight: 600; margin-right: 6px;">Falta un dato:</b> {{d.missingText}}. El total queda vacío hasta resolverlo.</div>
+        </sc-if>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;">
+          <sc-for list="{{d.kpis}}" as="k" hint-placeholder-count="4">
+            <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 13px; font-weight: 500; color: #6B7280;">{{k.label}}</span>
+              <span style="font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2;">{{k.value}}</span>
+              <span style="font-size: 12px; color: #6B7280;">{{k.detail}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; flex: 1 1 0; min-height: 0;">
+          <section class="card" style="display: flex; flex-direction: column; min-height: 0; overflow: hidden;">
+            <div style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 16px; font-weight: 600;">Línea por línea</h2><span style="font-size: 12px; color: #6B7280;">De la que más pesa a la que menos</span></div>
+            <div style="flex: 1 1 0; min-height: 0; overflow: auto; border-top: 1px solid #E5E7EB;">
+              <table class="tbl">
+                <thead><tr><th>Ingrediente</th><th class="r">Cantidad</th><th class="r">Costo</th><th>Peso en el costo</th><th class="r">Con IVA</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{d.lines}}" as="l" hint-placeholder-count="5">
+                    <tr>
+                      <td style="font-weight: 500;">{{l.item}}</td>
+                      <td class="r" style="color: #4B5563;">{{l.qty}}</td>
+                      <td class="r"><sc-if value="{{l.ok}}" hint-placeholder-val="{{true}}">{{l.cost}}</sc-if><sc-if value="{{l.missing}}" hint-placeholder-val="{{false}}"><span style="color: #991B1B; font-weight: 500;">— {{l.why}}</span></sc-if></td>
+                      <td style="width: 200px;"><span style="display: flex; align-items: center; gap: 8px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #F1F2F4; display: block;"><span style="display: block; height: 8px; border-radius: 4px; background: #4F79C7; width: {{l.bar}};"></span></span><span style="width: 48px; text-align: right; font-size: 13px;">{{l.share}}</span></span></td>
+                      <td class="r" style="color: #4B5563;">{{l.gross}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <div style="display: flex; flex-direction: column; gap: 14px; min-height: 0;">
+            <section class="card" style="padding: 12px 16px; display: flex; flex-direction: column; gap: 4px;">
+              <h2 style="margin: 0 0 4px; font-size: 16px; font-weight: 600;">Cómo fue cambiando</h2>
+              <sc-for list="{{d.history}}" as="h" hint-placeholder-count="3">
+                <div style="display: flex; justify-content: space-between; min-height: 32px; align-items: center; border-bottom: 1px solid #E5E7EB; font-size: 13px; font-variant-numeric: tabular-nums;"><span><b style="font-weight: 500;">{{h.total}}</b> · {{h.reason}}</span><span style="color: #6B7280;">{{h.at}}</span></div>
+              </sc-for>
+              <a href="#" style="font-size: 13px; margin-top: 4px;">Ver toda la historia</a>
+            </section>
+            <section class="card" style="padding: 12px 16px; display: flex; flex-direction: column; gap: 6px;">
+              <h2 style="margin: 0; font-size: 16px; font-weight: 600;">Para bajar el costo</h2>
+              <p style="margin: 0; font-size: 13px; color: #4B5563;">{{d.tip}}</p>
+              <a href="#" style="font-size: 13px;">Probarlo en Escenarios</a>
+            </section>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { open: null, tab: 'all', q: '' }; }
+  renderVals() {
+    const REL = { verified: ['Completo y verificado', '#DCFCE7', '#166534'], estimated: ['Con estimaciones', '#DBEAFE', '#1E40AF'], stale: ['Desactualizado', '#FEF3C7', '#92400E'], incomplete: ['Incompleto', '#FEE2E2', '#991B1B'] };
+    const IVA = 1.21;
+    const money = (n) => '$ ' + Math.round(n).toLocaleString('es-AR');
+    const R = [
+      ['PLA-PAS-0004', 'Lasaña de carne', 'Plato', 'verified', 6, 2.4, '14/11 08:12', [['Masa de lasaña', '600 g', 1188], ['Salsa bolognesa', '900 g', 6246], ['Salsa blanca', '600 g', 1926], ['Queso muzzarella', '400 g', 3920], ['Queso parmesano', '120 g', 2940]]],
+      ['PLA-PAS-0001', 'Sorrentinos de calabaza', 'Plato', 'verified', 4, 1.2, '14/11 08:12', [['Masa de pasta al huevo', '500 g', 990], ['Relleno de calabaza', '450 g', 1242], ['Salsa pomodoro', '300 g', 918], ['Queso parmesano', '40 g', 980]]],
+      ['PLA-CAR-0002', 'Milanesa napolitana', 'Plato', 'stale', 1, 0.45, '02/11 19:40', [['Nalga', '220 g', 2420], ['Pan rallado', '40 g', 128], ['Huevo', '1 unidad', 260], ['Queso muzzarella', '80 g', 784], ['Salsa pomodoro', '60 g', 184], ['Jamón cocido', '40 g', 560]]],
+      ['PLA-CAF-0002', 'Cortado', 'Plato', 'verified', 1, 0.09, '13/11 10:05', [['Café en grano', '14 g', 336], ['Leche entera', '60 ml', 87], ['Azúcar en sobre', '1 unidad', 32]]],
+      ['PLA-CAF-0003', 'Medialuna con manteca', 'Plato', 'estimated', 12, 0.6, '13/11 10:05', [['Harina 000', '500 g', 450], ['Manteca', '250 g', 2800], ['Azúcar', '80 g', 96], ['Levadura fresca', '25 g', 150], ['Huevo', '2 unidades', 520]]],
+      ['PLA-POS-0001', 'Flan con dulce de leche', 'Plato', 'verified', 8, 1.1, '12/11 16:30', [['Leche entera', '1 l', 1450], ['Huevo', '8 unidades', 2080], ['Azúcar', '250 g', 300], ['Dulce de leche', '320 g', 1536]]],
+      ['PLA-ENT-0001', 'Empanada de carne', 'Plato', 'incomplete', 12, 0.9, '14/11 08:12', [['Tapas de empanada', '12 unidades', 1680], ['Carne picada especial', '500 g', 4450], ['Cebolla', '300 g', 630], ['Comino', '3 g', null, 'sin precio vigente'], ['Huevo duro', '2 unidades', 520]]],
+      ['PRE-SAL-0001', 'Salsa bolognesa', 'Preparación', 'verified', null, 2.2, '14/11 08:12', [['Carne picada especial', '1 kg', 8900], ['Tomate triturado', '800 g', 2080], ['Cebolla', '300 g', 630], ['Zanahoria', '150 g', 225], ['Vino tinto', '200 ml', 1000], ['Aceite de oliva', '40 g', 560]]],
+      ['PRE-SAL-0002', 'Salsa blanca', 'Preparación', 'incomplete', null, 1.1, '14/11 08:12', [['Leche entera', '1 l', null, 'falta la densidad'], ['Manteca', '60 g', 672], ['Harina 000', '60 g', 54], ['Nuez moscada', '1 g', 60]]],
+      ['PRE-MAS-0001', 'Masa de pasta al huevo', 'Preparación', 'estimated', null, 1.0, '13/11 10:05', [['Harina 000', '700 g', 630], ['Huevo', '6 unidades', 1560], ['Sal fina', '5 g', 5]]],
+      ['PRE-FON-0001', 'Fondo oscuro', 'Preparación', 'stale', null, 3.0, '30/10 07:00', [['Huesos de ternera', '2 kg', 3600], ['Cebolla', '300 g', 630], ['Zanahoria', '200 g', 300], ['Tomate perita', '200 g', 480]]]
+    ].map(([code, name, type, rel, portions, kg, at, lines]) => {
+      const miss = lines.find(l => l[2] == null);
+      const total = miss ? null : lines.reduce((s, l) => s + l[2], 0);
+      return { code, name, type, rel, portions, kg, at, lines, miss, total };
+    });
+    const { tab, q, open } = this.state;
+    const total = R.length;
+    const n = (k) => R.filter(r => r.rel === k).length;
+    const stale = n('stale'), incomplete = n('incomplete'), upToDate = total - stale - incomplete;
+    // Regla única (decisión de Soy): falta más de la mitad = Crítico; la mitad o menos = Atención; nada = Al día.
+    const ST = { ok: ['#DCFCE7', '#166534'], warn: ['#FEF3C7', '#92400E'], bad: ['#FEE2E2', '#991B1B'] };
+    const rule = (missing) => missing === 0 ? ['Al día', ST.ok] : missing * 2 > total ? ['Faltan ' + missing, ST.bad] : ['Faltan ' + missing, ST.warn];
+    const k1 = rule(total - upToDate), k2 = rule(stale), k3 = rule(incomplete);
+    const dishes = R.filter(r => r.portions && r.total != null).map(r => ({ r, pp: r.total / r.portions })).sort((a, b) => b.pp - a.pp);
+    const top = dishes[0];
+    const kpis = [
+      { label: 'Recetas al día', value: String(upToDate), of: 'de ' + total, state: k1[0], bg: k1[1][0], ink: k1[1][1], link: false },
+      { label: 'Desactualizadas', value: String(stale), of: 'de ' + total, state: stale ? k2[0].replace('Faltan', 'Vencidas:') : 'Ninguna', bg: k2[1][0], ink: k2[1][1], link: stale > 0, linkText: 'Ver cuáles', go: () => this.setState({ tab: 'stale' }) },
+      { label: 'Incompletas', value: String(incomplete), of: 'de ' + total, state: incomplete ? k3[0].replace('Faltan', 'Sin total:') : 'Ninguna', bg: k3[1][0], ink: k3[1][1], link: incomplete > 0, linkText: 'Ver cuáles', go: () => this.setState({ tab: 'incomplete' }) },
+      { label: 'Mayor costo por porción', value: money(top.pp), of: '', state: top.r.name, bg: '#F1F2F4', ink: '#4B5563', link: true, linkText: 'Ver', go: () => this.setState({ open: top.r.code }) }
+    ];
+    const tabsDef = [['all', 'Todas · ' + total], ['verified', 'Completo'], ['estimated', 'Con estimaciones'], ['stale', 'Desactualizado · ' + stale], ['incomplete', 'Incompleto · ' + incomplete]];
+    const tabs = tabsDef.map(([key, label]) => ({ label, on: tab === key, bg: tab === key ? '#EAF0FB' : '#FFFFFF', ink: tab === key ? '#2F4F8F' : '#1F2937', pick: () => this.setState({ tab: key }) }));
+    const qq = q.trim().toLowerCase();
+    const shown = R.filter(r => (tab === 'all' || r.rel === tab) && (!qq || r.name.toLowerCase().includes(qq) || r.code.toLowerCase().includes(qq)));
+    const rows = shown.map(r => ({
+      name: r.name, code: r.code, type: r.type, rel: REL[r.rel][0], bg: REL[r.rel][1], ink: REL[r.rel][2], at: r.at,
+      why: r.miss ? r.miss[0] + ': ' + r.miss[3] : '',
+      total: r.total == null ? '—' : money(r.total), gross: r.total == null ? '—' : money(r.total * IVA),
+      portion: r.total == null || !r.portions ? '—' : money(r.total / r.portions),
+      perKg: r.total == null ? '—' : money(r.total / r.kg),
+      open: () => this.setState({ open: r.code })
+    }));
+    const filters = [];
+    if (tab !== 'all') filters.push(tabsDef.find(t => t[0] === tab)[1].split(' · ')[0]);
+    if (qq) filters.push('«' + q + '»');
+    const cur = R.find(r => r.code === open);
+    let d = {};
+    if (cur) {
+      const t = cur.total;
+      const sorted = [...cur.lines].sort((a, b) => (b[2] ?? Infinity) - (a[2] ?? Infinity));
+      const big = t == null ? null : sorted.find(l => l[2] != null);
+      d = {
+        name: cur.name, code: cur.code, type: cur.type, at: cur.at, rel: REL[cur.rel][0], bg: REL[cur.rel][1], ink: REL[cur.rel][2],
+        hasMissing: !!cur.miss, missingText: cur.miss ? cur.miss[0] + ', ' + cur.miss[3] : '',
+        kpis: [
+          { label: 'Costo sin IVA', value: t == null ? '—' : money(t), detail: t == null ? 'Falta un dato' : 'Antes: ' + money(t * 0.94) },
+          { label: 'Con IVA', value: t == null ? '—' : money(t * IVA), detail: 'IVA 21 %' },
+          { label: 'Por porción', value: t == null || !cur.portions ? '—' : money(t / cur.portions), detail: cur.portions ? cur.portions + ' porciones' : 'Es una preparación' },
+          { label: 'Por kg', value: t == null ? '—' : money(t / cur.kg), detail: 'Rinde ' + cur.kg.toLocaleString('es-AR') + ' kg' }
+        ],
+        lines: sorted.map(([item, qty, cost, why]) => {
+          const share = cost == null || t == null ? null : cost * 100 / t;
+          return { item, qty, ok: cost != null, missing: cost == null, why: why || '', cost: cost == null ? '' : money(cost), gross: cost == null ? '—' : money(cost * IVA), share: share == null ? '—' : share.toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' %', bar: share == null ? '0%' : Math.round(share) + '%' };
+        }),
+        history: t == null
+          ? [{ total: 'Sin costo', reason: 'Versión nueva', at: cur.at }]
+          : [{ total: money(t), reason: 'Precio nuevo', at: cur.at }, { total: money(t * 0.94), reason: 'Actualización diaria', at: '01/11 06:00' }, { total: money(t * 0.9), reason: 'Versión nueva', at: '20/10 11:24' }],
+        tip: big ? big[0] + ' es el ' + Math.round(big[2] * 100 / t) + ' % del costo. Un cambio de precio o de cantidad ahí es lo que más mueve el total.' : 'Primero hay que completar el dato que falta.'
+      };
+    }
+    return {
+      isList: !cur, isDetail: !!cur, back: () => this.setState({ open: null }), updated: '14/11 08:12',
+      kpis, tabs, q, onQ: (e) => this.setState({ q: e.target.value }),
+      hasFilter: filters.length > 0, filterText: filters.join(' · '), clear: () => this.setState({ tab: 'all', q: '' }),
+      rows, noRows: rows.length === 0, rowCount: rows.length, emptyText: 'No hay recetas con esos filtros. Probá con otro nombre o confiabilidad.',
+      d
+    };
+  }
+}
+</script>
+</body>
+</html>
