@@ -548,9 +548,10 @@ export function DataSection({
           aria-invalid={bad("notas")}
           value={draft.data.notes}
           maxLength={1000}
-          rows={2}
+          // Un renglón de base: se estira con lo que sobra en la columna (la ficha llena tiene que entrar sin scroll).
+          rows={1}
           onChange={(e) => set("notes", e.target.value)}
-          className={cn("min-h-14 flex-1 resize-none", is("notes") && changedRing)}
+          className={cn("min-h-10 flex-1 resize-none", is("notes") && changedRing)}
         />
       </div>
     </div>
