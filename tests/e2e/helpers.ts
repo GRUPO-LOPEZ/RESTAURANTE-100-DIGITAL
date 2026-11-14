@@ -97,13 +97,29 @@ export async function openAction(page: Page, summary: string) {
 }
 
 // El aviso de la pantalla (no el anunciador de rutas de Next, que también es role=alert).
+// Los avisos que se ven. En las fichas sin scroll (ADR-0046) el aviso de guardado está arriba en el celular y en la barra
+// en la computadora: el de la otra versión queda oculto.
 export function notice(page: Page) {
-  return page.locator('[data-slot="notice"]');
+  return page.locator('[data-slot="notice"]:visible');
 }
 
 // Una pestaña de una ficha (rediseño, ADR-0036): de receta, o la que diga of ("materia prima", "persona",
 // "mi cuenta"). La pestaña queda en la dirección (?seccion=).
 export async function openSection(page: Page, name: string, of = "receta") {
+  if (of === "materia prima") {
+    // Ficha sin scroll (ADR-0046): no hay índice, todas las tarjetas están a la vista. «Dónde se usa» es el indicador
+    // «Recetas que la usan» (con «Ver cuáles»).
+    const card =
+      name === "Dónde se usa"
+        ? page.locator('[data-slot="kpi"]:visible', { hasText: "Recetas que la usan" })
+        : page.locator("section:visible", {
+            has: page.getByRole("heading", { level: 2, name, exact: true }),
+          });
+    // En el celular la ficha tiene scroll: se baja hasta la tarjeta. En la computadora ya está a la vista.
+    await card.first().scrollIntoViewIfNeeded();
+    await expect(card.first()).toBeInViewport();
+    return;
+  }
   const label = of.startsWith("mi ") ? `Secciones de ${of}` : `Secciones de la ${of}`;
   const tab = page
     .getByRole("navigation", { name: label })

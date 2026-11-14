@@ -154,13 +154,16 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
 
   await login(page, "compras@ejemplo.test");
   await page.goto(`/materias-primas/${ingredient}?seccion=compra`);
-  await page.locator("summary", { hasText: "Proponer precio" }).click();
-  await page.locator("#precio-producto").selectOption({ index: 1 });
-  await page.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
-  await page.locator("#precio-envase").fill(price);
-  await page.locator("#precio-motivo").fill("Precio de prueba automática");
-  await page.getByRole("button", { name: "Proponer precio" }).click();
+  // «Proponer precio» abre su panel (ficha sin scroll, ADR-0046), también en el celular.
+  await page.getByRole("button", { name: "Proponer precio" }).filter({ visible: true }).click();
+  const panel = page.getByRole("dialog", { name: "Proponer precio" });
+  await panel.locator("#precio-producto").selectOption({ index: 1 });
+  await panel.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
+  await panel.locator("#precio-envase").fill(price);
+  await panel.locator("#precio-motivo").fill("Precio de prueba automática");
+  await panel.getByRole("button", { name: "Proponer precio" }).click();
   await expect(notice(page).filter({ hasText: "Precio propuesto." })).toBeVisible();
+  await page.keyboard.press("Escape");
   await logout(page);
 
   await login(page, "controller@ejemplo.test", { mfa: true });
@@ -174,6 +177,11 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
   await expect(page.getByRole("heading", { name: /Resueltas/ })).toBeVisible();
 
   await page.goto(`/materias-primas/${ingredient}?seccion=compra`);
+  // El impacto de cada precio está en el panel de los productos.
+  await page
+    .getByRole("button", { name: /^Ver (el producto|los \d+ productos)$/ })
+    .filter({ visible: true })
+    .click();
   await page
     .getByRole("link", { name: /Ver el impacto/ })
     .first()
