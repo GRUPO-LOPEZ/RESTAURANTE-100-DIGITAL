@@ -81,7 +81,10 @@ Cada estado sale de una regla verificable y cada tarjeta enlaza a los registros 
 
 - Espaciado en múltiplos de 4 px. Radio de 10 px en tarjetas (`rounded-md`) y 8 px en controles (`rounded-sm`). Bordes de 1 px.
 - Controles de 36 a 40 px de alto en la computadora; **44 px como mínimo en el celular** (táctil).
-  - Excepción (ADR-0045, aprobada por Joaco el 2026-11-13): en los **paneles de una pantalla** (el Inicio), en la computadora las filas de lista pueden medir 28 px y los enlaces «Ver …» y los botones del ranking, 32 px. Nunca menos de 24 px (WCAG 2.5.8) y siempre 44 px en el celular.
+  - Excepción (ADR-0045, aprobada por Joaco el 2026-11-13; ampliada en ADR-0046): en los **paneles de una pantalla** (el Inicio) y en las **pantallas de carga sin scroll** (las fichas), en la computadora:
+    - 28 px: las filas de lista y los botones de una grilla de estados (por ejemplo, los alérgenos);
+    - 32 px: los enlaces «Ver …», los botones chicos de una tarjeta (ranking, «Editar» de una fila, quitar un chip) y los controles de un formulario angosto (36 px si entran).
+    - Nunca menos de 24 px (WCAG 2.5.8) y siempre 44 px en el celular.
 - Sin degradados, sin sombras pesadas, sin fondos con imágenes ni texturas.
 - Íconos de trazo, del mismo set en todo el sistema (Lucide), **siempre con texto al lado** o con nombre accesible.
 
@@ -100,6 +103,20 @@ Las reglas están en `CLAUDE.md` («Edición directa»): toggle de un clic para 
 - **C. Listados e informes**: filtros en una línea que se aplican solos (con etiquetas que se pueden quitar), pestañas de estado, tabla de ancho completo ordenable, paginación de 15 filas (10, 25, 50) con total. El detalle se abre en un panel lateral o una ficha con "← Volver", sin perder filtros ni página.
 
 Mismo lugar para los botones, misma lógica de filtros y mismos nombres para las mismas acciones en todo el sistema.
+
+## Pantallas de carga sin scroll (ADR-0046)
+
+Las fichas (materia prima y receta) y los paneles como el Inicio entran enteros en 1440 × 900. Todo nuevo tipo B sigue este patrón:
+
+1. **Encabezado en una línea:** «← Volver», nombre (h1 de 20 px, `xl`, no de 28), código · rubro · lo que lo define, y el estado con palabra (`AppShell` con `back` y `meta`). La acción secundaria (por ejemplo, Desactivar) es un botón a la derecha, no un desplegable. El aviso de guardado va en la barra de abajo, no en una fila arriba (en el celular, arriba).
+2. **4 indicadores arriba** con `Metric` (`compact`). No se repiten más abajo. La unidad va en `unit`, no dentro del valor; el motivo de un dato faltante se ve entero, en su renglón. En el celular van de a uno (los montos no entran de a dos). Si un indicador tiene su lista, «Ver cuáles» la abre en un panel (`action`).
+3. **Tarjetas en columnas** (`components/ui/tile.tsx`) que ocupan el alto que queda (`AppShell fill`). Se edita donde se ve. Lo que no entra en la tarjeta se edita en un panel corto que trabaja sobre el mismo borrador (cuenta en la barra y se guarda junto).
+4. **Las listas se cortan** en 3 a 5 filas con «Ver los N …» (`components/ui/short-list.tsx`), que abre el panel lateral. La pantalla no crece con los datos. «Ver los N» también puede estar con la lista entera a la vista, si el panel tiene más (editar, historial), y su número cuenta lo que el panel muestra.
+5. **Barra fija abajo:** contador, motivo obligatorio, Descartar y Guardar cambios.
+6. **Se prueba en 1440 × 900, 1600 × 900 y 1920 × 1080** (sin scroll vertical, con datos reales: los números de una corrida completa no son los del seed), **con un rol que edita y con uno que solo lee** (la lectura no puede ser más alta que la edición), y con las listas llenas (por ejemplo, 5 productos). En el celular es de consulta, con scroll y 44 px.
+
+- Los enlaces de antes (`?seccion=`, `#ancla`, Calidad) llevan el foco a su tarjeta y la marcan (`components/focus-target.tsx`; la tarjeta tiene `id` y `tabIndex=-1`).
+- Si algo no entra con datos reales, no se achica por debajo de los mínimos: se avisa y se decide qué sale (ADR-0046: «Dónde se usa» pasó al indicador «Recetas que la usan»).
 
 ## Accesibilidad (WCAG 2.2 AA)
 

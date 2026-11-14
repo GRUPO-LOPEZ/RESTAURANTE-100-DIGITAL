@@ -9,7 +9,9 @@ import { AttentionStrip, Missing, attentionParts } from "@/components/quality-bo
 import { Badge } from "@/components/ui/badge";
 import { Notice } from "@/components/ui/notice";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { ShortList } from "@/components/ui/short-list";
 import { EmptyState } from "@/components/ui/states";
+import { Tile } from "@/components/ui/tile";
 import { RELIABILITY, formatMoneyDifference, type Reliability } from "@/lib/cost-labels";
 import { getRecalcStatus } from "@/lib/costs";
 import { formatDate, formatDateTime, getInbox } from "@/lib/data";
@@ -63,45 +65,6 @@ const SHORTCUTS: { key: ShortcutKey; href: string; label: string; icon: NavIcon 
 ];
 
 export type HomeMenus = Record<ShortcutKey, boolean>;
-
-// Una tarjeta compacta: título de 16 px, un dato chico a la derecha y el enlace «Ver …» abajo.
-function Tile({
-  title,
-  aside,
-  footer,
-  className,
-  children,
-}: {
-  title: string;
-  aside?: string;
-  footer?: { href: string; label: string };
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section
-      aria-label={title}
-      className={cn(
-        "flex min-w-0 flex-col gap-1.5 rounded-md border border-line bg-surface p-4",
-        className,
-      )}
-    >
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-base font-semibold text-ink">{title}</h2>
-        {aside ? <span className="text-xs text-ink-muted">{aside}</span> : null}
-      </div>
-      {children}
-      {footer ? (
-        <Link
-          href={footer.href}
-          className="mt-auto inline-flex min-h-touch w-fit items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-8"
-        >
-          {footer.label}
-        </Link>
-      ) : null}
-    </section>
-  );
-}
 
 // Lo secundario no puede tirar el Inicio: es la pantalla por la que entra todo el mundo.
 async function safely<T>(load: () => Promise<T>): Promise<T | null> {
@@ -162,55 +125,57 @@ async function CompareTile({ placeId }: { placeId: string }) {
   if (!places) return <Notice status="warn">No pudimos comparar los locales.</Notice>;
   if (places.length < 2) return null;
   // Hasta 5 locales, siempre con el elegido: la tarjeta no crece con la cantidad de locales. El resto, en Calidad.
-  const shown = places.slice(0, COMPARE_ROWS);
-  const chosen = places.find((p) => p.id === placeId);
-  if (chosen && !shown.includes(chosen)) shown[COMPARE_ROWS - 1] = chosen;
+  const ordered = [...places];
+  const at = ordered.findIndex((p) => p.id === placeId);
+  if (at >= COMPARE_ROWS) ordered.splice(COMPARE_ROWS - 1, 0, ...ordered.splice(at, 1));
+  const shown = Math.min(places.length, COMPARE_ROWS);
   return (
     <Tile
       title="Cómo está cada local"
       aside={
-        places.length > shown.length
-          ? `${shown.length} de ${places.length} · costo confiable`
-          : "Costo confiable"
+        places.length > shown ? `${shown} de ${places.length} · costo confiable` : "Costo confiable"
       }
       footer={{ href: "/calidad", label: "Comparar los locales" }}
     >
-      <ul className="flex flex-col" aria-label="Costo confiable por local">
-        {shown.map((p) => {
+      <ShortList
+        label="Costo confiable por local"
+        items={ordered}
+        limit={COMPARE_ROWS}
+        itemKey={(p) => p.id}
+        empty={null}
+        renderItem={(p) => {
           const c = p.counts.find((x) => x.indicator === "recipe_cost");
           const current = p.id === placeId;
           const pct = qualityPercent(c?.done ?? 0, c?.total ?? 0);
           // Toda la fila es el enlace (44 px en el celular); la barra repite el número que el enlace ya dice.
           return (
-            <li key={p.id}>
-              <Link
-                href={`/?local=${p.id}`}
-                aria-current={current ? "true" : undefined}
-                className="flex min-h-touch items-center justify-between gap-3 text-sm underline-offset-4 hover:underline desk:min-h-7"
+            <Link
+              href={`/?local=${p.id}`}
+              aria-current={current ? "true" : undefined}
+              className="flex min-h-touch items-center justify-between gap-3 text-sm underline-offset-4 hover:underline desk:min-h-7"
+            >
+              <span
+                className={cn(
+                  "min-w-0 truncate",
+                  current ? "font-semibold text-ink" : "text-primary",
+                )}
               >
-                <span
-                  className={cn(
-                    "min-w-0 truncate",
-                    current ? "font-semibold text-ink" : "text-primary",
-                  )}
-                >
-                  {p.name}
-                  <span className="sr-only">
-                    {pct === null ? ": sin datos" : `: ${pct} % con costo confiable`}
-                  </span>
+                {p.name}
+                <span className="sr-only">
+                  {pct === null ? ": sin datos" : `: ${pct} % con costo confiable`}
                 </span>
-                <ProgressBar
-                  value={c?.done ?? 0}
-                  total={c?.total ?? 0}
-                  label={`Costo confiable en ${p.name}`}
-                  decorative
-                  className="shrink-0"
-                />
-              </Link>
-            </li>
+              </span>
+              <ProgressBar
+                value={c?.done ?? 0}
+                total={c?.total ?? 0}
+                label={`Costo confiable en ${p.name}`}
+                decorative
+                className="shrink-0"
+              />
+            </Link>
           );
-        })}
-      </ul>
+        }}
+      />
     </Tile>
   );
 }
@@ -388,24 +353,25 @@ async function Board({
       )}
     </div>
   );
-  const errorList = (limit: number, label: string) =>
-    errors.length === 0 ? (
-      <p className="text-sm text-ink-muted">No falta nada por corregir.</p>
-    ) : (
-      <ul className="flex flex-col divide-y divide-line" aria-label={label}>
-        {errors.slice(0, limit).map(({ key, label: item, count }) => (
-          <li key={key}>
-            <Link
-              href={`/calidad/${key}?local=${placeId}`}
-              className="flex min-h-touch items-center justify-between gap-4 text-sm underline-offset-4 hover:underline desk:min-h-7"
-            >
-              <span className="min-w-0 truncate text-primary">{item}</span>
-              <span className="shrink-0 font-medium text-ink tabular-nums">{count}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    );
+  // Las faltas que más pesan (hasta 3, o 2 en el celular), cada una con su enlace a Calidad.
+  const errorList = (limit: number, label: string) => (
+    <ShortList
+      label={label}
+      items={errors}
+      limit={limit}
+      itemKey={(e) => e.key}
+      empty={<p className="text-sm text-ink-muted">No falta nada por corregir.</p>}
+      renderItem={({ key, label: item, count }) => (
+        <Link
+          href={`/calidad/${key}?local=${placeId}`}
+          className="flex min-h-touch items-center justify-between gap-4 text-sm underline-offset-4 hover:underline desk:min-h-7"
+        >
+          <span className="min-w-0 truncate text-primary">{item}</span>
+          <span className="shrink-0 font-medium text-ink tabular-nums">{count}</span>
+        </Link>
+      )}
+    />
+  );
 
   return (
     <>

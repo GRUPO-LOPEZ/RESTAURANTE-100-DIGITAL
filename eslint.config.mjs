@@ -30,7 +30,15 @@ const eslintConfig = defineConfig([
     files: ["app/layout.tsx"],
     rules: { "no-restricted-syntax": "off" },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "lib/database.types.ts"]),
+  // Las copias de trabajo locales (git worktree) tienen su propio .next: no son parte del repositorio.
+  globalIgnores([
+    ".claude/worktrees/**",
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "lib/database.types.ts",
+  ]),
 ]);
 
 export default eslintConfig;

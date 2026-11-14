@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). En curso: Inicio sin scroll (ADR-0045, PR #65); después, las fichas sin scroll._
+_Última actualización: 2026-11-14. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). En curso: fichas sin scroll, Prompt 1 (materia prima, ADR-0046): suite completa en verde, PR abierto._
 
-## En curso: Inicio sin scroll (rama `feat/inicio-sin-scroll`, ADR-0045)
+## Antes: Inicio sin scroll (rama `feat/inicio-sin-scroll`, ADR-0045, PR #65 fusionado)
 
 - **Qué se hizo** (pedido de Soy, `docs/prompts/2026-11-13-inicio-sin-scroll.md`; boceto aprobado):
   - el Inicio entra entero en 1440 × 900, 1600 × 900 y 1920 × 1080, sin scroll (en 1440 termina en 889 px);
@@ -28,15 +28,35 @@ _Última actualización: 2026-11-13. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   - segunda corrida completa: 267 en verde, 15 salteadas y 2 fallas. (1) Con datos reales (importaciones y 26 recetas) el Inicio medía 923 px en 1440 × 900: se ajustaron la línea de importación (un renglón), la separación interna de las tarjetas y la línea de datos, y la prueba ahora controla también las 4 listas del ranking. (2) `recetas` «las fotos van con la versión»: «Salir» no navegó; no la toca este cambio y pasó al repetirla;
   - después del ajuste, `inicio` + `recetas` sobre la base que dejó la corrida completa: 20 en verde y 2 salteadas. **No se repitió la corrida completa entera después de ese último ajuste:** la confirma GitHub Actions en el PR.
 - **Capturas** (seed limpio, antes del último ajuste de 2 px): 1440, 1600, 1920 y celular.
-- **PR #65 abierto (2026-11-13).** Se fusiona con GitHub Actions en verde.
+- **PR #65 fusionado (2026-11-13)** con las pruebas en verde en el PR.
 
-## Próximo: fichas sin scroll (pedido de Soy, 2026-11-13)
+## En curso: fichas sin scroll — Prompt 1, ficha de materia prima (rama `feat/ficha-materia-prima-sin-scroll`, ADR-0046)
 
-- **Prompts:** `docs/prompts/2026-11-13-fichas-sin-scroll.md`, dos en orden: 1) ficha de materia prima (rama `feat/ficha-materia-prima-sin-scroll`); 2) ficha de receta (rama `feat/ficha-receta-sin-scroll`). Boceto aprobado de la materia prima en `docs/prompts/2026-11-13-boceto-fichas-sin-scroll/`.
-- **Qué pide:** las dos fichas entran en 1440 × 900 sin scroll de página, con el mismo patrón que el Inicio. En la receta, la planilla de ingredientes es la única parte con scroll propio. Los alérgenos pasan a un botón por alérgeno que cambia de estado con cada clic.
-- **Orden:** primero el Inicio (reutilizan su regla de estado), después Prompt 1 y después Prompt 2.
-- **Bocetos aprobados de las dos fichas** en `docs/prompts/2026-11-13-boceto-fichas-sin-scroll/` (materia prima y receta).
-- **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
+- **Pedido:** `docs/prompts/2026-11-13-fichas-sin-scroll.md` (dos prompts en orden; el 2, ficha de receta, va en `feat/ficha-receta-sin-scroll`, que sale de esta rama). Plan aprobado por Joaco el 2026-11-13.
+- **La rama sale de `feat/inicio-sin-scroll`** (usa su regla de colores y `AppShell fill`). El #65 ya está fusionado: al retomar, actualizar con `main` antes del PR.
+- **Hecho:**
+  - piezas comunes: `components/ui/tile.tsx`, `components/ui/short-list.tsx`, `components/focus-target.tsx`; `AppShell`/`PageHeader` con `back` y `meta`; `Kpi`/`Metric` con `action`; `ActionModal` con `variant="link"`, `icon="none"` y `size="sm"`; `BackLink` con `label`. El Inicio ya usa `Tile` y `ShortList`;
+  - la ficha (`app/materias-primas/[id]/page.tsx`, `components/ingredient-sheet/sheet-editor.tsx`, `components/ingredient-prices.tsx` con `part`): encabezado en una línea con «Desactivar» como botón, 4 indicadores, columnas 4 : 5 : 4, precios unidos con «Ver los N productos», mermas con su motivo, conversiones con panel sobre el borrador, alérgenos con un botón que cambia en cada clic y un solo «Origen de estos cambios»;
+  - **decisión de Joaco (2026-11-13):** «Dónde se usa» sale como tarjeta y pasa al indicador «Recetas que la usan» con «Ver cuáles» (con 14 alérgenos la tercera columna no entraba; el boceto tampoco);
+  - «Proponer precio» sigue en el celular (ADR-0044);
+  - `.claude/rules/design.md`: sección «Pantallas de carga sin scroll»; ADR-0046; lista para Soy en `docs/modulos/11-ficha-materia-prima-sin-scroll-lista-de-cambios.md`;
+  - Vitest: ciclo de alérgenos y origen común (`ingredient-sheet.test.ts`), `short-list.test.ts`; formato, lint y tipos en verde;
+  - Playwright ajustadas: `ficha-materia-prima` (más una prueba nueva de una pantalla y foco en la tarjeta), `materias-primas`, `mermas`, `rendimientos`, `precios`, `costos` y `openSection` en `helpers.ts`.
+- **Medido con el servidor de desarrollo (Cebolla, seed):** sin scroll en 1440 × 900, 1600 × 900 y 1920 × 1080.
+- **Revisiones (2026-11-14):** seguridad apta (corregido `FocusTarget` con un `#` mal armado; el Chef vuelve a ver el costo neto). Diseño: un grave (los montos se salían de la tarjeta) y varios medios, **todos corregidos** (detalle en el ADR-0046, «Después de las revisiones»). `design.md`: la excepción de 28 y 32 px se amplió a las pantallas sin scroll, con aclaraciones del patrón.
+- **El aviso de guardado** va en la barra de abajo en la computadora (con 5 productos, arriba hacía scroll); en el celular y para quien no edita, arriba. El helper `notice()` de las pruebas mira solo los avisos visibles.
+- **Últimos ajustes (2026-11-14):** el número del indicador compacto sin aire extra (`leading-none`), la ayuda de la unidad en una línea («Fija: tiene precios. Se calcula en gramos (g).») y el botón «+ Producto» (nombre accesible «Agregar producto de compra»).
+- **Corridas (2026-11-14), con la base recién recreada:**
+  - suite completa (`npm run test`): formato, lint y tipos en verde; Vitest 382 de 382; pgTAP en verde; Playwright 269 en verde, 16 salteadas y 1 falla;
+  - la falla fue `rubros` («un rubro con insumos pide el destino…», en la computadora). Esta rama no toca rubros, y en el celular pasó en la misma corrida. Corrida sola, 3 veces seguidas: 24 de 24 en verde. Es una prueba inestable: el panel no llegó a abrirse;
+  - la ficha entra sin scroll en 1440 × 900, 1600 × 900 y 1920 × 1080, con Compras (edita) y con la Chef (solo lee).
+- **Capturas:** `docs/capturas/ficha-materia-prima-sin-scroll/`. Compras editando la Cebolla en 1440, 1600 y 1920, el Gerente con precio de su local en 1440 y el celular.
+- **Para preguntar a Joaco (no es de esta rama, pasa igual en `main`):** la ficha elige el local entre los que dejan ver costos de recetas (`resolveCostPlace` usa `recipes.view_costs`). Compras ve precios pero no costos, y por eso nunca ve el precio de un local: aunque elija uno arriba, la ficha dice «Elegí un local arriba». ¿Compras tiene que ver el precio del local elegido?
+- **Pendiente:**
+  1. PR «feat(materias-primas): ficha en una pantalla sin scroll». Esperar el verde de Actions antes de fusionar.
+  2. **Con 14 alérgenos no está probado** (el seed tiene 8): mirarlo en staging.
+  3. Después, el Prompt 2 (receta), con su plan detallado.
+- **Queda para después:** entre 800 y 1279 px las tres columnas son angostas (no es un ancho objetivo).
 
 ## Antes: rubro con precios y edición de productos de compra (rama `feat/rubro-y-producto-de-compra`, PR #64 fusionado)
 
