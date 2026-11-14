@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
+import { CircleAlert, CircleCheck, Eye, Info, TriangleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,8 @@ const styles = {
   warn: { box: "bg-warn text-warn-ink", Icon: TriangleAlert },
   bad: { box: "bg-bad text-bad-ink", Icon: CircleAlert },
   info: { box: "bg-info text-info-ink", Icon: Info },
+  // Una versión en revisión (ADR-0047): la franja violeta de la ficha de receta.
+  review: { box: "bg-review text-review-ink", Icon: Eye },
 } as const;
 
 // Aviso en pastel con su texto oscuro y un ícono: el color nunca es la única señal.

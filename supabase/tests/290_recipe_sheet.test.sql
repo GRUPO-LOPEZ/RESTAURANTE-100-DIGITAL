@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(48);
+select plan(54);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -44,6 +44,31 @@ begin
     v := 'sin error';
   exception when others then
     v := sqlerrm;
+  end;
+  reset role;
+  perform set_config('request.jwt.claims', '', true);
+  return v;
+end
+$$;
+-- Cuánto tarda una consulta que devuelve un número, en milisegundos, con la sesión de una persona. Si la consulta falla o
+-- no devuelve p_expect, nulo (la prueba falla con un mensaje claro).
+create function pg_temp.ms(p_user uuid, p_sql text, p_expect bigint)
+returns numeric
+language plpgsql
+as $$
+declare
+  t0 timestamptz;
+  n  bigint;
+  v  numeric;
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', p_user, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  set local role authenticated;
+  begin
+    t0 := clock_timestamp();
+    execute p_sql into n;
+    v := case when n = p_expect then extract(epoch from clock_timestamp() - t0) * 1000 end;
+  exception when others then
+    v := null;
   end;
   reset role;
   perform set_config('request.jwt.claims', '', true);
@@ -168,6 +193,46 @@ select is(pg_temp.q(pg_temp.u(405), $$
     from costing.preview_sheet_lines(pg_temp.ver(1108, 'published'), pg_temp.u(201),
                                      jsonb_build_array(jsonb_build_object('ingredient_id', pg_temp.u(899), 'quantity', 50, 'unit', 'g')))$$),
   '0', 'una materia prima desactivada no se calcula');
+
+-- La grilla rápida (ADR-0047, migración 20261201120000): los permisos de una preparación se evalúan solo para la que la
+-- fila usa. Las reglas son las mismas: la preparación guardada pasa, la de otra marca y la receta misma no.
+select is(pg_temp.q(pg_temp.u(405), $$
+  select (count(*) = jsonb_array_length((select value from lines where name = 'guardadas')))::text
+    from costing.preview_sheet_lines(pg_temp.ver(1108, 'published'), pg_temp.u(201), (select value from lines where name = 'guardadas'))$$),
+  'true', 'las líneas guardadas, con su preparación, se calculan todas');
+select is(pg_temp.q(pg_temp.u(405), $$
+  select count(*)::text
+    from costing.preview_sheet_lines(pg_temp.ver(1108, 'published'), pg_temp.u(201),
+                                     jsonb_build_array(jsonb_build_object('sub_recipe_id', pg_temp.u(1108), 'quantity', 50, 'unit', 'g')))$$),
+  '0', 'la receta no se usa a sí misma como preparación');
+insert into lines
+select 'veinticinco', jsonb_agg(jsonb_build_object('ingredient_id', pg_temp.u(800 + o), 'quantity', 10, 'unit', 'g') order by o)
+  from generate_series(1, 25) o;
+select is(pg_temp.q(pg_temp.u(405), $$
+  select string_agg(line_order::text, ',' order by line_order)
+    from costing.preview_sheet_lines(pg_temp.ver(1108, 'published'), pg_temp.u(201),
+           (select value from lines where name = 'veinticinco') - 24
+             || jsonb_build_array(jsonb_build_object('sub_recipe_id', pg_temp.u(1112), 'quantity', 50, 'unit', 'ml')))$$),
+  (select string_agg(o::text, ',') from generate_series(1, 24) o),
+  '24 materias primas y una preparación de otra marca: pasan las 24, en su orden');
+-- Tope amplio contra una regresión: con estas mismas 25 materias primas, la función de 20261128 tardaba 4,3 s; ahora,
+-- unos 0,1 s. Además tienen que salir las 25 filas.
+select ok(pg_temp.ms(pg_temp.u(405), $$
+  select count(*) from costing.preview_sheet_lines(pg_temp.ver(1108, 'published'), pg_temp.u(201), (select value from lines where name = 'veinticinco'))$$, 25)
+  < 1000, 'la grilla calcula 25 filas en menos de 1 s');
+-- Una preparación desactivada no se calcula (se desactiva dentro de la prueba y vuelve a estar activa).
+update recipes.recipes set is_active = false where id = pg_temp.u(1106);
+select is(pg_temp.q(pg_temp.u(405), $$
+  select count(*)::text
+    from costing.preview_sheet_lines(pg_temp.ver(1108, 'published'), pg_temp.u(201),
+                                     jsonb_build_array(jsonb_build_object('sub_recipe_id', pg_temp.u(1106), 'quantity', 150, 'unit', 'g')))$$),
+  '0', 'una preparación desactivada no se calcula');
+update recipes.recipes set is_active = true where id = pg_temp.u(1106);
+select is(pg_temp.q(pg_temp.u(405), $$
+  select count(*)::text
+    from costing.preview_sheet_lines(pg_temp.ver(1108, 'published'), pg_temp.u(201),
+                                     jsonb_build_array(jsonb_build_object('sub_recipe_id', pg_temp.u(1106), 'quantity', 150, 'unit', 'g')))$$),
+  '1', 'la misma preparación, activa, sí se calcula');
 select is(pg_temp.q(pg_temp.u(405), $$
   select string_agg(dimension || ':' || has_density || ':' || has_unit_weight, ',' order by ingredient_id)
     from catalog.ingredient_unit_options(array[pg_temp.u(826), pg_temp.u(833)])$$),

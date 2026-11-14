@@ -179,9 +179,9 @@ test("la sub-receta muestra su rendimiento final y la merma de cocción, sin sup
     await expect(page.getByLabel("Unidad", { exact: true })).toHaveValue("kg");
   }
   // Lleva vino y aceite en ml sin densidad: el rendimiento no se inventa.
-  const loss = kpi(page, "Rendimiento (neto ÷ bruto)");
+  const loss = kpi(page, "Rendimiento");
   await expect(loss).toContainText("—");
-  await expect(loss).toContainText("Falta pasar algún ingrediente a gramos");
-  await expect(kpi(page, "Peso bruto total")).toContainText("—");
+  await expect(loss).toContainText(/no se pasan? a gramos/);
+  await expect(kpi(page, "Peso bruto → neto")).toContainText("—");
   await axe(page);
 });

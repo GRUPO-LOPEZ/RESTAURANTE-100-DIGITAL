@@ -79,14 +79,15 @@ test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", a
     // que la base rechace.
     const unit = page.getByLabel("Medida, fila 1", { exact: true });
     await expect(unit).toHaveValue("g");
+    // La planilla muestra la abreviatura (ADR-0047).
     await expect(unit.locator("option")).toHaveText([
       "Elegí",
-      "Gramo (g)",
-      "Kilogramo (kg)",
-      "Miligramo (mg)",
-      "Libra (lb)",
-      "Onza (oz)",
-      "Pizca",
+      "g",
+      "kg",
+      "mg",
+      "lb",
+      "oz",
+      "pizca",
     ]);
     await page.getByLabel("Cantidad, fila 1", { exact: true }).fill("180");
     // Una preparación va siempre en cantidad terminada: no se pregunta la base.
