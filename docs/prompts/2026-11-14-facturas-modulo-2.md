@@ -56,6 +56,41 @@ Se preguntaron con una recomendación y Soy las confirmó. Van al ADR del prompt
 
 Tablero de alarmas por perfil (al final del sistema), agente de carga de listas, OCR / ARCA, precios autocompletados en la OC, WhatsApp Business API, descuento de stock por ventas. Todo queda **preparado** (columnas, estados, cola de mensajes) pero no se construye.
 
+## Lo que muestran las facturas reales (33 comprobantes de Soy, 2026-11-14)
+
+Soy mandó dos PDF con 33 comprobantes reales de unos 30 proveedores de los tres locales. **Son proveedores reales que el sistema tiene que reconocer desde el primer día.** Los PDF tienen CUIT, domicilios, precios y firmas reales y el repositorio es público: **nunca se commitean, no van al seed ni a las capturas, y no se suben a ningún servicio.** Joaco los recibe aparte. Este resumen no tiene nombres, CUIT ni importes.
+
+Lo que cambia el diseño (cada punto está en el prompt que lo usa):
+
+1. **Hay seis clases de papel, no solo A, B y C:** factura A (la mayoría); factura/remito A (un solo papel que es las dos cosas); remito R (código 91, «no válido como factura», a veces con «valor declarado» y la factura llega después); remito electrónico harinero (código 993, con la factura enviada por mail); comprobante X (no fiscal, con el saldo de la cuenta corriente); y nota de pedido escrita a mano (puesto del mercado, sin CUIT, «no válido como factura»).
+2. **Mucho se factura por peso:** se piden piezas, cajas o unidades, pero se cobra por kg («8 piezas · 32,80 kg», «7 unidades / 130,05 kg», «5 cajas · 50 kg»). La línea tiene dos cantidades: unidades y kg facturados. El precio es por kg.
+3. **Descuentos por línea:** precio de lista, uno o dos % de bonificación (15, 45, 50, 65 %) y precio neto. Hay líneas con 99,99 % de bonificación (regalos), una línea «descuento por volumen» y bonificación general al pie.
+4. **Más impuestos que el IVA:** alícuotas de 10,5 % y 21 % mezcladas en la misma factura; líneas exentas; impuestos internos (bebidas, por línea); percepciones de IIBB de CABA o de Provincia, percepción de IVA (RG 3337, RG 5329) y «otros tributos»; ajuste por redondeo.
+5. **Líneas que no son mercadería:** flete, envío, «servicios administrativos», redondeo, envases retornables (barril) y un servicio de gestión y traslado.
+6. **Mucho no es comida:** limpieza (desengrasantes, bidones), descartables (bandejas, bobinas, guantes, sorbetes) y bebidas que se revenden (vinos, gaseosas, cerveza, agua). Hoy todo artículo de compra tiene que apuntar a una materia prima.
+7. **Quien recibe y quien factura pueden no coincidir:** un local recibe mercadería facturada a la razón social de otro local, y un proveedor usa el domicilio fiscal y otro el de entrega. Cada proveedor nos tiene con su propio número de cliente.
+8. **Autorización fiscal variada:** CAE (la mayoría), CAI (talonario preimpreso) y CAEA. Una factura «A» trae datos de emisor de ejemplo (CUIT 99-99999999-9, sin CAE): el sistema la tiene que frenar.
+9. **Vencimiento impreso:** casi todas traen la fecha de pago o la condición («7 días fecha factura», «30 días FF», «contado contra entrega», «transferencia en el día»).
+10. **Referencias cruzadas:** la factura nombra el remito, el pedido o un casillero «Orden de compra» vacío. Varias son de más de una página.
+11. **Sellos del local en el papel:** «{LOCAL} RECIBIDO» con fecha y firma (es la foto 2 del documento de Soy), «PAGADO EFECTIVO» (se pagó al recibir) y «PASADA» (ya se cargó). Dos traen el saldo de la cuenta corriente según el proveedor.
+12. **Cada proveedor tiene su código de artículo** en casi todas las facturas. Es la clave para reconocer un artículo la segunda vez sin preguntar.
+
+## Cuatro preguntas nuevas para Soy (salen de las facturas reales)
+
+Van con recomendación. Joaco no arranca el prompt que las usa sin la respuesta.
+
+4. **Impuestos internos y percepciones (Prompt 5).** **Recomendación:** los impuestos internos suman al costo, porque no se recuperan. Las percepciones de IIBB e IVA no son costo: son a cuenta de impuestos y se guardan aparte. Conviene confirmarlo con el contador.
+5. **Flete, envío y servicios (Prompt 5).** **Recomendación:** no se reparten entre los productos. Quedan como gasto de la factura y se ven en el tablero de compras.
+6. **Lo que no es comida (Prompt 2).** **Recomendación:** limpieza, descartables y bebidas que se revenden se cargan como materias primas en rubros que no van a recetas. Así entran igual en la OC, la recepción, la factura, los pagos y el gasto por rubro.
+7. **Pago en efectivo al recibir (Prompt 4).** **Recomendación:** en la recepción se marca «Se pagó en efectivo» con el importe, y queda como pago para que Compras lo confirme.
+
+## Carga real: cómo el sistema reconoce a los proveedores de Soy
+
+- **Nunca por el seed ni por una migración.** Los datos reales viven solo en producción, y Claude Code trabaja solo en desarrollo.
+- **Después del Prompt 1 en producción:** Compras carga los proveedores reales desde la ficha, con la lista privada que arma Joaco a partir de los PDF (fuera del repositorio). Joaco puede proponer en el plan del Prompt 1 una importación desde planilla, con el mismo patrón del importador de recetas (ADR-0027), si cargarlos a mano lleva mucho.
+- **Después del Prompt 2 en producción:** se cargan sus artículos con el código del proveedor y se mapean a las materias primas. Desde ahí, cada factura nueva de esos proveedores se reconoce sola.
+- **Para diseñar y probar:** el seed copia **la forma** de cada clase de papel (factura/remito por peso, remito R, comprobante X, nota manuscrita, factura con impuestos internos y percepciones) con proveedores, CUIT e importes inventados.
+
 ## Orden
 
 - **Prompt 0:** plan de la Fase 3 (solo documentos). Rama `docs/plan-fase-3-compras`.
@@ -115,8 +150,11 @@ EL PLAN TIENE
    (quién valida con datos de prueba).
 9. Riesgos (por ejemplo: productos de compra sin proveedor que ya existen; precios de prueba
    test_value que conviven con los de factura; la carrera entre dos cocineros que piden a la vez).
-10. Decisiones: las tres que Soy ya respondió (en este archivo) y las preguntas nuevas que
-    encuentres. Nada se decide en el plan: se pregunta.
+10. Decisiones: las tres que Soy ya respondió, las cuatro preguntas nuevas de las facturas reales
+    (en este archivo) y las que encuentres. Nada se decide en el plan: se pregunta.
+11. «Lo que muestran las facturas reales»: los 12 puntos de este archivo, uno por uno, con la tabla
+    o la columna que lo resuelve. Mirá vos los PDF que te pasa Soy (fuera del repositorio) y sumá lo
+    que falte. En el plan no va ningún nombre, CUIT ni importe real.
 
 ENTREGA
 - ADR nuevo (siguiente número libre): «Módulo de compras y facturas: alcance y reutilización».
@@ -162,6 +200,19 @@ BASE (primero, con pgTAP)
 - RLS en todo, columnas de control, auditoría, comentarios en español, reject_truncate.
 - Seed: los proveedores ficticios que ya existen quedan completos (ficha entera, 2 con «requiere
   aprobación», uno inactivo, uno con cuenta corriente a 30 días, uno contado). Ninguno real.
+
+FACTURAS REALES (sección del mismo nombre en este archivo)
+- El CUIT es opcional (el puesto del mercado no tiene) y, si se carga, se valida el dígito
+  verificador. Un CUIT inválido no se guarda.
+- «Cómo factura» admite: a, b, c, invoice_remito (factura/remito en un papel), remito_then_invoice
+  (remito y la factura después), non_fiscal (comprobante X) y handwritten_note (nota manuscrita).
+  Puede ser más de uno.
+- purchasing.supplier_customer_numbers: proveedor + local + nuestro número de cliente en ese
+  proveedor (cada uno nos tiene con otro número). Se ve en la ficha.
+- Condición de pago: además de contado y cuenta corriente, «contado contra entrega» y
+  «transferencia en el día»; los días se cuentan desde la fecha de la factura.
+- Carga inicial: decí en el plan si conviene una importación desde planilla para los proveedores
+  reales (unos 30), con el patrón del importador de recetas. Se usa solo en producción, por Compras.
 
 PANTALLAS
 - app/proveedores (tipo C): filtros en una línea (rubro, estado, canal), pestañas Activos /
@@ -259,6 +310,19 @@ BASE
 - Seed: artículos para las 50 materias primas repartidos entre los proveedores, 2 listas aceptadas,
   1 reemplazada, 1 vencida (frecuencia semanal, vigencia vieja) y 3 artículos sin mapear.
 
+FACTURAS REALES (sección del mismo nombre en este archivo)
+- Reconocer un artículo: primero por proveedor + código del proveedor (supplier_sku, único por
+  proveedor); si no hay código, por proveedor + descripción normalizada (mayúsculas, sin espacios
+  dobles ni puntos). Lo que no se reconoce va a la cola de mapeo.
+- Artículos que se facturan por peso: billed_by_weight boolean y estimated_weight_per_unit (por
+  ejemplo, «pieza de jamón ≈ 4,5 kg»). Se piden por unidad y se facturan por kg; el precio de lista
+  es por kg.
+- Lo que no es comida (decisión 6): limpieza, descartables y bebidas que se revenden se mapean a
+  materias primas de rubros marcados «no va a recetas» (decí en el plan si el rubro ya tiene algo
+  así o hace falta una columna). No aparecen al armar una receta.
+- Precio de lista con bonificación: el ítem guarda precio de lista y hasta dos % de bonificación;
+  el neto se calcula.
+
 PANTALLAS
 - Ficha de proveedor: el indicador «Lista de precios vigente» ya muestra fecha y estado (Al día /
   Vencida con la fecha / Sin datos). Tarjeta nueva «Lista de precios»: la vigente con hasta 5
@@ -338,6 +402,12 @@ BASE
   (purchasing), purchasing.record_order_news (purchasing, restaurant_manager).
 - Seed: 4 OC en distintos estados (borrador, pendiente de aprobación, enviada, con novedad).
 
+FACTURAS REALES (sección del mismo nombre en este archivo)
+- El mensaje de la OC lleva su número bien visible y pide «poner este número en Orden de compra»:
+  varios proveedores tienen ese casillero y hoy viene vacío.
+- Artículos por peso: se piden por unidad y la OC muestra los kg estimados («8 piezas ≈ 36 kg»).
+- Nuestro número de cliente en ese proveedor va en el mensaje.
+
 PANTALLAS
 - app/compras/ordenes/nueva (celular primero, también computadora):
   1. Elegir proveedor: tarjetas con nombre, días de pedido y entrega, y si requiere aprobación.
@@ -410,6 +480,20 @@ BASE
   inventory.view (restaurant_manager, executive_chef, head_chef, controller, brand_director,
   general_management, auditor).
 - Seed: 2 recepciones cerradas (una completa, una con faltante y uno de más) con sus movimientos.
+
+FACTURAS REALES (sección del mismo nombre en este archivo)
+- El papel que llega es de una de seis clases (factura A/B/C, factura/remito, remito R, remito
+  electrónico, comprobante X, nota manuscrita): botones segmentados al sacar la foto 1. Si es
+  factura o factura/remito, la recepción deja la factura en borrador para Compras con la foto.
+- Varias fotos por documento (hay facturas de varias páginas): «+ Otra página».
+- Artículos por peso: además de ✓ / ✕, se carga el peso recibido (lo que dice la balanza o el
+  papel). El stock entra con el peso, no con las piezas.
+- Llegan cosas sin OC (el mercado, el panadero): «Recibir sin OC» con proveedor y líneas; queda
+  marcado y avisa a Compras.
+- Pago al recibir (decisión 7): «Se pagó en efectivo» con el importe, que queda como pago para
+  confirmar por Compras.
+- Recepción hecha por un local para otro (un local recibe a nombre de otro): se elige el local
+  que recibe; la razón social facturada se controla en la factura.
 
 PANTALLAS
 - app/compras/recepcion (celular primero, un paso por pantalla, botones de 44 px o más, también
@@ -513,8 +597,38 @@ BASE
   factura). El cocinero y el chef no ven facturas.
 - Seed: 4 facturas ficticias: una A conforme (con sus precios en price_records), una B conforme,
   una observada por precio, una observada por artículo sin mapear; una NC que resuelve una
-  diferencia. Los importes son de prueba; **no se copian las facturas de referencia de Soy ni sus
-  fotos: tienen datos reales.** Sirven solo para diseñar el formulario.
+  diferencia. Los importes son de prueba. Sumá un comprobante inventado de cada clase de papel real:
+  factura/remito por peso con dos bonificaciones, factura con 10,5 % y 21 % mezclados e impuestos
+  internos y percepciones, comprobante X, nota manuscrita y remito R con la factura después.
+  **Los PDF reales de Soy no se copian ni se commitean: tienen datos reales.**
+
+FACTURAS REALES (sección del mismo nombre en este archivo)
+- Clase de comprobante (enum): invoice_a, invoice_b, invoice_c, invoice_remito_a (factura/remito),
+  non_fiscal (X) y handwritten_note. Los remitos R y el harinero se cargan en la recepción, no acá.
+  En non_fiscal y handwritten_note no hay CAE, IVA ni punto de venta obligatorios, y el costo es el
+  total (price_records con document_type no_invoice, como hoy).
+- Autorización: tipo (CAE, CAI, CAEA), número de 14 dígitos y su vencimiento. Obligatoria en las
+  clases fiscales.
+- CUIT del emisor: dígito verificador válido y tiene que ser el del proveedor elegido; si no, no se
+  guarda («El CUIT de la factura no es el del proveedor»). Una factura con CUIT 99-99999999-9 o sin
+  CAE se frena.
+- CUIT del receptor: se compara con la razón social del local que recibió. Si es la de otro local,
+  la factura queda observada con «Facturada a otra razón social» (pasa en la realidad: un local
+  recibe a nombre de otro).
+- Líneas: clase (product, freight, service, rounding, deposit, free_of_charge), unidades y cantidad
+  facturada (kg si va por peso), precio de lista, bonificación 1 y 2 (%), precio neto unitario,
+  alícuota por línea (0, 10,5, 21, 27 o exento) e impuestos internos por línea (internal_tax_amount).
+  Una línea con 99 % o más de bonificación es free_of_charge y no cambia ningún costo.
+- Pie: neto gravado por alícuota, exento, IVA por alícuota, impuestos internos, percepciones (tabla
+  purchasing.invoice_taxes: tipo enum iibb, vat_perception, municipal, other; jurisdicción; amount),
+  bonificación general, redondeo y total. Check: todo suma el total, con 0,01 de tolerancia.
+- Costos (decisiones 4 y 5): los impuestos internos de la línea suman al costo; las percepciones no
+  (quedan a cuenta de impuestos); flete y servicios no se reparten y se ven como gasto.
+- Vencimiento: el impreso en la factura; si no tiene, el calculado con la condición del proveedor.
+- Referencias: números de remito y de pedido que trae la factura, y la OC del sistema si está.
+- Saldo informado por el proveedor (opcional): se guarda para compararlo con la cuenta corriente.
+- Control de cantidad en artículos por peso: kg facturados contra kg recibidos (tolerancia 0,5 %,
+  configurable por grupo).
 
 PANTALLAS
 - app/compras/facturas (tipo C): pestañas por estado (Cargadas, Observadas, Conformes, Liberadas,
@@ -607,6 +721,14 @@ BASE
   purchasing.view_dashboard (los mismos más executive_chef sin importes).
 - Seed: 3 pagos (uno parcial, uno que paga dos facturas, uno con comprobante), una factura vencida
   y una que vence en 3 días.
+
+FACTURAS REALES (sección del mismo nombre en este archivo)
+- Los pagos en efectivo al recibir (Prompt 4) aparecen en «Pagos para confirmar»: Compras los
+  confirma o los corrige con motivo.
+- La cuenta corriente muestra al lado el último «saldo según el proveedor» cargado de una factura y
+  la diferencia con el nuestro, con estado (Al día si coincide, Atención si no).
+- El gasto por rubro separa lo que va a recetas de lo que no (limpieza, descartables, reventa), y
+  muestra aparte fletes y percepciones.
 
 PANTALLAS
 - app/compras/pagos (tipo C): pestañas «Por vencer», «Vencidas», «Pagadas»; filtros proveedor y
