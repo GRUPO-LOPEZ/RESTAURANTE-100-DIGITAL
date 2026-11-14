@@ -77,47 +77,8 @@ export async function createRecipeAction(
   redirect(codeChangedHref(`/recetas/${result.id}`, fields.data.expected_code, result.code));
 }
 
-// Buscador del editor: desde 3 letras, materias primas (por nombre, alias o código) y preparaciones
-// con versión vigente al alcance de la receta (ADR-0025). Un error se informa como error (no como
-// "no hay resultados").
-export type ComponentFound = { id: string; name: string; code: string; unit: string };
-export type ComponentSearch =
-  | { status: "ok"; ingredients: ComponentFound[]; preparations: ComponentFound[] }
-  | { status: "error" };
-
-export async function searchComponentsAction(
-  query: unknown,
-  recipeId: unknown,
-): Promise<ComponentSearch> {
-  const text = z.string().max(200).safeParse(query);
-  const recipe = uuid.safeParse(recipeId);
-  if (!text.success || !recipe.success) return { status: "error" };
-  const q = text.data
-    .replace(/[^\p{L}\p{N} -]/gu, "")
-    .trim()
-    .slice(0, 60);
-  if (q.length < 3) return { status: "ok", ingredients: [], preparations: [] };
-  const supabase = await createClient();
-  const [ingredients, preparations] = await Promise.all([
-    supabase.schema("catalog").rpc("search_components", { p_query: q, p_limit: 12 }),
-    supabase
-      .schema("recipes")
-      .rpc("search_subrecipes", { p_query: q, p_recipe_id: recipe.data, p_limit: 12 }),
-  ]);
-  if (ingredients.error || preparations.error) return { status: "error" };
-  return {
-    status: "ok",
-    ingredients: ingredients.data
-      .filter((c) => c.kind === "ingredient")
-      .map((c) => ({ id: c.id, name: c.name, code: c.code, unit: c.unit })),
-    preparations: preparations.data.map((p) => ({
-      id: p.id,
-      name: p.name,
-      code: p.code,
-      unit: p.unit,
-    })),
-  };
-}
+// El buscador de la planilla está en lib/recipe-search.ts y se usa por la ruta GET /recetas/buscar-componentes
+// (ADR-0047).
 
 // Variante local de una maestra: la base pide recipes.approve en ese local, copia la vigente y la
 // asigna. Al crearla, se va a su ficha para ajustarla.

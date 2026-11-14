@@ -4,7 +4,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { fillSheetRow, login, logout, notice, openAction, openSection, saveSheet } from "./helpers";
+import {
+  closePanels,
+  fillSheetRow,
+  login,
+  logout,
+  notice,
+  openAction,
+  openSection,
+  saveSheet,
+} from "./helpers";
 
 async function noHorizontalScroll(page: Page) {
   const overflow = await page.evaluate(
@@ -59,7 +68,7 @@ test("el Jefe de Cocina carga una receta y, aprobada, la cocina la ve sin costos
   await openSection(page, "Ingredientes y costos");
   await fillSheetRow(page, 1, "Harina 000", /Harina 000/, "250");
   await fillSheetRow(page, 2, "Aceite de oliva", /Aceite de oliva/, "30", "ml");
-  await expect(page.getByRole("columnheader", { name: "Costo en la receta" })).toHaveCount(0);
+  await expect(page.getByRole("columnheader", { name: "Costo", exact: true })).toHaveCount(0);
   await openSection(page, "Procedimiento");
   await page.getByRole("button", { name: "Agregar paso" }).click();
   await page.getByLabel("Qué se hace").first().fill("Mezclar la harina con el agua y el aceite.");
@@ -79,14 +88,19 @@ test("el Jefe de Cocina carga una receta y, aprobada, la cocina la ve sin costos
   await page.goto("/recetas");
   await page.goto(url);
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-  await expect(page.getByLabel("Tiempo total")).toHaveValue("35 min");
   await expect(page.getByLabel("Ingrediente, fila 1", { exact: true })).toHaveValue("Harina 000");
   await expect(page.getByLabel("Cantidad, fila 1", { exact: true })).toHaveValue("250");
   await expect(page.getByLabel("Cantidad, fila 2", { exact: true })).toHaveValue("30");
+  await expect(page.getByLabel("Peso de la porción (g)")).toHaveValue("50");
+  // El tiempo total y los pasos, en sus paneles (ADR-0047).
+  await page.getByRole("button", { name: /^(Editar datos|Ver todos los datos)/ }).click();
+  await expect(page.getByLabel("Tiempo total")).toHaveValue("35 min");
+  await closePanels(page);
+  await page.getByRole("button", { name: /^(Editar|Ver) los 2 pasos$/ }).click();
   await expect(page.getByLabel("Qué se hace").first()).toHaveValue(
     "Mezclar la harina con el agua y el aceite.",
   );
-  await expect(page.getByLabel("Peso de la porción (g)")).toHaveValue("50");
+  await closePanels(page);
   await axe(page);
   await noHorizontalScroll(page);
   await noRepeatedIds(page);
@@ -185,10 +199,10 @@ test("las fotos van con la versión: la Cocinera las ve cuando se publica", asyn
     await page.locator('[id$="-motivo-version"]').fill("Fotos del emplatado");
     await page.getByRole("button", { name: "Crear versión nueva" }).click();
   }
-  await expect(page.getByText("Versión en preparación", { exact: false })).toBeVisible({
-    timeout: 15_000,
-  });
-  // La foto se agrega desde el carrusel del encabezado.
+  // La versión en preparación se ve en el encabezado (ADR-0047): el chip «Borrador vN».
+  await expect(page.getByText(/^Borrador v\d+$/)).toBeVisible({ timeout: 15_000 });
+  // La foto se agrega desde el carrusel de «Datos generales» (con el panel de versiones cerrado).
+  await closePanels(page);
   await page.getByRole("button", { name: "Agregar foto" }).click();
   const dialog = page.getByRole("dialog", { name: "Agregar foto" });
   await dialog

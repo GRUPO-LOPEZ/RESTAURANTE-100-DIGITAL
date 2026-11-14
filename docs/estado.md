@@ -58,6 +58,57 @@ _Última actualización: 2026-11-14. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
   3. Después, el Prompt 2 (receta), con su plan detallado.
 - **Queda para después:** entre 800 y 1279 px las tres columnas son angostas (no es un ancho objetivo).
 
+## En curso (en paralelo): fichas sin scroll — Prompt 2, ficha de receta (rama `feat/ficha-receta-sin-scroll`, ADR-0047)
+
+- **Plan aprobado por Joaco (2026-11-14).** Se trabaja en un git worktree aparte (`.claude/worktrees/ficha-receta-sin-scroll`), porque otro chat cierra el Prompt 1 en la carpeta principal. Sale del commit `765b875` del Prompt 1.
+- **Hecho:**
+  - `app/recetas/[id]/page.tsx`:
+    - encabezado en una línea (`AppShell fill/back/meta/actions`);
+    - franja «En revisión» con quién pidió la versión, cuándo y el motivo (de `getInbox`);
+    - resumen con los paneles de Alérgenos, Dónde se usa y Versiones;
+    - `FocusTarget` para los enlaces de antes;
+    - se fue el índice de secciones.
+  - `components/recipe-sheet/sheet-editor.tsx`:
+    - 4 indicadores (`sheetKpis`);
+    - la planilla con scroll propio, con el encabezado y el total fijos;
+    - columna derecha de 300 px;
+    - paneles de datos y de pasos sobre el mismo borrador;
+    - la barra con el aviso de guardado.
+  - `ReviewBox` como barra (computadora) o tarjeta (celular); `PhotoCarousel compact`; `Notice status="review"`.
+  - Vitest nueva `recipe-sheet-kpis.test.ts` (12).
+  - Playwright: `ficha-receta.spec.ts` reescrita (25 ingredientes con el teclado y 12 pasos en 3 tamaños, enlaces de antes, panel de datos, 44 px en el celular). Ajustadas `helpers.ts` (`openSection` y `closePanels`), `recetas`, `respuestas`, `mermas` y `costos`.
+  - ADR-0047 y `docs/modulos/12-ficha-receta-sin-scroll-lista-de-cambios.md`.
+- **Medido con la pantalla real (`next start`, 2026-11-14):** sin scroll de página en 1440 × 900, 1600 × 900 y 1920 × 1080, con el chef y con el director con local.
+  - Para entrar hizo falta:
+    - que la planilla tenga base `0px` (no `0%`);
+    - que la columna derecha vaya en una capa `absolute`;
+    - tarjetas de 12 px de margen;
+    - pasos de una línea que se cortan solos.
+  - Con dinero, la planilla se desplaza de costado en 1440 y 1600, con Código e Ingrediente fijos (decisión de Joaco).
+- **Decisión de Joaco (2026-11-14): optimizar la grilla.**
+  - Migración `20261201120000_preview_sheet_fast.sql`: `preview_sheet_lines` bajó de 4,3 s a 73 ms con 25 filas. El join de la preparación evaluaba los permisos de todas las recetas por fila.
+  - La búsqueda va por la ruta GET `/recetas/buscar-componentes`: no hace cola detrás de las acciones.
+  - pgTAP `290` con 6 pruebas nuevas (54 en total, en verde). `db-reviewer`: sin graves ni medios.
+- **Confirmado por Joaco (2026-11-14):** quien no ve costos ve «Tiempo total» e «Ingredientes con peso» en lugar de los indicadores de plata.
+- **Corregido al probar:**
+  - la búsqueda que se reiniciaba con cada desplazamiento;
+  - controles de 40 px que debían ser de 32;
+  - medida y código cortados;
+  - el enlace «Variante de …» que se había perdido;
+  - «Editar el paso» en singular;
+  - el contraste de la sugerencia marcada;
+  - la columna derecha en pantallas bajas.
+- **Corrido (2026-11-14):**
+  - `db:reset` y pgTAP completo: 2538 de 2538.
+  - Lint y tipos en verde.
+  - Playwright en verde: `ficha-receta`, `recetas`, `subrecetas`, `respuestas`, `escalado`, `mermas` y `calidad`; `costos`, 14 de 14 con la base recién recreada.
+  - Con la base ya usada por otras corridas, `costos` falló 3 veces por datos cambiados por las pruebas anteriores.
+  - Un cálculo con una preparación (Salsa bolognesa) tarda 1,3 s en el motor de costos: no es de esta pantalla, queda anotado.
+- **Pendiente:**
+  1. Capturas hechas en `docs/capturas/ficha-receta-sin-scroll/`: plato en edición, plato en revisión y preparación en edición, en 1440, 1600 y 1920 (sin scroll de página), y plato en el celular.
+  2. Revisiones hechas (`db-reviewer`, `security-auditor` y `ui-reviewer`): los graves y los medios están corregidos. El detalle y los menores que quedan están en el ADR-0047, «Revisiones».
+  3. Actualizar con el Prompt 1 terminado (su rama ya tiene `28ff920` y `1d54fda`; solo choca `docs/estado.md`) (y con `main`, cuando se fusione el PR 1). Después, la suite completa y el PR «feat(recetas): ficha en una pantalla con planilla con scroll propio».
+
 ## Antes: rubro con precios y edición de productos de compra (rama `feat/rubro-y-producto-de-compra`, PR #64 fusionado)
 
 - **Qué se hizo** (ADR-0044, decisiones de Joaco del 2026-11-13):
