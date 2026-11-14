@@ -24,6 +24,14 @@ async function openIngredient(page: Page, name: string, section = "Mermas y rend
 const kpi = (page: Page, label: string) =>
   page.locator('[data-slot="kpi"]').filter({ has: page.getByText(label, { exact: true }) });
 
+// Una merma en la tarjeta «Mermas y rendimientos» (ficha sin scroll, ADR-0046): su valor, su estado y su motivo.
+const waste = (page: Page, label: string) =>
+  page
+    .getByRole("list", { name: "Mermas" })
+    .filter({ visible: true })
+    .getByRole("listitem")
+    .filter({ hasText: label });
+
 test("Compras marca una materia prima como congelada (falta su merma, nunca se supone) y desmarcarla pide aprobación", async ({
   page,
   isMobile,
@@ -31,7 +39,7 @@ test("Compras marca una materia prima como congelada (falta su merma, nunca se s
   const name = isMobile ? "Bola de lomo" : "Nalga";
   await login(page, "compras@ejemplo.test");
   await openIngredient(page, name);
-  await expect(kpi(page, "Merma de descongelado")).toContainText("No aplica");
+  await expect(waste(page, "Merma de descongelado")).toContainText("No aplica");
   await axe(page);
   if (isMobile) {
     // En el celular se lee, sin el interruptor ni la barra para guardar.
@@ -52,7 +60,7 @@ test("Compras marca una materia prima como congelada (falta su merma, nunca se s
   await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
   await expect(notice(page)).toContainText("Guardado: se compra congelada.");
   // Congelada y sin merma de descongelado aprobada: «—» y el motivo, nunca 0 %.
-  const thawing = kpi(page, "Merma de descongelado");
+  const thawing = waste(page, "Merma de descongelado");
   await expect(thawing).toContainText("—");
   await expect(thawing).toContainText("Se compra congelada y falta su merma aprobada.");
   await expect(kpi(page, "Rinde neto")).toContainText("—");
@@ -64,7 +72,9 @@ test("Compras marca una materia prima como congelada (falta su merma, nunca se s
     .fill("Ahora viene fresca (prueba)");
   await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
   await expect(notice(page)).toContainText("Queda pendiente: dejar de comprarla congelada");
-  await expect(page.getByText("Pedido pendiente: dejar de comprarla congelada")).toBeVisible();
+  await expect(
+    page.getByText("Pedido pendiente: dejar de comprarla congelada").filter({ visible: true }),
+  ).toBeVisible();
   // Hasta que lo aprueben, sigue congelada.
   await expect(page.getByRole("button", { name: /^¿Se compra congelada?/ })).toHaveAttribute(
     "aria-pressed",
@@ -80,7 +90,7 @@ test("la Chef propone una merma con vista previa y queda en revisión", async ({
   const name = isMobile ? "Panceta" : "Comino";
   await login(page, "chef@ejemplo.test");
   await openIngredient(page, name);
-  await expect(kpi(page, "Merma de limpieza")).toContainText("Sin merma de limpieza aprobada.");
+  await expect(waste(page, "Merma de limpieza")).toContainText("Sin merma de limpieza aprobada.");
   if (isMobile) {
     await expect(page.getByRole("button", { name: "Proponer merma o rendimiento" })).toBeHidden();
     return;
@@ -102,9 +112,9 @@ test("la Chef propone una merma con vista previa y queda en revisión", async ({
   await expect(notice(page)).toContainText("Queda pendiente: la tiene que aprobar un Chef");
   await axe(page);
   await page.keyboard.press("Escape");
-  await expect(page.getByText("1 merma en revisión")).toBeVisible();
+  await expect(waste(page, "Merma de limpieza")).toContainText("En revisión");
   // Hasta que la aprueben, el costo no cambia: la limpieza sigue sin dato.
-  await expect(kpi(page, "Merma de limpieza")).toContainText("—");
+  await expect(waste(page, "Merma de limpieza")).toContainText("—");
   await axe(page);
 });
 

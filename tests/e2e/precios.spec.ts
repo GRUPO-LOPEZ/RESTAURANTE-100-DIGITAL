@@ -28,12 +28,23 @@ const ingredient = (n: number) =>
   `/materias-primas/00000000-0000-4000-8000-${String(800 + n).padStart(12, "0")}?seccion=compra`;
 
 async function propose(page: Page, price: string) {
-  await page.locator("summary", { hasText: "Proponer precio" }).click();
-  await page.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
-  await page.locator("#precio-envase").fill(price);
-  await page.locator("#precio-motivo").fill("Precio de prueba automática");
-  await page.getByRole("button", { name: "Proponer precio" }).click();
+  await page.getByRole("button", { name: "Proponer precio" }).filter({ visible: true }).click();
+  const panel = page.getByRole("dialog", { name: "Proponer precio" });
+  await panel.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
+  await panel.locator("#precio-envase").fill(price);
+  await panel.locator("#precio-motivo").fill("Precio de prueba automática");
+  await panel.getByRole("button", { name: "Proponer precio" }).click();
   await expect(notice(page).filter({ hasText: "Precio propuesto." })).toBeVisible();
+  await page.keyboard.press("Escape");
+}
+
+// El panel con los productos, el costo en el local y los precios (la tarjeta muestra hasta 3 productos).
+async function openPrices(page: Page) {
+  await page
+    .getByRole("button", { name: /^Ver (el producto|los \d+ productos)$/ })
+    .filter({ visible: true })
+    .click();
+  return page.getByRole("dialog", { name: "Precios de compra" });
 }
 
 // La solicitud de esta materia prima en la bandeja (puede haber otras pendientes).
@@ -54,7 +65,9 @@ test("Compras propone, el Controller aprueba y una suba grande pasa a Dirección
 
   await login(page, "compras@ejemplo.test");
   await page.goto(ingredient(n));
-  await expect(page.getByRole("heading", { name: "Precios", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Precios de compra", exact: true }).filter({ visible: true }),
+  ).toBeVisible();
   await propose(page, "9000");
   await noHorizontalScroll(page);
   await axe(page);
@@ -69,7 +82,9 @@ test("Compras propone, el Controller aprueba y una suba grande pasa a Dirección
   // Al aprobarse, la tarjeta pasa a "Aprobada" (el formulario ya no hace falta).
   await expect(request(page, name)).toHaveCount(0);
   await page.goto(ingredient(n));
+  await openPrices(page);
   await expect(page.getByRole("list", { name: "Precios vigentes" })).toContainText("9.000,00");
+  await page.keyboard.press("Escape");
   await logout(page);
 
   // Una suba grande: el Controller la aprueba y pasa a Dirección General.
@@ -95,6 +110,7 @@ test("Compras propone, el Controller aprueba y una suba grande pasa a Dirección
   await expect(request(page, name)).toContainText("Ya la aprobó el Controller");
   await request(page, name).getByRole("button", { name: "Aprobar" }).click();
   await page.goto(ingredient(n));
+  await openPrices(page);
   await expect(page.getByRole("list", { name: "Precios vigentes" })).toContainText("20.000,00");
 });
 
@@ -102,6 +118,11 @@ test("el Gerente ve el costo de su local, heredado de su marca", async ({ page }
   // Tiene un solo local: no hay selector y la ficha usa ese.
   await login(page, "gerente@ejemplo.test", { mfa: true });
   await page.goto(ingredient(19));
+  // El precio vigente, arriba; el detalle (heredado, con y sin IVA), en el panel de los productos.
+  await expect(
+    page.locator('[data-slot="kpi"]', { hasText: "Precio vigente" }).filter({ visible: true }),
+  ).toContainText("Demo Pastas Centro");
+  await openPrices(page);
   await expect(page.getByText("Costo en Demo Pastas Centro")).toBeVisible();
   await expect(page.getByText("Heredado de la marca")).toBeVisible();
   await expect(page.getByText(/por kg/).first()).toBeVisible();

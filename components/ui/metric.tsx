@@ -12,6 +12,7 @@ function Metric({
   href,
   hrefLabel,
   comparison,
+  action,
   compact,
   className,
   ...input
@@ -23,6 +24,7 @@ function Metric({
   period?: string;
   href?: string;
   hrefLabel?: string;
+  action?: React.ReactNode;
   compact?: boolean;
   className?: string;
 }) {
@@ -35,9 +37,14 @@ function Metric({
       period={period}
       status={view.status}
       statusLabel={view.statusLabel}
-      detail={view.detail ?? comparison}
+      // Compacta: lo corto al lado del número y el motivo (o la fecha de un dato vencido), entero, en su renglón.
+      detail={
+        compact ? (view.detail === null ? comparison : undefined) : (view.detail ?? comparison)
+      }
+      note={compact ? (view.detail ?? undefined) : undefined}
       href={href}
       hrefLabel={hrefLabel}
+      action={action}
       compact={compact}
       className={className}
     />

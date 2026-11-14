@@ -2,9 +2,8 @@ import Link from "next/link";
 
 import { proposePriceAction } from "@/app/materias-primas/actions";
 import { ActionForm } from "@/components/action-form";
-import { Disclosure } from "@/components/disclosure";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { CardDescription } from "@/components/ui/card";
 import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { EmptyState } from "@/components/ui/kpi";
 import { Notice } from "@/components/ui/notice";
@@ -30,11 +29,14 @@ import { getMySession } from "@/lib/auth/session";
 // Solo para quien ve precios (la ficha no la muestra si no). Proponer un precio pide prices.propose;
 // lo aprueba el Controller y, si cambia mucho, también Dirección General.
 export async function IngredientPrices({
+  part,
   ingredient,
   canPropose,
   canSeeImpact,
   suppliers,
 }: {
+  // Ficha sin scroll (ADR-0046): el detalle va en el panel «Ver los productos» y el formulario, en «Proponer precio».
+  part: "detail" | "propose";
   ingredient: IngredientDetail;
   canPropose: boolean;
   // Quien ve costos de recetas puede ver a qué platos les pegó cada precio.
@@ -61,9 +63,163 @@ export async function IngredientPrices({
   const products = ingredient.products.filter((p) => p.isActive);
   const showForm = canPropose && products.length > 0 && places.length > 0;
 
+  if (part === "propose") {
+    if (showForm)
+      return (
+        <ActionForm
+          action={proposePriceAction}
+          schema="priceProposal"
+          submitLabel="Proponer precio"
+          pendingLabel="Proponiendo…"
+        >
+          <input type="hidden" name="ingredientId" value={ingredient.id} />
+          <FormSelect
+            id="precio-producto"
+            label="Producto"
+            name="product_id"
+            required
+            defaultValue={products.length === 1 ? products[0]?.id : ""}
+          >
+            <option value="" disabled>
+              Elegí el producto
+            </option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.description} ({p.contents})
+              </option>
+            ))}
+          </FormSelect>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormSelect
+              id="precio-lugar"
+              label="Para quién vale"
+              hint="Un local sin precio propio usa el de su marca, y si no, el del grupo."
+              name="place"
+              required
+              defaultValue={places.length === 1 ? places[0]?.value : ""}
+            >
+              <option value="" disabled>
+                Elegí para quién vale
+              </option>
+              {places.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </FormSelect>
+            <FormInput
+              id="precio-desde"
+              label="Vale desde"
+              name="valid_from"
+              type="date"
+              required
+              defaultValue={todayInArgentina()}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormInput
+              id="precio-envase"
+              label="Precio del envase ($)"
+              hint="El precio del producto completo, como lo cotizó el proveedor."
+              name="package_price"
+              required
+              inputMode="decimal"
+              autoComplete="off"
+            />
+            <FormInput
+              id="precio-descuento"
+              label="Descuento por envase ($, opcional)"
+              name="discount_amount"
+              inputMode="decimal"
+              autoComplete="off"
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormSelect
+              id="precio-comprobante"
+              label="Comprobante"
+              name="document_type"
+              required
+              defaultValue="invoice"
+            >
+              <option value="invoice">{DOCUMENT_LABELS.invoice}</option>
+              <option value="no_invoice">{DOCUMENT_LABELS.no_invoice}</option>
+            </FormSelect>
+            <FormSelect
+              id="precio-iva"
+              label="Alícuota de IVA"
+              hint="Solo con factura."
+              name="vat_rate"
+              defaultValue="21"
+            >
+              {VAT_RATES.map((v) => (
+                <option key={v} value={v}>
+                  {v.replace(".", ",")} %
+                </option>
+              ))}
+            </FormSelect>
+          </div>
+          <FormCheckbox
+            id="precio-incluye-iva"
+            label="El precio ya incluye el IVA"
+            hint="Solo con factura."
+            name="price_includes_vat"
+            defaultChecked
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormSelect
+              id="precio-proveedor"
+              label="Proveedor (opcional)"
+              name="supplier_id"
+              defaultValue=""
+            >
+              <option value="">Sin indicar</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </FormSelect>
+            <FormSelect
+              id="precio-origen"
+              label="Origen"
+              hint="Hasta que lleguen las facturas, los precios son valores de prueba."
+              name="source"
+              required
+              defaultValue="test_value"
+            >
+              <option value="test_value">{SOURCE_LABELS.test_value}</option>
+              <option value="manual">{SOURCE_LABELS.manual}</option>
+            </FormSelect>
+          </div>
+          <FormTextarea
+            id="precio-notas"
+            label="Observaciones (opcional)"
+            hint="No escribas montos acá: las observaciones se ven aunque el precio esté oculto."
+            name="notes"
+            maxLength={1000}
+          />
+          <FormTextarea
+            id="precio-motivo"
+            label="Motivo"
+            hint="Queda en el historial. No escribas montos: el motivo lo ve quien no ve precios."
+            name="reason"
+            required
+            maxLength={500}
+          />
+        </ActionForm>
+      );
+    return (
+      <p className="text-base text-ink-muted">
+        {products.length === 0
+          ? "Para proponer un precio, primero cargá cómo se compra."
+          : "No tenés locales donde proponer precios."}
+      </p>
+    );
+  }
+
   return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>Precios</CardTitle>
+    <div className="flex flex-col gap-4">
       {local ? (
         <LocalCostSummary cost={local} unitCode={ingredient.unitCode} />
       ) : !activeRestaurant && scopes.length > 1 ? (
@@ -71,7 +227,7 @@ export async function IngredientPrices({
       ) : null}
       {current.length === 0 ? (
         <EmptyState title="Todavía no hay precios aprobados.">
-          {showForm ? "Proponé el primero con «Proponer precio»." : "Los carga Compras."}
+          {canPropose ? "Proponelo desde la tarjeta, con «Proponer precio»." : "Los carga Compras."}
         </EmptyState>
       ) : (
         <ul aria-label="Precios vigentes" className="flex flex-col divide-y divide-line">
@@ -81,7 +237,10 @@ export async function IngredientPrices({
         </ul>
       )}
       {rows.length > current.length ? (
-        <Disclosure summary="Ver el historial de precios">
+        <section aria-labelledby="historial-precios" className="flex flex-col gap-2">
+          <h3 id="historial-precios" className="text-base font-semibold text-ink">
+            Historial de precios
+          </h3>
           {rows.length > 10 ? <CardDescription>Se muestran los últimos 10.</CardDescription> : null}
           <ul aria-label="Historial de precios" className="flex flex-col divide-y divide-line">
             {rows.slice(0, 10).map((r) => (
@@ -94,158 +253,9 @@ export async function IngredientPrices({
               />
             ))}
           </ul>
-        </Disclosure>
+        </section>
       ) : null}
-      {showForm ? (
-        <Disclosure summary="Proponer precio">
-          <ActionForm
-            action={proposePriceAction}
-            schema="priceProposal"
-            submitLabel="Proponer precio"
-            pendingLabel="Proponiendo…"
-          >
-            <input type="hidden" name="ingredientId" value={ingredient.id} />
-            <FormSelect
-              id="precio-producto"
-              label="Producto"
-              name="product_id"
-              required
-              defaultValue={products.length === 1 ? products[0]?.id : ""}
-            >
-              <option value="" disabled>
-                Elegí el producto
-              </option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.description} ({p.contents})
-                </option>
-              ))}
-            </FormSelect>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormSelect
-                id="precio-lugar"
-                label="Para quién vale"
-                hint="Un local sin precio propio usa el de su marca, y si no, el del grupo."
-                name="place"
-                required
-                defaultValue={places.length === 1 ? places[0]?.value : ""}
-              >
-                <option value="" disabled>
-                  Elegí para quién vale
-                </option>
-                {places.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </FormSelect>
-              <FormInput
-                id="precio-desde"
-                label="Vale desde"
-                name="valid_from"
-                type="date"
-                required
-                defaultValue={todayInArgentina()}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormInput
-                id="precio-envase"
-                label="Precio del envase ($)"
-                hint="El precio del producto completo, como lo cotizó el proveedor."
-                name="package_price"
-                required
-                inputMode="decimal"
-                autoComplete="off"
-              />
-              <FormInput
-                id="precio-descuento"
-                label="Descuento por envase ($, opcional)"
-                name="discount_amount"
-                inputMode="decimal"
-                autoComplete="off"
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormSelect
-                id="precio-comprobante"
-                label="Comprobante"
-                name="document_type"
-                required
-                defaultValue="invoice"
-              >
-                <option value="invoice">{DOCUMENT_LABELS.invoice}</option>
-                <option value="no_invoice">{DOCUMENT_LABELS.no_invoice}</option>
-              </FormSelect>
-              <FormSelect
-                id="precio-iva"
-                label="Alícuota de IVA"
-                hint="Solo con factura."
-                name="vat_rate"
-                defaultValue="21"
-              >
-                {VAT_RATES.map((v) => (
-                  <option key={v} value={v}>
-                    {v.replace(".", ",")} %
-                  </option>
-                ))}
-              </FormSelect>
-            </div>
-            <FormCheckbox
-              id="precio-incluye-iva"
-              label="El precio ya incluye el IVA"
-              hint="Solo con factura."
-              name="price_includes_vat"
-              defaultChecked
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormSelect
-                id="precio-proveedor"
-                label="Proveedor (opcional)"
-                name="supplier_id"
-                defaultValue=""
-              >
-                <option value="">Sin indicar</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </FormSelect>
-              <FormSelect
-                id="precio-origen"
-                label="Origen"
-                hint="Hasta que lleguen las facturas, los precios son valores de prueba."
-                name="source"
-                required
-                defaultValue="test_value"
-              >
-                <option value="test_value">{SOURCE_LABELS.test_value}</option>
-                <option value="manual">{SOURCE_LABELS.manual}</option>
-              </FormSelect>
-            </div>
-            <FormTextarea
-              id="precio-notas"
-              label="Observaciones (opcional)"
-              hint="No escribas montos acá: las observaciones se ven aunque el precio esté oculto."
-              name="notes"
-              maxLength={1000}
-            />
-            <FormTextarea
-              id="precio-motivo"
-              label="Motivo"
-              hint="Queda en el historial. No escribas montos: el motivo lo ve quien no ve precios."
-              name="reason"
-              required
-              maxLength={500}
-            />
-          </ActionForm>
-        </Disclosure>
-      ) : null}
-      {canPropose && products.length === 0 ? (
-        <CardDescription>Para proponer un precio, primero cargá cómo se compra.</CardDescription>
-      ) : null}
-    </Card>
+    </div>
   );
 }
 
