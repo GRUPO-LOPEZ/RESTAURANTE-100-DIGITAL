@@ -44,13 +44,13 @@ Soy habla de «administración», «cocinero» y «chef». En la base son estos 
 - **Auditor** lee todo, sin importes salvo que su rol los tenga hoy.
 - Las razones sociales y la condición frente al IVA siguen siendo de `org.manage` (ADR-0029, decisión 8).
 
-## Tres decisiones pendientes para Soy
+## Tres decisiones más de Soy (respondidas el 2026-11-14)
 
-Hay que resolverlas antes del prompt que las usa. Joaco se las pregunta a Soy por mail si no llegaron. **No se inventan.**
+Se preguntaron con una recomendación y Soy las confirmó. Van al ADR del prompt que las usa.
 
-1. **Factura conforme y aprobación de precios (antes del Prompt 5).** Hoy un precio entra solo si lo aprueba el Controller y, si la variación supera el % del grupo (15 %), también Dirección General (ADR-0029). El documento de Soy dice que el costo se actualiza solo con la factura conforme. **Recomendación:** dar por conforme la factura **es** la aprobación del precio (quien lo hace queda como `approved_by`); si la variación supera el % del grupo, el precio entra igual y salta una alarma a Dirección General con el detalle, sin frenar la operación. La alternativa es mantener el paso bloqueante de Dirección: la factura queda conforme pero el costo espera.
-2. **Separación de funciones en facturas (antes del Prompt 5).** ¿Quien carga la factura puede darla por conforme a mano cuando el control automático falló? **Recomendación:** si el control automático pasa, alcanza con Compras; si falló y hay que forzar el conforme, lo hace **otra persona** (Controller), con motivo. La base lo valida.
-3. **Quién aprueba una OC que requiere aprobación (antes del Prompt 3).** **Recomendación:** Compras o el Gerente del local, nunca quien la pidió.
+1. **Factura conforme = precio aprobado (Prompt 5).** Hoy un precio entra solo si lo aprueba el Controller y, si la variación supera el % del grupo (15 %), también Dirección General (ADR-0029). **Decisión:** dar por conforme la factura **es** la aprobación del precio: quien lo hace queda como `approved_by`. Si la variación supera el % del grupo, el precio entra igual y salta una alarma a Dirección General con el detalle (valor anterior, nuevo y diferencia), sin frenar la operación. El camino de hoy (proponer y aprobar a mano) sigue existiendo para los precios sin factura.
+2. **Separación de funciones en facturas (Prompt 5).** Si el control automático de 3 vías pasa, alcanza con Compras: la factura queda conforme sola. Si falló y hay que darla por conforme a mano, lo hace **otra persona distinta de quien la cargó** (el Controller, o alguien con `purchasing.approve_invoices` que no sea quien la cargó), con motivo. **La base lo valida**, no la pantalla.
+3. **Quién aprueba una OC que requiere aprobación (Prompt 3).** **Compras** (`purchasing`), en el alcance del local. Nunca quien la pidió (`excluded_approvers`).
 
 ## Lo que no entra todavía (Soy, 2026-11-14)
 
@@ -115,8 +115,8 @@ EL PLAN TIENE
    (quién valida con datos de prueba).
 9. Riesgos (por ejemplo: productos de compra sin proveedor que ya existen; precios de prueba
    test_value que conviven con los de factura; la carrera entre dos cocineros que piden a la vez).
-10. Decisiones pendientes: las tres de este archivo, con la recomendación, y las que encuentres.
-    Nada se decide en el plan: se pregunta.
+10. Decisiones: las tres que Soy ya respondió (en este archivo) y las preguntas nuevas que
+    encuentres. Nada se decide en el plan: se pregunta.
 
 ENTREGA
 - ADR nuevo (siguiente número libre): «Módulo de compras y facturas: alcance y reutilización».
@@ -300,9 +300,8 @@ Commit: «feat(compras): artículos de proveedor, cola de mapeo y listas de prec
 ```text
 Leé docs/fases/fase-3-plan.md, docs/fases/fase-3-facturas.md (Etapa 2), docs/decisiones/0029
 (cómo se arma una aprobación con apply_*), 0041 (code_series) y los dos PRs anteriores.
-Antes de empezar, confirmá con Soy la decisión pendiente 3 de docs/prompts/2026-11-14-facturas-
-modulo-2.md (quién aprueba una OC). Si no hay respuesta, aplicá la recomendación y dejalo escrito
-en el ADR como supuesto.
+Decisión de Soy (2026-11-14, en docs/prompts/2026-11-14-facturas-modulo-2.md): una OC que requiere
+aprobación la aprueba Compras, en el alcance del local, y nunca quien la pidió.
 Tarea: la orden de compra digital, su aprobación opcional, el envío en cola y las novedades.
 Rama: feat/ordenes-de-compra. Entrá en modo plan y mostrame el plan antes de tocar nada.
 
@@ -322,8 +321,8 @@ BASE
 - Ranking: función purchasing.supplier_product_ranking(p_supplier_id, p_restaurant_id) que ordena
   los artículos del proveedor por cantidad de órdenes enviadas o recibidas que los incluyen (se
   calcula desde la historia, sin contadores guardados; índice que lo haga rápido).
-- Aprobación: workflow nuevo purchasing.approve_order con approver_role_codes según la decisión 3
-  y excluded_approvers = quien la pidió; función purchasing.apply_order_approval. Si el proveedor
+- Aprobación: workflow nuevo purchasing.approve_order con approver_role_codes = purchasing (en el
+  alcance del local) y excluded_approvers = quien la pidió; función purchasing.apply_order_approval. Si el proveedor
   no requiere aprobación, «Mandar OC» envía directo.
 - Envío: purchasing.outbound_messages (grupo, canal, destino, asunto, cuerpo, adjunto opcional,
   entidad de origen, estado enum: queued, sent, failed, cancelled). purchasing.send_order(p_id,
@@ -335,8 +334,8 @@ BASE
   solicitante (kind order_news) con enlace a la OC.
 - Permisos: purchasing.view_orders (quien pide, Compras, Controller, Gerente, Director de Marca,
   Dirección, Auditor, cada uno en su alcance), purchasing.create_orders (cook, head_chef,
-  executive_chef, restaurant_manager, purchasing, en su local), purchasing.approve_orders (según
-  la decisión 3), purchasing.record_order_news (purchasing, restaurant_manager).
+  executive_chef, restaurant_manager, purchasing, en su local), purchasing.approve_orders
+  (purchasing), purchasing.record_order_news (purchasing, restaurant_manager).
 - Seed: 4 OC en distintos estados (borrador, pendiente de aprobación, enviada, con novedad).
 
 PANTALLAS
@@ -457,8 +456,10 @@ Leé docs/fases/fase-3-plan.md, docs/fases/fase-3-facturas.md (Etapa 4 y «Costo
 sistema»), docs/decisiones/0029 y 0032 (cómo entra un precio y cómo se recalcula), la migración de
 costing.price_records (su restricción de aprobación y el trigger de solo inserción) y los PRs
 anteriores.
-ANTES DE EMPEZAR: las decisiones pendientes 1 y 2 de docs/prompts/2026-11-14-facturas-modulo-2.md
-tienen que estar respondidas por Soy. Si no llegaron, pedilas por mail y no arranques este PR.
+Decisiones de Soy (2026-11-14, en docs/prompts/2026-11-14-facturas-modulo-2.md): 1) dar por
+conforme la factura es la aprobación del precio; una variación mayor al % del grupo entra igual y
+avisa a Dirección General; 2) si el control automático falló, el conforme a mano lo da otra persona
+distinta de quien cargó la factura, y la base lo valida.
 Tarea: la factura de compra, el control de 3 vías, las notas de crédito y débito, y la actualización
 de costos. Rama: feat/facturas. Entrá en modo plan y mostrame el plan antes de tocar nada.
 
@@ -490,8 +491,9 @@ BASE
   Todo pasa → approved (conforme) y enseguida released (liberada a pago). Algo no pasa → observed,
   con aviso a Compras (kind invoice_observed). Al adjuntar una NC, ND o descuento que cierra la
   diferencia, se vuelve a controlar; si cierra, pasa a conforme. Si no cierra solo, «Dar por
-  conforme» a mano con motivo, según la decisión 2 (separación de funciones validada por la base).
-- Costos, según la decisión 1: al quedar conforme, por cada línea con producto de compra se
+  conforme» a mano con motivo, solo por alguien con purchasing.approve_invoices que no sea quien
+  cargó la factura (decisión 2; lo valida la función, no la pantalla).
+- Costos (decisión 1): al quedar conforme, por cada línea con producto de compra se
   inserta un costing.price_records con source = 'invoice', alcance local, valid_from = fecha de la
   factura, package_price = unit_price (por envase), document_type y vat según el tipo de factura
   (A: IVA discriminado; B y C: el precio es final, sin IVA recuperable; que price_rows dé el neto
@@ -500,13 +502,15 @@ BASE
   sin solicitud de aprobación (la restricción de hoy la exige salvo test_value): hacelo con una
   columna invoice_line_id y un check que pida una u otra. Reutilizá la función interna que usa
   costing.insert_approved_price para registrar, así el evento price.approved y la cola de recálculo
-  disparan igual. Si la variación contra costing.reference_price supera el % del grupo: según la
-  decisión 1 (recomendación: entra igual y avisa a Dirección General, kind price_variation).
+  disparan igual. Si la variación contra costing.reference_price supera el % del grupo, el precio
+  entra igual y se avisa a Dirección General (kind price_variation) con el valor anterior, el nuevo
+  y la diferencia (decisión 1). No se crea la segunda solicitud de Dirección para estos precios.
 - Inmutabilidad: una factura conforme no cambia sus datos fiscales ni sus líneas (trigger). Se
   corrige con NC, ND o descuento. Cancelar una factura cargada por error es un estado, con motivo.
 - Permisos: purchasing.view_invoices (purchasing, controller, general_management, brand_director,
   restaurant_manager en su local, auditor), purchasing.manage_invoices (purchasing),
-  purchasing.approve_invoices (según la decisión 2). El cocinero y el chef no ven facturas.
+  purchasing.approve_invoices (controller y purchasing; la función rechaza a quien cargó esa
+  factura). El cocinero y el chef no ven facturas.
 - Seed: 4 facturas ficticias: una A conforme (con sus precios en price_records), una B conforme,
   una observada por precio, una observada por artículo sin mapear; una NC que resuelve una
   diferencia. Los importes son de prueba; **no se copian las facturas de referencia de Soy ni sus
@@ -539,7 +543,8 @@ PRUEBAS
   $ 50.000 → $ 1.000 por kg; la misma en B → $ 1.210 por kg); cantidad facturada > recibida →
   observada por cantidad; precio distinto de la lista → observada por precio; sin lista vigente →
   observada; artículo sin mapear → observada y en la cola; NC que cierra la diferencia → conforme;
-  conforme a mano por quien no corresponde → rechazado; variación mayor al % → según la decisión 1;
+  conforme a mano por quien cargó la factura → rechazado; por el Controller → pasa; variación mayor
+  al % → el precio entra y Dirección recibe el aviso;
   conforme inmutable; totales que no cierran → rechazado; única por tipo, PV y número; RLS (el
   cocinero no ve nada; el Gerente ve su local sin editar); auditoría con motivo; la cola de
   recálculo recibe el cambio.
