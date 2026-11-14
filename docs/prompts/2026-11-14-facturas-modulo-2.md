@@ -75,14 +75,12 @@ Lo que cambia el diseño (cada punto está en el prompt que lo usa):
 11. **Sellos del local en el papel:** «{LOCAL} RECIBIDO» con fecha y firma (es la foto 2 del documento de Soy), «PAGADO EFECTIVO» (se pagó al recibir) y «PASADA» (ya se cargó). Dos traen el saldo de la cuenta corriente según el proveedor.
 12. **Cada proveedor tiene su código de artículo** en casi todas las facturas. Es la clave para reconocer un artículo la segunda vez sin preguntar.
 
-## Cuatro preguntas nuevas para Soy (salen de las facturas reales)
+## Cuatro decisiones más de Soy (salen de las facturas reales, respondidas el 2026-11-14)
 
-Van con recomendación. Joaco no arranca el prompt que las usa sin la respuesta.
-
-4. **Impuestos internos y percepciones (Prompt 5).** **Recomendación:** los impuestos internos suman al costo, porque no se recuperan. Las percepciones de IIBB e IVA no son costo: son a cuenta de impuestos y se guardan aparte. Conviene confirmarlo con el contador.
-5. **Flete, envío y servicios (Prompt 5).** **Recomendación:** no se reparten entre los productos. Quedan como gasto de la factura y se ven en el tablero de compras.
-6. **Lo que no es comida (Prompt 2).** **Recomendación:** limpieza, descartables y bebidas que se revenden se cargan como materias primas en rubros que no van a recetas. Así entran igual en la OC, la recepción, la factura, los pagos y el gasto por rubro.
-7. **Pago en efectivo al recibir (Prompt 4).** **Recomendación:** en la recepción se marca «Se pagó en efectivo» con el importe, y queda como pago para que Compras lo confirme.
+4. **Impuestos internos y percepciones (Prompt 5). Ninguno suma al costo** (decisión de Soy; la recomendación era sumar los internos). El costo de la materia prima es el precio neto de la línea, sin IVA, sin impuestos internos y sin percepciones. Los impuestos internos y las percepciones se guardan aparte en la factura, cuentan para el total y el pago, y se ven en el tablero de compras.
+5. **Flete, envío y servicios (Prompt 5).** No se reparten entre los productos. Quedan como gasto de la factura y se ven en el tablero de compras.
+6. **Lo que no es comida (Prompt 2).** Limpieza, descartables y bebidas que se revenden se cargan como materias primas en rubros que no van a recetas. Así entran igual en la OC, la recepción, la factura, los pagos y el gasto por rubro.
+7. **Pago en efectivo al recibir (Prompt 4).** En la recepción se marca «Se pagó en efectivo» con el importe, y queda como pago para que Compras lo confirme.
 
 ## Carga real: cómo el sistema reconoce a los proveedores de Soy
 
@@ -150,8 +148,8 @@ EL PLAN TIENE
    (quién valida con datos de prueba).
 9. Riesgos (por ejemplo: productos de compra sin proveedor que ya existen; precios de prueba
    test_value que conviven con los de factura; la carrera entre dos cocineros que piden a la vez).
-10. Decisiones: las tres que Soy ya respondió, las cuatro preguntas nuevas de las facturas reales
-    (en este archivo) y las que encuentres. Nada se decide en el plan: se pregunta.
+10. Decisiones: las siete que Soy ya respondió (en este archivo) y las preguntas nuevas que
+    encuentres. Nada se decide en el plan: se pregunta.
 11. «Lo que muestran las facturas reales»: los 12 puntos de este archivo, uno por uno, con la tabla
     o la columna que lo resuelve. Mirá vos los PDF que te pasa Soy (fuera del repositorio) y sumá lo
     que falte. En el plan no va ningún nombre, CUIT ni importe real.
@@ -622,8 +620,10 @@ FACTURAS REALES (sección del mismo nombre en este archivo)
 - Pie: neto gravado por alícuota, exento, IVA por alícuota, impuestos internos, percepciones (tabla
   purchasing.invoice_taxes: tipo enum iibb, vat_perception, municipal, other; jurisdicción; amount),
   bonificación general, redondeo y total. Check: todo suma el total, con 0,01 de tolerancia.
-- Costos (decisiones 4 y 5): los impuestos internos de la línea suman al costo; las percepciones no
-  (quedan a cuenta de impuestos); flete y servicios no se reparten y se ven como gasto.
+- Costos (decisiones 4 y 5): el costo es el precio neto de la línea. Ni los impuestos internos ni
+  las percepciones suman al costo: se guardan aparte, cuentan para el total y el pago, y se ven en el
+  tablero. Flete y servicios no se reparten y se ven como gasto. Prueba pgTAP: una línea con
+  impuestos internos registra en price_records el neto sin ellos.
 - Vencimiento: el impreso en la factura; si no tiene, el calculado con la condición del proveedor.
 - Referencias: números de remito y de pedido que trae la factura, y la OC del sistema si está.
 - Saldo informado por el proveedor (opcional): se guarda para compararlo con la cuenta corriente.
