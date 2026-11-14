@@ -6,26 +6,33 @@ import { Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
+import { cn } from "@/lib/utils";
 
 // Un alta o una propuesta con su propio flujo (su motivo, su aprobación), en un panel corto al lado (ADR-0036). La
 // ficha única la usa para lo que no entra en el guardado en lote: agregar un producto, proponer una merma (ADR-0043).
 // El formulario de adentro avisa el resultado; al cerrar, el foco vuelve al botón que lo abrió (WCAG 2.4.3).
-// «Editar» en una fila de tabla (ADR-0044) usa el lápiz y un nombre accesible que dice qué se edita.
+// «Editar» en una fila de tabla (ADR-0044) usa el lápiz y un nombre accesible que dice qué se edita. En las pantallas
+// sin scroll (ADR-0046) también abre lo que no entra: «Ver los 5 productos» (variante link, sin ícono) o una acción
+// chica de una tarjeta (size sm).
 export function ActionModal({
   label,
   title,
   description,
   variant = "outline",
   icon = "plus",
+  size = "default",
   accessibleName,
+  className,
   children,
 }: {
   label: string;
   title: string;
   description?: string;
-  variant?: "default" | "outline";
-  icon?: "plus" | "pencil";
+  variant?: "default" | "outline" | "link";
+  icon?: "plus" | "pencil" | "none";
+  size?: "default" | "sm";
   accessibleName?: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -36,13 +43,18 @@ export function ActionModal({
         ref={opener}
         type="button"
         variant={variant}
+        size={size}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={accessibleName}
         onClick={() => setOpen(true)}
-        className="self-start"
+        className={cn("self-start", variant === "link" && "px-0", className)}
       >
-        {icon === "pencil" ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
+        {icon === "pencil" ? (
+          <Pencil aria-hidden="true" />
+        ) : icon === "plus" ? (
+          <Plus aria-hidden="true" />
+        ) : null}
         {label}
       </Button>
       <Modal

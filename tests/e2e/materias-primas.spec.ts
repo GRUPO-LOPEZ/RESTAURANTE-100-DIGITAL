@@ -59,9 +59,7 @@ test("Compras busca por alias, crea una materia prima y la ve en su ficha", asyn
   await expect(page.getByRole("heading", { name: `Rúcula de prueba ${run}` })).toBeVisible();
   // El encabezado de la ficha: el código que armó la base, el rubro y la unidad de recetas (ADR-0043).
   await expect(page.getByText(/^MPR-VER-\d{4}$/)).toBeVisible();
-  await expect(
-    page.getByText(/^Rubro: Verduras y frutas · Se usa en recetas en Gramo \(g\)$/),
-  ).toBeVisible();
+  await expect(page.getByText(/ · Verduras y frutas · se usa en g$/)).toBeVisible();
   await axe(page);
   await noHorizontalScroll(page);
   // Next guarda ocultos el alta y la lista: si un id se repitiera, una etiqueta podría apuntar al
@@ -122,7 +120,17 @@ test("el Chef ve la ficha con sus alérgenos, sin poder editar", async ({ page }
   await expect(page.getByRole("button", { name: "Guardar cambios" })).toHaveCount(0);
   await openSection(page, "Alérgenos", "materia prima");
   await expect(page.getByRole("list", { name: "Alérgenos" }).getByText("Contiene")).toBeVisible();
-  await expect(page.getByText("La lista de alérgenos todavía no está validada")).toBeVisible();
+  // La lista sin validar se dice al lado del título; la explicación, en su ayuda (ⓘ).
+  await expect(
+    page.getByText("Sin validar", { exact: true }).filter({ visible: true }),
+  ).toBeVisible();
+  const help = page
+    .getByRole("button", { name: "Más información: lista sin validar" })
+    .filter({ visible: true });
+  await help.focus();
+  await expect(page.getByRole("tooltip")).toContainText(
+    "La lista de alérgenos todavía no está validada",
+  );
   await expect(page.getByRole("radio")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Nueva materia prima" })).toHaveCount(0);
 });
@@ -187,9 +195,9 @@ test("la lista de materias primas se ordena, se pagina y filtra por estado", asy
   await noHorizontalScroll(page);
 });
 
-// La ficha es una sola página con índice (ADR-0043): el índice baja a cada sección, los enlaces de antes
-// (?seccion=) también, y "Volver" regresa a la misma lista, con sus filtros.
-test("la ficha se recorre por su índice y vuelve a la lista con sus filtros", async ({
+// La ficha entra en una pantalla (ADR-0046): todas las tarjetas a la vista, los enlaces de antes (?seccion=) llevan a
+// su tarjeta, y "Volver" regresa a la misma lista, con sus filtros.
+test("la ficha muestra todo a la vista y vuelve a la lista con sus filtros", async ({
   page,
   isMobile,
 }, info) => {
@@ -197,17 +205,17 @@ test("la ficha se recorre por su índice y vuelve a la lista con sus filtros", a
   await page.goto("/materias-primas?q=mozzarella&estado=active");
   await page.getByRole("link", { name: "Mozzarella", exact: true }).first().click();
   await expect(page.getByRole("heading", { name: "Mozzarella" })).toBeVisible();
-  // Todas las secciones están en la misma página.
+  // Todas las tarjetas están en la misma pantalla; «Dónde se usa» es el indicador «Recetas que la usan».
   for (const name of [
     "Datos generales",
     "Precios de compra",
     "Mermas y rendimientos",
     "Conversiones",
     "Alérgenos",
-    "Dónde se usa",
   ]) {
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   }
+  await expect(page.locator('[data-slot="kpi"]', { hasText: "Recetas que la usan" })).toBeVisible();
   // Compras edita en la computadora; en el celular, solo lee.
   if (isMobile) {
     await expect(page.getByRole("textbox", { name: "Nombre", exact: true })).toBeHidden();
@@ -218,8 +226,12 @@ test("la ficha se recorre por su índice y vuelve a la lista con sus filtros", a
   }
 
   await openSection(page, "Alérgenos", "materia prima");
+  // Quien edita ve un botón por alérgeno (un grupo); en el celular, la lista para leer.
   await expect(
-    page.getByRole("list", { name: "Alérgenos" }).filter({ visible: true }),
+    page
+      .getByRole("group", { name: "Estado de cada alérgeno" })
+      .or(page.getByRole("list", { name: "Alérgenos" }))
+      .filter({ visible: true }),
   ).toBeVisible();
   await openSection(page, "Precios de compra", "materia prima");
   await openSection(page, "Dónde se usa", "materia prima");
@@ -227,12 +239,14 @@ test("la ficha se recorre por su índice y vuelve a la lista con sus filtros", a
   await noHorizontalScroll(page);
   await page.screenshot({ path: info.outputPath("ficha-indice.png"), fullPage: true });
 
-  // Un enlace de antes baja a su sección; uno que no existe queda arriba. Un "volver" de otro módulo no se respeta.
+  // Un enlace de antes lleva el foco a su tarjeta; uno que no existe queda arriba. Un "volver" de otro módulo no se
+  // respeta.
   const url = new URL(page.url());
   const old = new URLSearchParams(url.search);
   old.set("seccion", "alergenos");
   await page.goto(`${url.pathname}?${old}`);
   await expect(page).toHaveURL(/#alergenos-[0-9a-f]{8}$/);
+  await expect(page.locator('[id^="alergenos-"]:visible')).toBeFocused();
   await page.goto(
     `${url.pathname}?seccion=nada&volver=${encodeURIComponent("https://ejemplo.test")}`,
   );

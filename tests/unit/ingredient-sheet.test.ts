@@ -3,13 +3,17 @@ import { describe, expect, it } from "vitest";
 
 import { ingredientSheetSchema } from "@/lib/forms/schemas";
 import {
+  applyAllergenSource,
   countSheetChanges,
+  cycleAllergen,
+  nextAllergenStatus,
   normalizeAliases,
   priceState,
   sheetChanges,
   sheetPayload,
   splitAliases,
   type IngredientSheetDraft,
+  type SheetAllergen,
 } from "@/lib/ingredient-sheet";
 
 const ID = "00000000-0000-4000-8000-000000000828";
@@ -181,5 +185,67 @@ describe("estado del precio de un producto", () => {
       label: "Sin precio",
     });
     expect(priceState({ ...base, status: "missing_legal_entity" }).status).toBe("warn");
+  });
+});
+
+describe("alérgenos con un botón que cambia en cada clic (ADR-0046)", () => {
+  const OTHER = "00000000-0000-4000-8000-000000000952";
+
+  it("el ciclo es Sin dato, No contiene, Puede contener, Contiene y vuelve a Sin dato", () => {
+    expect(nextAllergenStatus("")).toBe("free_verified");
+    expect(nextAllergenStatus("free_verified")).toBe("may_contain");
+    expect(nextAllergenStatus("may_contain")).toBe("contains");
+    expect(nextAllergenStatus("contains")).toBe("");
+  });
+
+  it("un clic toma el origen común; sin origen elegido queda vacío y el guardado lo pide", () => {
+    expect(cycleAllergen(undefined, undefined, "supplier")).toEqual({
+      status: "free_verified",
+      source: "supplier",
+    });
+    const pending = cycleAllergen(undefined, undefined, "");
+    expect(pending).toEqual({ status: "free_verified", source: "" });
+    const payload = sheetPayload(
+      saved,
+      edit({ allergens: { ...saved.allergens, [OTHER]: pending } }),
+    );
+    expect(
+      ingredientSheetSchema.safeParse({
+        ingredientId: ID,
+        expectedStamp: "",
+        reason: "Ficha técnica",
+        ...payload,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("si el ciclo vuelve al estado guardado, vuelve su origen y no cuenta como cambio", () => {
+    let current: SheetAllergen = { status: "contains", source: "supplier" };
+    for (let i = 0; i < 4; i++)
+      current = cycleAllergen(saved.allergens[ALLERGEN], current, "manual");
+    expect(current).toEqual(saved.allergens[ALLERGEN]);
+    expect(
+      countSheetChanges(sheetChanges(saved, edit({ allergens: { [ALLERGEN]: current } }))),
+    ).toBe(0);
+  });
+
+  it("volver a Sin dato borra el origen", () => {
+    expect(cycleAllergen(saved.allergens[ALLERGEN], saved.allergens[ALLERGEN], "manual")).toEqual({
+      status: "",
+      source: "",
+    });
+  });
+
+  it("el origen común vale solo para los cambiados que tienen estado", () => {
+    const draft = edit({
+      allergens: {
+        [ALLERGEN]: { status: "contains", source: "supplier" },
+        [OTHER]: { status: "may_contain", source: "" },
+      },
+    });
+    expect(applyAllergenSource(saved, draft, "verified")).toEqual({
+      [ALLERGEN]: { status: "contains", source: "supplier" },
+      [OTHER]: { status: "may_contain", source: "verified" },
+    });
   });
 });

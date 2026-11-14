@@ -20,6 +20,15 @@ async function openIngredient(page: Page, name: string) {
   await openSection(page, "Mermas y rendimientos", "materia prima");
 }
 
+// La tabla de rendimientos por proceso, en su panel (ficha sin scroll, ADR-0046: la tarjeta muestra el resumen).
+async function openYields(page: Page) {
+  await page
+    .getByRole("button", { name: "Ver todos los rendimientos por proceso" })
+    .filter({ visible: true })
+    .click();
+  return page.getByRole("dialog", { name: "Rendimientos por proceso" });
+}
+
 // Los paneles de la ficha: «Registrar un ensayo» y «Proponer merma o rendimiento» (con «Rendimiento por proceso»).
 async function openPanel(page: Page, name: string) {
   await page.getByRole("button", { name, exact: true }).click();
@@ -29,9 +38,11 @@ async function openPanel(page: Page, name: string) {
 test("el Jefe de Cocina registra un ensayo y el estándar no cambia", async ({ page, isMobile }) => {
   await login(page, "jefecocina@ejemplo.test");
   await openIngredient(page, "Tomate perita");
+  await openYields(page);
   const pelado = sheetRows(page, "Rendimientos por proceso").filter({ hasText: "Pelado" }).first();
   await expect(pelado).toContainText("Limpieza 80,0 %");
   await axe(page);
+  await page.keyboard.press("Escape");
   // En el celular, la ficha es de consulta: se lee el estándar, sin cargar.
   if (isMobile) {
     await expect(page.getByRole("button", { name: "Registrar un ensayo" })).toBeHidden();
@@ -48,6 +59,7 @@ test("el Jefe de Cocina registra un ensayo y el estándar no cambia", async ({ p
   await axe(page);
   await page.keyboard.press("Escape");
   // El estándar sigue en 80 %: el ensayo solo suma al promedio.
+  await openYields(page);
   await expect(pelado).toContainText("Limpieza 80,0 %");
 });
 
@@ -67,9 +79,11 @@ test("el Chef propone un estándar y el Chef del grupo lo aprueba", async ({ pag
     "Queda pendiente: lo tiene que aprobar un Chef de todo el grupo",
   );
   await page.keyboard.press("Escape");
+  await openYields(page);
   const row = sheetRows(page, "Rendimientos por proceso").filter({ hasText: cut });
   await expect(row.getByText("Propuesta en revisión")).toBeVisible();
   await expect(row.getByText("Sin estándar aprobado")).toBeVisible();
+  await page.keyboard.press("Escape");
   await logout(page);
 
   await login(page, "chefgrupo@ejemplo.test");
@@ -92,6 +106,7 @@ test("el Chef propone un estándar y el Chef del grupo lo aprueba", async ({ pag
   ).toBeVisible();
 
   await openIngredient(page, "Zanahoria");
+  await openYields(page);
   const approved = sheetRows(page, "Rendimientos por proceso").filter({ hasText: cut });
   await expect(approved).toContainText("Limpieza 85,0 %");
   await expect(approved.getByText("Propuesta en revisión")).toHaveCount(0);
@@ -126,6 +141,9 @@ test("un ensayo desviado avisa al Chef, que lo ve marcado en la ficha", async ({
   await axe(page);
   await card.getByRole("link", { name: /Ver la materia prima/ }).click();
   await expect(page.getByRole("heading", { name: "Tomate perita", exact: true })).toBeVisible();
+  // El resumen de la tarjeta ya avisa que uno se desvía; el detalle, en el panel.
+  await expect(page.getByText(/1 se desvía/).filter({ visible: true })).toBeVisible();
+  await openYields(page);
   await expect(
     sheetRows(page, "Rendimientos por proceso")
       .getByText("El promedio se desvía más del 10 % del estándar")
