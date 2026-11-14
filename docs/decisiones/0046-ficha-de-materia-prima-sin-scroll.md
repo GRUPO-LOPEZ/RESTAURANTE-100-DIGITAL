@@ -141,6 +141,7 @@ Piezas comunes nuevas, que también usa el Inicio:
 
 - **Corrida completa (2026-11-14), con la base recién recreada:** Vitest 382 de 382, pgTAP en verde, Playwright 269 en verde y 1 falla inestable en `rubros`, que esta rama no toca (sola, 24 de 24 en verde).
 - **Capturas:** `docs/capturas/ficha-materia-prima-sin-scroll/`.
+- **En GitHub Actions (Linux) la ficha con 5 productos medía 908 px** (en Windows, 898): la letra ocupa un poco más y «Proponer precio» bajaba a un segundo renglón. Arreglo: el botón chico (`size="sm"`, en todo el sistema) lleva ícono de 16 px y menos aire, y Observaciones arranca en un renglón. Lección: dejar unos 20 px de margen medido, no 2.
 
 ## Riesgos y lo que queda
 
