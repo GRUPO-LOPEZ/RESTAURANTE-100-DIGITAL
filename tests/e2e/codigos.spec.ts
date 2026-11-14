@@ -35,7 +35,7 @@ async function fillRecipe(page: Page, type: "Plato" | "Preparación", rubro: str
   return code.inputValue();
 }
 
-// El encabezado de la ficha de una receta: «PLA-PAS-0003 · Plato · Todo el grupo».
+// El encabezado de la ficha de una receta: «PLA-PAS-0003 · Pastas · Plato» (código · rubro · tipo; ADR-0047).
 function header(page: Page, code: string) {
   return page.getByText(new RegExp(`^${code} · `));
 }
@@ -86,7 +86,7 @@ test("alta de una preparación: PRE y el rubro de sub-recetas", async ({ page },
   expect(code).toMatch(/^PRE-SAL-\d{4}$/);
   await page.getByRole("button", { name: "Crear receta" }).click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-  await expect(page.getByText(new RegExp(`^${code} · Preparación · `))).toBeVisible();
+  await expect(page.getByText(new RegExp(`^${code} · Salsas · Preparación$`))).toBeVisible();
   await axe(page);
 });
 
