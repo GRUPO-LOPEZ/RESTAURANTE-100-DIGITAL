@@ -68,6 +68,49 @@ function sameAllergen(a: SheetAllergen | undefined, b: SheetAllergen | undefined
   return x.status === y.status && (x.status === "" || x.source === y.source);
 }
 
+// Alérgenos con un botón que cambia de estado en cada clic (ADR-0046, pedido de Soy del 2026-11-13).
+// Sin dato → No contiene → Puede contener → Contiene → Sin dato.
+export const ALLERGEN_CYCLE: (AllergenStatus | "")[] = [
+  "",
+  "free_verified",
+  "may_contain",
+  "contains",
+];
+
+export function nextAllergenStatus(status: AllergenStatus | ""): AllergenStatus | "" {
+  const i = ALLERGEN_CYCLE.indexOf(status);
+  return ALLERGEN_CYCLE[(i + 1) % ALLERGEN_CYCLE.length] ?? "";
+}
+
+// Un clic sobre un alérgeno. El origen del dato es uno solo para todos los cambiados (el de la tarjeta, «Origen de
+// estos cambios»): si todavía no se eligió, queda vacío y el guardado lo pide. Si el clic vuelve al estado guardado,
+// vuelve también su origen: así no cuenta como cambio.
+export function cycleAllergen(
+  saved: SheetAllergen | undefined,
+  current: SheetAllergen | undefined,
+  commonSource: DataSource | "",
+): SheetAllergen {
+  const before = saved ?? { status: "", source: "" };
+  const next = nextAllergenStatus((current ?? before).status);
+  if (next === before.status) return before;
+  if (next === "") return { status: "", source: "" };
+  return { status: next, source: commonSource };
+}
+
+// Elegir el origen de los cambios: vale para cada alérgeno cambiado que tiene un estado.
+export function applyAllergenSource(
+  saved: IngredientSheetDraft,
+  draft: IngredientSheetDraft,
+  source: DataSource | "",
+): IngredientSheetDraft["allergens"] {
+  const changed = sheetChanges(saved, draft).allergens;
+  return Object.fromEntries(
+    Object.entries(draft.allergens).map(([id, v]) =>
+      changed.includes(id) && v.status ? [id, { status: v.status, source }] : [id, v],
+    ),
+  );
+}
+
 export type SheetChanges = {
   data: (keyof IngredientSheetData)[];
   aliases: boolean;

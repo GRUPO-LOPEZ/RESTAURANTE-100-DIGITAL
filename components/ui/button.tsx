@@ -19,7 +19,9 @@ const buttonVariants = cva(
       },
       size: {
         default: "",
-        sm: "px-3 text-sm desk:min-h-control-sm",
+        // Chico (36 px): ícono de 16 px y menos aire, para que tres acciones entren en una línea de una tarjeta
+        // angosta (ADR-0046; en Linux la letra ocupa un poco más).
+        sm: "gap-1.5 px-2.5 text-sm desk:min-h-control-sm [&_svg:not([class*='size-'])]:size-4",
         wide: "w-full",
         icon: "w-touch px-0 desk:w-control",
       },

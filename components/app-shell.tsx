@@ -27,6 +27,8 @@ export function AppShell({
   title,
   heading,
   description,
+  back,
+  meta,
   actions,
   fill = false,
   children,
@@ -36,6 +38,9 @@ export function AppShell({
   heading?: React.ReactNode;
   description?: React.ReactNode;
   // La acción principal de la pantalla, a la derecha del título (mismo lugar en todo el sistema).
+  // Las pantallas de carga sin scroll (ADR-0046): «← Volver» y los datos del registro en la línea del nombre.
+  back?: React.ReactNode;
+  meta?: React.ReactNode;
   actions?: React.ReactNode;
   // Una pantalla de un solo vistazo (el Inicio, ADR-0045): en la computadora mide al menos el alto de la ventana y lo de
   // adentro se reparte el espacio que sobra. No oculta ni encima nada: si algo no entra, la página crece como cualquier otra.
@@ -84,7 +89,14 @@ export function AppShell({
             fill && "gap-4 desk:min-h-0 desk:pt-4 desk:pb-4",
           )}
         >
-          <PageHeader title={title} heading={heading} description={description} actions={actions} />
+          <PageHeader
+            title={title}
+            heading={heading}
+            description={description}
+            back={back}
+            meta={meta}
+            actions={actions}
+          />
           {children}
         </main>
       </div>

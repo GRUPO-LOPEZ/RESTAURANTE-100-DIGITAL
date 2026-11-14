@@ -109,15 +109,13 @@ test("el Chef ve el costo por línea, sin precios", async ({ page }, testInfo) =
   // Cambiar de local recarga la pantalla: la primera vez tarda. El costo está en la grilla de la ficha (ADR-0042).
   await expect(page.getByLabel("Local activo")).toHaveValue(PASTAS_CENTRO, { timeout: 20_000 });
   await openSection(page, "Ingredientes y costos");
-  const total = page
-    .locator('[data-slot="kpi"]')
-    .filter({ hasText: "Costo total de la receta, sin IVA" });
+  const total = page.locator('[data-slot="kpi"]').filter({ hasText: "Costo total" });
   await expect(total).toContainText("4.506,27", { timeout: 20_000 });
   await expect(total).toContainText("Demo Pastas Centro");
   if (testInfo.project.name !== "celular") {
     // Costo por renglón sí; el precio de compra, no (sin prices.view, ADR-0032).
-    await expect(page.getByRole("columnheader", { name: "Costo en la receta" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Precio por kg o l" })).toHaveCount(0);
+    await expect(page.getByRole("columnheader", { name: "Costo", exact: true })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "$ por kg o l" })).toHaveCount(0);
   }
   await axe(page);
   await page.goto("/recetas");
@@ -154,13 +152,16 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
 
   await login(page, "compras@ejemplo.test");
   await page.goto(`/materias-primas/${ingredient}?seccion=compra`);
-  await page.locator("summary", { hasText: "Proponer precio" }).click();
-  await page.locator("#precio-producto").selectOption({ index: 1 });
-  await page.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
-  await page.locator("#precio-envase").fill(price);
-  await page.locator("#precio-motivo").fill("Precio de prueba automática");
-  await page.getByRole("button", { name: "Proponer precio" }).click();
+  // «Proponer precio» abre su panel (ficha sin scroll, ADR-0046), también en el celular.
+  await page.getByRole("button", { name: "Proponer precio" }).filter({ visible: true }).click();
+  const panel = page.getByRole("dialog", { name: "Proponer precio" });
+  await panel.locator("#precio-producto").selectOption({ index: 1 });
+  await panel.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
+  await panel.locator("#precio-envase").fill(price);
+  await panel.locator("#precio-motivo").fill("Precio de prueba automática");
+  await panel.getByRole("button", { name: "Proponer precio" }).click();
   await expect(notice(page).filter({ hasText: "Precio propuesto." })).toBeVisible();
+  await page.keyboard.press("Escape");
   await logout(page);
 
   await login(page, "controller@ejemplo.test", { mfa: true });
@@ -174,6 +175,11 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
   await expect(page.getByRole("heading", { name: /Resueltas/ })).toBeVisible();
 
   await page.goto(`/materias-primas/${ingredient}?seccion=compra`);
+  // El impacto de cada precio está en el panel de los productos.
+  await page
+    .getByRole("button", { name: /^Ver (el producto|los \d+ productos)$/ })
+    .filter({ visible: true })
+    .click();
   await page
     .getByRole("link", { name: /Ver el impacto/ })
     .first()
