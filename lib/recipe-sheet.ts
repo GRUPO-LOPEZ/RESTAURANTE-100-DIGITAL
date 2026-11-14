@@ -2,7 +2,9 @@
 // costo oficial, costing.preview_sheet_lines); acá solo se suman, se escalan y se reparten esos valores, sin
 // suponer nada: si falta un dato, el resultado queda vacío (null) y la pantalla dice por qué.
 
-import type { UnitDimension } from "@/lib/recipe-format";
+import { missingState, type MetricInput } from "@/lib/metrics";
+import { formatMoney } from "@/lib/money";
+import { formatMinutes, formatQuantity, type UnitDimension } from "@/lib/recipe-format";
 
 // Lo que devuelve la base por cada fila de la grilla.
 export type PreviewLine = {
@@ -167,4 +169,223 @@ const grams = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 1 });
 export function formatGrams(v: number | null): string {
   if (v === null) return "—";
   return v >= 10000 ? `${grams.format(v / 1000)} kg` : `${grams.format(v)} g`;
+}
+
+// ---------------------------------------------------------------------------
+// Ficha sin scroll (ADR-0047): los 4 indicadores de arriba, la marca de quien revisa y el estado del total
+// ---------------------------------------------------------------------------
+
+export type SheetKpi = MetricInput & {
+  key: string;
+  label: string;
+  unit?: string;
+  period?: string;
+  comparison?: string;
+};
+
+export type SheetKpiInput = {
+  dish: boolean;
+  // Ve costos (menú de costos) y el local elegido arriba (sin local, no hay costo).
+  money: boolean;
+  place: string | null;
+  // Filas completas de la planilla, y lo que la base pudo pasar a gramos y costear.
+  lines: number;
+  grams: number | null;
+  missingGrams: number;
+  cost: number | null;
+  missingCost: number;
+  // Plato: el peso de la porción escrito (texto), el número leído y las porciones (calculadas o cargadas a mano).
+  portionText: string;
+  portionGrams: number | null;
+  portions: number | null;
+  manualPortions: number | null;
+  // Preparación: el peso neto escrito (texto), en gramos si se puede, y neto ÷ bruto.
+  netText: string;
+  netGrams: number | null;
+  ratio: number | null;
+  totalMinutes: number;
+};
+
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+// Los 4 indicadores de la ficha. Plato: costo total, costo por porción, peso total y porciones. Preparación: costo
+// total, costo por kg neto, peso bruto → neto y rendimiento. Quien no ve costos nunca ve dinero: en lugar de los dos
+// de plata, el tiempo total y los ingredientes con peso (con la regla única de lo que falta). Sin dato: null y el
+// motivo (la tarjeta muestra «—», nunca un número supuesto).
+export function sheetKpis(i: SheetKpiInput): SheetKpi[] {
+  const noLines = "Todavía no tiene ingredientes.";
+  const noPlace = "Elegí un local arriba para ver el costo.";
+  const costMissing = !i.place
+    ? noPlace
+    : i.lines === 0
+      ? noLines
+      : `Incompleto: falta el costo de ${i.missingCost} ${plural(i.missingCost, "fila", "filas")}.`;
+  const gramsMissing =
+    i.lines === 0
+      ? noLines
+      : `Incompleto: ${i.missingGrams} ${plural(i.missingGrams, "fila no se pasa", "filas no se pasan")} a gramos.`;
+  const cost = i.money && i.place ? i.cost : null;
+  const shownPortions = i.portions ?? i.manualPortions;
+
+  const total: SheetKpi = {
+    key: "costo",
+    label: "Costo total",
+    value: cost === null ? null : formatMoney(cost),
+    missingReason: costMissing,
+    period: i.place ?? undefined,
+    comparison: "sin IVA",
+    status: "ok",
+    statusLabel: "Completo",
+    emptyLabel: "Sin datos",
+  };
+  const weighed = missingState(i.missingGrams, i.lines);
+  const noMoney: SheetKpi[] = [
+    {
+      key: "tiempo",
+      label: "Tiempo total",
+      value: i.totalMinutes > 0 ? formatMinutes(i.totalMinutes) : null,
+      missingReason: "Todavía no tiene pasos con minutos.",
+      comparison: "sale de los pasos",
+      status: "info",
+      statusLabel: "Calculado",
+      emptyLabel: "Sin datos",
+    },
+    {
+      key: "con-peso",
+      label: "Ingredientes con peso",
+      value: i.lines - i.missingGrams,
+      total: i.lines,
+      comparison: `de ${i.lines}`,
+      emptyLabel: noLines,
+      status: weighed.status,
+      statusLabel: weighed.label,
+    },
+  ];
+
+  if (i.dish) {
+    const portionsKpi: SheetKpi = {
+      key: "porciones",
+      label: "Porciones",
+      value: shownPortions === null ? null : formatQuantity(shownPortions),
+      missingReason: !i.portionText
+        ? "Sin peso de porción."
+        : i.portionGrams === null || i.portionGrams <= 0
+          ? "Revisá el peso de la porción."
+          : i.lines === 0
+            ? noLines
+            : "Falta pasar algún ingrediente a gramos.",
+      comparison:
+        i.portions !== null
+          ? `de ${formatQuantity(i.portionGrams)} g`
+          : i.manualPortions !== null
+            ? "cargadas a mano"
+            : undefined,
+      status: "info",
+      statusLabel: i.portions !== null ? "Calculado" : "Cargadas a mano",
+      emptyLabel: "Sin datos",
+    };
+    const weight: SheetKpi = {
+      key: "peso",
+      label: "Peso total",
+      value: i.grams === null ? null : formatGrams(i.grams),
+      missingReason: gramsMissing,
+      comparison: "suma de los ingredientes",
+      status: "ok",
+      statusLabel: "Completo",
+      emptyLabel: "Sin datos",
+    };
+    if (!i.money) return [weight, portionsKpi, ...noMoney];
+    const per = perPortion(cost, shownPortions);
+    return [
+      total,
+      {
+        key: "porcion",
+        label: "Costo por porción",
+        value: per === null ? null : formatMoney(per),
+        missingReason:
+          cost === null ? costMissing : "Faltan las porciones: cargá el peso de la porción.",
+        period: i.place ?? undefined,
+        status: "ok",
+        statusLabel: "Completo",
+        emptyLabel: "Sin datos",
+      },
+      weight,
+      portionsKpi,
+    ];
+  }
+
+  const ratioKpi: SheetKpi = {
+    key: "rendimiento",
+    label: "Rendimiento",
+    value: i.ratio === null ? null : formatPct(i.ratio * 100),
+    missingReason: !i.netText
+      ? "Sin peso neto."
+      : i.netGrams === null
+        ? "Rinde en volumen o en unidades: se calcula solo en peso."
+        : gramsMissing,
+    comparison: "neto ÷ bruto",
+    status: "info",
+    statusLabel: "Objetivo de los lotes",
+    emptyLabel: "Sin datos",
+  };
+  const grossNet: SheetKpi = {
+    key: "bruto-neto",
+    label: "Peso bruto → neto",
+    value:
+      i.grams === null || i.netGrams === null
+        ? null
+        : `${formatGrams(i.grams)} → ${formatGrams(i.netGrams)}`,
+    missingReason:
+      i.grams === null
+        ? gramsMissing
+        : !i.netText
+          ? "Sin peso neto."
+          : "Rinde en volumen o en unidades: se calcula solo en peso.",
+    comparison: "lo que queda al terminar",
+    status: "info",
+    statusLabel: "Calculado",
+    emptyLabel: "Sin datos",
+  };
+  if (!i.money) return [grossNet, ratioKpi, ...noMoney];
+  const perKg = costPerNetKg(cost, i.netGrams);
+  return [
+    total,
+    {
+      key: "kg-neto",
+      label: "Costo por kg neto",
+      value: perKg === null ? null : formatMoney(perKg),
+      missingReason: cost === null ? costMissing : "Falta el peso neto en peso.",
+      period: i.place ?? undefined,
+      status: "ok",
+      statusLabel: "Completo",
+      emptyLabel: "Sin datos",
+    },
+    grossNet,
+    ratioKpi,
+  ];
+}
+
+// La marca de una fila para quien revisa: «antes 380 g» si cambió la cantidad, «Nueva» si se agregó.
+export function reviewMark(d: {
+  change: string;
+  unit: string;
+  oldQuantity: number | null;
+}): string | null {
+  if (d.change === "added") return "Nueva";
+  if (d.change === "changed")
+    return d.oldQuantity === null ? "Cambió" : `antes ${formatQuantity(d.oldQuantity)} ${d.unit}`;
+  return null;
+}
+
+// El estado del total de la planilla: «Completo» o «Incompleto: falta 1 dato».
+export function totalState(
+  lines: number,
+  missing: number,
+): { status: "ok" | "warn" | "none"; label: string } {
+  if (lines === 0) return { status: "none", label: "Sin ingredientes" };
+  if (missing === 0) return { status: "ok", label: "Completo" };
+  return {
+    status: "warn",
+    label: `Incompleto: ${missing === 1 ? "falta 1 dato" : `faltan ${missing} datos`}`,
+  };
 }

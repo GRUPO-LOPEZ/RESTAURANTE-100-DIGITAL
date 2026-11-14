@@ -120,6 +120,32 @@ export async function openSection(page: Page, name: string, of = "receta") {
     await expect(card.first()).toBeInViewport();
     return;
   }
+  if (of === "receta") {
+    // Ficha de receta en una pantalla (ADR-0047): no hay índice. Las tarjetas están a la vista; Alérgenos, Dónde se usa y
+    // Versiones son filas del resumen que abren su panel.
+    await closePanels(page);
+    const panel: Record<string, string> = {
+      Alérgenos: "Ver (Alérgenos)",
+      "Dónde se usa": "Ver (Dónde se usa)",
+      "Versiones y aprobaciones": "Ver el historial (Versiones y aprobaciones)",
+    };
+    const opener = panel[name];
+    if (opener) {
+      const button = page.getByRole("button", { name: opener, exact: true }).first();
+      await button.scrollIntoViewIfNeeded();
+      await button.click();
+      await expect(page.getByRole("dialog", { name })).toBeVisible();
+      return;
+    }
+    const card = page
+      .locator("section:visible", {
+        has: page.getByRole("heading", { level: 2, name, exact: true }),
+      })
+      .first();
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toBeInViewport();
+    return;
+  }
   const label = of.startsWith("mi ") ? `Secciones de ${of}` : `Secciones de la ${of}`;
   const tab = page
     .getByRole("navigation", { name: label })
@@ -135,6 +161,17 @@ export async function openSection(page: Page, name: string, of = "receta") {
   await expect(tab).toHaveAttribute("aria-current", "page");
 }
 
+// Cierra los paneles abiertos de una ficha (datos, pasos, dónde se usa…): lo de atrás queda tapado mientras están abiertos.
+export async function closePanels(page: Page) {
+  const dialog = page.getByRole("dialog");
+  for (let i = 0; i < 3 && (await dialog.count()) > 0; i++) {
+    await page.keyboard.press("Escape");
+    await expect(dialog)
+      .toHaveCount(0)
+      .catch(() => undefined);
+  }
+}
+
 // Una fila de la grilla de la ficha de receta (ADR-0042): busca por nombre (o código), elige la sugerencia y carga
 // la cantidad y la medida.
 export async function fillSheetRow(
@@ -145,6 +182,7 @@ export async function fillSheetRow(
   quantity: string,
   unit?: string,
 ) {
+  await closePanels(page);
   await page.getByLabel(`Ingrediente, fila ${row}`, { exact: true }).fill(search);
   await page
     .getByRole("listbox", { name: "Sugerencias" })
@@ -157,6 +195,7 @@ export async function fillSheetRow(
 
 // Guarda la ficha con la barra de abajo (un solo motivo para todo) y espera el aviso.
 export async function saveSheet(page: Page, reason: string, submit = false) {
+  await closePanels(page);
   await page.getByLabel("Motivo de los cambios", { exact: true }).fill(reason);
   await page
     .getByRole("button", { name: submit ? "Enviar a revisión" : "Guardar cambios", exact: true })

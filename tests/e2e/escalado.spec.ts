@@ -104,6 +104,8 @@ test("el Chef ve el costo proyectado y carga la capacidad en un borrador", async
   await page.getByLabel(/Capacidad del equipo/).fill("5");
   await saveSheet(page, "Prueba automática");
   await page.reload();
+  // Los pasos se ven y se editan en su panel (ADR-0047).
+  await page.getByRole("button", { name: /^(Editar|Ver) el paso$/ }).click();
   await expect(page.getByLabel("Equipo", { exact: true })).toHaveValue("Horno");
   await page.getByText("Capacidad del equipo y orden").click();
   await expect(page.getByLabel(/Capacidad del equipo/)).toHaveValue("5");
