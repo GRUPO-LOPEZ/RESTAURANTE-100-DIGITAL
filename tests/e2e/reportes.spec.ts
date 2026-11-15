@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login } from "./helpers";
+import { chooseLocal, localSettled, login } from "./helpers";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -94,10 +94,13 @@ test("cambios de costo se pide por período", async ({ page }) => {
   await expect(page.getByLabel("Desde")).toBeVisible();
   await page.getByLabel("Desde").fill("2020-01-01");
   await page.getByLabel("Hasta").fill("2020-01-31");
-  // El período se aplica solo, sin botón (ADR-0036), y conserva el local.
+  // El período se aplica solo, sin botón (ADR-0036), y conserva el local: el ?local= quedó aplicado arriba y salió de la
+  // dirección (ADR-0048).
   await expect(page).toHaveURL(/desde=2020-01-01/);
   await expect(page).toHaveURL(/hasta=2020-01-31/);
-  await expect(page).toHaveURL(/local=/);
+  await expect(page).not.toHaveURL(/local=/);
+  await expect(page.getByLabel("Local activo").locator("visible=true")).toHaveValue(PASTAS_CENTRO);
+  await expect(page.getByRole("main")).toContainText("Demo Pastas Centro");
   await expect(page.getByText("No hubo cambios de costo en este período.")).toBeVisible();
   await axe(page);
 });
@@ -128,6 +131,7 @@ test("quien ve el registro de seguridad ve las exportaciones", async ({ page }) 
     .filter({ hasText: "Rendimientos" })
     .filter({ hasText: "CSV" });
   await expect(exported.first()).toBeVisible();
+  await localSettled(page);
   await axe(page);
 });
 
@@ -169,8 +173,15 @@ test("la ficha técnica y la de costeo de una receta", async ({ page }) => {
   expect(text).toContain("Alérgenos:");
 
   // Una receta de otra marca, pedida a mano, no sale a nombre de este local.
+  // «No encontramos esta página» o, si el selector ya sacó el ?local= de la dirección (ADR-0048), la lista para elegir
+  // otra receta (sin local en la dirección, una receta que no es del local lleva a elegir). Nunca la ficha de la otra.
   await page.goto(`/reportes/recipe_card?local=${PASTAS_CENTRO}&receta=${VACIO}`);
-  await expect(page.getByText("No encontramos esta página")).toBeVisible();
+  await expect(
+    page
+      .getByRole("heading", { name: "No encontramos esta página" })
+      .or(page.getByText("¿De qué receta?")),
+  ).toBeVisible();
+  await expect(page.getByRole("list", { name: "De qué receta es" })).toHaveCount(0);
   const other = await page.request.get(
     `/reportes/recipe_card/exportar?local=${PASTAS_CENTRO}&receta=${VACIO}&formato=csv`,
     { maxRedirects: 0 },
@@ -202,7 +213,7 @@ test("la Chef no saca el reporte de precios", async ({ page }) => {
   await expect(list.getByRole("link", { name: /Rendimientos/ })).toBeVisible();
   await expect(list.getByRole("link", { name: /Materias primas/ })).toHaveCount(0);
   await page.goto(`/reportes/ingredients?local=${PASTAS_CENTRO}`);
-  await expect(page.getByText("No encontramos esta página")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No encontramos esta página" })).toBeVisible();
   const download = await page.request.get(
     `/reportes/ingredients/exportar?local=${PASTAS_CENTRO}&formato=csv`,
     { maxRedirects: 0 },
@@ -224,7 +235,7 @@ test("un formato o un reporte que no existe no abre nada", async ({ page }) => {
   );
   expect(format.status()).toBe(404);
   await page.goto(`/reportes/no_existe?local=${PASTAS_CENTRO}`);
-  await expect(page.getByText("No encontramos esta página")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No encontramos esta página" })).toBeVisible();
 });
 
 // Rediseño (ADR-0036): el local es el de la barra de arriba. Sin selector propio; con «Todos mis
@@ -232,22 +243,24 @@ test("un formato o un reporte que no existe no abre nada", async ({ page }) => {
 test("Reportes usa el local de la barra de arriba", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto("/reportes");
-  await expect(page.getByText("Elegí un local para ver sus reportes.")).toBeVisible();
+  await chooseLocal(page, { label: "Todos mis locales" });
+  await expect(page.getByText("Los reportes se ven de a un local.")).toBeVisible();
   await expect(page.getByRole("main").getByRole("combobox")).toHaveCount(0);
   await axe(page);
+  // Elegir un local en la pantalla lo aplica también arriba (ADR-0048).
   await page
     .getByRole("list", { name: "Tus locales" })
-    .getByRole("link", { name: "Demo Pastas Centro" })
+    .getByRole("button", { name: "Demo Pastas Centro" })
     .click();
-  await expect(page).toHaveURL(new RegExp(`local=${PASTAS_CENTRO}`));
   await expect(page.getByRole("heading", { name: "Reportes de Demo Pastas Centro" })).toBeVisible();
+  await expect(page.getByLabel("Local activo").locator("visible=true")).toHaveValue(PASTAS_CENTRO);
   // El reporte vuelve a la lista de su local.
   await page
     .getByRole("navigation", { name: "Reportes" })
     .getByRole("link", { name: /Rendimientos/ })
     .click();
   await page.getByRole("link", { name: "Volver a los reportes" }).click();
-  await expect(page).toHaveURL(new RegExp(`/reportes\\?local=${PASTAS_CENTRO}$`));
+  await expect(page.getByRole("heading", { name: "Reportes de Demo Pastas Centro" })).toBeVisible();
 });
 
 // Cambiar el local arriba, con un reporte abierto, muestra el mismo reporte del otro local (el selector saca
@@ -257,16 +270,15 @@ test("el selector de arriba cambia el local de un reporte abierto", async ({ pag
   await page.goto(`/reportes/usage?local=${PASTAS_CENTRO}`);
   await expect(page.getByText(/Demo Pastas Centro · Datos del/).first()).toBeVisible();
   try {
-    await page.getByLabel("Local activo").selectOption({ label: "Demo Pastas Norte · PASTAS" });
-    await page.getByRole("button", { name: "Cambiar" }).click();
+    // El ?local= de la dirección se aplicó arriba al llegar (ADR-0048) y sale de la dirección.
     await expect(page).not.toHaveURL(/local=/, { timeout: 20_000 });
+    await chooseLocal(page, { label: "Demo Pastas Norte · PASTAS" });
     await expect(page.getByRole("heading", { name: "Dónde se usa" })).toBeVisible();
     await expect(page.getByText(/Demo Pastas Norte · Datos del/).first()).toBeVisible();
   } finally {
-    await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
-    await page.getByRole("button", { name: "Cambiar" }).click();
+    await chooseLocal(page, { label: "Todos mis locales" });
   }
-  await expect(page.getByText("Elegí un local para ver este reporte.")).toBeVisible({
+  await expect(page.getByText("Los reportes se ven de a un local.")).toBeVisible({
     timeout: 20_000,
   });
   await axe(page);

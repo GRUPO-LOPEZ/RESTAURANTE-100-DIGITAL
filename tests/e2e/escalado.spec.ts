@@ -3,7 +3,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { fillSheetRow, login, openSection, saveSheet } from "./helpers";
+import { fillSheetRow, login, openSection, saveSheet, chooseLocal } from "./helpers";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -57,8 +57,7 @@ test("el Chef ve el costo proyectado y carga la capacidad en un borrador", async
 }, info) => {
   test.setTimeout(180_000);
   await login(page, "chef@ejemplo.test");
-  await page.getByLabel("Local activo").selectOption(PASTAS_CENTRO);
-  await page.getByRole("button", { name: "Cambiar" }).click();
+  await chooseLocal(page, PASTAS_CENTRO);
   await page.goto(`/recetas/${NOQUIS}/escalar?por=porciones&objetivo=8`);
   // El costo sin IVA de los Ñoquis son $ 1.461,43 por lote: el doble.
   await expect(page.getByText(/Costo proyectado en Demo Pastas Centro/)).toBeVisible({
@@ -74,8 +73,7 @@ test("el Chef ve el costo proyectado y carga la capacidad en un borrador", async
   await expect(page.getByRole("list", { name: "Cantidades para este lote" })).toBeVisible();
   await page.emulateMedia({ media: "screen" });
 
-  await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
-  await page.getByRole("button", { name: "Cambiar" }).click();
+  await chooseLocal(page, { label: "Todos mis locales" });
 
   // Una receta nueva por proyecto: el borrador con la capacidad no toca las otras pruebas.
   await page.goto("/recetas/nueva");

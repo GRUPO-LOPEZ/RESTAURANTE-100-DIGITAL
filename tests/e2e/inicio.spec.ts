@@ -2,7 +2,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, notice } from "./helpers";
+import { login, notice, chooseLocal } from "./helpers";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -318,6 +318,8 @@ test("la Cocinera ve el Inicio simple, sin el tablero", async ({ page }) => {
 
 test("sin elegir local, se pide elegir uno", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
+  // Otra prueba pudo dejar un local aplicado (un enlace con ?local= se aplica al llegar, ADR-0048).
+  await chooseLocal(page, { label: "Todos mis locales" });
   await expect(page.getByText("Elegí un local para ver cómo está su recetario.")).toBeVisible();
   await expect(page.getByRole("list", { name: "Tus locales" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Ver qué falta corregir" })).toHaveCount(0);
@@ -330,13 +332,11 @@ test("sin elegir local, se pide elegir uno", async ({ page }) => {
 test("el selector global de local cambia el tablero del Inicio", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto("/");
-  await page.getByLabel("Local activo").selectOption({ label: "Demo Pastas Centro · PASTAS" });
-  await page.getByRole("button", { name: "Cambiar" }).click();
+  await chooseLocal(page, { label: "Demo Pastas Centro · PASTAS" });
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Demo Pastas Centro");
   await expect(page.locator('[data-slot="kpi"]')).toHaveCount(4);
   await expect(page.getByRole("link", { name: "Ver qué falta corregir" })).toBeVisible();
   // Vuelve a "Todos mis locales" para no cambiar otras pruebas.
-  await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
-  await page.getByRole("button", { name: "Cambiar" }).click();
+  await chooseLocal(page, { label: "Todos mis locales" });
   await expect(page.getByText("Elegí un local para ver cómo está su recetario.")).toBeVisible();
 });

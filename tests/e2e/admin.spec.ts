@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { fillLogin, login, logout, menuLink, notice, openAction } from "./helpers";
+import { chooseLocal, fillLogin, login, logout, menuLink, notice, openAction } from "./helpers";
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page })
@@ -219,8 +219,10 @@ test.describe("administración con el sistema nuevo", () => {
   }) => {
     test.setTimeout(120_000);
     await login(page, "direccion@ejemplo.test", { mfa: true });
-    // Con «Todos mis locales», todo el alcance, y la marca como filtro.
+    // Con «Todos mis locales», todo el alcance, y la marca como filtro. Se elige primero: otra prueba pudo dejar aplicado
+    // un local con un enlace ?local= (ADR-0048).
     await page.goto("/usuarios/lista?filas=10");
+    await chooseLocal(page, { label: "Todos mis locales" });
     await expect(page.getByRole("heading", { name: "Personas de todo tu alcance" })).toBeVisible();
     await expect(page.getByRole("main").getByRole("combobox", { name: "Marca" })).toBeVisible();
     await expect(

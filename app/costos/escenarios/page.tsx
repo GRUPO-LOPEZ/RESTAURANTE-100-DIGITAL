@@ -66,14 +66,7 @@ async function Scenarios({
   const place = pickCostPlace(places, first(params.local), activeId);
 
   // El local sale de la barra de arriba (o de ?local=): sin selector propio (ADR-0036).
-  if (!place)
-    return (
-      <PlacePrompt
-        title="Elegí un local para ver sus escenarios."
-        places={places}
-        path="/costos/escenarios"
-      />
-    );
+  if (!place) return <PlacePrompt title="Los escenarios se ven de a un local." places={places} />;
 
   const scenarios = await getScenarios(place.id);
   const active = scenarios.filter((s) => !s.archived);

@@ -249,7 +249,7 @@ async function Quality({ searchParams }: { searchParams: PageProps<"/calidad">["
           <Detail placeId={place.id} name={place.name} />
         </Suspense>
       ) : (
-        <PlacePrompt title="Elegí un local para ver qué falta." places={places} path="/calidad" />
+        <PlacePrompt title="Calidad se ve de a un local." places={places} />
       )}
       {places.length > 1 ? (
         <Suspense fallback={<Loading />}>

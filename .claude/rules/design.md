@@ -18,7 +18,7 @@ El celular **no** es una copia achicada de la computadora: tiene su propia dispo
 
 - **Barra lateral fija** (desde 800 px): 240 px expandida, 68 px contraída (solo íconos; se recuerda en una cookie del navegador). Logo arriba; usuario, Mi cuenta y Salir abajo. Grupos: Visión general · Base de conocimiento · Gestión y análisis · Control · Administración. La navegación entra sin scroll en 1440 px.
 - **Barra superior fija** de 64 px: ruta de navegación, selector global de local, búsqueda, avisos y perfil.
-- **El selector de local es único y global.** No se agregan selectores de local dentro de las pantallas.
+- **El selector de local es único y global.** No se agregan selectores de local dentro de las pantallas. Lo que muestra es siempre lo aplicado (ADR-0048): con mouse o dedo se aplica al elegir, con el teclado se confirma con «Aplicar», y un `?local=` se aplica al llegar.
 - **Área principal fluida:** sin `max-width` global. Márgenes de 32 px (45 px desde 1700 px). Solo los formularios de texto largo limitan su ancho.
 - **Celular (menos de 800 px):** barra inferior con 4 accesos (Inicio, Recetas, Reportes, Control) y el resto en "Menú". Las tablas pasan a tarjetas con nombre, estado y acción.
 
@@ -115,6 +115,7 @@ Las fichas (materia prima y receta) y los paneles como el Inicio entran enteros 
 5. **Barra fija abajo:** contador, motivo obligatorio, Descartar y Guardar cambios.
 6. **Se prueba en 1440 × 900, 1600 × 900 y 1920 × 1080** (sin scroll vertical, con datos reales: los números de una corrida completa no son los del seed), **con un rol que edita y con uno que solo lee** (la lectura no puede ser más alta que la edición), y con las listas llenas (por ejemplo, 5 productos). En el celular es de consulta, con scroll y 44 px.
 
+- **Listados en una pantalla** (Costos, ADR-0048): 4 indicadores, filtros de pocas opciones como botones con `aria-pressed` (`components/costs/reliability-filter.tsx`) y `DataTable scroll`, que ocupa el alto que queda y se desplaza adentro con el encabezado fijo. Una fila, un renglón. Cada eslabón entre `AppShell fill` y la tabla lleva `min-h-0` y base `0px` (`flex-[1_1_0px]`); un contenedor con scroll lleva `relative` (si no, el `sr-only` del título escapa y agranda la página).
 - Los enlaces de antes (`?seccion=`, `#ancla`, Calidad) llevan el foco a su tarjeta y la marcan (`components/focus-target.tsx`; la tarjeta tiene `id` y `tabIndex=-1`).
 - Si algo no entra con datos reales, no se achica por debajo de los mínimos: se avisa y se decide qué sale (ADR-0046: «Dónde se usa» pasó al indicador «Recetas que la usan»).
 

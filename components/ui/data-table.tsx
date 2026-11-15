@@ -29,6 +29,7 @@ function DataTable<T>({
   path,
   params,
   empty,
+  scroll = false,
 }: {
   // Nombre de la tabla para lectores de pantalla y para las pruebas ("Recetas").
   caption: string;
@@ -40,6 +41,9 @@ function DataTable<T>({
   path?: string;
   params?: Record<string, string>;
   empty?: React.ReactNode;
+  // Pantallas sin scroll (ADR-0048): en la computadora la tabla ocupa el alto que le dan y se desplaza adentro, con el
+  // encabezado fijo. Quien la usa le da el alto (un padre flex con min-h-0). El celular sigue con tarjetas.
+  scroll?: boolean;
 }) {
   // Sin filas, nunca una tabla vacía: el vacío de la pantalla o uno por defecto.
   if (rows.length === 0)
@@ -50,7 +54,10 @@ function DataTable<T>({
   const lines = columns.filter((c) => c !== title && (c.mobile ?? "line") === "line");
 
   return (
-    <div data-slot="data-table" className="flex flex-col">
+    <div
+      data-slot="data-table"
+      className={cn("flex flex-col", scroll && "desk:min-h-0 desk:flex-[1_1_0px]")}
+    >
       <ul className="flex flex-col gap-2 desk:hidden print:hidden" aria-label={caption}>
         {rows.map((row) => (
           <li
@@ -92,11 +99,22 @@ function DataTable<T>({
         role="region"
         aria-label={`${caption} (tabla)`}
         tabIndex={0}
-        className="hidden overflow-x-auto rounded-md border border-line bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary desk:block print:block"
+        className={cn(
+          "hidden overflow-x-auto rounded-md border border-line bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary desk:block print:block",
+          // relative: el título oculto de la tabla (sr-only, absoluto) no escapa del recorte ni agranda la página.
+          scroll &&
+            "relative desk:h-0 desk:min-h-0 desk:flex-[1_1_0px] desk:overflow-auto print:h-auto",
+        )}
       >
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">{caption}</caption>
-          <thead>
+          {/* Con border-collapse el borde de la fila no acompaña al encabezado fijo: va una línea de 1 px propia. */}
+          <thead
+            className={cn(
+              scroll &&
+                "sticky top-0 z-10 bg-app shadow-[inset_0_-1px_0_var(--color-line)] print:static",
+            )}
+          >
             <tr className="border-b border-line">
               {columns.map((c) => (
                 <th
@@ -111,6 +129,7 @@ function DataTable<T>({
                   }
                   className={cn(
                     "px-4 py-2 text-sm font-medium text-ink-muted",
+                    scroll && "px-2 whitespace-nowrap",
                     c.align === "right" ? "text-right" : "text-left",
                   )}
                 >
@@ -155,6 +174,8 @@ function DataTable<T>({
                     key={c.key}
                     className={cn(
                       "px-4 py-2 align-top text-ink",
+                      // Una fila, un renglón: así entran más filas en el alto de la pantalla.
+                      scroll && "px-2 py-1.5 whitespace-nowrap",
                       c.align === "right" && "text-right tabular-nums",
                     )}
                   >

@@ -1,13 +1,35 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-14. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Próximo: Costos sin scroll._
+_Última actualización: 2026-11-14. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). En curso: Costos sin scroll y selector de local (ADR-0048)._
 
-## Después de las fichas: Costos sin scroll y selector de local (pedido de Soy, 2026-11-14)
+## En curso: Costos sin scroll y selector de local (rama `feat/costos-sin-scroll`, ADR-0048, PR #70 abierto)
 
-- **Prompt:** `docs/prompts/2026-11-14-costos-sin-scroll.md` (uno solo, rama `feat/costos-sin-scroll`). Boceto en `docs/prompts/2026-11-14-boceto-costos/`.
-- **Qué pide:** lista y detalle de Costos en una pantalla, con la regla del rojo; y que el selector de local muestre siempre lo aplicado (Soy veía «Demo Café Centro» arriba y Costos le pedía elegir un local).
-- **Pendiente de Soy:** si las pantallas sin scroll se diseñan para el alto real de un monitor de 1440 × 900 (unos 790 px útiles).
-- **Formato:** verificado con Prettier antes de fusionar (PR #69).
+- **Pedido:** `docs/prompts/2026-11-14-costos-sin-scroll.md`; boceto en `docs/prompts/2026-11-14-boceto-costos/`. Plan aprobado por Joaco el 2026-11-14. **Sin cambios en la base.**
+- **La causa del selector, reproducida con Playwright antes de cambiar nada** (Controller, base recién recreada):
+  - (a) **se reprodujo:** elegir un local en la barra sin apretar «Cambiar» lo mostraba arriba y Costos seguía pidiendo uno. Es lo que vio Soy;
+  - (b) una pantalla guardada por Next con un valor viejo: **no se reprodujo**;
+  - (c) el local aplicado sin permiso de costos: descartada para Soy;
+  - (d) **se reprodujo:** un enlace con `?local=` mostraba ese local y arriba decía otro.
+- **Decisión de Joaco (2026-11-14):** un `?local=` se aplica arriba al llegar.
+- **Hecho:**
+  - selector controlado, con chip «Aplicado / Sin aplicar / Aplicando…»; con mouse o dedo aplica al elegir, con el teclado pide «Aplicar»; `?local=` se aplica al llegar y sale de la dirección;
+  - `PlacePrompt` (Costos, Calidad, Reportes, Escenarios): «{Pantalla} se ve de a un local» y botones que aplican el local; dice si el local aplicado no deja ver costos;
+  - lista `/costos` en una pantalla: 4 indicadores con la regla única, confiabilidad como botones con `aria-pressed`, `DataTable scroll` (nuevo) con encabezado fijo;
+  - detalle `/costos/[id]` en una pantalla: franja de lo que falta, 4 indicadores, línea por línea de mayor a menor con barra (lo que falta, al final), historia con panel y «Para bajar el costo»;
+  - `lib/costs.ts`: `costListMetrics`, `costTip`, `missingSummary`, `sortCostLines` (lo que falta al final), `resolveCostPlace` con `blockedActive`;
+  - `design.md` (selector y listados en una pantalla), ADR-0048 y `docs/modulos/13-costos-sin-scroll-lista-de-cambios.md`.
+- **Medido con `next start` (Controller, seed):** lista y detalle sin scroll de página en 1440 × 900, 1600 × 900 y 1920 × 1080, y la tabla entra entera de ancho en 1440. Celular revisado en capturas.
+- **Aprendido:**
+  - un contenedor con `overflow: auto` sin `relative` deja escapar el `sr-only` (absoluto) del título de la tabla y la página crece (1104 px en 1440);
+  - las pruebas eligen el local antes de la hidratación y React vuelve al valor anterior: `chooseLocal()` espera `data-ready` y `data-applied` del formulario;
+  - como un `?local=` ahora cambia el local de la persona, las pruebas que esperan «Todos mis locales» lo eligen primero;
+  - sacar el `?local=` con `router.replace` navegaba: pisaba un clic rápido (ordenar una columna) y dejaba la pestaña sin título un momento (axe fallaba). Se saca con `window.history.replaceState`, que Next sincroniza sin navegar;
+  - el selector semitransparente mientras aplica no llegaba al contraste: ya no se aclara, el chip dice «Aplicando…»;
+  - un script que espera «Aplicado» después de un `?local=` lo encuentra antes de tiempo (el chip de «Todos mis locales»): hay que esperar `data-applied`.
+- **Capturas** (`docs/capturas/costos-sin-scroll/`, base recién recreada): lista, detalle completo (Ravioles de ricota) e incompleto (Lasaña bolognesa) en 1440, 1600, 1920 y celular. En el seed ninguna receta está «Completo»: Ravioles tiene todas sus líneas pero está «Desactualizado».
+- **Pruebas:** primera corrida completa: Vitest 407/407 y pgTAP 2540/2540 (con la base limpia); Playwright con 11 fallas. Arregladas de raíz: contraste del selector, `?local=` con `replaceState`, pruebas que esperaban el comportamiento de antes (`local=` en la dirección, «Todos mis locales» de entrada) y el localizador del 404 (el anunciador de rutas repite el texto). Mermas, roles y tres ingresos que quedaron en «Cargando…» pasaron al repetirlas (lentitud de la corrida larga). Las 7 pruebas que usan `?local=`: 98 pasan, 4 omitidas.
+- **Corrida final (2026-11-15):** lint, tipos y Vitest 407/407; pgTAP 2540/2540 (base recién recreada); Playwright 282 pasan, 21 omitidas y 1 falla: roles en el celular, por tiempo. El ingreso esperó 19 s el código de doble verificación siguiente (no se repite uno usado) y a la prueba le quedaron 11 s. Arreglado en `freshTotp` (`tests/e2e/helpers.ts`): esa espera se suma al límite de la prueba. Con la base recreada, roles pasa 10/10.
+- **Aprendido:** con la computadora cargada (68 % de CPU en reposo, Docker con 3,7 GB), pgTAP tardó 12 minutos en vez de 3 y fallaron por tiempo pruebas de rendimiento distintas en cada corrida. Antes de medir, cerrar lo pesado.
 
 ## Antes: Inicio sin scroll (rama `feat/inicio-sin-scroll`, ADR-0045, PR #65 fusionado)
 

@@ -123,11 +123,7 @@ async function Reports({ searchParams }: { searchParams: PageProps<"/reportes">[
           <ReportList placeId={place.id} placeName={place.name} />
         </Suspense>
       ) : (
-        <PlacePrompt
-          title="Elegí un local para ver sus reportes."
-          places={places}
-          path="/reportes"
-        />
+        <PlacePrompt title="Los reportes se ven de a un local." places={places} />
       )}
       <Suspense fallback={null}>
         <Exports />
