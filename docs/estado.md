@@ -1,8 +1,41 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-14. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
+_Última actualización: 2026-11-15._ **En curso: Fase 3, compras y facturas. Prompt 0 (plan) escrito en `docs/plan-fase-3-compras`, esperando la aprobación de Joaco y sus respuestas a P1–P10.**
 
-## Próximo: Módulo 2 «Facturas», compras (pedido de Soy, 2026-11-14)
+_Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
+
+## Fase 3: compras y facturas (Módulo 2 «Facturas»)
+
+- **Prompt 0, plan de la Fase 3** (rama `docs/plan-fase-3-compras`, ADR-0049, solo documentos). Escrito el 2026-11-15:
+  - `docs/fases/fase-3-plan.md`: resumen para Soy, qué se reutiliza y qué se agrega, diagrama, diccionario, permisos por rol, las 9 pantallas, 34 casos con la cuenta hecha, orden, riesgos, decisiones y lo que muestran las facturas reales;
+  - ADR-0049, «Módulo de compras y facturas: alcance y reutilización».
+- **Esperando:** que Joaco apruebe el plan y responda las **10 preguntas nuevas (P1 a P10)**, o las pase a Soy. Ningún prompt arranca con una pregunta suya sin responder:
+  - P1 importación de proveedores reales;
+  - P2 rubro «no va a recetas»;
+  - P3 locales sin código;
+  - P4 facturas sin OC;
+  - P5 IVA de 2,5 % y 5 %;
+  - P6 bonificación en pesos;
+  - P7 QR de ARCA;
+  - P8 retenciones;
+  - P9 lote en la recepción;
+  - P10 pago con código electrónico.
+- **Facturas reales:** se miraron las 33 páginas. Las imágenes se sacaron en la carpeta temporal de la sesión, fuera del repo, y se borraron al terminar. El plan suma 14 hallazgos a los 12 del archivo de prompts, sin nombres, CUIT ni importes.
+- **Orden de los PRs:**
+
+  | PR  | Rama                                 | Qué hace                                       |
+  | --- | ------------------------------------ | ---------------------------------------------- |
+  | 0   | `docs/plan-fase-3-compras`           | Plan (este)                                    |
+  | 1   | `feat/proveedores`                   | Ficha completa de proveedor                    |
+  | 2   | `feat/articulos-y-listas-de-precios` | Artículos de proveedor, cola de mapeo y listas |
+  | 3   | `feat/ordenes-de-compra`             | OC con numeración por local, aprobación y cola |
+  | 4   | `feat/recepcion`                     | Recepción con fotos y stock                    |
+  | 5   | `feat/facturas`                      | Facturas, control de 3 vías y costos           |
+  | 6   | `feat/pagos-y-tablero-de-compras`    | Pagos, cuenta corriente y tablero              |
+
+  Cada uno con su plan aprobado antes de tocar nada.
+
+## Antes: Módulo 2 «Facturas», compras (pedido de Soy, 2026-11-14)
 
 - **Documento de Soy:** `docs/fases/fase-3-facturas.md` (completo, tal como llegó). Soy lo llama Módulo 2: Facturas; en la hoja de ruta es la Fase 3 (compras).
 - **Prompts:** `docs/prompts/2026-11-14-facturas-modulo-2.md`, siete en orden, un PR cada uno: 0) plan de la Fase 3 (solo docs, `docs/fases/fase-3-plan.md`); 1) proveedores, ficha completa; 2) artículos de proveedor, cola de mapeo y listas de precios; 3) orden de compra; 4) recepción y stock; 5) facturas, control de 3 vías y costos; 6) pagos, cuenta corriente y tablero de compras.
@@ -14,7 +47,7 @@ _Última actualización: 2026-11-14. Soy aprobó la Fase 1 (ADR-0019). Joaco apr
 - **Orden:** Costos sin scroll ya está fusionado (PR #70). Sigue el Prompt 0 y después los seis PRs en orden.
 - **Sin verificar desde la máquina de Soy:** el formato (`npm run format:check`) de estos archivos de docs.
 
-## En curso: Costos sin scroll y selector de local (rama `feat/costos-sin-scroll`, ADR-0048, PR #70 abierto)
+## Antes: Costos sin scroll y selector de local (rama `feat/costos-sin-scroll`, ADR-0048, PR #70 fusionado)
 
 - **Pedido:** `docs/prompts/2026-11-14-costos-sin-scroll.md`; boceto en `docs/prompts/2026-11-14-boceto-costos/`. Plan aprobado por Joaco el 2026-11-14. **Sin cambios en la base.**
 - **La causa del selector, reproducida con Playwright antes de cambiar nada** (Controller, base recién recreada):
