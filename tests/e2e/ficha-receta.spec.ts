@@ -7,6 +7,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import {
+  chooseLocal,
   closePanels,
   fillSheetRow,
   login,
@@ -59,9 +60,7 @@ const kpi = (page: Page, label: string) =>
 const sheet = (page: Page) => page.locator('[data-slot="sheet-scroll"]:visible');
 
 async function choosePlace(page: Page) {
-  await page.getByLabel("Local activo").selectOption(PASTAS_CENTRO);
-  await page.getByRole("button", { name: "Cambiar" }).click();
-  await expect(page.getByLabel("Local activo")).toHaveValue(PASTAS_CENTRO, { timeout: 20_000 });
+  await chooseLocal(page, PASTAS_CENTRO);
 }
 
 async function newRecipe(page: Page, type: "Plato" | "Preparación", rubro: string, name: string) {

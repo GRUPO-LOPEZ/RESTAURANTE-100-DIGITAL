@@ -2,7 +2,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout } from "./helpers";
+import { login, logout, chooseLocal } from "./helpers";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -73,13 +73,15 @@ test("quien no ve borradores los cuenta, sin ver sus nombres", async ({ page }) 
 test("sin elegir local, se compara y se elige", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto("/calidad");
-  // Con «Todos mis locales» en la barra de arriba, la pantalla pide uno.
-  await expect(page.getByText("Elegí un local para ver qué falta.")).toBeVisible();
+  // Con «Todos mis locales» en la barra de arriba, la pantalla lo dice y pide uno (ADR-0048).
+  await chooseLocal(page, { label: "Todos mis locales" });
+  await expect(page.getByText("Calidad se ve de a un local.")).toBeVisible();
   await page
     .getByRole("list", { name: "Tus locales" })
-    .getByRole("link", { name: "Demo Pastas Centro" })
+    .getByRole("button", { name: "Demo Pastas Centro" })
     .click();
-  await expect(page).toHaveURL(/local=/);
+  // Elegirlo en la pantalla lo aplica también arriba: lo que muestra el selector es lo aplicado.
+  await expect(page.getByLabel("Local activo").locator("visible=true")).toHaveValue(PASTAS_CENTRO);
   await expect(page.getByRole("list", { name: "¿Listas para cocinar?" })).toBeVisible();
 });
 
@@ -125,15 +127,13 @@ test("el selector de arriba cambia el local de un indicador abierto", async ({ p
   await page.goto(`/calidad/recipe_photo?local=${PASTAS_CENTRO}`);
   await expect(page.getByText(/^Demo Pastas Centro: \d+ para revisar/)).toBeVisible();
   try {
-    await page.getByLabel("Local activo").selectOption({ label: "Demo Pastas Norte · PASTAS" });
-    await page.getByRole("button", { name: "Cambiar" }).click();
+    await chooseLocal(page, { label: "Demo Pastas Norte · PASTAS" });
     await expect(page).not.toHaveURL(/local=/, { timeout: 20_000 });
     await expect(page.getByText(/^Demo Pastas Norte: \d+ para revisar/)).toBeVisible();
   } finally {
-    await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
-    await page.getByRole("button", { name: "Cambiar" }).click();
+    await chooseLocal(page, { label: "Todos mis locales" });
   }
-  await expect(page.getByText("Elegí un local para ver qué falta.")).toBeVisible({
+  await expect(page.getByText("Calidad se ve de a un local.")).toBeVisible({
     timeout: 20_000,
   });
   await axe(page);

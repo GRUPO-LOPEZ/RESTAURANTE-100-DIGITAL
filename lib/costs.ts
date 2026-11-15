@@ -6,6 +6,7 @@ import {
   type SnapshotReason,
 } from "@/lib/cost-labels";
 import { getActiveRestaurantId, getMyScopes } from "@/lib/data";
+import { missingState } from "@/lib/metrics";
 import { perBaseLabel } from "@/lib/money";
 import type { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +32,10 @@ export {
 // ---------------------------------------------------------------------------
 export type CostPlace = { id: string; name: string };
 
-export async function getCostPlaces(): Promise<CostPlace[]> {
+async function costPlacesAndNames(): Promise<{
+  places: CostPlace[];
+  names: Map<string, string>;
+}> {
   const supabase = await createClient();
   const [{ data, error }, scopes] = await Promise.all([
     supabase.schema("core").rpc("permitted_restaurant_ids", { p_permission: "recipes.view_costs" }),
@@ -40,10 +44,15 @@ export async function getCostPlaces(): Promise<CostPlace[]> {
   if (error || !Array.isArray(data)) throw new Error("No pudimos cargar tus locales.");
   const ids = new Set(data.filter((x): x is string => typeof x === "string"));
   const names = new Map(scopes.map((s) => [s.restaurant_id, s.restaurant_name]));
-  return [...ids]
+  const places = [...ids]
     .map((id) => ({ id, name: names.get(id) ?? "" }))
     .filter((p) => p.name)
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  return { places, names };
+}
+
+export async function getCostPlaces(): Promise<CostPlace[]> {
+  return (await costPlacesAndNames()).places;
 }
 
 // El pedido en la dirección, el local elegido arriba o el único que tiene. Si no, ninguno.
@@ -62,9 +71,22 @@ export function pickCostPlace(
 export async function resolveCostPlace(
   userId: string | undefined,
   requested?: string,
-): Promise<{ places: CostPlace[]; place: CostPlace | null }> {
-  const [places, activeId] = await Promise.all([getCostPlaces(), getActiveRestaurantId(userId)]);
-  return { places, place: pickCostPlace(places, requested, activeId) };
+): Promise<{
+  places: CostPlace[];
+  place: CostPlace | null;
+  // El local aplicado arriba cuando no es uno de los que dejan ver costos (para decirlo, en vez de pedir uno).
+  blockedActive: string | null;
+}> {
+  const [{ places, names }, activeId] = await Promise.all([
+    costPlacesAndNames(),
+    getActiveRestaurantId(userId),
+  ]);
+  const place = pickCostPlace(places, requested, activeId);
+  const blockedActive =
+    !place && activeId && !places.some((p) => p.id === activeId)
+      ? (names.get(activeId) ?? null)
+      : null;
+  return { places, place, blockedActive };
 }
 
 // ---------------------------------------------------------------------------
@@ -183,14 +205,99 @@ export type CostLine = {
   preparation?: boolean;
 };
 
-// De la que más pesa a la que menos; lo que falta, primero: es lo que hay que resolver.
+// De la que más pesa a la que menos; las que no tienen dato, al final (pedido de Soy, ADR-0048). Lo que falta se avisa
+// arriba, en una franja (missingSummary).
 export function sortCostLines(lines: CostLine[]): CostLine[] {
   return [...lines].sort(
     (a, b) =>
-      Number(b.missing !== null) - Number(a.missing !== null) ||
+      Number(a.missing !== null) - Number(b.missing !== null) ||
       (b.cost ?? 0) - (a.cost ?? 0) ||
       a.order - b.order,
   );
+}
+
+// La franja del detalle: qué línea no tiene dato y por qué. null si no falta nada.
+export function missingSummary(lines: CostLine[], shown = 2): string | null {
+  const missing = lines.filter((l) => l.missing !== null);
+  if (missing.length === 0) return null;
+  const why = (l: CostLine) => `${l.item}, ${(l.missing ?? "").toLocaleLowerCase("es-AR")}`;
+  if (missing.length === 1) return `Falta un dato: ${why(missing[0] as CostLine)}.`;
+  const listed = missing.slice(0, shown).map(why).join("; ");
+  const rest = missing.length - Math.min(shown, missing.length);
+  return `Faltan ${missing.length} datos: ${listed}${rest > 0 ? ` y ${rest} más` : ""}.`;
+}
+
+// «Para bajar el costo» (ADR-0048): la línea que más pesa y su parte del total. Es una cuenta con los datos de la
+// pantalla, no un agente. Con un dato faltante no hay total contra el que medir: primero se completa.
+export function costTip(lines: CostLine[], total: number | null): string | null {
+  const missing = lines.filter((l) => l.missing !== null).length;
+  if (missing > 0 || total === null) {
+    return missing > 1
+      ? `Primero hay que completar los ${missing} datos que faltan.`
+      : "Primero hay que completar el dato que falta.";
+  }
+  if (total <= 0) return null;
+  const top = sortCostLines(lines).find((l) => l.cost !== null && l.cost > 0);
+  if (!top || top.cost === null) return null;
+  // Con el mismo redondeo que la tabla (un decimal), así dicen lo mismo.
+  const share = (top.share ?? (top.cost * 100) / total).toLocaleString("es-AR", {
+    maximumFractionDigits: 1,
+  });
+  const name = top.preparation ? `${top.item} (una preparación)` : top.item;
+  return `${name} es el ${share} % del costo. Un cambio de precio o de cantidad ahí es lo que más mueve el total.`;
+}
+
+// Los tres indicadores con número de la lista (ADR-0048), con la regla única de lo que falta (lib/metrics.ts). Sin
+// recetas con costo, Metric dice «Sin datos» (nunca «Todas al día»).
+export type CostListMetric = {
+  key: "up_to_date" | "stale" | "incomplete";
+  label: string;
+  value: number;
+  total: number;
+  status: "ok" | "warn" | "bad" | "none";
+  statusLabel: string;
+  // El filtro de «Ver cuáles», si hay algo para ver.
+  filter?: Reliability;
+};
+
+export function costListMetrics(summary: {
+  total: number;
+  complete: number;
+  stale: number;
+  incomplete: number;
+}): CostListMetric[] {
+  const { total, complete, stale, incomplete } = summary;
+  const behind = missingState(total - complete, total);
+  const old = missingState(stale, total);
+  const empty = missingState(incomplete, total);
+  return [
+    {
+      key: "up_to_date",
+      label: "Recetas al día",
+      value: complete,
+      total,
+      status: behind.status,
+      statusLabel: behind.status === "ok" ? "Todas al día" : behind.label,
+    },
+    {
+      key: "stale",
+      label: "Desactualizadas",
+      value: stale,
+      total,
+      status: old.status,
+      statusLabel: stale > 0 ? `Vencidas: ${stale}` : "Ninguna",
+      ...(stale > 0 ? { filter: "stale" as const } : {}),
+    },
+    {
+      key: "incomplete",
+      label: "Incompletas",
+      value: incomplete,
+      total,
+      status: empty.status,
+      statusLabel: incomplete > 0 ? `Sin total: ${incomplete}` : "Ninguna",
+      ...(incomplete > 0 ? { filter: "incomplete" as const } : {}),
+    },
+  ];
 }
 
 export async function getCostLines(versionId: string, restaurantId: string): Promise<CostLine[]> {
@@ -323,6 +430,7 @@ export type CostSnapshot = {
 export async function getCostHistory(
   restaurantId: string,
   recipeId: string,
+  limit = 10,
 ): Promise<CostSnapshot[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -332,7 +440,7 @@ export async function getCostHistory(
     .eq("restaurant_id", restaurantId)
     .eq("recipe_id", recipeId)
     .order("entry_number", { ascending: false })
-    .limit(10);
+    .limit(limit);
   if (error) throw new Error("No pudimos cargar la historia del costo.");
   return data.map((s) => ({
     id: s.id,
