@@ -202,11 +202,11 @@ export async function createSupplierAction(
   const back = ingredientId(formData);
   if (!groupId.success) return { status: "bad", message: "Falta el grupo." };
   const supabase = await createClient();
-  const { error } = await supabase.schema("catalog").rpc("create_supplier", {
+  // El código lo pone la base (PROV-0001), con la operativa vacía para completar en la ficha (ADR-0050).
+  const { error } = await supabase.schema("purchasing").rpc("create_supplier", {
     p_group_id: groupId.data,
-    p_code: fields.data.code,
     p_name: fields.data.name,
-    p_details: fields.data.tax_id ? { tax_id: fields.data.tax_id } : {},
+    p_tax_id: fields.data.tax_id ?? "",
     p_reason: fields.data.reason,
   });
   if (back.success) revalidatePath(`/materias-primas/${back.data}`);

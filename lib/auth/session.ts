@@ -91,6 +91,9 @@ export const getMenus = cache(async () => {
     scenarios,
     reports,
     rubrosRecipes,
+    suppliers,
+    suppliersManage,
+    supplierPayment,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -128,6 +131,11 @@ export const getMenus = cache(async () => {
     check("reports.export"),
     // Rubros de sub-recetas y menú (ADR-0038): permiso propio, para todo el grupo.
     groupWide("recipes.manage_categories"),
+    // Proveedores (ADR-0050): ver en cualquier alcance; administrar, para todo el grupo (como la base); el pago lo ve
+    // quien administra o quien tiene purchasing.view_payment_terms (Controller y Dirección).
+    check("purchasing.view_suppliers"),
+    groupWide("purchasing.manage_suppliers"),
+    check("purchasing.view_payment_terms"),
   ]);
   return {
     users,
@@ -168,6 +176,9 @@ export const getMenus = cache(async () => {
     // Calidad de datos: la misma regla que costing.quality_allowed. El cocinero no entra.
     quality: recipesDraft || costs || pricesView,
     reports,
+    suppliers,
+    suppliersManage,
+    supplierPayment: supplierPayment || suppliersManage,
   };
 });
 

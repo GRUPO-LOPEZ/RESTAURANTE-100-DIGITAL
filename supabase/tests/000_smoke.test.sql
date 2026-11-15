@@ -22,9 +22,9 @@ from unnest(array[
 -- Si una migración futura da acceso, tiene que actualizar esta prueba a propósito.
 select is(
   has_schema_privilege(r, s, 'usage'),
-  (r = 'authenticated' and s in ('core', 'org', 'workflow', 'catalog', 'recipes', 'costing')) or (r = 'service_role' and s = 'core'),
+  (r = 'authenticated' and s in ('core', 'org', 'workflow', 'catalog', 'recipes', 'costing', 'purchasing')) or (r = 'service_role' and s = 'core'),
   format('%s %s acceso al esquema %s', r,
-         case when (r = 'authenticated' and s in ('core', 'org', 'workflow', 'catalog', 'recipes', 'costing')) or (r = 'service_role' and s = 'core') then 'tiene' else 'no tiene' end, s)
+         case when (r = 'authenticated' and s in ('core', 'org', 'workflow', 'catalog', 'recipes', 'costing', 'purchasing')) or (r = 'service_role' and s = 'core') then 'tiene' else 'no tiene' end, s)
 )
 from unnest(array[
   'core', 'org', 'audit', 'workflow', 'catalog', 'recipes',

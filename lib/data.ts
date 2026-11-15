@@ -615,6 +615,11 @@ export const TABLE_LABELS: Record<string, string> = {
   "catalog.yield_processes": "Proceso de rendimiento",
   "catalog.ingredient_yield_profiles": "Rendimiento estándar",
   "catalog.ingredient_yield_tests": "Ensayo de rendimiento",
+  "purchasing.supplier_terms": "Operativa de un proveedor",
+  "purchasing.supplier_payment_terms": "Condición de pago de un proveedor",
+  "purchasing.supplier_payment_accounts": "Cuenta de pago de un proveedor",
+  "purchasing.supplier_categories": "Rubro de un proveedor",
+  "purchasing.supplier_customer_numbers": "Número de cliente en un proveedor",
 };
 
 // Módulos del historial (audit.module_for), con su nombre en español.
@@ -626,6 +631,7 @@ export const MODULE_LABELS: Record<string, string> = {
   notifications: "Avisos",
   test_documents: "Documentos de ensayo",
   catalog: "Materias primas",
+  purchasing: "Compras",
 };
 
 // Campos que se muestran en el historial y en el "antes y después", con su nombre en español.
@@ -705,6 +711,32 @@ export const FIELD_LABELS: Record<string, string> = {
   before_cooking_weight: "Antes de cocinar (g)",
   after_cooking_weight: "Después de cocinar (g)",
   responsible: "Responsable",
+  // Proveedores (ADR-0050).
+  trade_name: "Nombre de fantasía",
+  vat_condition: "Condición frente al IVA",
+  city: "Localidad",
+  whatsapp: "WhatsApp",
+  sales_contact: "Contacto de ventas",
+  admin_contact: "Contacto de pagos",
+  order_days: "Días de pedido",
+  delivery_days: "Días de entrega",
+  receiving_from: "Recibe desde",
+  receiving_to: "Recibe hasta",
+  po_channel: "Canal de la orden de compra",
+  po_channel_target: "Dato del canal",
+  billing_modes: "Cómo factura",
+  price_list_frequency: "Frecuencia de la lista de precios",
+  requires_po_approval: "Requiere aprobación de la OC",
+  payment_terms: "Condición de pago",
+  payment_days: "Días de pago",
+  minimum_order_amount: "Pedido mínimo",
+  cbu: "CBU",
+  bank: "Banco",
+  holder_name: "Titular",
+  holder_tax_id: "CUIT del titular",
+  electronic_code: "Código de pago electrónico",
+  category_id: "Rubro",
+  customer_number: "Número de cliente",
 };
 
 const VALUE_LABELS: Record<string, string> = {
