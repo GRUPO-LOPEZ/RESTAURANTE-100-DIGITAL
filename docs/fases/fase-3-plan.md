@@ -516,7 +516,7 @@ Llegaron por Luciano. Soy aceptó la recomendación en cinco de las seis pregunt
 - **P5, sí:** se suman las alícuotas de 2,5 % y 5 % en las líneas de factura y en `price_records`.
 - **P6, pendiente:** Soy no la respondió todavía. No hace falta hasta el Prompt 2.
 - **P8, sí a la recomendación:** las retenciones quedan fuera de esta fase, con la columna preparada en el pago.
-- **P9, sí:** el lote se carga en la recepción, opcional y por renglón. Soy lo pidió con énfasis: para él, tener un programa de calidad es importante, así que el lote tiene que poder seguirse desde Calidad.
+- **P9, sí:** el lote se carga en la recepción, opcional y por renglón. Soy lo pidió con énfasis («tener un programa de calidad es importante»), así que el lote tiene que poder seguirse desde Calidad.
 
 P1, P2, P7 y P10 son de Joaco.
 
