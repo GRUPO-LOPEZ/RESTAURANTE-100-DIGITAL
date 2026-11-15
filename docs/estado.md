@@ -13,6 +13,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - P1: la importación de los proveedores reales desde planilla va en un PR aparte, justo después del Prompt 1;
   - P10: el pago con código electrónico es un medio más;
   - P2 a P9: valen las recomendaciones del plan. Se aplican en el prompt que usa cada una.
+- **Respuestas de Soy (2026-11-15, PR #73):** P3, P4, P5, P6, P8 y P9 como recomienda el plan (detalle en `docs/fases/fase-3-plan.md`). P9 con énfasis: el lote tiene que poder seguirse desde Calidad (Prompt 4).
 - **Facturas reales:** se miraron las 33 páginas, fuera del repo. El plan suma 14 hallazgos a los 12 del archivo de prompts, sin nombres, CUIT ni importes. **Pendiente:** las imágenes sacadas de los PDF siguen en la carpeta temporal de la sesión de Claude Code (el borrado automático fue rechazado). Joaco las borra a mano.
 
 ### Prompt 1: ficha de proveedor (rama `feat/proveedores`, ADR-0050), PR abierto
