@@ -107,12 +107,16 @@ test("el Controller ve el tablero en una pantalla y llega a lo que falta", async
     for (const size of [
       { width: 1440, height: 900 },
       { width: 1600, height: 900 },
+      { width: 1715, height: 843 },
       { width: 1920, height: 1080 },
     ]) {
       await page.setViewportSize(size);
       await page.reload();
       await boardReady(page);
       await noVerticalScroll(page);
+      // Lo que lleva a los números queda a la vista, aunque la tarjeta se desplace adentro (ADR-0051).
+      await expect(page.getByRole("link", { name: "Ver los números" })).toBeInViewport();
+      if (size.height === 843) await axe(page);
     }
     // Con cada lista del ranking (unas tienen más filas que otras) sigue entrando en 1440 × 900.
     await page.setViewportSize({ width: 1440, height: 900 });

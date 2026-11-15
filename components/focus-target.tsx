@@ -17,7 +17,10 @@ export function FocusTarget() {
       }
       if (!id) return;
       const el = document.getElementById(id);
-      if (el && el.offsetParent !== null) el.focus({ preventScroll: false });
+      if (!el || el.offsetParent === null) return;
+      // Una tarjeta que se desplaza adentro (ADR-0051) se muestra desde su título.
+      el.scrollTop = 0;
+      el.focus({ preventScroll: false });
     }
     focusHash();
     // Un enlace de Next cambia la dirección sin «hashchange»: también se escucha «popstate» (volver y avanzar).

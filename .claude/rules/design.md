@@ -106,18 +106,20 @@ Mismo lugar para los botones, misma lógica de filtros y mismos nombres para las
 
 ## Pantallas de carga sin scroll (ADR-0046)
 
-Las fichas (materia prima y receta) y los paneles como el Inicio entran enteros en 1440 × 900. Todo nuevo tipo B sigue este patrón:
+Las fichas (materia prima, receta y, cuando llegue con el Prompt 1 de Facturas, proveedor), los listados en una pantalla (Costos) y los paneles como el Inicio entran enteros, sin scroll de página, desde 1440 × 900 y hasta la pantalla real más baja medida: **1715 × 843** (la de Soy, ADR-0051). Todo nuevo tipo B sigue este patrón:
 
 1. **Encabezado en una línea:** «← Volver», nombre (h1 de 20 px, `xl`, no de 28), código · rubro · lo que lo define, y el estado con palabra (`AppShell` con `back` y `meta`). La acción secundaria (por ejemplo, Desactivar) es un botón a la derecha, no un desplegable. El aviso de guardado va en la barra de abajo, no en una fila arriba (en el celular, arriba).
 2. **4 indicadores arriba** con `Metric` (`compact`). No se repiten más abajo. La unidad va en `unit`, no dentro del valor; el motivo de un dato faltante se ve entero, en su renglón. En el celular van de a uno (los montos no entran de a dos). Si un indicador tiene su lista, «Ver cuáles» la abre en un panel (`action`).
 3. **Tarjetas en columnas** (`components/ui/tile.tsx`) que ocupan el alto que queda (`AppShell fill`). Se edita donde se ve. Lo que no entra en la tarjeta se edita en un panel corto que trabaja sobre el mismo borrador (cuenta en la barra y se guarda junto).
 4. **Las listas se cortan** en 3 a 5 filas con «Ver los N …» (`components/ui/short-list.tsx`), que abre el panel lateral. La pantalla no crece con los datos. «Ver los N» también puede estar con la lista entera a la vista, si el panel tiene más (editar, historial), y su número cuenta lo que el panel muestra.
 5. **Barra fija abajo:** contador, motivo obligatorio, Descartar y Guardar cambios.
-6. **Se prueba en 1440 × 900, 1600 × 900 y 1920 × 1080** (sin scroll vertical, con datos reales: los números de una corrida completa no son los del seed), **con un rol que edita y con uno que solo lee** (la lectura no puede ser más alta que la edición), y con las listas llenas (por ejemplo, 5 productos). En el celular es de consulta, con scroll y 44 px.
+6. **Se prueba en 1440 × 900, 1600 × 900, 1715 × 843 y 1920 × 1080** (sin scroll vertical, con datos reales: los números de una corrida completa no son los del seed), **con un rol que edita y con uno que solo lee** (la lectura no puede ser más alta que la edición), y con las listas llenas (por ejemplo, 5 productos). En el celular es de consulta, con scroll y 44 px.
 
 - **Listados en una pantalla** (Costos, ADR-0048): 4 indicadores, filtros de pocas opciones como botones con `aria-pressed` (`components/costs/reliability-filter.tsx`) y `DataTable scroll`, que ocupa el alto que queda y se desplaza adentro con el encabezado fijo. Una fila, un renglón. Cada eslabón entre `AppShell fill` y la tabla lleva `min-h-0` y base `0px` (`flex-[1_1_0px]`); un contenedor con scroll lleva `relative` (si no, el `sr-only` del título escapa y agranda la página).
 - Los enlaces de antes (`?seccion=`, `#ancla`, Calidad) llevan el foco a su tarjeta y la marcan (`components/focus-target.tsx`; la tarjeta tiene `id` y `tabIndex=-1`).
-- Si algo no entra con datos reales, no se achica por debajo de los mínimos: se avisa y se decide qué sale (ADR-0046: «Dónde se usa» pasó al indicador «Recetas que la usan»).
+- **Si algo no entra, la página queda quieta y lo que sobra se desplaza dentro de su tarjeta** (ADR-0051), como la tabla de Costos: la grilla de tarjetas lleva `min-h-0`, base `0px` (`flex-[1_1_0px]`) y `grid-rows-[minmax(0,1fr)]`; cada tarjeta, `Tile scroll` (`relative min-h-0 overflow-y-auto`, y mientras se desplaza entra en el orden de Tab para recorrerla con el teclado). Nunca se achica letra ni controles por debajo de los mínimos.
+- Si con eso no alcanza (lo importante queda escondido), se avisa y se decide qué sale (ADR-0046: «Dónde se usa» pasó al indicador «Recetas que la usan»).
+- **No se diseña para menos de 843 de alto** hasta tener la medición de la computadora de un local (ADR-0051). Si da menos, la más chica pasa a ser el mínimo.
 
 ## Accesibilidad (WCAG 2.2 AA)
 
@@ -137,4 +139,4 @@ La paleta, los tamaños, los pesos y los radios por defecto de Tailwind están *
 - Todo lo visible en español rioplatense. Código en inglés.
 - Formularios con React Hook Form + Zod, con el mismo esquema en el navegador y en el servidor.
 - La interfaz oculta lo que el usuario no puede hacer, pero nunca reemplaza a la seguridad de la base.
-- Antes de cerrar, pedir revisión al subagente `ui-reviewer` y mirar la pantalla real en computadora (1440, 1600 y 1920 px) y en celular.
+- Antes de cerrar, pedir revisión al subagente `ui-reviewer` y mirar la pantalla real en computadora (1440 × 900, 1600 × 900, 1715 × 843 y 1920 × 1080) y en celular.

@@ -560,9 +560,11 @@ async function Ingredient({
           </div>
         </div>
 
-        {/* Tres columnas en proporción 4 : 5 : 4 (el boceto) que ocupan el alto que queda. En el celular, una debajo de la otra. */}
-        <div className="grid gap-4 desk:flex-1 desk:grid-cols-[4fr_5fr_4fr]">
-          <Tile id={anchor("datos")} title="Datos generales">
+        {/* Tres columnas en proporción 4 : 5 : 4 (el boceto) que ocupan el alto que queda. La página queda quieta: si una
+            pantalla es más baja (1715 × 843, la de Soy; ADR-0051), lo que sobra se desplaza dentro de su tarjeta. Cada
+            eslabón lleva min-h-0 y base 0px. En el celular, una debajo de la otra. */}
+        <div className="grid gap-4 desk:min-h-0 desk:flex-[1_1_0px] desk:grid-cols-[4fr_5fr_4fr] desk:grid-rows-[minmax(0,1fr)]">
+          <Tile id={anchor("datos")} title="Datos generales" scroll>
             <DataSection
               middle={<ThawingToggle pending={thawingPending} />}
               readExtra={
@@ -575,12 +577,13 @@ async function Ingredient({
             />
           </Tile>
 
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-h-0 min-w-0 flex-col gap-4">
             <Tile
               id={anchor("compra")}
               title={menus.pricesView ? "Precios de compra" : "Cómo se compra"}
               aside={menus.pricesView ? (place?.name ?? undefined) : undefined}
-              className="desk:flex-1"
+              scroll
+              className="desk:flex-[1_1_0px]"
             >
               <PurchaseCard
                 ingredient={ingredient}
@@ -606,7 +609,8 @@ async function Ingredient({
                   un Chef de todo el grupo.
                 </InfoTip>
               }
-              className="desk:flex-1"
+              scroll
+              className="desk:flex-[1_1_0px]"
             >
               <WasteCard
                 ingredient={ingredient}
@@ -624,10 +628,12 @@ async function Ingredient({
             </Tile>
           </div>
 
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-h-0 min-w-0 flex-col gap-4">
             <Tile
               id={anchor("conversiones")}
               title="Conversiones"
+              scroll
+              className="desk:shrink-0"
               titleExtra={
                 <InfoTip label="conversiones">
                   Solo hacen falta si se compra en una unidad y se usa en otra (por ejemplo, aceite
@@ -648,7 +654,8 @@ async function Ingredient({
                 </InfoTip>
               }
               aside={<AllergenSummary />}
-              className="desk:flex-1"
+              scroll
+              className="desk:flex-[1_1_0px]"
             >
               <AllergensSection />
             </Tile>
