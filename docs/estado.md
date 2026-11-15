@@ -2,7 +2,7 @@
 
 _Última actualización: 2026-11-14. Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). En curso: Costos sin scroll y selector de local (ADR-0048)._
 
-## En curso: Costos sin scroll y selector de local (rama `feat/costos-sin-scroll`, ADR-0048)
+## En curso: Costos sin scroll y selector de local (rama `feat/costos-sin-scroll`, ADR-0048, PR #70 abierto)
 
 - **Pedido:** `docs/prompts/2026-11-14-costos-sin-scroll.md`; boceto en `docs/prompts/2026-11-14-boceto-costos/`. Plan aprobado por Joaco el 2026-11-14. **Sin cambios en la base.**
 - **La causa del selector, reproducida con Playwright antes de cambiar nada** (Controller, base recién recreada):
