@@ -9,6 +9,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Prompt 0, plan de la Fase 3** (rama `docs/plan-fase-3-compras`, ADR-0049, solo documentos). Escrito el 2026-11-15:
   - `docs/fases/fase-3-plan.md`: resumen para Soy, qué se reutiliza y qué se agrega, diagrama, diccionario, permisos por rol, las 9 pantallas, 34 casos con la cuenta hecha, orden, riesgos, decisiones y lo que muestran las facturas reales;
   - ADR-0049, «Módulo de compras y facturas: alcance y reutilización».
+- **Respuestas de Soy (2026-11-15):** P3, P4, P5, P6, P8 y P9 como recomienda el plan (detalle en `docs/fases/fase-3-plan.md`).
 - **Esperando:** que Joaco apruebe el plan y responda las **10 preguntas nuevas (P1 a P10)**, o las pase a Soy. Ningún prompt arranca con una pregunta suya sin responder:
   - P1 importación de proveedores reales;
   - P2 rubro «no va a recetas»;
