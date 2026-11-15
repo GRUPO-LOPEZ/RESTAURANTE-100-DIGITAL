@@ -3,7 +3,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, menuLink } from "./helpers";
+import { chooseLocal, login, menuLink } from "./helpers";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -109,14 +109,11 @@ test("en el celular: barra inferior con cuatro accesos y el menú completo", asy
 test("el selector global de local cambia el local y lo conserva", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto("/recetas");
-  const select = page.getByLabel("Local activo");
-  await select.selectOption({ label: "Demo Pastas Centro · PASTAS" });
-  await page.getByRole("button", { name: "Cambiar" }).click();
+  await chooseLocal(page, { label: "Demo Pastas Centro · PASTAS" });
   await page.goto("/costos");
   await expect(page.getByLabel("Local activo")).toHaveValue("00000000-0000-4000-8000-000000000201");
   // Vuelve a "Todos mis locales" para no cambiar otras pruebas.
-  await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
-  await page.getByRole("button", { name: "Cambiar" }).click();
+  await chooseLocal(page, { label: "Todos mis locales" });
   await page.reload();
   await expect(page.getByLabel("Local activo")).toHaveValue("");
 });

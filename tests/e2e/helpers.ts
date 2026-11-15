@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 // Datos de prueba del seed (supabase/seed.sql). Solo locales y ficticios.
 export const PASSWORD = "Demo-Local-2026!";
@@ -34,7 +34,11 @@ let lastPeriod = -1;
 export async function freshTotp(page: Page): Promise<string> {
   let period = Math.floor(Date.now() / 30_000);
   if (period === lastPeriod) {
-    await page.waitForTimeout(30_000 - (Date.now() % 30_000) + 500);
+    // Esperar el código siguiente no es tiempo de la prueba: se le suma a su límite (si no, una prueba que entra justo
+    // después de otra con doble verificación se queda con 10 segundos para todo).
+    const wait = 30_000 - (Date.now() % 30_000) + 500;
+    test.info().setTimeout(test.info().timeout + wait);
+    await page.waitForTimeout(wait);
     period = Math.floor(Date.now() / 30_000);
   }
   lastPeriod = period;
@@ -89,6 +93,31 @@ export async function menuLink(page: Page, name: string) {
   return page
     .getByRole("navigation", { name: "Menú principal" })
     .getByRole("link", { name, exact: true });
+}
+
+// Elige el local de la barra de arriba (ADR-0048): con el mouse o el dedo se aplica al elegir. Espera a que quede
+// «Aplicado» con ese local (la base lo guardó y la pantalla se armó de nuevo). Visible: Next guarda ocultas las
+// pantallas anteriores, cada una con su selector.
+export async function chooseLocal(page: Page, option: string | { label: string }) {
+  const select = page.getByLabel("Local activo").locator("visible=true");
+  const bar = () => page.locator("form").filter({ has: select });
+  // Antes de que la pantalla responda (hidratación), elegir no llega a React: se espera.
+  await expect(bar()).toHaveAttribute("data-ready", "true", { timeout: 20_000 });
+  const [value] = await select.selectOption(option);
+  // La base lo guardó y la barra se armó de nuevo con ese local.
+  await expect(bar()).toHaveAttribute("data-applied", value ?? "", { timeout: 20_000 });
+  await expect(bar().getByRole("status")).toHaveText("Aplicado");
+  await expect(select).toHaveValue(value ?? "");
+}
+
+// Después de entrar con ?local=: el selector lo aplica y lo saca de la dirección (ADR-0048). Mientras tanto la pantalla
+// navega (y el título queda vacío un momento): se espera el final antes de medir o pasar axe.
+export async function localSettled(page: Page) {
+  await expect(page).not.toHaveURL(/[?&]local=/, { timeout: 20_000 });
+  const select = page.getByLabel("Local activo").locator("visible=true");
+  await expect(page.locator("form").filter({ has: select }).getByRole("status")).toHaveText(
+    "Aplicado",
+  );
 }
 
 // Abre una acción plegada de la ficha (por ejemplo, "Desactivar…").

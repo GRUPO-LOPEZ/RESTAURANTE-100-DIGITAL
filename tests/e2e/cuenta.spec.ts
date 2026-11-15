@@ -3,7 +3,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
-import { PASSWORD, fillLogin, login, logout, menuLink, notice, openSection } from "./helpers";
+import {
+  PASSWORD,
+  fillLogin,
+  login,
+  logout,
+  menuLink,
+  notice,
+  openSection,
+  chooseLocal,
+} from "./helpers";
 
 const MAILPIT = "http://127.0.0.1:54324";
 
@@ -180,8 +189,7 @@ test.describe("selector de local", () => {
     await login(page, "gerente2@ejemplo.test", { mfa: true });
     const selector = page.getByLabel("Local activo");
     await expect(selector).toBeVisible();
-    await selector.selectOption({ label: "Demo Pastas Norte · PASTAS" });
-    await page.getByRole("button", { name: "Cambiar" }).click();
+    await chooseLocal(page, { label: "Demo Pastas Norte · PASTAS" });
     await page.reload();
     await expect(page.getByLabel("Local activo")).toHaveValue(
       "00000000-0000-4000-8000-000000000202",
@@ -192,8 +200,7 @@ test.describe("selector de local", () => {
       page.getByRole("heading", { name: "Personas de Demo Pastas Norte" }),
     ).toBeVisible();
     // Vuelve a "todos" para no afectar a otras pruebas.
-    await page.getByLabel("Local activo").selectOption({ label: "Todos mis locales" });
-    await page.getByRole("button", { name: "Cambiar" }).click();
+    await chooseLocal(page, { label: "Todos mis locales" });
     await page.reload();
     await expect(page.getByLabel("Local activo")).toHaveValue("");
     await logout(page);

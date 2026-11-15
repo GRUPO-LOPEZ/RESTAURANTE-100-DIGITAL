@@ -48,13 +48,7 @@ async function Items({ params, searchParams }: Pick<Props, "params" | "searchPar
     const active = pickCostPlace(places, undefined, activeId);
     if (!active) {
       if (places.length === 0) return <EmptyState title="No tenés locales para revisar." />;
-      return (
-        <PlacePrompt
-          title="Elegí un local para ver qué falta."
-          places={places}
-          path={`/calidad/${indicator.key}`}
-        />
-      );
+      return <PlacePrompt title="Calidad se ve de a un local." places={places} />;
     }
     local = active.id;
   }

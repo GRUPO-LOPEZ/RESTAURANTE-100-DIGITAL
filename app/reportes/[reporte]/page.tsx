@@ -238,13 +238,7 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
     const active = pickCostPlace(places, undefined, activeId);
     if (!active) {
       if (places.length === 0) return <EmptyState title="No tenés locales para sacar reportes." />;
-      return (
-        <PlacePrompt
-          title="Elegí un local para ver este reporte."
-          places={places}
-          path={`/reportes/${report.key}`}
-        />
-      );
+      return <PlacePrompt title="Los reportes se ven de a un local." places={places} />;
     }
     local = active.id;
   }
