@@ -121,7 +121,7 @@ test("el Chef del grupo ve dónde se usa una salsa y sus avisos de cambios", asy
 
   // El aviso del seed: qué cambió y el enlace a la receta (no se marca como leído acá).
   await page.goto("/aprobaciones");
-  const notices = page.getByRole("region", { name: /Avisos de recetas/ });
+  const notices = page.getByRole("region", { name: /^Avisos \(/ });
   await expect(
     notices.getByRole("heading", { name: "Cambió «Salsa bolognesa» (v1)" }),
   ).toBeVisible();

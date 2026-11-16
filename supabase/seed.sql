@@ -796,6 +796,56 @@ select '00000000-0000-4000-8000-000000000001', a.source_id,
   join (values ('00000000-0000-4000-8000-000000001311'::uuid, 9800.00), ('00000000-0000-4000-8000-000000001312', 4200.00),
                ('00000000-0000-4000-8000-000000001313', 2650.00)) as v (id, price) on v.id = a.id;
 
+-- Órdenes de compra (Fase 3, Prompt 3, ADR-0053). Códigos de local inventados; Demo Café Centro queda sin código para
+-- probar que un local sin código no puede pedir (P3).
+update org.restaurants set code = v.code
+  from (values ('00000000-0000-4000-8000-000000000201'::uuid, 'PCE'), ('00000000-0000-4000-8000-000000000202', 'PNO'),
+               ('00000000-0000-4000-8000-000000000203', 'PAR')) as v (id, code)
+ where org.restaurants.id = v.id;
+
+-- Cuatro OC de Demo Pastas Centro, armadas con las mismas funciones que usa la app y con la sesión de cada persona:
+-- un borrador (Verdulería), una pendiente de aprobación (Frigorífico, que la requiere), una enviada y una con novedad
+-- (Lácteos). Todo inventado.
+create function pg_temp.as_user(p_user uuid) returns void language sql as $$
+  select set_config('request.jwt.claims',
+                    json_build_object('sub', p_user, 'role', 'authenticated', 'aal', 'aal2')::text, true)
+$$;
+create function pg_temp.lines(p_supplier uuid, p_n int) returns jsonb language sql as $$
+  select jsonb_agg(jsonb_build_object('purchase_product_id', p.id, 'quantity', 1 + p.rn % 4))
+    from (select id, row_number() over (order by code) as rn from catalog.purchase_products
+           where supplier_id = p_supplier and deleted_at is null and is_active order by code limit p_n) p
+$$;
+do $$
+declare
+  v_pce   uuid := '00000000-0000-4000-8000-000000000201';
+  v_order uuid;
+begin
+  -- La cocinera: un borrador, una a aprobar y una enviada.
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000409');
+  perform purchasing.save_order_draft(null, v_pce, '00000000-0000-4000-8000-000000000901',
+                                      pg_temp.lines('00000000-0000-4000-8000-000000000901', 3),
+                                      null, null, 'Pedido de verdura de la semana');
+  v_order := (purchasing.save_order_draft(null, v_pce, '00000000-0000-4000-8000-000000000902',
+                                          pg_temp.lines('00000000-0000-4000-8000-000000000902', 4),
+                                          'Cortar la nalga en bifes', null, 'Carne para el fin de semana')
+              ->> 'purchase_order_id')::uuid;
+  perform purchasing.submit_order(v_order, 'Carne para el fin de semana');
+  v_order := (purchasing.save_order_draft(null, v_pce, '00000000-0000-4000-8000-000000000903',
+                                          pg_temp.lines('00000000-0000-4000-8000-000000000903', 3),
+                                          null, null, 'Lácteos de la semana') ->> 'purchase_order_id')::uuid;
+  perform purchasing.submit_order(v_order, 'Lácteos de la semana');
+  -- El gerente: una enviada a la que Compras le registra una novedad.
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000404');
+  v_order := (purchasing.save_order_draft(null, v_pce, '00000000-0000-4000-8000-000000000903',
+                                          pg_temp.lines('00000000-0000-4000-8000-000000000903', 2),
+                                          null, null, 'Reposición de quesos') ->> 'purchase_order_id')::uuid;
+  perform purchasing.submit_order(v_order, 'Reposición de quesos');
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000408');
+  perform purchasing.record_order_news(v_order, 'shortage', 'El proveedor avisó que no tiene ricota: llega el jueves.');
+  perform set_config('request.jwt.claims', '', true);
+end
+$$;
+
 -- Los costos de las recetas: en la base los calcula la cola cada minuto.
 select costing.process_recalc_queue(10000);
 

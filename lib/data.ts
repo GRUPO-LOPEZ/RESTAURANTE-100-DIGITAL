@@ -280,15 +280,27 @@ export async function getUnreadCount(): Promise<number> {
 }
 
 // Avisos sin leer de cambios de recetas (una preparación que cambió y que usan platos de la persona,
-// ADR-0026). Los de solicitudes ya se ven en la bandeja.
+// ADR-0026) y de compras (Fase 3: cuentas de proveedor, artículos sin mapear, listas vencidas y novedades de una OC).
+// Los de solicitudes ya se ven en la bandeja.
 export type NoticeRow = {
   id: string;
-  kind: "recipe_changed" | "recipe_cost_changed" | "yield_deviation";
+  kind: NoticeKind;
   title: string;
   body: string | null;
   link: string | null;
   createdAt: string;
 };
+
+const NOTICE_KINDS = [
+  "recipe_changed",
+  "recipe_cost_changed",
+  "yield_deviation",
+  "supplier_account_changed",
+  "unmapped_article",
+  "price_list_expired",
+  "order_news",
+] as const;
+export type NoticeKind = (typeof NOTICE_KINDS)[number];
 
 export async function getRecipeNotices(limit = 20): Promise<NoticeRow[]> {
   const supabase = await createClient();
@@ -296,7 +308,7 @@ export async function getRecipeNotices(limit = 20): Promise<NoticeRow[]> {
     .schema("core")
     .from("notifications")
     .select("id, kind, title, body, link, created_at")
-    .in("kind", ["recipe_changed", "recipe_cost_changed", "yield_deviation"])
+    .in("kind", [...NOTICE_KINDS])
     .is("read_at", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -304,8 +316,7 @@ export async function getRecipeNotices(limit = 20): Promise<NoticeRow[]> {
   if (error) failed("los avisos");
   return data.map((n) => ({
     id: n.id,
-    kind:
-      n.kind === "recipe_cost_changed" || n.kind === "yield_deviation" ? n.kind : "recipe_changed",
+    kind: NOTICE_KINDS.find((k) => k === n.kind) ?? "recipe_changed",
     title: n.title,
     body: n.body,
     link: noticeLink(n.kind, n.link),

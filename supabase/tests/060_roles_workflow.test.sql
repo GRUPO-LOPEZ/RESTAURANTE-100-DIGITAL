@@ -145,7 +145,9 @@ select is(pg_temp.r(pg_temp.u(404), format('core.request_role_permission_change(
 -- ---------------------------------------------------------------------------
 -- M7: aprobaciones
 -- ---------------------------------------------------------------------------
-select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from workflow.approval_requests'), '0', 'el cocinero no ve solicitudes ajenas');
+-- (Desde ADR-0053 la cocinera del seed pidió una OC que requiere aprobación: esa sí la ve, es propia.)
+select is(pg_temp.q(pg_temp.u(409), format('select count(*)::text from workflow.approval_requests where requested_by <> %L', pg_temp.u(409))),
+          '0', 'el cocinero no ve solicitudes ajenas');
 -- Solo las solicitudes de esta prueba (created_at = hora de esta transacción): la base local puede traer otras.
 select is(pg_temp.q(pg_temp.u(402), 'select count(*)::text from workflow.approval_requests where created_at = now()'), '4', 'Dirección General ve todas las solicitudes del grupo');
 select is(pg_temp.q(pg_temp.u(403), 'select count(*)::text from workflow.approval_requests where created_at = now()'), '1', 'el director ve las solicitudes de su marca');

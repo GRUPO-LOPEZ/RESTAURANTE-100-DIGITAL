@@ -48,8 +48,9 @@ select is((select name from org.areas where id = '00000000-0000-4000-8000-000000
   'las áreas del seed tienen ids fijos');
 select is(
   (select count(*)::int from audit.audit_events where table_schema = 'org' and source = 'seed'),
-  -- 20 de la estructura, más 2 razones sociales y la razón social de los 4 locales (2.1 C, ADR-0029).
-  26,
+  -- 20 de la estructura, más 2 razones sociales y la razón social de los 4 locales (2.1 C, ADR-0029), más el código
+  -- de 3 locales para numerar las órdenes de compra (ADR-0053).
+  29,
   'cada alta del seed quedó auditada con origen seed'
 );
 
