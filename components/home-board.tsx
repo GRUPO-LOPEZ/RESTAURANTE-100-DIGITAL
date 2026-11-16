@@ -83,6 +83,7 @@ function ReliabilityTile({ board, placeId }: { board: HomeBoard; placeId: string
   const max = Math.max(1, ...counts.values());
   return (
     <Tile
+      scroll
       title="¿Qué tan confiable es el costo?"
       aside={total === 1 ? "1 receta" : `${total} recetas`}
       footer={{ href: `/costos?local=${placeId}`, label: "Ver los números" }}
@@ -131,6 +132,7 @@ async function CompareTile({ placeId }: { placeId: string }) {
   const shown = Math.min(places.length, COMPARE_ROWS);
   return (
     <Tile
+      scroll
       title="Cómo está cada local"
       aside={
         places.length > shown ? `${shown} de ${places.length} · costo confiable` : "Costo confiable"
@@ -406,13 +408,15 @@ async function Board({
           compact
         />
       </div>
-      {/* Las tarjetas se reparten el ancho entre las que se muestran, y en la computadora el alto que queda. */}
-      <div className="grid gap-4 desk:flex-1 desk:auto-cols-fr desk:grid-flow-col">
+      {/* Las tarjetas se reparten el ancho entre las que se muestran, y en la computadora el alto que queda. La página queda
+          quieta: si la pantalla es más baja (1715 × 843, la de Soy; ADR-0051), cada tarjeta se desplaza adentro. */}
+      <div className="grid gap-4 desk:min-h-0 desk:flex-[1_1_0px] desk:auto-cols-fr desk:grid-flow-col desk:grid-rows-[minmax(0,1fr)]">
         {has("reliability") ? <ReliabilityTile board={board} placeId={placeId} /> : null}
         <Suspense fallback={<Loading />}>
           <CompareTile placeId={placeId} />
         </Suspense>
         <Tile
+          scroll
           title="Tareas pendientes"
           footer={
             menus.approvals ? { href: "/aprobaciones", label: "Ver las aprobaciones" } : undefined

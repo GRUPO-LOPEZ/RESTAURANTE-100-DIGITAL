@@ -203,11 +203,17 @@ test.describe("en la computadora", () => {
     for (const size of [
       { width: 1440, height: 900 },
       { width: 1600, height: 900 },
+      { width: 1715, height: 843 },
       { width: 1920, height: 1080 },
     ]) {
       await page.setViewportSize(size);
       await expect(card(page, "Alérgenos")).toBeVisible();
       await noVerticalScroll(page);
+      // En la pantalla de Soy (ADR-0051) las tarjetas se desplazan adentro: «Ver los 5» tiene que quedar a la vista.
+      await expect(
+        card(page, "Precios de compra").getByRole("button", { name: "Ver los 5 productos" }),
+      ).toBeInViewport();
+      if (size.height === 843) await axe(page);
     }
     products = await openProducts(page);
     await expect(
@@ -300,6 +306,7 @@ test.describe("en la computadora", () => {
     for (const size of [
       { width: 1440, height: 900 },
       { width: 1600, height: 900 },
+      { width: 1715, height: 843 },
       { width: 1920, height: 1080 },
     ]) {
       await page.setViewportSize(size);
@@ -316,6 +323,12 @@ test.describe("en la computadora", () => {
         await expect(card(page, title)).toBeInViewport();
       }
       await noVerticalScroll(page);
+      // Los alérgenos enteros (la última fila de la grilla) y «Ver cuáles», sin desplazar nada.
+      await expect(card(page, "Alérgenos").getByRole("button").last()).toBeInViewport();
+      await expect(
+        page.getByRole("button", { name: "Ver cuáles (Recetas que la usan)" }),
+      ).toBeInViewport();
+      if (size.height === 843) await axe(page);
     }
     // Sin índice ni «Desactivar» escondido: es un botón a la derecha del nombre.
     await expect(
@@ -327,6 +340,11 @@ test.describe("en la computadora", () => {
     // Quien solo lee (la Chef) también la ve entera: los alérgenos en la misma grilla de 2 columnas.
     await logout(page);
     await login(page, "chef@ejemplo.test");
+    await page.setViewportSize({ width: 1715, height: 843 });
+    await page.goto(sheet);
+    await expect(card(page, "Alérgenos").getByRole("button").last()).toBeInViewport();
+    await noVerticalScroll(page);
+    await axe(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(sheet);
     await expect(card(page, "Alérgenos")).toBeInViewport();

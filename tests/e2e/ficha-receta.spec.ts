@@ -23,6 +23,7 @@ const RAVIOLES = uuid(1108);
 const SIZES = [
   { width: 1440, height: 900 },
   { width: 1600, height: 900 },
+  { width: 1715, height: 843 },
   { width: 1920, height: 1080 },
 ];
 // 25 materias primas del seed que se usan en gramos (DEMO-ING-001 a 050).
@@ -318,6 +319,7 @@ test.describe("en la computadora", () => {
       await expect(page.getByRole("table", { name: "Ingredientes y costos" })).toBeVisible();
       await noVerticalScroll(page);
       await noHorizontalScroll(page);
+      if (size.height === 843) await axe(page);
       await page.screenshot({ path: testInfo.outputPath(`ficha-${size.width}.png`) });
     }
   });
