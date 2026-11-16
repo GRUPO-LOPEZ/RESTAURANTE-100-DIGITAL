@@ -520,6 +520,10 @@ Llegaron por Luciano. Soy aceptó la recomendación en las seis preguntas suyas 
 
 P1, P2, P7 y P10 son de Joaco.
 
+### Respuesta de Soy (2026-11-16): Compras y el precio del local
+
+Soy respondió la pregunta que había quedado anotada en `docs/estado.md` (sin código P): **Compras tiene que ver el precio del local que elige arriba, sin ver los costos de las recetas**, porque es quien más va a usar los precios en Facturas. Pedía resolverlo antes del Prompt 2; llegó con el Prompt 2 ya fusionado (PR #76), así que se resolvió en un PR aparte, antes del Prompt 5 (ver ADR-0052, «Decisión posterior de Soy»).
+
 ---
 
 ## 10. Lo que muestran las facturas reales

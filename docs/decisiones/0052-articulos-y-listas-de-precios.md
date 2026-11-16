@@ -87,6 +87,10 @@ Quedan anotados:
 - **Lista con vigencia futura (decisión de Joaco, 2026-11-16):** se puede aceptar cuando llega y pasa a ser la vigente al instante; la anterior queda reemplazada. No toca costos y la fecha «vale desde» se ve. Si pasa seguido, se puede activar sola el día que empieza a valer.
 - la vista previa de la ficha de receta no avisa todavía «no va a recetas»: lo dice al guardar, porque el buscador ya no ofrece esas materias primas.
 
+## Decisión posterior de Soy (2026-11-16)
+
+- **Compras ve el precio del local elegido (decisión posterior de Soy, 2026-11-16).** Llegó cuando este prompt ya estaba fusionado (PR #76), así que se resolvió aparte, antes de Facturas (Prompt 5). Compras ve en la ficha de materia prima el precio del local que elige arriba, sin ver los costos de las recetas. La ficha toma el local de los precios con `prices.view` y el de los costos con `recipes.view_costs`, cada uno por su lado. La base ya lo permitía: no hubo migración.
+
 ## Límites conocidos
 
 - **El archivo de la lista viaja por una acción de servidor,** que acepta hasta 4 MB por envío (`next.config.ts`). La pantalla pide hasta 3,5 MB; el bucket ya acepta 10 MB para cuando se suba directo desde el navegador.
