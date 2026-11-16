@@ -507,6 +507,19 @@ Salen de comparar el documento con la base y con las facturas reales. **Nada se 
 | P9  | Soy                  | Algunos remitos traen el lote del producto. ¿Se carga el lote en la recepción (opcional)?                                                                                                                                        | Sí, opcional, por renglón: sirve para la trazabilidad de Calidad                                                                                      | 4      |
 | P10 | Joaco                | Pago con código de pago electrónico (impreso en la factura). ¿Es un medio de pago más?                                                                                                                                           | Sí: `electronic_code` en `payment_method`                                                                                                             | 1, 6   |
 
+### Respuestas de Soy (2026-11-15)
+
+Llegaron por Luciano. Soy aceptó la recomendación en las seis preguntas suyas (P6 llegó un rato después):
+
+- **P3, sí:** sin código, el local no puede pedir. «Nueva OC» dice «Falta el código del local» y enlaza al Panel de control.
+- **P4, sí:** una factura sin OC ni recepción la da por conforme otra persona, distinta de quien la cargó (misma regla que la decisión 2), validado por la base.
+- **P5, sí:** se suman las alícuotas de 2,5 % y 5 % en las líneas de factura y en `price_records`.
+- **P6, sí:** la bonificación en pesos por caja se guarda como descuento por unidad (`bonus_per_unit_amount`), que se resta después de los %.
+- **P8, sí a la recomendación:** las retenciones quedan fuera de esta fase, con la columna preparada en el pago.
+- **P9, sí:** el lote se carga en la recepción, opcional y por renglón. Soy lo pidió con énfasis («tener un programa de calidad es importante»), así que el lote tiene que poder seguirse desde Calidad.
+
+P1, P2, P7 y P10 son de Joaco.
+
 ---
 
 ## 10. Lo que muestran las facturas reales

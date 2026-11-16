@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-15._ **En curso: Fase 3, compras y facturas. Prompt 0 (plan) escrito en `docs/plan-fase-3-compras`, esperando la aprobación de Joaco y sus respuestas a P1–P10.**
+_Última actualización: 2026-11-15._ **En curso: Fase 3, compras y facturas. Plan aprobado y fusionado (PR #72, ADR-0049). Prompt 1, ficha de proveedor, en `feat/proveedores` (ADR-0050).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
@@ -22,18 +22,44 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Prompt 0, plan de la Fase 3** (rama `docs/plan-fase-3-compras`, ADR-0049, solo documentos). Escrito el 2026-11-15:
   - `docs/fases/fase-3-plan.md`: resumen para Soy, qué se reutiliza y qué se agrega, diagrama, diccionario, permisos por rol, las 9 pantallas, 34 casos con la cuenta hecha, orden, riesgos, decisiones y lo que muestran las facturas reales;
   - ADR-0049, «Módulo de compras y facturas: alcance y reutilización».
-- **Esperando:** que Joaco apruebe el plan y responda las **10 preguntas nuevas (P1 a P10)**, o las pase a Soy. Ningún prompt arranca con una pregunta suya sin responder:
-  - P1 importación de proveedores reales;
-  - P2 rubro «no va a recetas»;
-  - P3 locales sin código;
-  - P4 facturas sin OC;
-  - P5 IVA de 2,5 % y 5 %;
-  - P6 bonificación en pesos;
-  - P7 QR de ARCA;
-  - P8 retenciones;
-  - P9 lote en la recepción;
-  - P10 pago con código electrónico.
-- **Facturas reales:** se miraron las 33 páginas. Las imágenes se sacaron en la carpeta temporal de la sesión, fuera del repo, y se borraron al terminar. El plan suma 14 hallazgos a los 12 del archivo de prompts, sin nombres, CUIT ni importes.
+- **Plan aprobado por Joaco y PR #72 fusionado (2026-11-15).** Sus respuestas:
+  - P1: la importación de los proveedores reales desde planilla va en un PR aparte, justo después del Prompt 1;
+  - P10: el pago con código electrónico es un medio más;
+  - P2 a P9: valen las recomendaciones del plan. Se aplican en el prompt que usa cada una.
+- **Respuestas de Soy (2026-11-15, PR #73):** P3, P4, P5, P6, P8 y P9 como recomienda el plan (detalle en `docs/fases/fase-3-plan.md`). P9 con énfasis: el lote tiene que poder seguirse desde Calidad (Prompt 4).
+- **Facturas reales:** se miraron las 33 páginas, fuera del repo. El plan suma 14 hallazgos a los 12 del archivo de prompts, sin nombres, CUIT ni importes. **Pendiente:** las imágenes sacadas de los PDF siguen en la carpeta temporal de la sesión de Claude Code (el borrado automático fue rechazado). Joaco las borra a mano.
+
+### Prompt 1: ficha de proveedor (rama `feat/proveedores`, ADR-0050), PR abierto
+
+- **Base** (`20261202110000_supplier_account_kind.sql` y `20261202120000_suppliers.sql`):
+  - `catalog.suppliers` completo, con CUIT de dígito verificador (trigger: solo controla un CUIT nuevo o cambiado);
+  - esquema `purchasing` con operativa, pago, cuentas, rubros y números de cliente;
+  - el pago con RLS propia y solo para todo el grupo: el cocinero, el gerente, el Auditor y el Director de Marca no lo ven;
+  - los números de cliente, por local;
+  - funciones de alta (PROV-0001), ficha en una transacción, desactivar y listado;
+  - permisos `purchasing.view_suppliers`, `manage_suppliers` y `view_payment_terms`;
+  - el Historial oculta el pago a quien no lo ve (`core.hide_payment`);
+  - cada cambio de cuenta avisa al Controller y a Dirección (`supplier_account_changed`).
+- **Decisiones de Joaco (2026-11-15):**
+  - el pago solo para todo el grupo;
+  - aviso al Controller por cada cambio de cuenta (la aprobación previa llega con el Prompt 6);
+  - el superadmin ve el pago (regla G2, aceptado y documentado);
+  - el Historial oculta el pago.
+- **Pantallas:**
+  - `/proveedores`: listado con búsqueda, rubro, «Pedidos por» como botones, y pestañas Activos / Inactivos;
+  - `/proveedores/[id]`: ficha sin scroll de página en 1440 × 900, 1600 × 900, **1715 × 843** (la pantalla de Soy) y 1920 × 1080, con Compras y con la cocinera. Lo que no entra se desplaza dentro de su tarjeta.
+- **Revisiones:**
+  - `db-reviewer`, `security-auditor` y `ui-reviewer`: los dos graves (el Historial mostraba el pago; el día elegido se veía solo por color) y los medios, corregidos. El detalle está en el ADR-0050.
+  - Quedan menores anotados: el dígito verificador del CBU, el aviso de los rubros con lector de pantalla y probar 6 a 8 rubros.
+- **Corrida completa (2026-11-15, base recién recreada):**
+  - formato, lint y tipos: en verde;
+  - Vitest: 424 de 424;
+  - pgTAP: 2617 de 2617 (la `320` tiene 77);
+  - Playwright: 288 en verde, 25 salteadas y 1 falla, «quién ve qué» de `admin.spec.ts` (el ingreso con doble verificación). No la toca este cambio y pasó sola, 4 de 4.
+- **Pendiente:**
+  1. El PR del Prompt 1. Esperar el verde de Actions antes de fusionar.
+  2. **PR chico aparte (pedido de Soy, 2026-11-15):** sumar 1715 × 843 a las pruebas sin scroll del Inicio, las dos fichas y la lista y el detalle de Costos. Si algo no entra, que se desplace dentro de su tarjeta; si no alcanza, avisar qué sacar. Dejarlo en `design.md` y en un ADR. No diseñar para menos de 843 de alto hasta tener la medición de un local.
+  3. El PR de la importación de proveedores desde planilla (P1).
 - **Orden de los PRs:**
 
   | PR  | Rama                                 | Qué hace                                       |

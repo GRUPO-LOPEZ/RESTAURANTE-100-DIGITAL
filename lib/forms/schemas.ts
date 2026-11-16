@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { parseAmount } from "@/lib/money";
 import { LINE_UNIT_CODES } from "@/lib/recipe-format";
+import { validCuit } from "@/lib/suppliers";
 
 // Esquemas de los formularios (ADR-0016): los mismos en el navegador (React Hook Form, antes de
 // enviar) y en las acciones de servidor (que validan igual, porque nunca se confía en la pantalla).
@@ -73,6 +74,12 @@ const catalogName = z
   .max(120, "Hasta 120 caracteres.");
 const settingName = catalogName.max(80, "Hasta 80 caracteres.");
 const notesField = z.string().trim().max(1000, "Hasta 1.000 caracteres.").optional();
+
+// CUIT: vacío, o 11 números con su dígito verificador (con o sin guiones). La misma regla que core.valid_cuit.
+const cuitField = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || validCuit(v), "El CUIT no es válido: revisá los números.");
 // Número positivo, con coma o punto decimal (como se escribe en la Argentina).
 export const positiveNumber = z
   .string({ message: "Escribí un número, por ejemplo 0,92." })
@@ -337,14 +344,10 @@ export const schemas = {
     content_unit: z.string().max(30).optional(),
     reason: reasonField,
   }),
+  // Alta corta de proveedor (ADR-0050): razón social, CUIT opcional y motivo. El código lo pone la base (PROV-0001).
   supplier: z.object({
-    code: catalogCode,
     name: catalogName,
-    tax_id: z
-      .string()
-      .trim()
-      .regex(/^$|^[0-9-]{8,15}$/, "El CUIT va solo con números y guiones.")
-      .optional(),
+    tax_id: cuitField.optional(),
     reason: reasonField,
   }),
   // Configuración del catálogo (ADR-0022): categorías y procesos, con nombres de hasta 80, como la base.
@@ -863,6 +866,203 @@ export const ingredientSheetSchema = z.object({
     .max(100)
     .nullable(),
 });
+
+// Ficha de proveedor (ADR-0050): lo que se guarda en lote. Cada bloque es opcional (solo viaja lo que cambió); la base
+// vuelve a controlar todo y decide los permisos (purchasing.save_supplier_sheet).
+const shortText = (max: number) => z.string().trim().max(max, `Hasta ${max} caracteres.`);
+const phoneField = z
+  .string()
+  .trim()
+  .regex(
+    /^$|^[0-9 +()-]{6,30}$/,
+    "El teléfono va con números, espacios, +, guiones o paréntesis (de 6 a 30).",
+  );
+const emailField = z
+  .string()
+  .trim()
+  .max(320, "El correo es demasiado largo.")
+  .refine((v) => v === "" || z.string().email().safeParse(v).success, "Revisá el correo.");
+const dayList = z
+  .array(
+    z
+      .number()
+      .int()
+      .min(1, "Los días van de lunes a domingo.")
+      .max(7, "Los días van de lunes a domingo."),
+  )
+  .max(7)
+  .refine((d) => new Set(d).size === d.length, "Los días van sin repetir.");
+const timeField = z
+  .string()
+  .regex(/^$|^([01][0-9]|2[0-3]):[0-5][0-9]$/, "Escribí la hora, por ejemplo 08:30.");
+const CHANNELS = ["whatsapp", "email", "supplier_portal"] as const;
+const BILLING_MODES = [
+  "a",
+  "b",
+  "c",
+  "invoice_remito",
+  "remito_then_invoice",
+  "non_fiscal",
+  "handwritten_note",
+] as const;
+const PAYMENT_METHODS = ["cash", "transfer", "check", "echeq", "card", "electronic_code"] as const;
+
+// El dato que corresponde a cada canal (la misma regla que purchasing.valid_channel_target).
+export function validChannelTarget(channel: string, target: string): boolean {
+  const t = target.trim();
+  if (channel === "whatsapp") return /^\+?[0-9 ()-]{6,30}$/.test(t);
+  if (channel === "email") return t.length <= 320 && z.string().email().safeParse(t).success;
+  if (channel === "supplier_portal") return /^https:\/\/\S{3,250}$/.test(t);
+  return false;
+}
+
+export const supplierSheetSchema = z.object({
+  supplierId: z.string().uuid(),
+  expectedStamp: z.string().min(1, "Recargá la página."),
+  reason: reasonField,
+  changes: z
+    .object({
+      supplier: z
+        .object({
+          name: catalogName,
+          trade_name: shortText(120),
+          tax_id: cuitField,
+          vat_condition: z.enum(["registered", "monotax", "exempt", ""]),
+          address: shortText(200),
+          city: shortText(120),
+          phone: phoneField,
+          whatsapp: phoneField,
+          email: emailField,
+          sales_contact: shortText(120),
+          admin_contact: shortText(120),
+          notes: shortText(1000),
+        })
+        .partial()
+        .optional(),
+      terms: z
+        .object({
+          order_days: dayList,
+          delivery_days: dayList,
+          receiving_from: timeField,
+          receiving_to: timeField,
+          po_channel: z.enum([...CHANNELS, ""]),
+          po_channel_target: shortText(320),
+          billing_modes: z.array(z.enum(BILLING_MODES)).max(7),
+          price_list_frequency: z.enum(["weekly", "biweekly", "monthly", ""]),
+          requires_po_approval: z.boolean(),
+        })
+        .partial()
+        .refine(
+          (t) =>
+            t.receiving_from === undefined && t.receiving_to === undefined
+              ? true
+              : (t.receiving_from ?? "") === "" && (t.receiving_to ?? "") === ""
+                ? true
+                : !!t.receiving_from && !!t.receiving_to && t.receiving_from < t.receiving_to,
+          {
+            message:
+              "El horario de recepción va con «desde» y «hasta», y «desde» es antes que «hasta».",
+            path: ["receiving_from"],
+          },
+        )
+        .refine(
+          (t) =>
+            t.po_channel === undefined || t.po_channel === ""
+              ? true
+              : validChannelTarget(t.po_channel, t.po_channel_target ?? ""),
+          {
+            message:
+              "El dato no corresponde al canal: un teléfono para WhatsApp, un correo para mail o una dirección https:// para el portal.",
+            path: ["po_channel_target"],
+          },
+        )
+        .optional(),
+      payment_terms: z
+        .object({
+          payment_terms: z.enum(["cash", "cash_on_delivery", "same_day_transfer", "account"], {
+            message: "Elegí la condición de pago.",
+          }),
+          payment_days: z
+            .string()
+            .trim()
+            .regex(/^[0-9]{1,3}$/, "Escribí los días, por ejemplo 30."),
+          minimum_order_amount: z
+            .string()
+            .trim()
+            .regex(
+              /^$|^[0-9]{1,12}([.][0-9]{1,2})?$/,
+              "Escribí el pedido mínimo en pesos, por ejemplo 150000.",
+            ),
+        })
+        .refine(
+          (p) =>
+            p.payment_terms === "account"
+              ? Number(p.payment_days) >= 1 && Number(p.payment_days) <= 180
+              : Number(p.payment_days) === 0,
+          { message: "En cuenta corriente, los días van de 1 a 180.", path: ["payment_days"] },
+        )
+        .optional(),
+      accounts: z
+        .array(
+          z.union([
+            z.object({ id: z.string().uuid(), remove: z.literal(true) }),
+            z
+              .object({
+                id: z.string().uuid().optional(),
+                method: z.enum(PAYMENT_METHODS, { message: "Elegí el medio de pago." }),
+                cbu: z
+                  .string()
+                  .trim()
+                  .regex(/^$|^[0-9]{22}$/, "El CBU tiene 22 números."),
+                alias: z
+                  .string()
+                  .trim()
+                  .regex(
+                    /^$|^[A-Za-z0-9.-]{6,20}$/,
+                    "El alias va de 6 a 20 caracteres: letras, números, puntos o guiones.",
+                  ),
+                bank: shortText(80),
+                holder_name: shortText(120),
+                holder_tax_id: cuitField,
+                electronic_code: z
+                  .string()
+                  .trim()
+                  .regex(
+                    /^$|^[0-9A-Za-z-]{4,40}$/,
+                    "El código va de 4 a 40 letras, números o guiones.",
+                  ),
+                is_active: z.boolean(),
+              })
+              .refine((a) => a.method !== "transfer" || a.cbu !== "" || a.alias !== "", {
+                message: "La transferencia necesita CBU o alias.",
+                path: ["cbu"],
+              })
+              .refine((a) => a.method !== "electronic_code" || a.electronic_code !== "", {
+                message: "El pago electrónico necesita su código.",
+                path: ["electronic_code"],
+              }),
+          ]),
+        )
+        .max(20)
+        .optional(),
+      categories: z.array(z.string().uuid()).max(60).optional(),
+      customer_numbers: z
+        .array(
+          z.object({
+            restaurant_id: z.string().uuid(),
+            customer_number: z
+              .string()
+              .trim()
+              .min(1)
+              .max(30, "El número de cliente va hasta 30 caracteres."),
+          }),
+        )
+        .max(200)
+        .optional(),
+    })
+    .refine((c) => Object.keys(c).length > 0, { message: "No hay cambios para guardar." }),
+});
+export type SupplierSheetInput = z.infer<typeof supplierSheetSchema>;
 
 // Los errores de un esquema, uno por campo (el primero), para mostrarlos debajo de cada campo.
 export function fieldErrors(error: z.ZodError): Record<string, string> {

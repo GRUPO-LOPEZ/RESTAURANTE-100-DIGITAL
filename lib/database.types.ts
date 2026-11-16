@@ -1090,53 +1090,80 @@ export type Database = {
       };
       suppliers: {
         Row: {
+          address: string | null;
+          admin_contact: string | null;
+          city: string | null;
           code: string;
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          email: string | null;
           group_id: string;
           id: string;
           is_active: boolean;
           is_internal: boolean;
           name: string;
           notes: string | null;
+          phone: string | null;
+          sales_contact: string | null;
           tax_id: string | null;
+          trade_name: string | null;
           updated_at: string;
           updated_by: string | null;
+          vat_condition: Database["org"]["Enums"]["vat_condition"] | null;
+          whatsapp: string | null;
         };
         ComputedFields: never;
         Insert: {
+          address?: string | null;
+          admin_contact?: string | null;
+          city?: string | null;
           code: string;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          email?: string | null;
           group_id: string;
           id?: string;
           is_active?: boolean;
           is_internal?: boolean;
           name: string;
           notes?: string | null;
+          phone?: string | null;
+          sales_contact?: string | null;
           tax_id?: string | null;
+          trade_name?: string | null;
           updated_at?: string;
           updated_by?: string | null;
+          vat_condition?: Database["org"]["Enums"]["vat_condition"] | null;
+          whatsapp?: string | null;
         };
         Update: {
+          address?: string | null;
+          admin_contact?: string | null;
+          city?: string | null;
           code?: string;
           created_at?: string;
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          email?: string | null;
           group_id?: string;
           id?: string;
           is_active?: boolean;
           is_internal?: boolean;
           name?: string;
           notes?: string | null;
+          phone?: string | null;
+          sales_contact?: string | null;
           tax_id?: string | null;
+          trade_name?: string | null;
           updated_at?: string;
           updated_by?: string | null;
+          vat_condition?: Database["org"]["Enums"]["vat_condition"] | null;
+          whatsapp?: string | null;
         };
         Relationships: [];
       };
@@ -2712,6 +2739,10 @@ export type Database = {
         Returns: boolean;
       };
       hide_costs: { Args: { p_value: Json }; Returns: Json };
+      hide_payment: {
+        Args: { p_group_id: string; p_schema: string; p_table: string; p_value: Json };
+        Returns: Json;
+      };
       holds_group_role: {
         Args: { p_group_id: string; p_role_code: string; p_user_id: string };
         Returns: boolean;
@@ -2760,6 +2791,7 @@ export type Database = {
         }[];
       };
       my_session: { Args: Record<PropertyKey, never>; Returns: Json };
+      normalize_cuit: { Args: { p_tax_id: string }; Returns: string };
       permission_matrix: { Args: { p_group_id: string }; Returns: Json };
       permitted_brand_ids: { Args: { p_permission: string }; Returns: string[] };
       permitted_group_ids: { Args: { p_permission: string }; Returns: string[] };
@@ -2864,6 +2896,7 @@ export type Database = {
         }[];
       };
       users_overview: { Args: { p_brand_id?: string; p_restaurant_id?: string }; Returns: Json };
+      valid_cuit: { Args: { p_tax_id: string }; Returns: boolean };
       visible_assignment_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
       visible_brand_ids: { Args: { p_permission: string }; Returns: string[] };
       visible_group_ids: { Args: { p_permission: string }; Returns: string[] };
@@ -2873,7 +2906,11 @@ export type Database = {
       account_status: "active" | "suspended" | "deactivated";
       actor_type: "user" | "service_account";
       notification_kind:
-        "approval_requested" | "recipe_changed" | "recipe_cost_changed" | "yield_deviation";
+        | "approval_requested"
+        | "recipe_changed"
+        | "recipe_cost_changed"
+        | "yield_deviation"
+        | "supplier_account_changed";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -5084,6 +5121,357 @@ export type Database = {
       [_ in never]: never;
     };
   };
+  purchasing: {
+    Tables: {
+      supplier_categories: {
+        Row: {
+          category_id: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          category_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          category_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      supplier_customer_numbers: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          customer_number: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          restaurant_id: string;
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          customer_number: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          restaurant_id: string;
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          customer_number?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          restaurant_id?: string;
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      supplier_payment_accounts: {
+        Row: {
+          alias: string | null;
+          bank: string | null;
+          cbu: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          electronic_code: string | null;
+          group_id: string;
+          holder_name: string | null;
+          holder_tax_id: string | null;
+          id: string;
+          is_active: boolean;
+          method: Database["purchasing"]["Enums"]["payment_method"];
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+          account_label: string | null;
+        };
+        ComputedFields: "account_label";
+        Insert: {
+          alias?: string | null;
+          bank?: string | null;
+          cbu?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          electronic_code?: string | null;
+          group_id: string;
+          holder_name?: string | null;
+          holder_tax_id?: string | null;
+          id?: string;
+          is_active?: boolean;
+          method: Database["purchasing"]["Enums"]["payment_method"];
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          alias?: string | null;
+          bank?: string | null;
+          cbu?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          electronic_code?: string | null;
+          group_id?: string;
+          holder_name?: string | null;
+          holder_tax_id?: string | null;
+          id?: string;
+          is_active?: boolean;
+          method?: Database["purchasing"]["Enums"]["payment_method"];
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      supplier_payment_terms: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          minimum_order_amount: number | null;
+          payment_days: number;
+          payment_terms: Database["purchasing"]["Enums"]["payment_terms"];
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          minimum_order_amount?: number | null;
+          payment_days?: number;
+          payment_terms: Database["purchasing"]["Enums"]["payment_terms"];
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          minimum_order_amount?: number | null;
+          payment_days?: number;
+          payment_terms?: Database["purchasing"]["Enums"]["payment_terms"];
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      supplier_terms: {
+        Row: {
+          billing_modes: Database["purchasing"]["Enums"]["billing_mode"][];
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          delivery_days: number[];
+          group_id: string;
+          id: string;
+          order_days: number[];
+          po_channel: Database["purchasing"]["Enums"]["channel"] | null;
+          po_channel_target: string | null;
+          price_list_frequency: Database["purchasing"]["Enums"]["list_frequency"] | null;
+          receiving_from: string | null;
+          receiving_to: string | null;
+          requires_po_approval: boolean;
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          billing_modes?: Database["purchasing"]["Enums"]["billing_mode"][];
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          delivery_days?: number[];
+          group_id: string;
+          id?: string;
+          order_days?: number[];
+          po_channel?: Database["purchasing"]["Enums"]["channel"] | null;
+          po_channel_target?: string | null;
+          price_list_frequency?: Database["purchasing"]["Enums"]["list_frequency"] | null;
+          receiving_from?: string | null;
+          receiving_to?: string | null;
+          requires_po_approval?: boolean;
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          billing_modes?: Database["purchasing"]["Enums"]["billing_mode"][];
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          delivery_days?: number[];
+          group_id?: string;
+          id?: string;
+          order_days?: number[];
+          po_channel?: Database["purchasing"]["Enums"]["channel"] | null;
+          po_channel_target?: string | null;
+          price_list_frequency?: Database["purchasing"]["Enums"]["list_frequency"] | null;
+          receiving_from?: string | null;
+          receiving_to?: string | null;
+          requires_po_approval?: boolean;
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      account_label: {
+        Args: {
+          p_acc: Omit<
+            Database["purchasing"]["Tables"]["supplier_payment_accounts"]["Row"],
+            Database["purchasing"]["Tables"]["supplier_payment_accounts"]["ComputedFields"]
+          >;
+        };
+        Returns: string;
+      };
+      can_see_payment: { Args: { p_group_id: string }; Returns: boolean };
+      create_supplier: {
+        Args: { p_group_id: string; p_name: string; p_reason: string; p_tax_id: string };
+        Returns: string;
+      };
+      days_from: { Args: { p_value: Json }; Returns: number[] };
+      distinct_billing_modes: {
+        Args: { p_modes: Database["purchasing"]["Enums"]["billing_mode"][] };
+        Returns: boolean;
+      };
+      notify_account_change: {
+        Args: {
+          p_notes: string[];
+          p_supplier: Omit<
+            Database["catalog"]["Tables"]["suppliers"]["Row"],
+            Database["catalog"]["Tables"]["suppliers"]["ComputedFields"]
+          >;
+        };
+        Returns: undefined;
+      };
+      raise_friendly: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
+      save_supplier_sheet: {
+        Args: {
+          p_changes: Json;
+          p_expected_stamp: string;
+          p_reason: string;
+          p_supplier_id: string;
+        };
+        Returns: Json;
+      };
+      set_supplier_active: {
+        Args: { p_active: boolean; p_id: string; p_reason: string };
+        Returns: Json;
+      };
+      supplier_list: {
+        Args: {
+          p_active?: boolean;
+          p_category_id?: string;
+          p_channel?: Database["purchasing"]["Enums"]["channel"];
+          p_desc?: boolean;
+          p_limit?: number;
+          p_offset?: number;
+          p_search?: string;
+          p_sort?: string;
+        };
+        Returns: Json;
+      };
+      supplier_sheet_stamp_internal: { Args: { p_id: string }; Returns: string };
+      supplier_sheet_state: { Args: { p_id: string }; Returns: Json };
+      text_or: { Args: { p_key: string; p_obj: Json; p_old: string }; Returns: string };
+      valid_channel_target: {
+        Args: { p_channel: Database["purchasing"]["Enums"]["channel"]; p_target: string };
+        Returns: boolean;
+      };
+      valid_days: { Args: { p_days: number[] }; Returns: boolean };
+    };
+    Enums: {
+      billing_mode:
+        | "a"
+        | "b"
+        | "c"
+        | "invoice_remito"
+        | "remito_then_invoice"
+        | "non_fiscal"
+        | "handwritten_note";
+      channel: "whatsapp" | "email" | "supplier_portal";
+      list_frequency: "weekly" | "biweekly" | "monthly";
+      payment_method: "cash" | "transfer" | "check" | "echeq" | "card" | "electronic_code";
+      payment_terms: "cash" | "cash_on_delivery" | "same_day_transfer" | "account";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   recipes: {
     Tables: {
       component_base_quantities: {
@@ -6628,6 +7016,7 @@ export const Constants = {
         "recipe_changed",
         "recipe_cost_changed",
         "yield_deviation",
+        "supplier_account_changed",
       ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
@@ -6676,6 +7065,23 @@ export const Constants = {
   },
   public: {
     Enums: {},
+  },
+  purchasing: {
+    Enums: {
+      billing_mode: [
+        "a",
+        "b",
+        "c",
+        "invoice_remito",
+        "remito_then_invoice",
+        "non_fiscal",
+        "handwritten_note",
+      ],
+      channel: ["whatsapp", "email", "supplier_portal"],
+      list_frequency: ["weekly", "biweekly", "monthly"],
+      payment_method: ["cash", "transfer", "check", "echeq", "card", "electronic_code"],
+      payment_terms: ["cash", "cash_on_delivery", "same_day_transfer", "account"],
+    },
   },
   recipes: {
     Enums: {
