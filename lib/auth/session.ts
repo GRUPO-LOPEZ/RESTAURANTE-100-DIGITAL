@@ -94,6 +94,9 @@ export const getMenus = cache(async () => {
     suppliers,
     suppliersManage,
     supplierPayment,
+    priceLists,
+    priceListsManage,
+    mapArticles,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -136,6 +139,11 @@ export const getMenus = cache(async () => {
     check("purchasing.view_suppliers"),
     groupWide("purchasing.manage_suppliers"),
     check("purchasing.view_payment_terms"),
+    // Listas de precios (ADR-0052): ver en cualquier alcance; cargar y aceptar, para todo el grupo (como la base).
+    check("purchasing.view_price_lists"),
+    groupWide("purchasing.manage_price_lists"),
+    // La cola de mapeo la resuelven también los chefs de una marca o de un local (Joaco, 2026-11-16): cualquier alcance.
+    check("catalog.map_articles"),
   ]);
   return {
     users,
@@ -179,6 +187,10 @@ export const getMenus = cache(async () => {
     suppliers,
     suppliersManage,
     supplierPayment: supplierPayment || suppliersManage,
+    priceLists,
+    priceListsManage,
+    mapArticles,
+    unmappedQueue: mapArticles || priceLists,
   };
 });
 

@@ -22,6 +22,7 @@ function rubro(over: Partial<Rubro>): Rubro {
     isActive: true,
     uses: 0,
     mismatched: 0,
+    usedInRecipes: true,
     ...over,
   };
 }

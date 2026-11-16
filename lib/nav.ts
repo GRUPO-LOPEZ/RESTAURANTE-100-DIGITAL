@@ -12,6 +12,7 @@ export type NavIcon =
   | "recipes"
   | "ingredients"
   | "suppliers"
+  | "priceLists"
   | "rubros"
   | "costs"
   | "reports"
@@ -37,6 +38,7 @@ export type NavMenus = {
   catalog: boolean;
   rubros: boolean;
   suppliers: boolean;
+  priceLists: boolean;
   costs: boolean;
   reports: boolean;
   quality: boolean;
@@ -79,6 +81,16 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
       label: "Gestión y análisis",
       items: [
         ...(menus.costs ? [{ href: "/costos", label: "Costos", icon: "costs" as const }] : []),
+        // Listas de precios (Fase 3, ADR-0052): Compras y quien controla precios. El cocinero no.
+        ...(menus.priceLists
+          ? [
+              {
+                href: "/listas-de-precios",
+                label: "Listas de precios",
+                icon: "priceLists" as const,
+              },
+            ]
+          : []),
         ...(menus.reports
           ? [{ href: "/reportes", label: "Reportes", icon: "reports" as const }]
           : []),
@@ -147,6 +159,7 @@ const MODULES: { href: string; label: string }[] = [
   { href: "/rubros", label: "Rubros" },
   { href: "/proveedores", label: "Proveedores" },
   { href: "/costos", label: "Costos" },
+  { href: "/listas-de-precios", label: "Listas de precios" },
   { href: "/reportes", label: "Reportes" },
   { href: "/calidad", label: "Calidad" },
   { href: "/aprobaciones", label: "Aprobaciones" },

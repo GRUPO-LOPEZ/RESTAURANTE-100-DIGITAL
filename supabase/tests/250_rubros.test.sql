@@ -309,7 +309,8 @@ select is(pg_temp.q(pg_temp.u(413), $$select recipes.deactivate_top_category('su
   '2', 'el Chef da de baja un rubro de sub-recetas y pasa sus recetas (la bondiola y el medallón)');
 select is((select category_id from recipes.recipes where id = pg_temp.u(1115)), pg_temp.rub('SR-SAL'),
   'la bondiola braseada quedó en Salsas');
-select is(pg_temp.q(pg_temp.u(408), $$select recipes.deactivate_top_category('purchase', pg_temp.rub('MP-LIM'), 'Sin uso')::text$$),
+-- (Limpieza ya no: desde ADR-0052 el seed carga una materia prima de limpieza.)
+select is(pg_temp.q(pg_temp.u(408), $$select recipes.deactivate_top_category('purchase', pg_temp.rub('MP-VIN'), 'Sin uso')::text$$),
   '0', 'un rubro sin uso se da de baja sin destino');
 select is(pg_temp.msg(pg_temp.u(413), $$select recipes.deactivate_top_category('subrecipe', pg_temp.rub('SR-MAS'), 'Prueba')$$),
   'Tiene 1 receta: elegí a qué rubro pasarla antes de darlo de baja.', 'con un solo uso, el mensaje va en singular');

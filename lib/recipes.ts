@@ -193,6 +193,7 @@ export async function getRubros(): Promise<{ groupId: string; rubros: Rubro[] } 
         isActive: r.is_active,
         uses: Number(r.uses),
         mismatched: Number(r.mismatched),
+        usedInRecipes: r.used_in_recipes,
       })),
   };
 }

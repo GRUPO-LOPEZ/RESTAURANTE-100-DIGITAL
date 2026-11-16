@@ -26,6 +26,7 @@ import {
 import { first, uuidOrUndefined } from "@/lib/data";
 import { listHref, parseList, plainParams } from "@/lib/list-params";
 import { getRubros, withSubcategories } from "@/lib/recipes";
+import { countUnmappedArticles } from "@/lib/price-lists-data";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 
 // Materias primas (sección 18; listado del rediseño, ADR-0036; ordenado por rubro, ADR-0041): ¿qué compramos y cómo
@@ -51,8 +52,15 @@ export default function MateriasPrimasPage({ searchParams }: PageProps<"/materia
 
 async function Actions() {
   const menus = await getMenus();
+  // La cola de mapeo (ADR-0052): la resuelve el chef; Compras la ve. Con el número de lo que espera.
+  const queue = menus.unmappedQueue ? await countUnmappedArticles() : 0;
   return (
     <>
+      {menus.mapArticles || (menus.unmappedQueue && queue > 0) ? (
+        <Button asChild variant="outline">
+          <Link href="/materias-primas/sin-mapear">Artículos sin mapear ({queue})</Link>
+        </Button>
+      ) : null}
       {menus.catalogSettings ? (
         <Button asChild variant="outline">
           <Link href="/materias-primas/configuracion">

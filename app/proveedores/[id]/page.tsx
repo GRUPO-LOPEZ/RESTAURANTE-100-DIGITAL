@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, cache } from "react";
 
@@ -23,7 +24,8 @@ import { Metric } from "@/components/ui/metric";
 import { Notice } from "@/components/ui/notice";
 import { Tile } from "@/components/ui/tile";
 import { getMenus, requireMenu } from "@/lib/auth/session";
-import { UUID, first } from "@/lib/data";
+import { UUID, first, formatDate } from "@/lib/data";
+import { getCurrentPriceList } from "@/lib/price-lists-data";
 import { VAT_LABELS, formatCuit } from "@/lib/suppliers";
 import { getGroupRestaurants, getPurchaseRubros, getSupplierSheet } from "@/lib/suppliers-data";
 
@@ -152,6 +154,83 @@ async function ActiveAction({ params }: { params: PageProps<"/proveedores/[id]">
   );
 }
 
+// La lista vigente (ADR-0052): su fecha y si venció según la frecuencia de la ficha. «Ver la lista» lleva a su detalle;
+// sin lista, quien carga listas va a «Cargar lista». Quien no ve listas (el cocinero) ve el motivo, sin precios.
+async function CurrentListMetric({
+  supplierId,
+  canView,
+  canManage,
+}: {
+  supplierId: string;
+  canView: boolean;
+  canManage: boolean;
+}) {
+  const current = canView ? await getCurrentPriceList(supplierId) : null;
+  const back = encodeURIComponent(`/proveedores/${supplierId}`);
+  const link =
+    "inline-flex min-h-touch items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-8";
+  if (!current) {
+    return (
+      <Metric
+        compact
+        label="Lista de precios vigente"
+        value={null}
+        missingReason={
+          canView ? "Sin lista aceptada." : "La ven Compras y quienes controlan precios."
+        }
+        emptyLabel="Sin datos"
+        status="none"
+        statusLabel="Sin datos"
+        action={
+          canManage ? (
+            <Link
+              href={`/listas-de-precios/nueva?proveedor=${supplierId}&volver=${back}`}
+              className={link}
+            >
+              Cargar lista
+            </Link>
+          ) : undefined
+        }
+      />
+    );
+  }
+  const date = formatDate(current.validFrom);
+  if (current.pending)
+    return (
+      <Metric
+        compact
+        label="Lista de precios vigente"
+        value={null}
+        missingReason={`Hay una recibida el ${date} sin aceptar.`}
+        emptyLabel="Sin datos"
+        status="none"
+        statusLabel="Sin datos"
+        action={
+          <Link href={`/listas-de-precios/${current.id}?volver=${back}`} className={link}>
+            Ver la lista
+          </Link>
+        }
+      />
+    );
+  return (
+    <Metric
+      compact
+      label="Lista de precios vigente"
+      value={date}
+      period={current.items === 1 ? "1 artículo" : `${current.items} artículos`}
+      emptyLabel="Sin datos"
+      // Vencida según la frecuencia de la ficha (design.md: dato vencido = Atención, con su fecha).
+      status={current.expired ? "warn" : "ok"}
+      statusLabel={current.expired ? "Vencida" : "Al día"}
+      action={
+        <Link href={`/listas-de-precios/${current.id}?volver=${back}`} className={link}>
+          Ver la lista
+        </Link>
+      }
+    />
+  );
+}
+
 // Una tarjeta que, si no entra, se desplaza adentro (la página queda quieta). relative: el sr-only de adentro no escapa.
 const scrolls = "relative desk:min-h-0 desk:overflow-y-auto";
 
@@ -199,14 +278,10 @@ async function Supplier({
         {/* 4 indicadores. Se llenan con los próximos prompts: hasta entonces, «—» con su motivo y Sin datos (nunca un
             estado positivo sin datos). En el celular, uno debajo del otro. */}
         <div className="grid gap-3 sm:grid-cols-2 desk:grid-cols-4 desk:gap-4">
-          <Metric
-            compact
-            label="Lista de precios vigente"
-            value={null}
-            missingReason="Sin listas cargadas."
-            emptyLabel="Sin datos"
-            status="none"
-            statusLabel="Sin datos"
+          <CurrentListMetric
+            supplierId={s.id}
+            canView={menus.priceLists}
+            canManage={menus.priceListsManage}
           />
           <Metric
             compact

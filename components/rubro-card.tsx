@@ -8,6 +8,7 @@ import {
   deactivateRubroAction,
   reactivateRubroAction,
   renameRubroAction,
+  setUsedInRecipesAction,
 } from "@/app/rubros/actions";
 import { ActionForm } from "@/components/action-form";
 import { Modal } from "@/components/ui/dialog";
@@ -54,18 +55,26 @@ export function RubroCard({
         rubro.isActive ? "bg-surface" : "bg-app",
       )}
     >
-      {canManage ? (
-        <RubroName rubro={rubro} />
-      ) : (
-        <h3
-          className={cn(
-            "flex min-h-control-sm items-center text-sm leading-4 font-medium [overflow-wrap:anywhere]",
-            rubro.isActive ? "text-ink" : "text-ink-muted",
+      {/* «Va a recetas» (solo en los de compra) va en la fila del nombre: abajo no entra sin agrandar la tarjeta. */}
+      <div className="flex items-start justify-between gap-1">
+        <div className="min-w-0 flex-1">
+          {canManage ? (
+            <RubroName rubro={rubro} />
+          ) : (
+            <h3
+              className={cn(
+                "flex min-h-control-sm items-center text-sm leading-4 font-medium [overflow-wrap:anywhere]",
+                rubro.isActive ? "text-ink" : "text-ink-muted",
+              )}
+            >
+              <span className="line-clamp-2">{rubro.name}</span>
+            </h3>
           )}
-        >
-          <span className="line-clamp-2">{rubro.name}</span>
-        </h3>
-      )}
+        </div>
+        {rubro.rubroClass === "purchase" ? (
+          <UsedInRecipes rubro={rubro} canManage={canManage} />
+        ) : null}
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-x-2">
         <div className="flex min-w-0 flex-col text-xs text-ink-muted tabular-nums">
           <span>
@@ -118,6 +127,64 @@ function StatusPill({ active }: { active: boolean }) {
       )}
       {active ? "Activo" : "De baja"}
     </span>
+  );
+}
+
+// «Va a recetas» (ADR-0052): sí/no de un clic para quien administra los rubros de compra; para el resto, solo la
+// palabra. Con ícono y texto, nunca solo color. Las recetas que ya usaban una materia prima del rubro no se tocan.
+function UsedInRecipes({ rubro, canManage }: { rubro: Rubro; canManage: boolean }) {
+  const [state, action, pending] = React.useActionState<ActionState, FormData>(
+    setUsedInRecipesAction,
+    {},
+  );
+  const used = rubro.usedInRecipes;
+  // Corto, como las celdas de la matriz de permisos (✓ o ✕ y la palabra): lo común (va a recetas) en gris, sin fondo;
+  // la excepción, resaltada. El lector de pantalla oye el estado entero.
+  const pill = (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-sm px-1 text-xs leading-5 font-medium",
+        used ? "text-ink-muted" : "bg-none text-none-ink",
+      )}
+    >
+      {used ? (
+        <Check aria-hidden="true" className="size-3.5" />
+      ) : (
+        <X aria-hidden="true" className="size-3.5" />
+      )}
+      Recetas
+    </span>
+  );
+  if (!canManage)
+    return (
+      <span className="flex min-h-control-sm items-center">
+        {pill}
+        <span className="sr-only">: {used ? "va a recetas" : "no va a recetas"}</span>
+      </span>
+    );
+  return (
+    <form action={action}>
+      <input type="hidden" name="rubroId" value={rubro.id} />
+      <input type="hidden" name="value" value={used ? "false" : "true"} />
+      <button
+        type="submit"
+        disabled={pending}
+        aria-pressed={used}
+        title={used ? "Clic: deja de ir a recetas" : "Clic: va a recetas"}
+        className="inline-flex min-h-touch items-center rounded-sm underline-offset-4 hover:underline disabled:opacity-60 desk:min-h-control-sm"
+      >
+        {pill}
+        <span className="sr-only"> ({rubro.name})</span>
+      </button>
+      <span role="status" className="sr-only">
+        {state.status === "ok" ? state.message : ""}
+      </span>
+      {state.status === "bad" ? (
+        <span role="alert" className="block max-w-40 text-xs text-bad-ink">
+          {state.message}
+        </span>
+      ) : null}
+    </form>
   );
 }
 

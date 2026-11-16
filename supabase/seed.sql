@@ -721,6 +721,81 @@ values ('00000000-0000-4000-8000-000000000407', '00000000-0000-4000-8000-0000000
         'Cambió el costo de «Salsa bolognesa»', '2 recetas en 1 de tus locales.',
         '/costos/00000000-0000-4000-8000-000000001108?local=00000000-0000-4000-8000-000000000201');
 
+-- Artículos de proveedor y listas de precios (Fase 3, Prompt 2, ADR-0052). Todo inventado: ni artículos, ni códigos, ni
+-- precios reales.
+-- Dos materias primas que no van a recetas (sus rubros nacen así).
+insert into catalog.ingredients (id, group_id, code, name, category_id, recipe_unit_id)
+select v.id, '00000000-0000-4000-8000-000000000001', v.code, v.name, c.id, u.id
+  from (values
+    ('00000000-0000-4000-8000-000000000851'::uuid, 'DEMO-ING-051', 'Detergente concentrado', 'MP-LIM', 'ml'),
+    ('00000000-0000-4000-8000-000000000852'::uuid, 'DEMO-ING-052', 'Bandeja descartable', 'MP-DES', 'unit')
+  ) as v (id, code, name, category, unit)
+  join catalog.ingredient_categories c
+    on c.group_id = '00000000-0000-4000-8000-000000000001' and c.code = v.category and c.parent_id is null
+  join catalog.units u on u.code = v.unit;
+
+-- El código del proveedor en los productos del Frigorífico y de Lácteos.
+update catalog.purchase_products
+   set supplier_sku = case supplier_id when '00000000-0000-4000-8000-000000000902' then 'FR' else 'LA' end
+                      || right(code, 3)
+ where supplier_id in ('00000000-0000-4000-8000-000000000902', '00000000-0000-4000-8000-000000000903')
+   and deleted_at is null;
+
+-- Cinco listas: la del Frigorífico (quincenal) reemplazada y la vigente; la de Lácteos (mensual) vigente; la de la
+-- Verdulería (semanal) aceptada hace 20 días, así que venció; y una del Almacén recibida, sin aceptar.
+insert into purchasing.price_lists (id, group_id, supplier_id, received_on, valid_from, status, accepted_at, accepted_by)
+select v.id, '00000000-0000-4000-8000-000000000001', v.supplier, recipes.today() - v.received, recipes.today() - v.valid,
+       v.status::purchasing.price_list_status, case when v.status <> 'received' then now() - make_interval(days => v.valid) end,
+       case when v.status <> 'received' then '00000000-0000-4000-8000-000000000408'::uuid end
+  from (values
+    ('00000000-0000-4000-8000-000000001301'::uuid, '00000000-0000-4000-8000-000000000902'::uuid, 21, 20, 'replaced'),
+    ('00000000-0000-4000-8000-000000001302', '00000000-0000-4000-8000-000000000902', 6, 5, 'accepted'),
+    ('00000000-0000-4000-8000-000000001303', '00000000-0000-4000-8000-000000000903', 4, 3, 'accepted'),
+    ('00000000-0000-4000-8000-000000001304', '00000000-0000-4000-8000-000000000901', 21, 20, 'accepted'),
+    ('00000000-0000-4000-8000-000000001305', '00000000-0000-4000-8000-000000000904', 1, 0, 'received')
+  ) as v (id, supplier, received, valid, status);
+
+-- Tres artículos que el sistema no reconoce: dos del Almacén y uno de Lácteos.
+insert into purchasing.unmapped_articles (id, group_id, supplier_id, raw_name, supplier_sku, package_hint, found_in,
+                                          source_id)
+values
+  ('00000000-0000-4000-8000-000000001311', '00000000-0000-4000-8000-000000000001',
+   '00000000-0000-4000-8000-000000000904', 'Garbanzos secos x 5 kg', 'ALM-881', 'bolsa x 5 kg', 'price_list',
+   '00000000-0000-4000-8000-000000001305'),
+  ('00000000-0000-4000-8000-000000001312', '00000000-0000-4000-8000-000000000001',
+   '00000000-0000-4000-8000-000000000904', 'Rollo de film 30 cm', null, 'rollo', 'price_list',
+   '00000000-0000-4000-8000-000000001305'),
+  ('00000000-0000-4000-8000-000000001313', '00000000-0000-4000-8000-000000000001',
+   '00000000-0000-4000-8000-000000000903', 'Ricota entera pote 500 g', 'LA900', 'pote 500 g', 'price_list',
+   '00000000-0000-4000-8000-000000001303');
+
+-- Los renglones: los productos de cada proveedor con un precio inventado. La lista vigente del Frigorífico sube un 8 %
+-- contra la reemplazada. Lácteos y el Almacén suman sus artículos sin mapear.
+insert into purchasing.price_list_items (group_id, price_list_id, line_order, purchase_product_id, raw_name, supplier_sku,
+                                         list_price, bonus1_pct, bonus2_pct, bonus_per_unit_amount, vat_rate)
+select '00000000-0000-4000-8000-000000000001', l.id,
+       row_number() over (partition by l.id order by p.code), p.id, p.description, p.supplier_sku,
+       round((800 + (right(p.code, 3)::int * 137) % 4000) * case when l.id = '00000000-0000-4000-8000-000000001302'
+                                                                 then 1.08 else 1 end, 2),
+       case when right(p.code, 3)::int % 3 = 0 then 10 else 0 end,
+       case when right(p.code, 3)::int % 6 = 0 then 5 else 0 end,
+       case when right(p.code, 3)::int % 4 = 0 then 50 else 0 end,
+       case when right(p.code, 3)::int % 2 = 0 then 21 else 10.5 end
+  from purchasing.price_lists l
+  join catalog.purchase_products p on p.supplier_id = l.supplier_id and p.deleted_at is null
+ where l.id in ('00000000-0000-4000-8000-000000001301', '00000000-0000-4000-8000-000000001302',
+                '00000000-0000-4000-8000-000000001303', '00000000-0000-4000-8000-000000001304',
+                '00000000-0000-4000-8000-000000001305');
+insert into purchasing.price_list_items (group_id, price_list_id, line_order, unmapped_article_id, raw_name, supplier_sku,
+                                         list_price, vat_rate)
+select '00000000-0000-4000-8000-000000000001', a.source_id,
+       (select count(*) from purchasing.price_list_items i where i.price_list_id = a.source_id)
+         + row_number() over (partition by a.source_id order by a.raw_name),
+       a.id, a.raw_name, a.supplier_sku, v.price, 21
+  from purchasing.unmapped_articles a
+  join (values ('00000000-0000-4000-8000-000000001311'::uuid, 9800.00), ('00000000-0000-4000-8000-000000001312', 4200.00),
+               ('00000000-0000-4000-8000-000000001313', 2650.00)) as v (id, price) on v.id = a.id;
+
 -- Los costos de las recetas: en la base los calcula la cola cada minuto.
 select costing.process_recalc_queue(10000);
 
