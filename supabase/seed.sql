@@ -244,6 +244,104 @@ insert into catalog.suppliers (id, group_id, code, name, is_internal) values
   ('00000000-0000-4000-8000-000000000905', '00000000-0000-4000-8000-000000000001', 'DEMO-PROV-05', 'Molino Demo', false),
   ('00000000-0000-4000-8000-000000000906', '00000000-0000-4000-8000-000000000001', 'DEMO-PROV-06', 'Pastas Demo (interna)', true);
 
+-- Ficha completa de proveedor (Fase 3, ADR-0050). Todo inventado: CUIT ficticios con dígito verificador válido
+-- (30-50000001-1 …), teléfonos y correos @ejemplo.test. Nunca un proveedor, un CUIT ni una cuenta reales.
+update catalog.suppliers s
+   set name = v.legal, trade_name = v.trade, tax_id = v.cuit, vat_condition = v.vat::org.vat_condition,
+       address = v.address, city = 'Ciudad Demo', phone = v.phone, whatsapp = v.phone,
+       email = v.email, sales_contact = v.sales, admin_contact = 'Administración Demo'
+  from (values
+    ('00000000-0000-4000-8000-000000000901'::uuid, 'Verdulería Demo S.R.L.', 'Verdulería Demo', '30500000011',
+     'registered', 'Calle Ficticia 101', '11 5000-0001', 'ventas.verduleria@ejemplo.test', 'Ana (ventas)'),
+    ('00000000-0000-4000-8000-000000000902', 'Frigorífico Demo S.A.', 'Frigorífico Demo', '30500000029',
+     'registered', 'Calle Ficticia 202', '11 5000-0002', 'ventas.frigorifico@ejemplo.test', 'Bruno (ventas)'),
+    ('00000000-0000-4000-8000-000000000903', 'Lácteos Demo S.A.', 'Lácteos Demo', '30500000038',
+     'registered', 'Calle Ficticia 303', '11 5000-0003', 'ventas.lacteos@ejemplo.test', 'Carla (ventas)'),
+    ('00000000-0000-4000-8000-000000000904', 'Almacén Mayorista Demo S.A.', 'Almacén Mayorista Demo', '30500000046',
+     'registered', 'Calle Ficticia 404', '11 5000-0004', 'ventas.almacen@ejemplo.test', 'Diego (ventas)'),
+    ('00000000-0000-4000-8000-000000000905', 'Molino Demo S.A.', 'Molino Demo', '30500000054',
+     'registered', 'Calle Ficticia 505', '11 5000-0005', 'ventas.molino@ejemplo.test', 'Elena (ventas)'),
+    ('00000000-0000-4000-8000-000000000906', 'Pastas Demo (interna)', 'Pastas Demo', '30500000070',
+     'monotax', 'Calle Ficticia 606', '11 5000-0006', 'pastas@ejemplo.test', 'Fede (producción)')
+  ) as v (id, legal, trade, cuit, vat, address, phone, email, sales)
+ where s.id = v.id;
+-- El Molino no se usa más (inactivo, con su ficha y su historia).
+update catalog.suppliers set is_active = false where id = '00000000-0000-4000-8000-000000000905';
+
+insert into purchasing.supplier_terms (group_id, supplier_id, order_days, delivery_days, receiving_from, receiving_to,
+                                       po_channel, po_channel_target, billing_modes, price_list_frequency,
+                                       requires_po_approval)
+select '00000000-0000-4000-8000-000000000001', v.id, v.order_days, v.delivery_days, v.r_from, v.r_to,
+       v.channel::purchasing.channel, v.target, v.billing::purchasing.billing_mode[],
+       v.freq::purchasing.list_frequency, v.approval
+  from (values
+    ('00000000-0000-4000-8000-000000000901'::uuid, '{1,2,3,4,5,6}'::smallint[], '{2,3,4,5,6,7}'::smallint[],
+     '07:00'::time, '11:00'::time, 'whatsapp', '+54 11 5000-0001', '{handwritten_note,a}', 'weekly', false),
+    ('00000000-0000-4000-8000-000000000902', '{1,3,5}', '{2,4,6}', '08:00', '12:00',
+     'email', 'pedidos.frigorifico@ejemplo.test', '{invoice_remito}', 'biweekly', true),
+    ('00000000-0000-4000-8000-000000000903', '{1,4}', '{2,5}', '08:00', '15:00',
+     'whatsapp', '+54 11 5000-0003', '{a,invoice_remito}', 'monthly', false),
+    ('00000000-0000-4000-8000-000000000904', '{2}', '{4}', '09:00', '17:00',
+     'supplier_portal', 'https://pedidos.ejemplo.test/almacen', '{a}', 'monthly', true),
+    ('00000000-0000-4000-8000-000000000905', '{3}', '{5}', '08:00', '12:00',
+     'email', 'pedidos.molino@ejemplo.test', '{remito_then_invoice}', 'monthly', false),
+    ('00000000-0000-4000-8000-000000000906', '{1,2,3,4,5}', '{1,2,3,4,5}', '06:00', '10:00',
+     'whatsapp', '+54 11 5000-0006', '{non_fiscal}', null, false)
+  ) as v (id, order_days, delivery_days, r_from, r_to, channel, target, billing, freq, approval);
+
+insert into purchasing.supplier_payment_terms (group_id, supplier_id, payment_terms, payment_days, minimum_order_amount)
+select '00000000-0000-4000-8000-000000000001', v.id, v.terms::purchasing.payment_terms, v.days, v.minimum
+  from (values
+    ('00000000-0000-4000-8000-000000000901'::uuid, 'cash_on_delivery', 0, null::numeric),
+    ('00000000-0000-4000-8000-000000000902', 'account', 30, 150000),
+    ('00000000-0000-4000-8000-000000000903', 'same_day_transfer', 0, 50000),
+    ('00000000-0000-4000-8000-000000000904', 'account', 15, 200000),
+    ('00000000-0000-4000-8000-000000000905', 'account', 7, null),
+    ('00000000-0000-4000-8000-000000000906', 'cash', 0, null)
+  ) as v (id, terms, days, minimum);
+
+insert into purchasing.supplier_payment_accounts (group_id, supplier_id, method, cbu, alias, bank, holder_name,
+                                                  holder_tax_id, electronic_code)
+select '00000000-0000-4000-8000-000000000001', v.id, v.method::purchasing.payment_method, v.cbu, v.alias, v.bank,
+       v.holder, v.holder_cuit, v.code
+  from (values
+    ('00000000-0000-4000-8000-000000000901'::uuid, 'cash', null, null, null, null, null, null),
+    ('00000000-0000-4000-8000-000000000902', 'transfer', '0000000000000000000001', 'frigorifico.demo', 'Banco Demo',
+     'Frigorífico Demo S.A.', '30500000029', null),
+    ('00000000-0000-4000-8000-000000000902', 'echeq', null, null, 'Banco Demo', 'Frigorífico Demo S.A.',
+     '30500000029', null),
+    ('00000000-0000-4000-8000-000000000903', 'transfer', null, 'lacteos.demo', 'Billetera Demo', 'Lácteos Demo S.A.',
+     '30500000038', null),
+    ('00000000-0000-4000-8000-000000000904', 'transfer', '0000000000000000000004', null, 'Banco Demo',
+     'Almacén Mayorista Demo S.A.', '30500000046', null),
+    ('00000000-0000-4000-8000-000000000904', 'electronic_code', null, null, null, null, null, '0000-1234-5678'),
+    ('00000000-0000-4000-8000-000000000906', 'cash', null, null, null, null, null, null)
+  ) as v (id, method, cbu, alias, bank, holder, holder_cuit, code);
+
+insert into purchasing.supplier_categories (group_id, supplier_id, category_id)
+select '00000000-0000-4000-8000-000000000001', v.supplier::uuid, v.category::uuid
+  from (values
+    ('00000000-0000-4000-8000-000000000901', '00000000-0000-4000-8000-000000000701'),
+    ('00000000-0000-4000-8000-000000000901', '00000000-0000-4000-8000-000000000704'),
+    ('00000000-0000-4000-8000-000000000902', '00000000-0000-4000-8000-000000000702'),
+    ('00000000-0000-4000-8000-000000000903', '00000000-0000-4000-8000-000000000703'),
+    ('00000000-0000-4000-8000-000000000904', '00000000-0000-4000-8000-000000000706'),
+    ('00000000-0000-4000-8000-000000000904', '00000000-0000-4000-8000-000000000707'),
+    ('00000000-0000-4000-8000-000000000904', '00000000-0000-4000-8000-000000000708'),
+    ('00000000-0000-4000-8000-000000000905', '00000000-0000-4000-8000-000000000705'),
+    ('00000000-0000-4000-8000-000000000906', '00000000-0000-4000-8000-000000000705')
+  ) as v (supplier, category);
+
+-- Cada proveedor nos tiene con su número de cliente, distinto en cada local.
+insert into purchasing.supplier_customer_numbers (group_id, supplier_id, restaurant_id, customer_number)
+values
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000902',
+   '00000000-0000-4000-8000-000000000201', 'CLI-0101'),
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000902',
+   '00000000-0000-4000-8000-000000000203', 'CLI-0102'),
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000903',
+   '00000000-0000-4000-8000-000000000201', '4410');
+
 -- Un producto por ingrediente, según cómo se compra cada categoría, y un segundo producto para
 -- algunos (la mozzarella de dos marcas es la pregunta N6).
 insert into catalog.purchase_products (group_id, code, ingredient_id, supplier_id, description, package_unit_id,

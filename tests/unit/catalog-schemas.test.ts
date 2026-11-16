@@ -100,12 +100,16 @@ describe("formularios del catálogo", () => {
     });
   });
 
-  it("el CUIT del proveedor es opcional, solo con números y guiones", () => {
-    const supplier = { code: "PROV-1", name: "Verdulería", reason: "Alta" };
+  // ADR-0050: el código lo pone la base y el CUIT se controla con su dígito verificador.
+  it("el CUIT del proveedor es opcional y, si se carga, tiene que ser válido", () => {
+    const supplier = { name: "Verdulería", reason: "Alta" };
     expect(errorsOf("supplier", supplier)).toEqual({});
-    expect(errorsOf("supplier", { ...supplier, tax_id: "30-12345678-9" })).toEqual({});
+    expect(errorsOf("supplier", { ...supplier, tax_id: "30-12345678-1" })).toEqual({});
+    expect(errorsOf("supplier", { ...supplier, tax_id: "30-12345678-9" })).toEqual({
+      tax_id: "El CUIT no es válido: revisá los números.",
+    });
     expect(errorsOf("supplier", { ...supplier, tax_id: "CUIT" })).toEqual({
-      tax_id: "El CUIT va solo con números y guiones.",
+      tax_id: "El CUIT no es válido: revisá los números.",
     });
   });
 });

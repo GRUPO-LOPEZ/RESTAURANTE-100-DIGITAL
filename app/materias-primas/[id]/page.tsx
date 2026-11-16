@@ -589,6 +589,7 @@ async function Ingredient({
                 localCost={localCost}
                 productPrices={productPrices}
                 canManage={canManage}
+                canCreateSupplier={menus.suppliersManage}
                 canPropose={menus.pricesPropose}
                 canSeeImpact={menus.costs}
                 pricedProducts={sheetState?.pricedProducts ?? null}
@@ -848,6 +849,7 @@ function PurchaseCard({
   localCost,
   productPrices,
   canManage,
+  canCreateSupplier,
   canPropose,
   canSeeImpact,
   pricedProducts,
@@ -861,6 +863,8 @@ function PurchaseCard({
   localCost: LocalCost | null;
   productPrices: ProductPrice[];
   canManage: boolean;
+  // Alta de proveedor: con el permiso de proveedores (ADR-0050), no con el del catálogo.
+  canCreateSupplier: boolean;
   canPropose: boolean;
   canSeeImpact: boolean;
   // Productos con precios: su envase y su contenido no cambian (ADR-0044). null: no lo puede editar.
@@ -965,7 +969,7 @@ function PurchaseCard({
           {canManage ? (
             <div className="hidden desk:contents">
               <CreateProduct ingredient={ingredient} units={units} suppliers={suppliers} />
-              <CreateSupplier ingredient={ingredient} />
+              {canCreateSupplier ? <CreateSupplier ingredient={ingredient} /> : null}
             </div>
           ) : null}
           {prices && canPropose ? (
@@ -1422,18 +1426,23 @@ function CreateSupplier({ ingredient }: { ingredient: IngredientDetail }) {
       size="sm"
       accessibleName="Crear un proveedor"
       title="Crear un proveedor"
-      description="Queda para todo el grupo. Después lo elegís en el producto."
+      description="Queda para todo el grupo, con código automático. Después lo elegís en el producto y completás su ficha en Proveedores."
     >
       <ActionForm action={createSupplierAction} schema="supplier" submitLabel="Crear proveedor">
         <input type="hidden" name="groupId" value={ingredient.groupId} />
         <input type="hidden" name="ingredientId" value={ingredient.id} />
-        <FormInput id="mp-supplier_code" label="Código" name="code" required maxLength={30} />
-        <FormInput id="mp-supplier_name" label="Nombre" name="name" required maxLength={120} />
+        <FormInput
+          id="mp-supplier_name"
+          label="Razón social"
+          name="name"
+          required
+          maxLength={120}
+        />
         <FormInput
           id="mp-tax_id"
           label="CUIT"
           name="tax_id"
-          hint="Con o sin guiones."
+          hint="Opcional. Con o sin guiones."
           maxLength={15}
         />
         <Reason id="mp-motivo-proveedor" />

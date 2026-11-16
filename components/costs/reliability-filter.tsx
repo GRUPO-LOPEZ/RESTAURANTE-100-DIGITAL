@@ -17,12 +17,17 @@ export type ReliabilityOption = {
 // La confiabilidad de Costos como botones a la vista (pocas opciones = botones, ADR-0039; ADR-0048), en vez de pestañas.
 // Son botones de un formulario GET (?confiabilidad=): sin JavaScript la página vuelve filtrada; con él, navega sin
 // recargar, como el ranking del Inicio. aria-pressed dice cuál está aplicada.
+// name y label: el mismo patrón para otros filtros de pocas opciones (por ejemplo, el canal de Proveedores, ADR-0050).
 export function ReliabilityFilter({
   path,
   keep,
   options,
+  name = "confiabilidad",
+  label = "Confiabilidad",
 }: {
   path: string;
+  name?: string;
+  label?: string;
   // Lo que sigue igual al cambiar la confiabilidad: la búsqueda, el orden y las filas.
   keep: Record<string, string>;
   options: ReliabilityOption[];
@@ -33,12 +38,12 @@ export function ReliabilityFilter({
       {Object.entries(keep).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
-      <div role="group" aria-label="Confiabilidad" className="flex flex-wrap gap-1.5">
+      <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
         {options.map((o) => (
           <button
             key={o.value || "todas"}
             type="submit"
-            name="confiabilidad"
+            name={name}
             value={o.value}
             aria-pressed={o.current}
             onClick={(event) => {

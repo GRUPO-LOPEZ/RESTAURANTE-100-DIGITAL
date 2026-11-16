@@ -11,6 +11,7 @@ export type NavIcon =
   | "panel"
   | "recipes"
   | "ingredients"
+  | "suppliers"
   | "rubros"
   | "costs"
   | "reports"
@@ -35,6 +36,7 @@ export type NavMenus = {
   recipes: boolean;
   catalog: boolean;
   rubros: boolean;
+  suppliers: boolean;
   costs: boolean;
   reports: boolean;
   quality: boolean;
@@ -67,6 +69,10 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
           ? [{ href: "/materias-primas", label: "Materias primas", icon: "ingredients" as const }]
           : []),
         ...(menus.rubros ? [{ href: "/rubros", label: "Rubros", icon: "rubros" as const }] : []),
+        // Proveedores (Fase 3, ADR-0050): los ve quien ve su ficha, también el cocinero.
+        ...(menus.suppliers
+          ? [{ href: "/proveedores", label: "Proveedores", icon: "suppliers" as const }]
+          : []),
       ],
     },
     {
@@ -139,6 +145,7 @@ const MODULES: { href: string; label: string }[] = [
   { href: "/recetas", label: "Recetas" },
   { href: "/materias-primas", label: "Materias primas" },
   { href: "/rubros", label: "Rubros" },
+  { href: "/proveedores", label: "Proveedores" },
   { href: "/costos", label: "Costos" },
   { href: "/reportes", label: "Reportes" },
   { href: "/calidad", label: "Calidad" },

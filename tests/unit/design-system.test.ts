@@ -10,6 +10,7 @@ const none: NavMenus = {
   recipes: false,
   catalog: false,
   rubros: false,
+  suppliers: false,
   costs: false,
   reports: false,
   quality: false,
@@ -37,6 +38,7 @@ describe("la navegación global", () => {
       "Recetas",
       "Materias primas",
       "Rubros",
+      "Proveedores",
       "Costos",
       "Reportes",
       "Calidad",
@@ -49,13 +51,14 @@ describe("la navegación global", () => {
   });
 
   it("muestra solo lo que la persona puede usar, sin grupos vacíos", () => {
-    // El cocinero ve las recetas y, sin editarlos, los rubros (ADR-0038).
-    const cook = navGroups({ ...none, recipes: true, rubros: true }, 0);
+    // El cocinero ve las recetas y, sin editarlos, los rubros (ADR-0038) y los proveedores (ADR-0050).
+    const cook = navGroups({ ...none, recipes: true, rubros: true, suppliers: true }, 0);
     expect(cook.map((g) => g.label)).toEqual(["Visión general", "Base de conocimiento"]);
     expect(cook.flatMap((g) => g.items.map((i) => i.label))).toEqual([
       "Inicio",
       "Recetas",
       "Rubros",
+      "Proveedores",
     ]);
   });
 
