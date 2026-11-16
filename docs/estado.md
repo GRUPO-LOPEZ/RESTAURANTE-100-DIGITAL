@@ -1,10 +1,10 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-16._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, en `feat/articulos-y-listas-de-precios` (ADR-0052). PR #75 (pantalla de 1715 × 843) abierto.**
+_Última actualización: 2026-11-16._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, en `feat/articulos-y-listas-de-precios` (ADR-0052). PR #75 (pantalla de 1715 × 843) fusionado.**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## Pantalla real de 1715 × 843 (rama `feat/pantalla-1715x843`, ADR-0051, pedido de Soy del 2026-11-15)
+## Antes: pantalla real de 1715 × 843 (rama `feat/pantalla-1715x843`, ADR-0051, PR #75 fusionado el 2026-11-16)
 
 - **Qué hace:** las pantallas sin scroll también se prueban en 1715 × 843, la que midió Soy: Inicio, ficha de materia prima, ficha de receta y lista y detalle de Costos, con un rol que edita y uno que solo lee. Los tamaños de antes siguen.
 - **Si algo no entra, la página queda quieta y la tarjeta se desplaza adentro** (`Tile scroll`). Mientras se desplaza, se llega con Tab y se recorre con las flechas.
@@ -12,10 +12,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Pruebas:** axe en 1715 × 843 y controles de que «Ver los N», «Ver cuáles», los alérgenos y «Ver los números» queden a la vista.
 - **Queda escrito** en `.claude/rules/design.md`. No se diseña para menos de 843 de alto hasta medir la computadora de un local.
 - **La ficha de proveedor** (PR #74) ya nace así y se prueba en 1715 × 843.
-- **Pausa pedida por Joaco (2026-11-15, 20:20), retomado el 2026-11-16.** Dónde quedó:
-  - **Este PR:** commit en la rama, sin PR. La suite completa corrió antes de los arreglos de la revisión de diseño: 4 de 304 fallas de Playwright, ninguna en lo cambiado (dos ingresos que no entraron y dos textos duplicados en Reportes, ya corregidos con `filter({ visible: true })`). **Falta:** volver a correr Inicio, fichas, Costos y Reportes con los arreglos (`Tile scroll`, axe en 1715 × 843), y después abrir el PR.
-  - **PR #74 (proveedores):** Actions en verde (1 h 16 min) y **fusionado el 2026-11-16.**
-  - **Prompt 2:** plan aprobado, sin empezar. Rama `feat/articulos-y-listas-de-precios`, desde `feat/proveedores` o desde `main` después de fusionar el #74.
+- **Pruebas:** Inicio, fichas, Costos, Reportes y Proveedores en verde (68 y 16 salteadas); Actions en verde (1 h 16 min).
 
 ## Fase 3: compras y facturas (Módulo 2 «Facturas»)
 
@@ -57,8 +54,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - pgTAP: 2617 de 2617 (la `320` tiene 77);
   - Playwright: 288 en verde, 25 salteadas y 1 falla, «quién ve qué» de `admin.spec.ts` (el ingreso con doble verificación). No la toca este cambio y pasó sola, 4 de 4.
 - **Pendiente:**
-  1. **PR #75 (1715 × 843, pedido de Soy):** abierto el 2026-11-16, esperando Actions.
-  2. El PR de la importación de proveedores desde planilla (P1).
+  1. El PR de la importación de proveedores desde planilla (P1).
 - **Orden de los PRs:**
 
   | PR  | Rama                                 | Qué hace                                       |
@@ -100,9 +96,10 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - tipos y lint: en verde;
   - Vitest: 442 de 442;
   - pgTAP: 2698 de 2698 (la `330` tiene 81);
-  - Playwright: listas de precios, rubros y proveedores, 28 en verde y 8 salteadas. **La suite completa todavía no se corrió.**
+  - Playwright (suite completa): 294 en verde, 29 salteadas y 1 falla, «un local sin recetas» de `inicio.spec.ts` (el ingreso, antes de llegar a la pantalla). No la toca este cambio y pasó sola, 2 de 2.
+  - Vitest desde PowerShell rompe `sync-repo` (no encuentra `sh`): la suite se corre desde Bash.
 - **Pendiente:**
-  - la suite completa, el commit, el PR y el verde de Actions;
+  - el PR y el verde de Actions;
   - decidido por Joaco (2026-11-16): una lista con vigencia futura se acepta y queda vigente al instante, como está.
 
 ## Antes: Módulo 2 «Facturas», compras (pedido de Soy, 2026-11-14)
