@@ -102,6 +102,31 @@ export async function deactivateRubroAction(
   return done(error, `Rubro dado de baja.${moved}`);
 }
 
+// «Va a recetas» (ADR-0052): sí/no de un clic en los rubros de compra. Motivo fijo, como el nombre: la auditoría guarda
+// quién, cuándo, y el valor de antes y de ahora.
+export async function setUsedInRecipesAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const id = uuid.safeParse(formData.get("rubroId"));
+  const value = formData.get("value");
+  if (!id.success || (value !== "true" && value !== "false"))
+    return { status: "bad", message: "Falta el rubro." };
+  const used = value === "true";
+  const supabase = await createClient();
+  const { data, error } = await supabase.schema("recipes").rpc("set_category_used_in_recipes", {
+    p_id: id.data,
+    p_value: used,
+    p_reason: used ? "Desde Rubros: va a recetas" : "Desde Rubros: no va a recetas",
+  });
+  revalidatePath("/rubros");
+  revalidatePath("/recetas", "layout");
+  const state = toActionState(data, error);
+  return state.status === "ok"
+    ? { status: "ok", message: used ? "Va a recetas." : "No va a recetas." }
+    : state;
+}
+
 export async function reactivateRubroAction(
   _prev: ActionState,
   formData: FormData,

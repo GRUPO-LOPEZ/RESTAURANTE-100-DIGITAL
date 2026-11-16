@@ -606,6 +606,7 @@ export type Database = {
           stale_price_days: number | null;
           updated_at: string;
           updated_by: string | null;
+          used_in_recipes: boolean;
         };
         ComputedFields: never;
         Insert: {
@@ -622,6 +623,7 @@ export type Database = {
           stale_price_days?: number | null;
           updated_at?: string;
           updated_by?: string | null;
+          used_in_recipes?: boolean;
         };
         Update: {
           code?: string | null;
@@ -637,6 +639,7 @@ export type Database = {
           stale_price_days?: number | null;
           updated_at?: string;
           updated_by?: string | null;
+          used_in_recipes?: boolean;
         };
         Relationships: [
           {
@@ -994,6 +997,7 @@ export type Database = {
       };
       purchase_products: {
         Row: {
+          billed_by_weight: boolean;
           brand_name: string | null;
           code: string;
           content_per_unit: number;
@@ -1003,6 +1007,7 @@ export type Database = {
           deleted_at: string | null;
           deleted_by: string | null;
           description: string;
+          estimated_weight_per_unit: number | null;
           group_id: string;
           id: string;
           ingredient_id: string;
@@ -1010,12 +1015,14 @@ export type Database = {
           notes: string | null;
           package_unit_id: string;
           supplier_id: string | null;
+          supplier_sku: string | null;
           units_per_package: number;
           updated_at: string;
           updated_by: string | null;
         };
         ComputedFields: never;
         Insert: {
+          billed_by_weight?: boolean;
           brand_name?: string | null;
           code: string;
           content_per_unit: number;
@@ -1025,6 +1032,7 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           description: string;
+          estimated_weight_per_unit?: number | null;
           group_id: string;
           id?: string;
           ingredient_id: string;
@@ -1032,11 +1040,13 @@ export type Database = {
           notes?: string | null;
           package_unit_id: string;
           supplier_id?: string | null;
+          supplier_sku?: string | null;
           units_per_package?: number;
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: {
+          billed_by_weight?: boolean;
           brand_name?: string | null;
           code?: string;
           content_per_unit?: number;
@@ -1046,6 +1056,7 @@ export type Database = {
           deleted_at?: string | null;
           deleted_by?: string | null;
           description?: string;
+          estimated_weight_per_unit?: number | null;
           group_id?: string;
           id?: string;
           ingredient_id?: string;
@@ -1053,6 +1064,7 @@ export type Database = {
           notes?: string | null;
           package_unit_id?: string;
           supplier_id?: string | null;
+          supplier_sku?: string | null;
           units_per_package?: number;
           updated_at?: string;
           updated_by?: string | null;
@@ -1472,6 +1484,7 @@ export type Database = {
           version_number: number;
         }[];
       };
+      ingredient_used_in_recipes: { Args: { p_ingredient_id: string }; Returns: boolean };
       missing_conversion: {
         Args: { p_content_unit_id: string; p_ingredient_id: string };
         Returns: string;
@@ -2910,7 +2923,9 @@ export type Database = {
         | "recipe_changed"
         | "recipe_cost_changed"
         | "yield_deviation"
-        | "supplier_account_changed";
+        | "supplier_account_changed"
+        | "unmapped_article"
+        | "price_list_expired";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -5123,6 +5138,238 @@ export type Database = {
   };
   purchasing: {
     Tables: {
+      article_aliases: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          normalized_name: string;
+          purchase_product_id: string;
+          raw_name: string;
+          supplier_id: string;
+          supplier_sku: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          normalized_name?: never;
+          purchase_product_id: string;
+          raw_name: string;
+          supplier_id: string;
+          supplier_sku?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          normalized_name?: never;
+          purchase_product_id?: string;
+          raw_name?: string;
+          supplier_id?: string;
+          supplier_sku?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      attachments: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          doc_kind: Database["purchasing"]["Enums"]["doc_kind"];
+          group_id: string;
+          id: string;
+          page: number;
+          source_id: string;
+          source_table: string;
+          storage_path: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          doc_kind: Database["purchasing"]["Enums"]["doc_kind"];
+          group_id: string;
+          id?: string;
+          page?: number;
+          source_id: string;
+          source_table: string;
+          storage_path: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          doc_kind?: Database["purchasing"]["Enums"]["doc_kind"];
+          group_id?: string;
+          id?: string;
+          page?: number;
+          source_id?: string;
+          source_table?: string;
+          storage_path?: string;
+        };
+        Relationships: [];
+      };
+      price_list_items: {
+        Row: {
+          bonus_per_unit_amount: number;
+          bonus1_pct: number;
+          bonus2_pct: number;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          includes_vat: boolean;
+          line_order: number;
+          list_price: number;
+          price_list_id: string;
+          purchase_product_id: string | null;
+          raw_name: string;
+          supplier_sku: string | null;
+          unmapped_article_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          vat_rate: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          bonus_per_unit_amount?: number;
+          bonus1_pct?: number;
+          bonus2_pct?: number;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          includes_vat?: boolean;
+          line_order: number;
+          list_price: number;
+          price_list_id: string;
+          purchase_product_id?: string | null;
+          raw_name: string;
+          supplier_sku?: string | null;
+          unmapped_article_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_rate: number;
+        };
+        Update: {
+          bonus_per_unit_amount?: number;
+          bonus1_pct?: number;
+          bonus2_pct?: number;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          includes_vat?: boolean;
+          line_order?: number;
+          list_price?: number;
+          price_list_id?: string;
+          purchase_product_id?: string | null;
+          raw_name?: string;
+          supplier_sku?: string | null;
+          unmapped_article_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_rate?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "price_list_items_list_fkey";
+            columns: ["price_list_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "price_lists";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "price_list_items_unmapped_fkey";
+            columns: ["unmapped_article_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "unmapped_articles";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      price_lists: {
+        Row: {
+          accepted_at: string | null;
+          accepted_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          expired_notified_at: string | null;
+          group_id: string;
+          id: string;
+          notes: string | null;
+          received_on: string;
+          status: Database["purchasing"]["Enums"]["price_list_status"];
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+          valid_from: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          expired_notified_at?: string | null;
+          group_id: string;
+          id?: string;
+          notes?: string | null;
+          received_on: string;
+          status?: Database["purchasing"]["Enums"]["price_list_status"];
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          valid_from: string;
+        };
+        Update: {
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          expired_notified_at?: string | null;
+          group_id?: string;
+          id?: string;
+          notes?: string | null;
+          received_on?: string;
+          status?: Database["purchasing"]["Enums"]["price_list_status"];
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          valid_from?: string;
+        };
+        Relationships: [];
+      };
       supplier_categories: {
         Row: {
           category_id: string;
@@ -5381,11 +5628,79 @@ export type Database = {
         };
         Relationships: [];
       };
+      unmapped_articles: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          found_in: Database["purchasing"]["Enums"]["article_source"];
+          group_id: string;
+          id: string;
+          normalized_name: string;
+          package_hint: string | null;
+          purchase_product_id: string | null;
+          raw_name: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          source_id: string | null;
+          status: Database["purchasing"]["Enums"]["unmapped_status"];
+          supplier_id: string;
+          supplier_sku: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          found_in: Database["purchasing"]["Enums"]["article_source"];
+          group_id: string;
+          id?: string;
+          normalized_name?: never;
+          package_hint?: string | null;
+          purchase_product_id?: string | null;
+          raw_name: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          source_id?: string | null;
+          status?: Database["purchasing"]["Enums"]["unmapped_status"];
+          supplier_id: string;
+          supplier_sku?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          found_in?: Database["purchasing"]["Enums"]["article_source"];
+          group_id?: string;
+          id?: string;
+          normalized_name?: never;
+          package_hint?: string | null;
+          purchase_product_id?: string | null;
+          raw_name?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          source_id?: string | null;
+          status?: Database["purchasing"]["Enums"]["unmapped_status"];
+          supplier_id?: string;
+          supplier_sku?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      accept_price_list: { Args: { p_id: string; p_reason: string }; Returns: Json };
       account_label: {
         Args: {
           p_acc: Omit<
@@ -5395,16 +5710,74 @@ export type Database = {
         };
         Returns: string;
       };
+      add_price_list_attachment: {
+        Args: { p_page: number; p_price_list_id: string; p_reason: string; p_storage_path: string };
+        Returns: Json;
+      };
       can_see_payment: { Args: { p_group_id: string }; Returns: boolean };
+      can_upload_document: { Args: { p_name: string }; Returns: boolean };
+      close_article: {
+        Args: {
+          p_a: Omit<
+            Database["purchasing"]["Tables"]["unmapped_articles"]["Row"],
+            Database["purchasing"]["Tables"]["unmapped_articles"]["ComputedFields"]
+          >;
+          p_product_id: string;
+        };
+        Returns: undefined;
+      };
+      create_price_list: {
+        Args: {
+          p_items: Json;
+          p_notes: string;
+          p_reason: string;
+          p_received_on: string;
+          p_supplier_id: string;
+          p_valid_from: string;
+        };
+        Returns: Json;
+      };
       create_supplier: {
         Args: { p_group_id: string; p_name: string; p_reason: string; p_tax_id: string };
         Returns: string;
       };
       days_from: { Args: { p_value: Json }; Returns: number[] };
+      discard_article: { Args: { p_id: string; p_reason: string }; Returns: Json };
       distinct_billing_modes: {
         Args: { p_modes: Database["purchasing"]["Enums"]["billing_mode"][] };
         Returns: boolean;
       };
+      document_parts: {
+        Args: { p_name: string };
+        Returns: {
+          group_id: string;
+          source_id: string;
+          source_table: string;
+        }[];
+      };
+      link_article: {
+        Args: { p_id: string; p_purchase_product_id: string; p_reason: string };
+        Returns: Json;
+      };
+      list_frequency_days: {
+        Args: { p_frequency: Database["purchasing"]["Enums"]["list_frequency"] };
+        Returns: number;
+      };
+      match_article: {
+        Args: { p_name: string; p_sku: string; p_supplier_id: string };
+        Returns: string;
+      };
+      net_list_price: {
+        Args: {
+          p_bonus_per_unit_amount: number;
+          p_bonus1_pct: number;
+          p_bonus2_pct: number;
+          p_list_price: number;
+        };
+        Returns: number;
+      };
+      normalize_name: { Args: { p_name: string }; Returns: string };
+      normalize_sku: { Args: { p_sku: string }; Returns: string };
       notify_account_change: {
         Args: {
           p_notes: string[];
@@ -5415,9 +5788,84 @@ export type Database = {
         };
         Returns: undefined;
       };
+      notify_expired_price_lists: { Args: Record<PropertyKey, never>; Returns: number };
+      notify_unmapped: { Args: { p_count: number; p_supplier_id: string }; Returns: undefined };
+      pending_article: {
+        Args: { p_id: string };
+        Returns: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          found_in: Database["purchasing"]["Enums"]["article_source"];
+          group_id: string;
+          id: string;
+          normalized_name: string;
+          package_hint: string | null;
+          purchase_product_id: string | null;
+          raw_name: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          source_id: string | null;
+          status: Database["purchasing"]["Enums"]["unmapped_status"];
+          supplier_id: string;
+          supplier_sku: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "unmapped_articles";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      price_list_changes: {
+        Args: { p_price_list_id: string };
+        Returns: {
+          change_pct: number;
+          net_price: number;
+          previous_net_price: number;
+          purchase_product_id: string;
+          raw_name: string;
+        }[];
+      };
+      price_list_expired: { Args: { p_id: string }; Returns: boolean };
+      price_list_list: {
+        Args: { p_limit?: number; p_offset?: number; p_status?: string; p_supplier_id?: string };
+        Returns: {
+          expired: boolean;
+          id: string;
+          items: number;
+          queued: number;
+          received_on: string;
+          status: Database["purchasing"]["Enums"]["price_list_status"];
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
+          valid_from: string;
+        }[];
+      };
       raise_friendly: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
+      };
+      raise_price_list_error: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
+      resolve_article: {
+        Args: {
+          p_content_per_unit: number;
+          p_content_unit: string;
+          p_details: Json;
+          p_id: string;
+          p_ingredient_id: string;
+          p_package_unit: string;
+          p_reason: string;
+          p_units_per_package: number;
+        };
+        Returns: Json;
       };
       save_supplier_sheet: {
         Args: {
@@ -5448,13 +5896,19 @@ export type Database = {
       supplier_sheet_stamp_internal: { Args: { p_id: string }; Returns: string };
       supplier_sheet_state: { Args: { p_id: string }; Returns: Json };
       text_or: { Args: { p_key: string; p_obj: Json; p_old: string }; Returns: string };
+      users_with_permission: {
+        Args: { p_group_id: string; p_permission: string };
+        Returns: string[];
+      };
       valid_channel_target: {
         Args: { p_channel: Database["purchasing"]["Enums"]["channel"]; p_target: string };
         Returns: boolean;
       };
       valid_days: { Args: { p_days: number[] }; Returns: boolean };
+      visible_document_paths: { Args: Record<PropertyKey, never>; Returns: string[] };
     };
     Enums: {
+      article_source: "price_list" | "invoice" | "receipt";
       billing_mode:
         | "a"
         | "b"
@@ -5464,9 +5918,12 @@ export type Database = {
         | "non_fiscal"
         | "handwritten_note";
       channel: "whatsapp" | "email" | "supplier_portal";
+      doc_kind: "price_list" | "other";
       list_frequency: "weekly" | "biweekly" | "monthly";
       payment_method: "cash" | "transfer" | "check" | "echeq" | "card" | "electronic_code";
       payment_terms: "cash" | "cash_on_delivery" | "same_day_transfer" | "account";
+      price_list_status: "received" | "accepted" | "replaced";
+      unmapped_status: "pending" | "resolved" | "discarded";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -6197,6 +6654,7 @@ export type Database = {
           is_active: boolean;
           mismatched: number;
           name: string;
+          used_in_recipes: boolean;
           uses: number;
         }[];
       };
@@ -6445,6 +6903,10 @@ export type Database = {
           p_recipe_id: string;
           p_restaurant_id: string;
         };
+        Returns: Json;
+      };
+      set_category_used_in_recipes: {
+        Args: { p_id: string; p_reason: string; p_value: boolean };
         Returns: Json;
       };
       set_components: {
@@ -7017,6 +7479,8 @@ export const Constants = {
         "recipe_cost_changed",
         "yield_deviation",
         "supplier_account_changed",
+        "unmapped_article",
+        "price_list_expired",
       ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
@@ -7068,6 +7532,7 @@ export const Constants = {
   },
   purchasing: {
     Enums: {
+      article_source: ["price_list", "invoice", "receipt"],
       billing_mode: [
         "a",
         "b",
@@ -7078,9 +7543,12 @@ export const Constants = {
         "handwritten_note",
       ],
       channel: ["whatsapp", "email", "supplier_portal"],
+      doc_kind: ["price_list", "other"],
       list_frequency: ["weekly", "biweekly", "monthly"],
       payment_method: ["cash", "transfer", "check", "echeq", "card", "electronic_code"],
       payment_terms: ["cash", "cash_on_delivery", "same_day_transfer", "account"],
+      price_list_status: ["received", "accepted", "replaced"],
+      unmapped_status: ["pending", "resolved", "discarded"],
     },
   },
   recipes: {

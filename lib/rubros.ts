@@ -13,6 +13,8 @@ export type Rubro = {
   uses: number;
   // Recetas cargadas antes de los rubros que quedaron en uno de la otra clase.
   mismatched: number;
+  // Solo en los de compra (ADR-0052): si sus materias primas se pueden usar en recetas (Limpieza y Descartables, no).
+  usedInRecipes: boolean;
 };
 
 export type RubroSort = "cantidad" | "az";
