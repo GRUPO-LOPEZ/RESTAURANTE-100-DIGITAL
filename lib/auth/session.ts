@@ -97,6 +97,10 @@ export const getMenus = cache(async () => {
     priceLists,
     priceListsManage,
     mapArticles,
+    orders,
+    ordersCreate,
+    orderNews,
+    ordersApprove,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -144,6 +148,11 @@ export const getMenus = cache(async () => {
     groupWide("purchasing.manage_price_lists"),
     // La cola de mapeo la resuelven también los chefs de una marca o de un local (Joaco, 2026-11-16): cualquier alcance.
     check("catalog.map_articles"),
+    // Órdenes de compra (ADR-0053): ver, pedir y registrar novedades, en algún local (la base controla en cuál).
+    check("purchasing.view_orders"),
+    check("purchasing.create_orders"),
+    check("purchasing.record_order_news"),
+    check("purchasing.approve_orders"),
   ]);
   return {
     users,
@@ -191,6 +200,10 @@ export const getMenus = cache(async () => {
     priceListsManage,
     mapArticles,
     unmappedQueue: mapArticles || priceLists,
+    orders,
+    ordersCreate,
+    orderNews,
+    ordersApprove,
   };
 });
 

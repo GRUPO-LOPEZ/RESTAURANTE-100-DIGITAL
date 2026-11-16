@@ -152,9 +152,12 @@ test.describe("ficha de proveedor", () => {
     await expect(
       page.getByRole("group", { name: /^Días de pedido/ }).getByRole("button", { name: "jueves" }),
     ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      page.getByRole("button", { name: "Requiere aprobación de la OC" }),
-    ).toHaveAttribute("aria-pressed", "true");
+    // Guardada en Sí, ya no se desmarca con un clic: se pide que deje de requerirla y lo aprueba Dirección (ADR-0053).
+    await expect(page.locator("p", { hasText: "Requiere aprobación de la OC:" })).toContainText(
+      "Sí",
+    );
+    await expect(page.getByRole("button", { name: "Requiere aprobación de la OC" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Pedir que deje de requerir" })).toBeVisible();
     await axe(page);
   });
 

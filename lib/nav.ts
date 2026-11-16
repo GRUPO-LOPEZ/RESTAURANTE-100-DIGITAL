@@ -13,6 +13,7 @@ export type NavIcon =
   | "ingredients"
   | "suppliers"
   | "priceLists"
+  | "orders"
   | "rubros"
   | "costs"
   | "reports"
@@ -39,6 +40,7 @@ export type NavMenus = {
   rubros: boolean;
   suppliers: boolean;
   priceLists: boolean;
+  orders: boolean;
   costs: boolean;
   reports: boolean;
   quality: boolean;
@@ -81,6 +83,10 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
       label: "Gestión y análisis",
       items: [
         ...(menus.costs ? [{ href: "/costos", label: "Costos", icon: "costs" as const }] : []),
+        // Órdenes de compra (Fase 3, ADR-0053): quien pide (también el cocinero) y quien las controla.
+        ...(menus.orders
+          ? [{ href: "/compras/ordenes", label: "Órdenes de compra", icon: "orders" as const }]
+          : []),
         // Listas de precios (Fase 3, ADR-0052): Compras y quien controla precios. El cocinero no.
         ...(menus.priceLists
           ? [
@@ -160,6 +166,7 @@ const MODULES: { href: string; label: string }[] = [
   { href: "/proveedores", label: "Proveedores" },
   { href: "/costos", label: "Costos" },
   { href: "/listas-de-precios", label: "Listas de precios" },
+  { href: "/compras/ordenes", label: "Órdenes de compra" },
   { href: "/reportes", label: "Reportes" },
   { href: "/calidad", label: "Calidad" },
   { href: "/aprobaciones", label: "Aprobaciones" },

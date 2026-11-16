@@ -117,7 +117,9 @@ select is(pg_temp.q(pg_temp.u(413), $$select recipes.preview_code(pg_temp.u(1062
           'vista previa de un plato de Pastas: PLA-PAS-0001');
 select is(pg_temp.q(pg_temp.u(413), $$select recipes.preview_code(pg_temp.u(1061), 'preparation')$$), 'PRE-SAL-0001',
           'vista previa de una preparación de Salsas: PRE-SAL-0001');
-select is((select count(*)::int from catalog.code_series), 0, 'la vista previa no entrega números');
+-- (El seed ya abre el contador de las órdenes de compra de un local, ADR-0053: se miran solo los de recetas.)
+select is((select count(*)::int from catalog.code_series where prefix in ('PLA-PAS-', 'PRE-SAL-')), 0,
+          'la vista previa no entrega números');
 select is(pg_temp.q(pg_temp.u(409), $$select coalesce(recipes.preview_code(pg_temp.u(1062), 'dish'), 'vacío')$$), 'vacío',
           'la Cocinera (sin recipes.draft) no recibe vista previa');
 select is(pg_temp.q(pg_temp.u(413), $$select coalesce(recipes.preview_code(pg_temp.u(1061), 'unit_component'), 'vacío')$$),

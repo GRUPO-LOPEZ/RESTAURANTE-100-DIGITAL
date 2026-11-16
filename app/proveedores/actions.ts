@@ -66,6 +66,29 @@ export async function saveSupplierSheetAction(
   return { status: "ok", message: "Cambios guardados." };
 }
 
+// Que un proveedor deje de requerir aprobación de OC: lo aprueba Dirección (ADR-0053).
+export async function requestLowerApprovalAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.reason.safeParse(formValues(formData));
+  if (!fields.success)
+    return {
+      status: "bad",
+      message: "Revisá los campos marcados.",
+      fieldErrors: fieldErrors(fields.error),
+    };
+  const id = uuid.safeParse(formData.get("supplierId"));
+  if (!id.success) return { status: "bad", message: "Falta el proveedor." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.schema("purchasing").rpc("request_lower_po_approval", {
+    p_supplier_id: id.data,
+    p_reason: fields.data.reason,
+  });
+  revalidatePath("/aprobaciones");
+  return toActionState(data, error);
+}
+
 export async function setSupplierActiveAction(
   _prev: ActionState,
   formData: FormData,
