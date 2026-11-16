@@ -66,7 +66,8 @@ export function Sidebar({
         </Link>
       </div>
       <nav aria-label="Menú principal" className="flex min-h-0 flex-1 flex-col gap-1 px-3 pb-3">
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+        {/* 4 px entre grupos (antes 8): con Órdenes de compra, el menú del controller entra sin scroll en 900 de alto. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
           {groups.map((g) =>
             collapsed ? (
               <ul

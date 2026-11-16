@@ -2925,7 +2925,8 @@ export type Database = {
         | "yield_deviation"
         | "supplier_account_changed"
         | "unmapped_article"
-        | "price_list_expired";
+        | "price_list_expired"
+        | "order_news";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -5224,6 +5225,61 @@ export type Database = {
         };
         Relationships: [];
       };
+      outbound_messages: {
+        Row: {
+          body: string;
+          channel: Database["purchasing"]["Enums"]["channel"];
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          source_id: string;
+          source_table: string;
+          status: Database["purchasing"]["Enums"]["message_status"];
+          subject: string;
+          target: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          body: string;
+          channel: Database["purchasing"]["Enums"]["channel"];
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          source_id: string;
+          source_table: string;
+          status?: Database["purchasing"]["Enums"]["message_status"];
+          subject: string;
+          target: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          body?: string;
+          channel?: Database["purchasing"]["Enums"]["channel"];
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          source_id?: string;
+          source_table?: string;
+          status?: Database["purchasing"]["Enums"]["message_status"];
+          subject?: string;
+          target?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       price_list_items: {
         Row: {
           bonus_per_unit_amount: number;
@@ -5367,6 +5423,203 @@ export type Database = {
           updated_at?: string;
           updated_by?: string | null;
           valid_from?: string;
+        };
+        Relationships: [];
+      };
+      purchase_order_events: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          kind: Database["purchasing"]["Enums"]["po_event_kind"];
+          message: string;
+          purchase_order_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          kind: Database["purchasing"]["Enums"]["po_event_kind"];
+          message: string;
+          purchase_order_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          kind?: Database["purchasing"]["Enums"]["po_event_kind"];
+          message?: string;
+          purchase_order_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_events_order_fkey";
+            columns: ["purchase_order_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_orders";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      purchase_order_lines: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string | null;
+          line_note: string | null;
+          line_order: number;
+          price_list_item_id: string | null;
+          purchase_order_id: string;
+          purchase_product_id: string | null;
+          quantity: number;
+          received_quantity: number;
+          unit_id: string | null;
+          unit_price: number | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id?: string | null;
+          line_note?: string | null;
+          line_order: number;
+          price_list_item_id?: string | null;
+          purchase_order_id: string;
+          purchase_product_id?: string | null;
+          quantity: number;
+          received_quantity?: number;
+          unit_id?: string | null;
+          unit_price?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string | null;
+          line_note?: string | null;
+          line_order?: number;
+          price_list_item_id?: string | null;
+          purchase_order_id?: string;
+          purchase_product_id?: string | null;
+          quantity?: number;
+          received_quantity?: number;
+          unit_id?: string | null;
+          unit_price?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_lines_order_fkey";
+            columns: ["purchase_order_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_orders";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "purchase_order_lines_price_item_fkey";
+            columns: ["price_list_item_id"];
+            isOneToOne: false;
+            referencedRelation: "price_list_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      purchase_orders: {
+        Row: {
+          approval_request_id: string | null;
+          brand_id: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          expected_delivery_on: string;
+          group_id: string;
+          id: string;
+          notes: string | null;
+          number: string;
+          requested_by: string;
+          restaurant_id: string;
+          sent_at: string | null;
+          sent_channel: Database["purchasing"]["Enums"]["channel"] | null;
+          status: Database["purchasing"]["Enums"]["po_status"];
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          approval_request_id?: string | null;
+          brand_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          expected_delivery_on: string;
+          group_id: string;
+          id?: string;
+          notes?: string | null;
+          number: string;
+          requested_by: string;
+          restaurant_id: string;
+          sent_at?: string | null;
+          sent_channel?: Database["purchasing"]["Enums"]["channel"] | null;
+          status?: Database["purchasing"]["Enums"]["po_status"];
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          approval_request_id?: string | null;
+          brand_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          expected_delivery_on?: string;
+          group_id?: string;
+          id?: string;
+          notes?: string | null;
+          number?: string;
+          requested_by?: string;
+          restaurant_id?: string;
+          sent_at?: string | null;
+          sent_channel?: Database["purchasing"]["Enums"]["channel"] | null;
+          status?: Database["purchasing"]["Enums"]["po_status"];
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
@@ -5714,8 +5967,17 @@ export type Database = {
         Args: { p_page: number; p_price_list_id: string; p_reason: string; p_storage_path: string };
         Returns: Json;
       };
+      apply_lower_po_approval: { Args: { p_request_id: string }; Returns: undefined };
+      apply_order_approval: { Args: { p_request_id: string }; Returns: undefined };
+      can_in_restaurant: {
+        Args: { p_permission: string; p_restaurant_id: string };
+        Returns: boolean;
+      };
+      can_map_articles: { Args: { p_group_id: string }; Returns: boolean };
+      can_read_own_document: { Args: { p_name: string }; Returns: boolean };
       can_see_payment: { Args: { p_group_id: string }; Returns: boolean };
       can_upload_document: { Args: { p_name: string }; Returns: boolean };
+      cancel_order: { Args: { p_id: string; p_reason: string }; Returns: Json };
       close_article: {
         Args: {
           p_a: Omit<
@@ -5755,6 +6017,7 @@ export type Database = {
           source_table: string;
         }[];
       };
+      expected_delivery: { Args: { p_from: string; p_supplier_id: string }; Returns: string };
       link_article: {
         Args: { p_id: string; p_purchase_product_id: string; p_reason: string };
         Returns: Json;
@@ -5776,6 +6039,7 @@ export type Database = {
         };
         Returns: number;
       };
+      next_order_number: { Args: { p_code: string; p_group_id: string }; Returns: string };
       normalize_name: { Args: { p_name: string }; Returns: string };
       normalize_sku: { Args: { p_sku: string }; Returns: string };
       notify_account_change: {
@@ -5789,7 +6053,73 @@ export type Database = {
         Returns: undefined;
       };
       notify_expired_price_lists: { Args: Record<PropertyKey, never>; Returns: number };
+      notify_requester: {
+        Args: {
+          p_body: string;
+          p_o: Omit<
+            Database["purchasing"]["Tables"]["purchase_orders"]["Row"],
+            Database["purchasing"]["Tables"]["purchase_orders"]["ComputedFields"]
+          >;
+          p_title: string;
+        };
+        Returns: undefined;
+      };
       notify_unmapped: { Args: { p_count: number; p_supplier_id: string }; Returns: undefined };
+      order_ingredient_search: {
+        Args: { p_query: string; p_restaurant_id: string };
+        Returns: {
+          code: string;
+          id: string;
+          name: string;
+          unit_name: string;
+        }[];
+      };
+      order_lines: {
+        Args: { p_order_id: string };
+        Returns: {
+          billed_by_weight: boolean;
+          estimated_kg: number;
+          ingredient_id: string;
+          line_note: string;
+          line_order: number;
+          name: string;
+          package_name: string;
+          purchase_product_id: string;
+          quantity: number;
+          received_quantity: number;
+          supplier_sku: string;
+          unit_name: string;
+          without_invoice_name: boolean;
+        }[];
+      };
+      order_list: {
+        Args: {
+          p_from?: string;
+          p_limit?: number;
+          p_mine?: boolean;
+          p_offset?: number;
+          p_restaurant_id?: string;
+          p_status?: string;
+          p_supplier_id?: string;
+          p_to?: string;
+        };
+        Returns: {
+          created_at: string;
+          expected_delivery_on: string;
+          id: string;
+          lines: number;
+          mine: boolean;
+          news: number;
+          number: string;
+          restaurant_id: string;
+          restaurant_name: string;
+          status: Database["purchasing"]["Enums"]["po_status"];
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
+        }[];
+      };
+      order_message: { Args: { p_order_id: string }; Returns: string };
       pending_article: {
         Args: { p_id: string };
         Returns: {
@@ -5831,6 +6161,7 @@ export type Database = {
         }[];
       };
       price_list_expired: { Args: { p_id: string }; Returns: boolean };
+      price_list_expired_internal: { Args: { p_id: string }; Returns: boolean };
       price_list_list: {
         Args: { p_limit?: number; p_offset?: number; p_status?: string; p_supplier_id?: string };
         Returns: {
@@ -5846,13 +6177,30 @@ export type Database = {
           valid_from: string;
         }[];
       };
+      qty_text: { Args: { p_value: number }; Returns: string };
       raise_friendly: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
+      raise_order_error: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
       };
       raise_price_list_error: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
+      };
+      record_order_news: {
+        Args: {
+          p_id: string;
+          p_kind: Database["purchasing"]["Enums"]["po_event_kind"];
+          p_message: string;
+        };
+        Returns: Json;
+      };
+      request_lower_po_approval: {
+        Args: { p_reason: string; p_supplier_id: string };
+        Returns: Json;
       };
       resolve_article: {
         Args: {
@@ -5867,6 +6215,18 @@ export type Database = {
         };
         Returns: Json;
       };
+      save_order_draft: {
+        Args: {
+          p_expected_on: string;
+          p_lines: Json;
+          p_notes: string;
+          p_order_id: string;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_supplier_id: string;
+        };
+        Returns: Json;
+      };
       save_supplier_sheet: {
         Args: {
           p_changes: Json;
@@ -5876,10 +6236,12 @@ export type Database = {
         };
         Returns: Json;
       };
+      send_order_internal: { Args: { p_order_id: string }; Returns: undefined };
       set_supplier_active: {
         Args: { p_active: boolean; p_id: string; p_reason: string };
         Returns: Json;
       };
+      submit_order: { Args: { p_id: string; p_reason: string }; Returns: Json };
       supplier_list: {
         Args: {
           p_active?: boolean;
@@ -5893,9 +6255,26 @@ export type Database = {
         };
         Returns: Json;
       };
+      supplier_product_ranking: {
+        Args: { p_restaurant_id: string; p_supplier_id: string };
+        Returns: {
+          billed_by_weight: boolean;
+          code: string;
+          content_per_unit: number;
+          content_unit: string;
+          description: string;
+          estimated_weight_per_unit: number;
+          package_name: string;
+          purchase_product_id: string;
+          supplier_sku: string;
+          times_ordered: number;
+          units_per_package: number;
+        }[];
+      };
       supplier_sheet_stamp_internal: { Args: { p_id: string }; Returns: string };
       supplier_sheet_state: { Args: { p_id: string }; Returns: Json };
       text_or: { Args: { p_key: string; p_obj: Json; p_old: string }; Returns: string };
+      users_who_map: { Args: { p_group_id: string }; Returns: string[] };
       users_with_permission: {
         Args: { p_group_id: string; p_permission: string };
         Returns: string[];
@@ -5920,8 +6299,19 @@ export type Database = {
       channel: "whatsapp" | "email" | "supplier_portal";
       doc_kind: "price_list" | "other";
       list_frequency: "weekly" | "biweekly" | "monthly";
+      message_status: "queued" | "sent" | "failed" | "cancelled";
       payment_method: "cash" | "transfer" | "check" | "echeq" | "card" | "electronic_code";
       payment_terms: "cash" | "cash_on_delivery" | "same_day_transfer" | "account";
+      po_event_kind: "news" | "shortage" | "delivery_change" | "note" | "cancelled";
+      po_status:
+        | "draft"
+        | "pending_approval"
+        | "sent"
+        | "with_news"
+        | "partially_received"
+        | "received"
+        | "closed"
+        | "cancelled";
       price_list_status: "received" | "accepted" | "replaced";
       unmapped_status: "pending" | "resolved" | "discarded";
     };
@@ -7481,6 +7871,7 @@ export const Constants = {
         "supplier_account_changed",
         "unmapped_article",
         "price_list_expired",
+        "order_news",
       ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
@@ -7545,8 +7936,20 @@ export const Constants = {
       channel: ["whatsapp", "email", "supplier_portal"],
       doc_kind: ["price_list", "other"],
       list_frequency: ["weekly", "biweekly", "monthly"],
+      message_status: ["queued", "sent", "failed", "cancelled"],
       payment_method: ["cash", "transfer", "check", "echeq", "card", "electronic_code"],
       payment_terms: ["cash", "cash_on_delivery", "same_day_transfer", "account"],
+      po_event_kind: ["news", "shortage", "delivery_change", "note", "cancelled"],
+      po_status: [
+        "draft",
+        "pending_approval",
+        "sent",
+        "with_news",
+        "partially_received",
+        "received",
+        "closed",
+        "cancelled",
+      ],
       price_list_status: ["received", "accepted", "replaced"],
       unmapped_status: ["pending", "resolved", "discarded"],
     },

@@ -152,7 +152,13 @@ const NOTICE_LABELS: Record<NoticeRow["kind"], { badge: string; link: string }> 
   recipe_changed: { badge: "Cambió una preparación", link: "Ver la receta" },
   recipe_cost_changed: { badge: "Cambió un costo", link: "Ver el costo" },
   yield_deviation: { badge: "Rendimiento desviado", link: "Ver la materia prima" },
+  supplier_account_changed: { badge: "Cambió una cuenta de pago", link: "Ver el proveedor" },
+  unmapped_article: { badge: "Artículos para mapear", link: "Ver la cola" },
+  price_list_expired: { badge: "Lista vencida", link: "Ver el proveedor" },
+  order_news: { badge: "Orden de compra", link: "Ver la orden" },
 };
+// Los que piden atención van en amarillo; el resto, como información.
+const NOTICE_WARN = new Set(["yield_deviation", "supplier_account_changed", "price_list_expired"]);
 
 // Avisos de cambios de recetas: qué cambió y el enlace a la receta. Se marcan como leídos con el
 // botón de arriba, junto con los de solicitudes.
@@ -160,7 +166,7 @@ function Notices({ rows }: { rows: NoticeRow[] }) {
   return (
     <section aria-labelledby="apr-avisos" className="flex flex-col gap-4">
       <h2 id="apr-avisos" className="text-xl font-semibold text-ink">
-        Avisos de recetas, costos y rendimientos ({rows.length >= 20 ? "20 o más" : rows.length})
+        Avisos ({rows.length >= 20 ? "20 o más" : rows.length})
       </h2>
       <ul className="flex flex-col gap-4">
         {rows.map((n) => (
@@ -168,7 +174,7 @@ function Notices({ rows }: { rows: NoticeRow[] }) {
             <Card className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-semibold text-ink">{n.title}</h3>
-                <Badge status={n.kind === "yield_deviation" ? "warn" : "info"}>
+                <Badge status={NOTICE_WARN.has(n.kind) ? "warn" : "info"}>
                   {NOTICE_LABELS[n.kind].badge}
                 </Badge>
               </div>
@@ -255,6 +261,47 @@ function PriceSummary({ row, toDirection }: { row: InboxRow; toDirection: boolea
   );
 }
 
+// Una orden de compra (ADR-0053): el proveedor, la entrega y lo que se pide, tal como se aprueba. Sin precios.
+function OrderSummary({ row }: { row: InboxRow }) {
+  const c = (row.proposed_changes ?? {}) as {
+    purchase_order_id?: string;
+    number?: string;
+    supplier_name?: string;
+    expected_delivery_on?: string;
+    lines?: { name: string; quantity: number; unit: string }[];
+  };
+  const lines = Array.isArray(c.lines) ? c.lines : [];
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-base text-ink">
+        {c.number ? <span className="font-medium tabular-nums">{c.number}</span> : null}
+        {c.supplier_name ? ` a ${c.supplier_name}` : ""}
+        {c.expected_delivery_on
+          ? ` · entrega esperada el ${formatDate(c.expected_delivery_on)}`
+          : ""}
+      </p>
+      <ul aria-label="Artículos de la orden" className="flex flex-col gap-1 text-sm text-ink">
+        {lines.map((l, i) => (
+          <li key={i} className="flex justify-between gap-2">
+            <span>{l.name}</span>
+            <span className="tabular-nums">
+              {Number(l.quantity).toLocaleString("es-AR")} {l.unit}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {typeof c.purchase_order_id === "string" && UUID.test(c.purchase_order_id) ? (
+        <Link
+          href={`/compras/ordenes/${c.purchase_order_id}`}
+          className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline"
+        >
+          Ver la orden
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 // Una versión de receta se revisa en la receta: la solicitud lleva solo un resumen (ADR-0023).
 function RecipeLink({ row }: { row: InboxRow }) {
   const recipeId = (row.proposed_changes as Record<string, unknown> | null)?.recipe_id;
@@ -297,7 +344,20 @@ function RequestList({
               {r.place_name ? ` · ${r.place_name}` : ""}
             </CardDescription>
             <p className="text-base text-ink">Motivo: {r.reason}</p>
-            {r.workflow_code.startsWith("costing.") ? (
+            {r.workflow_code === "purchasing.approve_order" ? (
+              <OrderSummary row={r} />
+            ) : r.workflow_code === "purchasing.lower_po_approval" ? (
+              <p className="text-base text-ink">
+                Que{" "}
+                <span className="font-medium">
+                  {String(
+                    (r.proposed_changes as Record<string, unknown> | null)?.supplier_name ??
+                      "el proveedor",
+                  )}
+                </span>{" "}
+                deje de requerir aprobación de sus órdenes de compra.
+              </p>
+            ) : r.workflow_code.startsWith("costing.") ? (
               <PriceSummary row={r} toDirection={toDirection.has(r.id)} />
             ) : (
               <BeforeAfter row={r} roleNames={roleNames} />

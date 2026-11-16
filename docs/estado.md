@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-16._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, en `feat/articulos-y-listas-de-precios` (ADR-0052). PR #75 (pantalla de 1715 × 843) fusionado.**
+_Última actualización: 2026-11-16._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, fusionado (PR #76, ADR-0052). Prompt 3, órdenes de compra, en `feat/ordenes-de-compra` (ADR-0053). PR #75 (pantalla de 1715 × 843) fusionado.**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
@@ -101,6 +101,42 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Pendiente:**
   - el PR y el verde de Actions;
   - decidido por Joaco (2026-11-16): una lista con vigencia futura se acepta y queda vigente al instante, como está.
+
+### Prompt 3: órdenes de compra (rama `feat/ordenes-de-compra`, ADR-0053)
+
+- **Base** (`20261204110000_order_news_kind.sql` y `20261204120000_purchase_orders.sql`):
+  - `purchase_orders`, `purchase_order_lines` (artículo del proveedor o materia prima «sin nombre de factura»), `purchase_order_events` y `outbound_messages` (la cola de envío);
+  - numeración por local («PCE-0001»), con un contador propio y sin saltos ni repetidos; un local sin código no pide (P3);
+  - fecha esperada con los días de entrega del proveedor, y un ranking de lo que más pide cada local;
+  - aprobación `purchasing.approve_order`: la da Compras y nunca quien la pidió (decisión 3). Si se rechaza o se retira, la OC vuelve a borrador;
+  - el mensaje queda en cola (decisión 9), con el número visible, el número de cliente y los kg estimados;
+  - novedades con aviso a quien la pidió, y cancelación;
+  - sin precios: `unit_price` queda vacío y protegido por columna.
+- **Decisiones de Joaco (2026-11-16):**
+  - desmarcar «requiere aprobación» de un proveedor pide el OK de Dirección (`purchasing.lower_po_approval`): si no, Compras podía saltear la aprobación de su propia OC;
+  - una OC la cancela quien la pidió o Compras.
+- **Pantallas:**
+  - `/compras/ordenes/nueva` (celular primero, botones − / + de 44 px);
+  - `/compras/ordenes` (listado, con las novedades sin leer arriba);
+  - `/compras/ordenes/[id]` (ficha con el mensaje y «Copiar mensaje»);
+  - la OC con sus líneas en Aprobaciones;
+  - «Pedir que deje de requerir» en la ficha de proveedor.
+- **Avisos de compras:** los de los Prompts 1, 2 y 3 ahora se ven en la sección «Avisos» de Aprobaciones. Antes se contaban en la campana, pero no se veían en ninguna pantalla.
+- **Revisiones:**
+  - `db-reviewer`: un grave (una OC quedaba trabada si se retiraba la aprobación) y los medios, corregidos;
+  - `security-auditor`: un grave (Compras podía apagar «requiere aprobación» para mandar su propia OC) y los medios, corregidos;
+  - `ui-reviewer`: dos graves (la barra de «Mandar OC» quedaba tapada en el celular; un mensaje fallido se veía en verde) y los medios, corregidos.
+- **Pruebas (2026-11-16):**
+  - tipos y lint en verde;
+  - Vitest: 452 de 452;
+  - pgTAP: 2755 de 2755 (la `340` tiene 57);
+  - formato en verde;
+  - Playwright, suite completa: 294 de 299. Las 5 que fallaron se corrigieron y pasan (42 de 42 en sus archivos):
+    - el menú del controller se pasaba por 1 px en 900 de alto con «Órdenes de compra»: el espacio entre grupos bajó de 8 a 4 px;
+    - la ficha de proveedor y Subrecetas esperaban la pantalla anterior (el interruptor guardado en Sí y el título «Avisos de recetas»);
+    - Calidad en el celular: falla intermitente (título doble un instante), pasó al repetirla.
+- **Aviso de Next.js:** el build avisa de una vulnerabilidad moderada en 16.4.2 (GHSA-mfr8-8qww-v76h, se corrige en 16.4.6; afecta a `use cache` con `unstable_cache()`, que no usamos). Actualizar, en un PR aparte, con OK de Joaco.
+- **Pendiente:** el PR de este prompt (el #76 ya está fusionado).
 
 ## Antes: Módulo 2 «Facturas», compras (pedido de Soy, 2026-11-14)
 

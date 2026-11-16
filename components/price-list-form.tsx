@@ -338,7 +338,7 @@ export function PriceListForm({
       ) : null}
 
       {/* Barra fija abajo, como en las fichas: cuántos renglones, el motivo, Descartar y Cargar lista. */}
-      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-line bg-surface px-4 py-3 desk:flex-row desk:items-end">
+      <div className="sticky bottom-[calc(var(--spacing-bottom-nav)+env(safe-area-inset-bottom))] z-40 -mx-4 flex flex-col gap-3 border-t border-line bg-surface px-4 py-3 desk:bottom-0 desk:flex-row desk:items-end">
         <p className="text-sm text-ink tabular-nums desk:pb-2" aria-live="polite">
           {rows.filter((r) => !isBlank(r)).length === 1
             ? "1 renglón"

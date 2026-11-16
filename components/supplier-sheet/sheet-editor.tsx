@@ -4,7 +4,10 @@ import { createContext, useContext, useId, useMemo, useRef, useState } from "rea
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check, Plus, Undo2, X } from "lucide-react";
 
-import { saveSupplierSheetAction } from "@/app/proveedores/actions";
+import { requestLowerApprovalAction, saveSupplierSheetAction } from "@/app/proveedores/actions";
+import { ActionForm } from "@/components/action-form";
+import { ActionModal } from "@/components/action-modal";
+import { FormTextarea } from "@/components/ui/form";
 import { FormNotice } from "@/components/form-notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +62,7 @@ export type SupplierSheetOptions = {
 };
 
 type Ctx = {
+  supplierId: string;
   prefix: string;
   editable: boolean;
   options: SupplierSheetOptions;
@@ -162,6 +166,7 @@ export function SupplierSheetProvider({
   }
 
   const value: Ctx = {
+    supplierId,
     prefix,
     editable,
     options,
@@ -1012,7 +1017,7 @@ function AccountInput({
 
 // «Requiere aprobación de administración antes de enviar la OC»: sí o no de un clic (ADR-0039).
 export function ApprovalToggle() {
-  const { prefix, saved, draft, setDraft, editable } = useSheet();
+  const { supplierId, prefix, saved, draft, setDraft, editable } = useSheet();
   const label = "Requiere aprobación de la OC";
   const tip = (
     <InfoTip label="aprobación de la orden de compra">
@@ -1026,6 +1031,35 @@ export function ApprovalToggle() {
         {label}: <span className="font-medium">{saved.terms.requiresPoApproval ? "Sí" : "No"}</span>
         {tip}
       </p>
+    );
+  // Marcada, no se desmarca directo: lo aprueba Dirección (ADR-0053). Si no, Compras podría saltear la aprobación de
+  // su propia OC.
+  if (saved.terms.requiresPoApproval)
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="flex items-center gap-1 text-base text-ink">
+          {label}: <span className="font-medium">Sí</span>
+          {tip}
+        </p>
+        <ActionModal
+          label="Pedir que deje de requerir"
+          icon="none"
+          title="Que este proveedor deje de requerir aprobación"
+          description="Lo aprueba Dirección, nunca quien lo pide: si no, Compras podría saltear la aprobación de su propia orden."
+        >
+          <ActionForm action={requestLowerApprovalAction} schema="reason" submitLabel="Pedir">
+            <input type="hidden" name="supplierId" value={supplierId} />
+            <FormTextarea
+              id={`${prefix}-bajar-aprobacion-motivo`}
+              name="reason"
+              label="Motivo"
+              hint="Lo ve Dirección al decidir."
+              required
+              maxLength={500}
+            />
+          </ActionForm>
+        </ActionModal>
+      </div>
     );
   return (
     <Split
