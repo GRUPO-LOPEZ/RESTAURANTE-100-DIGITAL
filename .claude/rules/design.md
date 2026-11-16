@@ -106,7 +106,7 @@ Mismo lugar para los botones, misma lógica de filtros y mismos nombres para las
 
 ## Pantallas de carga sin scroll (ADR-0046)
 
-Las fichas (materia prima, receta y, cuando llegue con el Prompt 1 de Facturas, proveedor), los listados en una pantalla (Costos) y los paneles como el Inicio entran enteros, sin scroll de página, desde 1440 × 900 y hasta la pantalla real más baja medida: **1715 × 843** (la de Soy, ADR-0051). Todo nuevo tipo B sigue este patrón:
+Las fichas (materia prima, receta y proveedor), los listados en una pantalla (Costos) y los paneles como el Inicio entran enteros, sin scroll de página, desde 1440 × 900 y hasta la pantalla real más baja medida: **1715 × 843** (la de Soy, ADR-0051). Todo nuevo tipo B sigue este patrón:
 
 1. **Encabezado en una línea:** «← Volver», nombre (h1 de 20 px, `xl`, no de 28), código · rubro · lo que lo define, y el estado con palabra (`AppShell` con `back` y `meta`). La acción secundaria (por ejemplo, Desactivar) es un botón a la derecha, no un desplegable. El aviso de guardado va en la barra de abajo, no en una fila arriba (en el celular, arriba).
 2. **4 indicadores arriba** con `Metric` (`compact`). No se repiten más abajo. La unidad va en `unit`, no dentro del valor; el motivo de un dato faltante se ve entero, en su renglón. En el celular van de a uno (los montos no entran de a dos). Si un indicador tiene su lista, «Ver cuáles» la abre en un panel (`action`).

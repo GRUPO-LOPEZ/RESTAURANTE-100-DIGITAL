@@ -3,7 +3,7 @@
 - **Fecha:** 2026-11-15
 - **Estado:** plan aprobado por Joaco el 2026-11-15.
 - **Pedido:** Soy, por correo, el 2026-11-15.
-- **Sigue a:** ADR-0045 y ADR-0046 (pantallas sin scroll), ADR-0048 (Costos en una pantalla) y ADR-0050 (ficha de proveedor, en el PR #74, todavía sin fusionar).
+- **Sigue a:** ADR-0045 y ADR-0046 (pantallas sin scroll), ADR-0048 (Costos en una pantalla) y ADR-0050 (ficha de proveedor, PR #74).
 - **Sin cambios en la base.**
 
 ## Contexto
@@ -40,7 +40,7 @@ Las pantallas sin scroll se probaban en 1440 × 900, 1600 × 900 y 1920 × 1080.
 - **Dónde se aplicó:**
   - en la ficha de materia prima, sus tres columnas. Conversiones queda con su alto; Precios, Mermas y Alérgenos se reparten el resto;
   - en el Inicio, la fila de tarjetas (confiabilidad, locales y tareas);
-  - la ficha de proveedor nace así (ADR-0050), cuando se fusione el PR #74.
+  - la ficha de proveedor nació así (ADR-0050, PR #74).
 - **Ficha de materia prima con Compras:** en 1715 × 843, «Observaciones» queda abajo en «Datos generales», a un desplazamiento de la tarjeta. Se acepta: no es un dato para decidir y el resto de la tarjeta se ve.
 - Queda escrito en `.claude/rules/design.md`, «Pantallas de carga sin scroll».
 

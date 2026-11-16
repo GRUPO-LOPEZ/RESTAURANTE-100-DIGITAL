@@ -12,9 +12,9 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Pruebas:** axe en 1715 × 843 y controles de que «Ver los N», «Ver cuáles», los alérgenos y «Ver los números» queden a la vista.
 - **Queda escrito** en `.claude/rules/design.md`. No se diseña para menos de 843 de alto hasta medir la computadora de un local.
 - **La ficha de proveedor** (PR #74) ya nace así y se prueba en 1715 × 843.
-- **Pausa pedida por Joaco (2026-11-15, 20:20).** Dónde quedó:
+- **Pausa pedida por Joaco (2026-11-15, 20:20), retomado el 2026-11-16.** Dónde quedó:
   - **Este PR:** commit en la rama, sin PR. La suite completa corrió antes de los arreglos de la revisión de diseño: 4 de 304 fallas de Playwright, ninguna en lo cambiado (dos ingresos que no entraron y dos textos duplicados en Reportes, ya corregidos con `filter({ visible: true })`). **Falta:** volver a correr Inicio, fichas, Costos y Reportes con los arreglos (`Tile scroll`, axe en 1715 × 843), y después abrir el PR.
-  - **PR #74 (proveedores):** se resolvió el conflicto con `main` en `docs/estado.md`; Actions arrancó a las 20:15. **Falta:** mirar el resultado y fusionar si está en verde. En esa rama, el `estado.md` todavía dice que las imágenes de las facturas siguen en la carpeta temporal: ya se borraron (2026-11-15) y hay que corregirlo.
+  - **PR #74 (proveedores):** Actions en verde (1 h 16 min) y **fusionado el 2026-11-16.**
   - **Prompt 2:** plan aprobado, sin empezar. Rama `feat/articulos-y-listas-de-precios`, desde `feat/proveedores` o desde `main` después de fusionar el #74.
 
 ## Fase 3: compras y facturas (Módulo 2 «Facturas»)
@@ -27,7 +27,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - P10: el pago con código electrónico es un medio más;
   - P2 a P9: valen las recomendaciones del plan. Se aplican en el prompt que usa cada una.
 - **Respuestas de Soy (2026-11-15, PR #73):** P3, P4, P5, P6, P8 y P9 como recomienda el plan (detalle en `docs/fases/fase-3-plan.md`). P9 con énfasis: el lote tiene que poder seguirse desde Calidad (Prompt 4).
-- **Facturas reales:** se miraron las 33 páginas, fuera del repo. El plan suma 14 hallazgos a los 12 del archivo de prompts, sin nombres, CUIT ni importes. **Pendiente:** las imágenes sacadas de los PDF siguen en la carpeta temporal de la sesión de Claude Code (el borrado automático fue rechazado). Joaco las borra a mano.
+- **Facturas reales:** se miraron las 33 páginas, fuera del repo. El plan suma 14 hallazgos a los 12 del archivo de prompts, sin nombres, CUIT ni importes. Las imágenes sacadas de los PDF se borraron de la carpeta temporal el 2026-11-15, a pedido de Joaco.
 
 ### Prompt 1: ficha de proveedor (rama `feat/proveedores`, ADR-0050), PR abierto
 
