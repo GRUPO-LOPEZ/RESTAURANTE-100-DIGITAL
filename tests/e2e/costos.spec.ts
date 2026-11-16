@@ -38,6 +38,7 @@ const RAVIOLES = uuid(1108);
 const SIZES = [
   [1440, 900],
   [1600, 900],
+  [1715, 843],
   [1920, 1080],
 ] as const;
 
@@ -367,6 +368,7 @@ test("lista y detalle entran sin scroll en la computadora", async ({ page }, inf
     // Toda la tabla a la vista, sin desplazarse de costado.
     const sideways = await table.evaluate((el) => el.scrollWidth - el.clientWidth);
     expect(sideways, `${width} × ${height}`).toBeLessThanOrEqual(0);
+    if (height === 843) await axe(page);
     // Con más filas que alto, la tabla se desplaza adentro y el encabezado queda fijo.
     const rows = await table.evaluate((el) => ({
       overflow: el.scrollHeight - el.clientHeight,

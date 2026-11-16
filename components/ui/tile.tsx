@@ -2,16 +2,19 @@ import * as React from "react";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
+import { ScrollFocus } from "@/components/ui/scroll-focus";
 
 // Tarjeta compacta de las pantallas de una sola vista (Inicio, ADR-0045; fichas sin scroll, ADR-0046): título de 16 px,
 // un dato chico o una acción a la derecha, el contenido y, abajo, el enlace «Ver …». Con id, los enlaces de antes
-// (#ancla) llevan el foco a la tarjeta y la marcan (FocusTarget).
+// (#ancla) llevan el foco a la tarjeta y la marcan (FocusTarget). Con scroll, en la computadora ocupa el alto que le
+// dan y lo que no entra se desplaza adentro (ADR-0051); mientras se desplaza, se alcanza con Tab (ScrollFocus).
 export function Tile({
   title,
   titleExtra,
   aside,
   footer,
   id,
+  scroll = false,
   className,
   children,
 }: {
@@ -22,6 +25,7 @@ export function Tile({
   aside?: React.ReactNode;
   footer?: { href: string; label: string };
   id?: string;
+  scroll?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -32,8 +36,10 @@ export function Tile({
       aria-label={title}
       className={cn(
         "flex min-w-0 flex-col gap-2 rounded-md border border-line bg-surface p-4",
-        id &&
-          "scroll-mt-24 target:outline-2 target:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        id && "scroll-mt-24 target:outline-2 target:outline-primary",
+        (id || scroll) &&
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        scroll && "relative desk:min-h-0 desk:overflow-y-auto",
         className,
       )}
     >
@@ -48,6 +54,7 @@ export function Tile({
           (aside ?? null)
         )}
       </div>
+      {scroll ? <ScrollFocus /> : null}
       {children}
       {footer ? (
         <Link

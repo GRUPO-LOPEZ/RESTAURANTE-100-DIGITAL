@@ -108,9 +108,10 @@ test("cambios de costo se pide por período", async ({ page }) => {
 test("un reporte largo va por páginas, y para imprimir trae todo", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto(`/reportes/usage?local=${PASTAS_CENTRO}`);
-  await expect(page.getByText(/Página 1 de \d+/)).toBeVisible();
+  // Next guarda oculta la pantalla anterior: se mira solo la visible.
+  await expect(page.getByText(/Página 1 de \d+/).filter({ visible: true })).toBeVisible();
   await page.getByRole("link", { name: "Siguiente" }).click();
-  await expect(page.getByText(/Página 2 de \d+/)).toBeVisible();
+  await expect(page.getByText(/Página 2 de \d+/).filter({ visible: true })).toBeVisible();
   await page.goto(`/reportes/usage?local=${PASTAS_CENTRO}&imprimir=1`);
   await expect(page.getByRole("button", { name: "Imprimir o guardar como PDF" })).toBeVisible();
   await expect(page.getByText(/Página \d+ de/)).toHaveCount(0);
@@ -191,7 +192,9 @@ test("la ficha técnica y la de costeo de una receta", async ({ page }) => {
   // Una búsqueda sin resultados lo dice, y propone otra cosa.
   await page.goto(`/reportes/recipe_card?local=${PASTAS_CENTRO}&buscar=zzzz`);
   await expect(
-    page.getByText("No encontramos recetas vigentes con ese nombre o código."),
+    page
+      .getByText("No encontramos recetas vigentes con ese nombre o código.")
+      .filter({ visible: true }),
   ).toBeVisible();
   // Sin acentos también la encuentra.
   await page.goto(`/reportes/recipe_card?local=${PASTAS_CENTRO}&buscar=noquis`);
