@@ -333,7 +333,7 @@ async function Detail({
                     {r.canReceive ? (
                       <Link
                         href={`/compras/recepcion/${r.id}`}
-                        className="text-primary underline-offset-4 hover:underline"
+                        className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline desk:min-h-control"
                       >
                         Retomar la recepción
                       </Link>

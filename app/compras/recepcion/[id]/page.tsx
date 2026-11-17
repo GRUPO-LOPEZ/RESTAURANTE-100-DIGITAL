@@ -108,7 +108,7 @@ async function Detail({
           {r.orderId && first(raw.aviso) !== "cerrada" ? (
             <Link
               href={`/compras/ordenes/${r.orderId}?seccion=recepcion`}
-              className="text-primary underline-offset-4 hover:underline"
+              className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline desk:min-h-control"
             >
               Ver la orden {r.orderNumber}
             </Link>

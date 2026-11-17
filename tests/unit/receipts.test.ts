@@ -91,6 +91,10 @@ describe("la coherencia de una observación (la misma regla que la base)", () =>
     );
     expect(decisionError({ ok: false, issue: "different_product", received: 0 }, 2)).toBeNull();
   });
+  it("solo «de más» trae más de lo pedido", () => {
+    expect(decisionError({ ok: false, issue: "quality", received: 3 }, 2)).toMatch(/De más/);
+    expect(decisionError({ ok: false, issue: "quality", received: 2 }, 2)).toBeNull();
+  });
   it("sin cantidad o con un peso inválido, avisa", () => {
     expect(decisionError({ ok: false, issue: "quality", received: Number.NaN }, 2)).toMatch(
       /cuánto llegó/,

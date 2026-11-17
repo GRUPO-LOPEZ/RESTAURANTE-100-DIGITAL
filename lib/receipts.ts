@@ -36,10 +36,10 @@ export const ISSUE_LABEL: Record<ReceiptIssue, string> = Object.fromEntries(
 ) as Record<ReceiptIssue, string>;
 
 export type ReceiptResult = "complete" | "partial" | "with_differences";
-export const RESULT: Record<ReceiptResult, { label: string; status: "ok" | "warn" | "info" }> = {
+export const RESULT: Record<ReceiptResult, { label: string; status: "ok" | "warn" }> = {
   complete: { label: "Completa", status: "ok" },
   partial: { label: "Parcial", status: "warn" },
-  with_differences: { label: "Con observaciones", status: "info" },
+  with_differences: { label: "Con observaciones", status: "warn" },
 };
 
 // ---------------------------------------------------------------------------
@@ -85,6 +85,8 @@ export function decisionError(decision: LineDecision, pending: number): string |
   if (!Number.isFinite(received) || received < 0) return "Escribí cuánto llegó (0 si no llegó).";
   if (issue === "missing" && received >= pending)
     return "Marcaste que faltó: lo recibido tiene que ser menos que lo pedido.";
+  if (issue !== "extra" && received > pending)
+    return "Llegó más de lo pedido: marcalo como «De más».";
   if (issue === "extra" && received <= pending)
     return "Marcaste que vino de más: lo recibido tiene que ser más que lo pedido.";
   if (issue === "different_product" && received !== 0)

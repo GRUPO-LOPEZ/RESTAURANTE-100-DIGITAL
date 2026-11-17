@@ -52,7 +52,10 @@ export function ReceiptReport({ receipt, heading }: { receipt: Receipt; heading?
                       alt=""
                       className="h-24 w-20 rounded-sm border border-line bg-app object-cover"
                     />
-                    <span className="max-w-24">{name}</span>
+                    <span className="max-w-24">
+                      {name}
+                      <span className="sr-only"> (se abre en otra pestaña)</span>
+                    </span>
                   </a>
                 ) : (
                   <span className="text-sm text-ink-muted">{name}: guardada</span>
@@ -100,9 +103,10 @@ export function ReceiptReport({ receipt, heading }: { receipt: Receipt; heading?
                           href={p.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-sm text-primary underline-offset-4 hover:underline"
+                          className="inline-flex min-h-touch items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-control-sm"
                         >
                           Foto {i + 1}
+                          <span className="sr-only"> de {l.name} (se abre en otra pestaña)</span>
                         </a>
                       </li>
                     ) : null,

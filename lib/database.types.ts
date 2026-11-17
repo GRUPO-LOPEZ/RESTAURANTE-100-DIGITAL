@@ -5869,6 +5869,7 @@ export type Database = {
           brand_id: string;
           cash_paid_amount: number | null;
           closed_at: string | null;
+          closed_by: string | null;
           created_at: string;
           created_by: string | null;
           currency: string;
@@ -5892,6 +5893,7 @@ export type Database = {
           brand_id: string;
           cash_paid_amount?: number | null;
           closed_at?: string | null;
+          closed_by?: string | null;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
@@ -5914,6 +5916,7 @@ export type Database = {
           brand_id?: string;
           cash_paid_amount?: number | null;
           closed_at?: string | null;
+          closed_by?: string | null;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
@@ -6544,6 +6547,7 @@ export type Database = {
         Returns: undefined;
       };
       receipt_detail: { Args: { p_id: string }; Returns: Json };
+      receipt_photo_ok: { Args: { p_name: string }; Returns: boolean };
       receipt_stock_quantity: {
         Args: {
           p_ingredient_id: string;

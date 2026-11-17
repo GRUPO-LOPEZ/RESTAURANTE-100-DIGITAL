@@ -16,6 +16,7 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
 import { Segmented } from "@/components/ui/segmented";
 import { ToggleField } from "@/components/ui/toggle-field";
+import { useUnsavedWarning } from "@/components/use-unsaved-warning";
 import { shrinkPhoto } from "@/lib/photos";
 import { qtyText } from "@/lib/purchase-orders";
 import {
@@ -110,6 +111,15 @@ export function ReceiptWizard({ receipt }: { receipt: Receipt }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const firstRender = useRef(true);
+  // Las fotos ya quedaron guardadas; lo marcado en los renglones se manda recién al cerrar: si se sale, se pregunta.
+  useUnsavedWarning(
+    !closing &&
+      (paperKind !== "" ||
+        Object.keys(forms).length > 0 ||
+        extras.length > 0 ||
+        cash ||
+        reason !== ""),
+  );
 
   // Al cambiar de paso, el foco va al título del paso (quien usa lector de pantalla sabe dónde está).
   useEffect(() => {
@@ -248,7 +258,8 @@ export function ReceiptWizard({ receipt }: { receipt: Receipt }) {
 
   return (
     <div className="flex flex-col gap-4 desk:max-w-3xl">
-      <nav aria-label="Pasos de la recepción">
+      {/* En el celular, el título del paso ya lo dice: la lista va solo en la computadora. */}
+      <nav aria-label="Pasos de la recepción" className="hidden desk:block">
         <ol className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-ink-muted">
           {steps.map((s, i) => (
             <li
@@ -429,7 +440,7 @@ export function ReceiptWizard({ receipt }: { receipt: Receipt }) {
               id={`${prefix}-efectivo`}
               name="cash"
               label="Se pagó en efectivo"
-              defaultValue={false}
+              defaultValue={cash}
               value={cash}
               onChange={setCash}
             />
@@ -564,7 +575,7 @@ function PhotoPages({
           type="button"
           onClick={() => pick(1)}
           disabled={pending}
-          className="text-lg min-h-24 w-full desk:min-h-24"
+          className="min-h-24 w-full text-xl desk:min-h-24"
         >
           <Camera aria-hidden="true" className="size-6" />
           {pending ? "Guardando la foto…" : label}
@@ -707,11 +718,14 @@ function LineCard({
               }
             />
             <div className="grid gap-3 desk:grid-cols-2">
-              <Field id={`${id}-recibido`} label={`Cuánto llegó (${unit || "cantidad"})`}>
+              <Field
+                id={`${id}-recibido`}
+                label={`Cuánto llegó (${unit || "cantidad"})`}
+                error={problem ?? undefined}
+              >
                 <Input
                   inputMode="decimal"
                   value={form.received}
-                  aria-invalid={problem ? true : undefined}
                   onChange={(e) => onChange({ received: e.target.value })}
                   placeholder="0 si no llegó"
                 />
@@ -739,7 +753,6 @@ function LineCard({
               photos={form.photos}
               onChange={(photos) => onChange({ photos })}
             />
-            {problem ? <p className="text-sm text-bad-ink">{problem}</p> : null}
           </div>
         ) : null}
         {form.mode ? (

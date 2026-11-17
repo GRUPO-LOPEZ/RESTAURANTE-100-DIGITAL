@@ -7,7 +7,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(29);
+select plan(30);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -76,7 +76,8 @@ declare
 begin
   foreach v_kind in array array['receipt_original', 'receipt_signed'] loop
     v_path := format('00000000-0000-4000-8000-000000000001/receipts/%s/%s.jpg', p_receipt, gen_random_uuid());
-    insert into storage.objects (bucket_id, name, owner_id) values ('purchasing-documents', v_path, pg_temp.u(p_user)::text);
+    insert into storage.objects (bucket_id, name, owner_id, metadata)
+  values ('purchasing-documents', v_path, pg_temp.u(p_user)::text, '{"mimetype": "image/jpeg", "size": 120000}');
     perform pg_temp.q(pg_temp.u(p_user), format(
       'select purchasing.add_receipt_attachment(%L, %L, %L) ->> ''result''', p_receipt, v_path, v_kind));
   end loop;
@@ -199,6 +200,23 @@ select is(pg_temp.msg(pg_temp.u(406), $$
   'No sabemos pasar «Huevo» a su unidad de uso: revisá el envase del producto o las conversiones de la materia prima.',
   'si no se puede pasar a la unidad de uso, la recepción no se cierra y lo dice');
 select is((select status::text from purchasing.receipts where id = pg_temp.k('r2')), 'open', 'y queda abierta, sin stock a medias');
+
+-- Un renglón OK que pesa más de un 20 % distinto de lo estimado se tiene que observar (Joaco, 2026-11-17).
+insert into pg_temp.k
+select 'oc3', (pg_temp.q(pg_temp.u(409), $$
+  select purchasing.save_order_draft(null, pg_temp.u(201), pg_temp.u(901), jsonb_build_array(
+           jsonb_build_object('purchase_product_id', pg_temp.product('T371-CAR'), 'quantity', 1)),
+           null, null, 'Carne al peso') ->> 'purchase_order_id' $$))::uuid;
+select pg_temp.q(pg_temp.u(409), $$ select purchasing.submit_order(pg_temp.k('oc3'), 'Carne al peso') ->> 'result' $$);
+insert into pg_temp.k
+select 'r3', (pg_temp.q(pg_temp.u(406), $$ select purchasing.start_receipt(pg_temp.k('oc3')) ->> 'receipt_id' $$))::uuid;
+select pg_temp.photos(pg_temp.k('r3'), 406);
+select is(pg_temp.msg(pg_temp.u(406), $$
+  select purchasing.close_receipt(pg_temp.k('r3'), 'remito', null, jsonb_build_array(
+           jsonb_build_object('purchase_order_line_id', pg_temp.line(pg_temp.k('oc3'), 'T371-CAR'), 'ok', true,
+                              'received_weight', 5)), null, null) $$),
+  'El peso del renglón 1 (5 kg) se aleja más de un 20 % de lo estimado (≈ 2.0 kg): marcalo como observado, con el motivo.',
+  'una pieza de ≈ 2 kg que pesa 5 kg no pasa como OK');
 
 -- ---------------------------------------------------------------------------
 -- Nadie cambia un movimiento

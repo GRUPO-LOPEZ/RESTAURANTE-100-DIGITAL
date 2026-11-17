@@ -7,7 +7,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(67);
+select plan(82);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -76,7 +76,8 @@ create function pg_temp.photo(p_receipt uuid, p_user int, p_kind text) returns t
 declare
   v_path text := format('00000000-0000-4000-8000-000000000001/receipts/%s/%s.jpg', p_receipt, gen_random_uuid());
 begin
-  insert into storage.objects (bucket_id, name, owner_id) values ('purchasing-documents', v_path, pg_temp.u(p_user)::text);
+  insert into storage.objects (bucket_id, name, owner_id, metadata)
+  values ('purchasing-documents', v_path, pg_temp.u(p_user)::text, '{"mimetype": "image/jpeg", "size": 120000}');
   return pg_temp.q(pg_temp.u(p_user), format(
     'select purchasing.add_receipt_attachment(%L, %L, %L) ->> ''result''', p_receipt, v_path, p_kind));
 end
@@ -392,6 +393,89 @@ select is(pg_temp.q(pg_temp.u(409), $$
 select ok(pg_temp.q(pg_temp.u(404), $$
   select count(*)::text from purchasing.receivable_orders(pg_temp.u(201)) $$)::int >= 2,
   'el Gerente ve las OC para recibir de su local');
+
+-- ---------------------------------------------------------------------------
+-- Revisiones de base y seguridad, y decisiones de Joaco (2026-11-17)
+-- ---------------------------------------------------------------------------
+select is((select closed_by from purchasing.receipts where id = pg_temp.k('r2')), pg_temp.u(409),
+          'queda quién cerró (la Cocinera retomó y cerró la segunda)');
+select ok((select closed_by from purchasing.receipts where id = pg_temp.k('r1')) = pg_temp.u(404),
+          'y en la primera, el Gerente');
+select throws_ok($$ insert into purchasing.receipt_lines (group_id, receipt_id, line_order, purchase_product_id,
+                                                          description, ok, received_quantity)
+                    select group_id, id, 99, null, 'De prueba', true, 1 from purchasing.receipts where id = pg_temp.k('r1') $$,
+                 '42501', 'Una recepción cerrada no se cambia.', 'no se suma un renglón a una recepción cerrada');
+select throws_ok($$ delete from purchasing.receipts where id = pg_temp.k('r1') $$, '42501',
+                 'Una recepción cerrada no se cambia.', 'ni se borra');
+select ok(exists (select 1 from core.notifications
+                   where recipient_user_id = pg_temp.u(408) and kind = 'receipt_differences'
+                     and body = 'Llegó sin orden de compra.'),
+          'toda recepción sin OC le avisa a Compras');
+-- Una OC nueva de Lácteos, de dos renglones, para los casos que siguen.
+insert into pg_temp.k
+select 'oc3', (pg_temp.q(pg_temp.u(409), $$
+  select purchasing.save_order_draft(null, pg_temp.u(201), pg_temp.u(903), pg_temp.products(903, 2, 2), null, null,
+                                     'Revisiones') ->> 'purchase_order_id' $$))::uuid;
+select pg_temp.q(pg_temp.u(409), $$ select purchasing.submit_order(pg_temp.k('oc3'), 'Revisiones') ->> 'result' $$);
+select is(pg_temp.msg(pg_temp.u(408), $$ select purchasing.start_receipt(pg_temp.k('oc3'), pg_temp.u(202)) $$),
+          'Se recibe en el local que pidió la orden.', 'se recibe en el local que pidió la orden');
+insert into pg_temp.k
+select 'r5', (pg_temp.q(pg_temp.u(404), $$ select purchasing.start_receipt(pg_temp.k('oc3')) ->> 'receipt_id' $$))::uuid;
+-- Un PDF con nombre .jpg no pasa como foto.
+insert into storage.objects (bucket_id, name, owner_id, metadata)
+values ('purchasing-documents', format('00000000-0000-4000-8000-000000000001/receipts/%s/%s.jpg', pg_temp.k('r5'),
+                                      '11111111-1111-4111-8111-111111111111'),
+        pg_temp.u(404)::text, '{"mimetype": "application/pdf", "size": 1000}');
+select is(pg_temp.msg(pg_temp.u(404), format(
+  'select purchasing.add_receipt_attachment(%L, %L, ''receipt_original'')', pg_temp.k('r5'),
+  format('00000000-0000-4000-8000-000000000001/receipts/%s/%s.jpg', pg_temp.k('r5'), '11111111-1111-4111-8111-111111111111'))),
+  'La foto tiene que ser una imagen JPEG de hasta 4 MB.', 'la base controla que la foto sea JPEG, no solo la pantalla');
+select is(pg_temp.q(pg_temp.u(409), format(
+  'select count(*)::text from storage.objects where name = %L',
+  format('00000000-0000-4000-8000-000000000001/receipts/%s/%s.jpg', pg_temp.k('r5'), '11111111-1111-4111-8111-111111111111'))),
+  '0', 'lo subido y sin registrar lo lee solo quien lo subió');
+select is(pg_temp.msg(pg_temp.u(404), $$
+  insert into storage.objects (bucket_id, name, owner_id)
+  values ('purchasing-documents', format('00000000-0000-4000-8000-000000000001/receipts/%s/%s.pdf', pg_temp.k('r5'),
+                                         gen_random_uuid()), (select auth.uid())::text) $$),
+  'new row violates row-level security policy for table "objects"', 'a una recepción solo se suben fotos .jpg');
+select pg_temp.photo(pg_temp.k('r5'), 404, 'receipt_original');
+select pg_temp.photo(pg_temp.k('r5'), 404, 'receipt_signed');
+select is(pg_temp.msg(pg_temp.u(404), $$
+  select purchasing.close_receipt(pg_temp.k('r5'), 'remito', null, jsonb_build_array(
+           jsonb_build_object('purchase_order_line_id', pg_temp.line(pg_temp.k('oc3'), 1), 'ok', false,
+                              'issue', 'quality', 'received_quantity', 3),
+           jsonb_build_object('purchase_order_line_id', pg_temp.line(pg_temp.k('oc3'), 2), 'ok', true)),
+           null, 'Calidad') $$),
+  'En el renglón 1 llegó más de lo pedido: marcalo como «De más».', 'una observación que no es «de más» no trae más de lo pedido');
+-- La foto de un producto observado, con su renglón.
+insert into storage.objects (bucket_id, name, owner_id, metadata)
+values ('purchasing-documents', format('00000000-0000-4000-8000-000000000001/receipts/%s/%s.jpg', pg_temp.k('r5'),
+                                      '22222222-2222-4222-8222-222222222222'),
+        pg_temp.u(404)::text, '{"mimetype": "image/jpeg", "size": 1000}');
+select is(pg_temp.q(pg_temp.u(404), $$
+  select purchasing.close_receipt(pg_temp.k('r5'), 'remito', null, jsonb_build_array(
+           jsonb_build_object('purchase_order_line_id', pg_temp.line(pg_temp.k('oc3'), 1), 'ok', false,
+                              'issue', 'expired', 'received_quantity', 2, 'note', 'Vencido ayer',
+                              'photo_paths', jsonb_build_array(format(
+                                '00000000-0000-4000-8000-000000000001/receipts/%s/%s.jpg', pg_temp.k('r5'),
+                                '22222222-2222-4222-8222-222222222222'))),
+           jsonb_build_object('purchase_order_line_id', pg_temp.line(pg_temp.k('oc3'), 2), 'ok', true)),
+           null, 'Llegó vencido') ->> 'receipt_result' $$),
+  'with_differences', 'se cierra con un renglón vencido');
+select is((select count(*)::int from purchasing.receipt_lines l join inventory.stock_movements m on m.source_id = l.id
+            where l.receipt_id = pg_temp.k('r5')), 1, 'lo vencido no suma stock; el renglón OK, sí');
+select ok(exists (select 1 from purchasing.attachments a join purchasing.receipt_lines l on l.id = a.source_id
+                   where a.source_table = 'receipt_lines' and a.doc_kind = 'product_issue' and l.receipt_id = pg_temp.k('r5')),
+          'la foto del producto queda con su renglón');
+select is(pg_temp.q(pg_temp.u(409), $$
+  select count(*)::text from purchasing.attachments a join purchasing.receipt_lines l on l.id = a.source_id
+   where a.source_table = 'receipt_lines' and l.receipt_id = pg_temp.k('r5') $$),
+  '1', 'y la ve la Cocinera, del mismo local');
+select is(pg_temp.q(pg_temp.u(409), $$
+  select count(*)::text from purchasing.visible_document_paths() p where p like '%/receipts/%'
+     and split_part(p, '/', 3)::uuid in (select id from purchasing.receipts where restaurant_id = pg_temp.u(203)) $$),
+  '0', 'pero no las fotos de la Parrilla');
 
 select * from finish();
 rollback;
