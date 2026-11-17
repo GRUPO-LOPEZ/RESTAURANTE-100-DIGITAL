@@ -4,7 +4,37 @@ _Última actualización: 2026-11-17._ **En curso: Fase 3, compras y facturas. Fu
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## En curso: la Chef ve el costo neto (rama `fix/costo-neto-chef`, ADR-0054)
+## En curso: Prompt 4, recepción y stock (rama `feat/recepcion`, ADR-0056)
+
+- **Qué es:** «pedido → recepción». Lo que llega se valida renglón por renglón contra la OC, con la foto del papel como llegó y la del papel firmado, y entra al stock (D8: todavía nada descuenta). Se recibe también sin OC.
+- **Hecho:**
+  - **Base:**
+    - las tablas `purchasing.receipts`, `purchasing.receipt_lines` e `inventory.stock_movements` (esquema nuevo en la API);
+    - los permisos `purchasing.receive` e `inventory.view`;
+    - `close_receipt`, en una sola transacción;
+    - fotos en `purchasing-documents`;
+    - el efectivo protegido por columna;
+    - el seed con dos recepciones inventadas en Demo Parrilla Centro.
+  - **Pantallas:**
+    - `/compras/recepcion`, con cuatro pasos en el celular;
+    - el informe en la ficha de la OC;
+    - `/inventario`, con filtro por lote;
+    - «Buscar un lote» en Calidad.
+  - **Decisiones de Joaco (2026-11-17):**
+    - los títulos de grupo de la barra lateral pasan a 28 px;
+    - lo vencido no suma stock;
+    - toda recepción sin OC avisa a Compras;
+    - un peso que se aleja más de un 20 % de lo estimado se observa.
+- **Pruebas:**
+  - pgTAP `370_receipts` (82) y `371_stock_movements` (30). Se actualizaron las listas de 000, 040, 050 y 320;
+  - Vitest de `lib/receipts.ts` y `lib/photos.ts`;
+  - Playwright `recepcion.spec.ts` con axe: la compuerta (el Gerente recibe en el celular una OC con un faltante y la cocinera ve el aviso), «Recibir sin OC», el informe y el inventario sin scroll en las cuatro pantallas.
+- **Revisiones:** `db-reviewer`, `security-auditor` y `ui-reviewer`, sin graves. Lo corregido y lo anotado está en ADR-0056.
+- **Capturas:** `docs/capturas/recepcion/`.
+- **Para decidir (Joaco):** un acceso directo a Recepción en la barra inferior del celular. Hoy está en «Menú».
+- **Falta:** mirarlo en un celular real, la suite completa y el PR.
+
+## Antes: la Chef ve el costo neto (rama `fix/costo-neto-chef`, ADR-0054)
 
 - **Pedido:** Joaco, 2026-11-16: «sí, que la Chef vea el costo neto, en otro PR». Hallazgo menor de `security-auditor` en el PR #80.
 - **Problema:** la Chef tiene `recipes.view_costs` y no `prices.view`. El costo neto de la ficha de materia prima salía de `costing.ingredient_line_cost`, que pide `prices.view`, y el indicador decía «No ves los costos de este local».

@@ -8,7 +8,7 @@ import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/states";
 import { getMenus, requireMenu } from "@/lib/auth/session";
-import { first, formatDateTime, getActiveRestaurantId, uuidOrUndefined } from "@/lib/data";
+import { first, formatDate, getActiveRestaurantId, uuidOrUndefined } from "@/lib/data";
 import { listHref, parseList, plainParams } from "@/lib/list-params";
 import { qtyText } from "@/lib/purchase-orders";
 import { getIngredientOptions, getMovements, type MovementRow } from "@/lib/receipts-data";
@@ -82,7 +82,7 @@ async function Movements({
       key: "when",
       header: "Cuándo",
       mobile: "line",
-      cell: (m) => <span className="tabular-nums">{formatDateTime(m.occurred_at)}</span>,
+      cell: (m) => <span className="tabular-nums">{formatDate(m.occurred_at)}</span>,
     },
     { key: "ingredient", header: "Materia prima", mobile: "title", cell: (m) => m.ingredient_name },
     {
@@ -134,7 +134,17 @@ async function Movements({
           `${m.supplier_name ?? "—"} · sin OC`
         ),
     },
-    { key: "place", header: "Local", mobile: "hidden", cell: (m) => m.restaurant_name },
+    // El local, solo si se mira más de uno (con un local elegido arriba, sobra).
+    ...(local
+      ? []
+      : [
+          {
+            key: "place",
+            header: "Local",
+            mobile: "line" as const,
+            cell: (m: MovementRow) => m.restaurant_name,
+          },
+        ]),
   ];
 
   return (
