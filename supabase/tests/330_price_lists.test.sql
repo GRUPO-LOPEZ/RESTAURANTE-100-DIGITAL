@@ -52,7 +52,12 @@ $$;
 create function pg_temp.u(p_n int) returns uuid language sql as $$
   select format('00000000-0000-4000-8000-%s', lpad(p_n::text, 12, '0'))::uuid
 $$;
-grant execute on function pg_temp.u(int) to authenticated;
+-- Hoy en la Argentina, como recipes.today(), pero lo pueden usar los roles de prueba. Con pg_temp.today_ar() (UTC), las
+-- listas «llegaban mañana» entre las 21 y las 24 de la Argentina y la base las rechazaba por fecha futura.
+create function pg_temp.today_ar() returns date language sql as $$
+  select (now() at time zone 'America/Argentina/Buenos_Aires')::date
+$$;
+grant execute on function pg_temp.u(int), pg_temp.today_ar() to authenticated;
 
 create temp table counts (what text primary key, n bigint);
 insert into counts values ('price_records', (select count(*) from costing.price_records));
@@ -129,11 +134,11 @@ select is(pg_temp.q(pg_temp.u(408),
 -- Cargar una lista
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(409), $$
-  select purchasing.create_price_list(pg_temp.u(904), current_date, current_date,
+  select purchasing.create_price_list(pg_temp.u(904), pg_temp.today_ar(), pg_temp.today_ar(),
     '[{"name": "Lo que sea", "list_price": 10, "vat_rate": 21}]', null, 'Prueba')->>'result' $$),
   'denied', 'la Cocinera no carga listas');
 select is(pg_temp.q(pg_temp.u(408), $$
-  select (purchasing.create_price_list(pg_temp.u(904), current_date, current_date,
+  select (purchasing.create_price_list(pg_temp.u(904), pg_temp.today_ar(), pg_temp.today_ar(),
     jsonb_build_array(
       jsonb_build_object('name', (select description from catalog.purchase_products
                                    where supplier_id = pg_temp.u(904) and deleted_at is null order by code limit 1),
@@ -151,18 +156,18 @@ select is((select count(*)::int from core.notifications
             where recipient_user_id = pg_temp.u(408) and kind = 'unmapped_article'), 0,
           'Compras no se avisa a sí misma');
 select is(pg_temp.q(pg_temp.u(408), $$
-  select (purchasing.create_price_list(pg_temp.u(904), current_date, current_date,
+  select (purchasing.create_price_list(pg_temp.u(904), pg_temp.today_ar(), pg_temp.today_ar(),
     '[{"name": "LENTEJAS SECAS X 5 KG", "list_price": 7400, "vat_rate": 10.5}]', null, 'Otra lista')
     ->> 'new_unmapped') $$),
   '0', 'el mismo artículo con otra escritura se suma al pendiente que ya hay');
 select is(pg_temp.msg(pg_temp.u(408), $$
-  select purchasing.create_price_list(pg_temp.u(904), current_date, current_date,
+  select purchasing.create_price_list(pg_temp.u(904), pg_temp.today_ar(), pg_temp.today_ar(),
     '[{"name": "Algo", "list_price": 100, "bonus1_pct": 50, "bonus2_pct": 50, "bonus_per_unit_amount": 30, "vat_rate": 21}]',
     null, 'Prueba') $$),
   'Con esas bonificaciones el precio neto queda en cero o negativo: revisá el renglón.',
   'un neto negativo se rechaza con un mensaje claro');
 select is(pg_temp.msg(pg_temp.u(408), $$
-  select purchasing.create_price_list(pg_temp.u(904), current_date, current_date,
+  select purchasing.create_price_list(pg_temp.u(904), pg_temp.today_ar(), pg_temp.today_ar(),
     '[{"name": "Algo", "list_price": 100, "vat_rate": 19}]', null, 'Prueba') $$),
   'El IVA es 0; 2,5; 5; 10,5; 21 o 27 %.', 'una alícuota que no existe se rechaza');
 
@@ -332,16 +337,16 @@ select throws_ok($$ delete from purchasing.attachments where source_id = pg_temp
 -- Revisiones (2026-11-16)
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(408), $$
-  select (purchasing.create_price_list(pg_temp.u(904), current_date, current_date,
+  select (purchasing.create_price_list(pg_temp.u(904), pg_temp.today_ar(), pg_temp.today_ar(),
     '[{"name": "Rollo de film 30 cm", "list_price": 4300, "vat_rate": 21}]', null, 'Otra lista') - 'price_list_id')::text $$),
   '{"items": 1, "queued": 0, "result": "applied", "new_unmapped": 0}',
   'un artículo descartado no vuelve a la cola ni avisa');
 select is(pg_temp.msg(pg_temp.u(408), $$
-  select purchasing.create_price_list(pg_temp.u(904), current_date + 3, current_date + 3,
+  select purchasing.create_price_list(pg_temp.u(904), pg_temp.today_ar() + 3, pg_temp.today_ar() + 3,
     '[{"name": "Algo", "list_price": 10, "vat_rate": 21}]', null, 'Prueba') $$),
   'La fecha en que llegó la lista no puede ser futura.', 'una lista no llega en una fecha futura');
 select is(pg_temp.msg(pg_temp.u(408), $$
-  select purchasing.create_price_list(pg_temp.u(902), current_date, current_date,
+  select purchasing.create_price_list(pg_temp.u(902), pg_temp.today_ar(), pg_temp.today_ar(),
     jsonb_build_array(jsonb_build_object('name', 'Uno', 'sku', (select supplier_sku from catalog.purchase_products where supplier_id = pg_temp.u(902) and supplier_sku is not null order by code limit 1), 'list_price', 10, 'vat_rate', 21),
                       jsonb_build_object('name', 'Otro', 'sku', (select supplier_sku from catalog.purchase_products where supplier_id = pg_temp.u(902) and supplier_sku is not null order by code limit 1), 'list_price', 11, 'vat_rate', 21)),
     null, 'Prueba') $$),

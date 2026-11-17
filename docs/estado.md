@@ -11,6 +11,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Pruebas:** `ficha-materia-prima.spec.ts` suma a Compras con un local elegido (monto a la vista, sin «Costo neto», sin scroll en 1440 × 900, 1600 × 900 y 1715 × 843, axe), y vuelve a «Todos mis locales» al final. Suite completa en verde: formato, Vitest 452, pgTAP 2755 y Playwright 298 (33 salteadas; un login del celular en rubros falló y pasó al repetirlo).
 - **Revisiones:** `security-auditor` sin hallazgos graves ni medios; `ui-reviewer`, tres medios corregidos.
 - **Estado al cerrar la sesión (2026-11-16):** PR #80 abierto, con GitHub Actions corriendo. **Falta:** que Actions dé verde y que Joaco apruebe la fusión. Después, el costo neto para la Chef (plan todavía no armado) y la importación de proveedores (plan aprobado).
+- **Actions (2026-11-17):** la primera corrida falló en `330_price_lists` (13 de 81) por la hora, no por el arreglo: la prueba usaba `current_date` (UTC) y a las 21 h de la Argentina las listas «llegaban mañana». Ahora usa `pg_temp.today_ar()`. Se comprobó corriéndola en una zona donde ya es mañana: la vieja falla 13 y la nueva pasa las 81. pgTAP entero en verde.
 - **Sigue (orden de Joaco):**
   1. **La Chef ve el costo neto de la materia prima** (decisión de Joaco, 2026-11-16). Hoy no lo ve: `costing.ingredient_line_cost` y `resolve_price` piden `prices.view`, y la Chef tiene costos sin precios. PR aparte, con migración y pgTAP.
   2. La importación de proveedores desde planilla (P1; plan aprobado).
