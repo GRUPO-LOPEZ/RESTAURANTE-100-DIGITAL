@@ -88,11 +88,22 @@ export async function logout(page: Page) {
 }
 
 // Un enlace del menú principal. En el celular el menú está plegado detrás de "Menú": se abre.
+// En la computadora, si el menú no entra abierto, los grupos están plegados salvo el actual (ADR-0057): se abre el grupo
+// del enlace, como lo haría la persona.
 export async function menuLink(page: Page, name: string) {
   await openMobileMenu(page);
-  return page
+  const link = page
     .getByRole("navigation", { name: "Menú principal" })
     .getByRole("link", { name, exact: true });
+  if ((await link.count()) === 0) {
+    const group = page
+      .locator("aside:visible details")
+      .filter({ has: page.getByRole("link", { name, exact: true, includeHidden: true }) })
+      .first();
+    if ((await group.count()) > 0 && !(await group.evaluate((el: HTMLDetailsElement) => el.open)))
+      await group.locator("summary").click();
+  }
+  return link;
 }
 
 // Elige el local de la barra de arriba (ADR-0048): con el mouse o el dedo se aplica al elegir. Espera a que quede

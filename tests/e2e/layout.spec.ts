@@ -74,6 +74,85 @@ test("en la computadora: barra lateral fija, sin scroll, y se contrae y lo recue
   await expect(page.locator("aside[data-sidebar]")).toHaveAttribute("data-sidebar", "expanded");
 });
 
+// Grupos plegados (ADR-0057): con muchos menús, abierto solo el grupo de la pantalla actual; el menú no tiene scroll ni
+// en la pantalla más baja (1715 × 843), tampoco contraído.
+test("con muchos menús, los grupos se pliegan y el menú entra", async ({ page }, info) => {
+  test.skip(info.project.name !== "computadora", "La barra lateral es de la computadora.");
+  // Visible: Next guarda ocultas las pantallas anteriores, cada una con su barra.
+  const sidebar = page.locator("aside[data-sidebar]:visible");
+  const nav = sidebar.getByRole("navigation", { name: "Menú principal" });
+  // El grupo por su título (el título puede llevar después el número de avisos).
+  const group = (name: string) =>
+    sidebar
+      .locator("details")
+      .filter({ has: page.locator("summary", { hasText: new RegExp(`^${name}`) }) });
+  const noScroll = async () => {
+    const scrolls = await nav.evaluate((el) => {
+      const list = el.firstElementChild as HTMLElement;
+      return list.scrollHeight > list.clientHeight;
+    });
+    expect(scrolls).toBe(false);
+  };
+
+  await login(page, "superadmin@ejemplo.test", { mfa: true });
+  await page.goto("/recetas");
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 1715, height: 843 },
+  ]) {
+    await page.setViewportSize(size);
+    await expect(group("Base de conocimiento")).toHaveAttribute("open", "");
+    await expect(group("Administración")).not.toHaveAttribute("open", "");
+    await expect(nav.getByRole("link", { name: "Usuarios" })).toHaveCount(0);
+    await noScroll();
+  }
+  await axe(page);
+
+  // Un grupo cerrado no esconde sus avisos: el número del título es el de Aprobaciones adentro (o ninguno).
+  const control = group("Control");
+  await expect(control).not.toHaveAttribute("open", "");
+  const badge = (await control.locator("summary").innerText()).match(/d+/)?.[0] ?? null;
+  if (badge) await expect(control.locator("summary")).toContainText(`${badge} avisos sin leer`);
+  await control.locator("summary").click();
+  await expect(control).toHaveAttribute("open", "");
+  const inside = nav.getByRole("link", { name: /^Aprobaciones/ });
+  if (badge) await expect(inside).toContainText(badge);
+  else await expect(inside).not.toContainText(/d/);
+  // Abierto, el número ya no va en el título.
+  await expect(control.locator("summary")).not.toContainText(/d/);
+
+  // Con el teclado: el foco en el título de «Administración», Enter, y queda abierto. Se llega a Usuarios: allá queda
+  // abierto su grupo.
+  await group("Administración").locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(group("Administración")).toHaveAttribute("open", "");
+  await nav.getByRole("link", { name: "Usuarios", exact: true }).click();
+  await expect(page).toHaveURL(/\/usuarios$/);
+  await expect(group("Administración")).toHaveAttribute("open", "");
+  await expect(nav.getByRole("link", { name: "Usuarios", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await noScroll();
+
+  // Contraído (solo íconos) también entra.
+  await page.getByRole("button", { name: "Contraer el menú" }).click();
+  await expect(sidebar).toHaveAttribute("data-sidebar", "collapsed");
+  await noScroll();
+  await page.getByRole("button", { name: "Expandir el menú" }).click();
+  await expect(sidebar).toHaveAttribute("data-sidebar", "expanded");
+});
+
+test("con pocos menús, todo queda abierto", async ({ page }, info) => {
+  test.skip(info.project.name !== "computadora", "La barra lateral es de la computadora.");
+  await login(page, "jefecocina@ejemplo.test");
+  await page.setViewportSize({ width: 1715, height: 843 });
+  await page.goto("/recetas");
+  const groups = page.locator("aside[data-sidebar] details");
+  await expect(groups.first()).toBeVisible();
+  for (const g of await groups.all()) await expect(g).toHaveAttribute("open", "");
+});
+
 test("la navegación muestra solo lo que cada uno puede usar", async ({ page }) => {
   await login(page, "cocinero@ejemplo.test");
   await page.goto("/");

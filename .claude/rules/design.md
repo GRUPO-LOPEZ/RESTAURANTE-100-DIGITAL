@@ -16,7 +16,7 @@ El celular **no** es una copia achicada de la computadora: tiene su propia dispo
 
 ## Layout global (`components/app-shell.tsx`)
 
-- **Barra lateral fija** (desde 800 px): 240 px expandida, 68 px contraída (solo íconos; se recuerda en una cookie del navegador). Logo arriba; usuario, Mi cuenta y Salir abajo. Grupos: Visión general · Base de conocimiento · Gestión y análisis · Control · Administración. La navegación entra sin scroll en 1440 px.
+- **Barra lateral fija** (desde 800 px): 240 px expandida, 68 px contraída (solo íconos; se recuerda en una cookie del navegador). Logo arriba; usuario, Mi cuenta y Salir abajo. Grupos: Visión general · Base de conocimiento · Gestión y análisis · Control · Administración. La navegación entra sin scroll en 1440 × 900 y 1715 × 843: si abierta no entra, los grupos se pliegan salvo el de la pantalla actual, y un grupo cerrado muestra sus avisos en el título (ADR-0057).
 - **Barra superior fija** de 64 px: ruta de navegación, selector global de local, búsqueda, avisos y perfil.
 - **El selector de local es único y global.** No se agregan selectores de local dentro de las pantallas. Lo que muestra es siempre lo aplicado (ADR-0048): con mouse o dedo se aplica al elegir, con el teclado se confirma con «Aplicar», y un `?local=` se aplica al llegar.
 - **Área principal fluida:** sin `max-width` global. Márgenes de 32 px (45 px desde 1700 px). Solo los formularios de texto largo limitan su ancho.

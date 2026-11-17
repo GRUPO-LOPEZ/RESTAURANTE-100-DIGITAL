@@ -4,7 +4,16 @@ import { describe, expect, it } from "vitest";
 import { internalHref } from "@/lib/internal-href";
 import { listHref, pageCount, parseList, rangeLabel, sortPatch } from "@/lib/list-params";
 import { metricView } from "@/lib/metrics";
-import { isCurrent, mobileItems, navGroups, type NavMenus } from "@/lib/nav";
+import {
+  currentGroup,
+  isCurrent,
+  mobileItems,
+  navFits,
+  navGroups,
+  navHeight,
+  type NavGroup,
+  type NavMenus,
+} from "@/lib/nav";
 
 const none: NavMenus = {
   recipes: false,
@@ -92,6 +101,47 @@ describe("la navegación global", () => {
     expect(isCurrent("/recetas", "/")).toBe(false);
     expect(isCurrent("/recetas/123/cocina", "/recetas")).toBe(true);
     expect(isCurrent("/recetasx", "/recetas")).toBe(false);
+  });
+});
+
+// Un menú de prueba con tantos grupos y accesos (los nombres no importan para el alto).
+function menuOf(sizes: number[]): NavGroup[] {
+  return sizes.map((n, g) => ({
+    label: `Grupo ${g}`,
+    items: Array.from({ length: n }, (_, i) => ({
+      href: `/g${g}/${i}`,
+      label: "x",
+      icon: "home" as const,
+    })),
+  }));
+}
+
+describe("los grupos plegados (ADR-0057)", () => {
+  it("el alto contado es el que se midió en la pantalla (1440 × 843)", () => {
+    // Medidas reales de la barra lateral, 2026-11-17: Dirección 5 grupos y 15 accesos, Controller 5 y 13, Compras 4 y 10.
+    expect(navHeight(menuOf([2, 4, 5, 2, 2]))).toBe(736);
+    expect(navHeight(menuOf([1, 4, 5, 2, 1]))).toBe(656);
+    expect(navHeight(menuOf([1, 4, 4, 1]))).toBe(508);
+  });
+
+  it("con pocos menús todo queda abierto; con muchos, se pliega", () => {
+    // El cocinero, el jefe de cocina, los chefs y Compras entran abiertos en 843 de alto.
+    expect(navFits(navGroups({ ...none, recipes: true, rubros: true, suppliers: true }, 0))).toBe(
+      true,
+    );
+    expect(navFits(menuOf([1, 4, 4, 1]))).toBe(true);
+    expect(navFits(menuOf([1, 4, 5, 1]))).toBe(true);
+    // El Controller (656 px) ya no entra en 843; el superadmin, menos.
+    expect(navFits(menuOf([1, 4, 5, 2, 1]))).toBe(false);
+    expect(navFits(navGroups(all, 0))).toBe(false);
+  });
+
+  it("el grupo actual es el de la pantalla, también en sus pantallas internas", () => {
+    const groups = navGroups(all, 0);
+    expect(currentGroup(groups, "/compras/recepcion/abc")).toBe("Gestión y análisis");
+    expect(currentGroup(groups, "/")).toBe("Visión general");
+    expect(currentGroup(groups, "/usuarios/123")).toBe("Administración");
+    expect(currentGroup(groups, "/mi-cuenta")).toBeNull();
   });
 });
 

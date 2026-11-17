@@ -147,6 +147,36 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
   return groups.filter((g) => g.items.length > 0);
 }
 
+// Grupos plegados (ADR-0057, decisión de Joaco del 2026-11-17): si el menú no entra abierto en la pantalla más baja
+// medida (1715 × 843, ADR-0051), los grupos arrancan cerrados salvo el de la pantalla actual. Se cuenta en vez de medir
+// en el navegador: el servidor y el navegador muestran lo mismo y no hay salto al cargar. Los altos son los de
+// components/sidebar.tsx (medidos en la pantalla): título de grupo 28 px, acceso 36 px y 4 px entre cada cosa.
+const NAV_ITEM = 36 + 4;
+const NAV_GROUP_TITLE = 28;
+// 843 de alto menos la barra de arriba (64), el pie (persona, Mi cuenta, Salir y Contraer: 149), los márgenes (16) y el
+// margen del foco alrededor de la lista (8).
+const NAV_ROOM = 843 - 64 - 149 - 16 - 8;
+// En Linux la letra ocupa un poco más (Actions mide 8 a 10 px de más): se deja margen.
+const NAV_MARGIN = 20;
+
+export function navHeight(groups: NavGroup[]): number {
+  const items = groups.reduce((n, g) => n + g.items.length, 0);
+  return groups.length * NAV_GROUP_TITLE + items * NAV_ITEM - 4;
+}
+
+export function navFits(groups: NavGroup[]): boolean {
+  return navHeight(groups) <= NAV_ROOM - NAV_MARGIN;
+}
+
+// El grupo de la pantalla actual (también en sus pantallas internas), o null si ninguno la tiene.
+export function currentGroup(groups: NavGroup[], pathname: string): string | null {
+  return (
+    groups.find((g) =>
+      g.items.some((i) => [i.href, ...(i.also ?? [])].some((h) => isCurrent(pathname, h))),
+    )?.label ?? null
+  );
+}
+
 // Barra inferior del celular: Inicio, Recetas, Reportes y Control (Aprobaciones o, si no, Calidad).
 export function mobileItems(menus: NavMenus, unread: number): NavItem[] {
   const control: NavItem | null = menus.approvals
