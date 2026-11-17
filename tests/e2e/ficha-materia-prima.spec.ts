@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, notice, saveSheet, sheetRows } from "./helpers";
+import { chooseLocal, localSettled, login, logout, notice, saveSheet, sheetRows } from "./helpers";
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page })
@@ -21,6 +21,7 @@ async function noHorizontalScroll(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
+const PASTAS_CENTRO = "00000000-0000-4000-8000-000000000201";
 const motivo = (page: Page) => page.getByLabel("Motivo de los cambios", { exact: true });
 
 async function noVerticalScroll(page: Page) {
@@ -356,6 +357,28 @@ test.describe("en la computadora", () => {
     await axe(page);
     await logout(page);
     await login(page, "compras@ejemplo.test");
+    // Compras ve el precio del local elegido arriba, sin ver costos de recetas (pedido de Soy, 2026-11-16).
+    await page.goto(`${sheet}?local=${PASTAS_CENTRO}`);
+    await localSettled(page);
+    const price = page.locator('[data-slot="kpi"]', { hasText: "Precio vigente" });
+    await expect(price).toContainText("Demo Pastas Centro");
+    // Un monto, no «Elegí un local» ni «Sin precio aprobado».
+    await expect(price).toContainText("$");
+    await expect(page.locator('[data-slot="kpi"]', { hasText: "Costo neto" })).toHaveCount(0);
+    await expect(card(page, "Precios de compra")).not.toContainText("Elegí un local");
+    // Con precios a la vista la tarjeta es más alta: sigue sin scroll en los tamaños de ADR-0046 y ADR-0051.
+    for (const [width, height] of [
+      [1440, 900],
+      [1600, 900],
+      [1715, 843],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await expect(card(page, "Precios de compra")).toBeInViewport();
+      await noVerticalScroll(page);
+    }
+    await axe(page);
+    // Compras vuelve a «Todos mis locales»: el local elegido queda guardado y lo verían las pruebas que siguen.
+    await chooseLocal(page, { label: "Todos mis locales" });
     await page.setViewportSize({ width: 1920, height: 1080 });
 
     // ?seccion= y el enlace de Calidad llevan el foco a su tarjeta.

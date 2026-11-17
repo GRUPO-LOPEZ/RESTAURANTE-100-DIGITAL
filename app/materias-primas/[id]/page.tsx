@@ -59,7 +59,12 @@ import {
 } from "@/lib/catalog";
 import { codeNoticeFromQuery } from "@/lib/codes";
 import { lineStatusLabel } from "@/lib/cost-labels";
-import { getIngredientNetCost, resolveCostPlace, type IngredientNetCost } from "@/lib/costs";
+import {
+  getIngredientNetCost,
+  resolveCostPlace,
+  resolvePricePlace,
+  type IngredientNetCost,
+} from "@/lib/costs";
 import { UUID, first, formatDate } from "@/lib/data";
 import { priceState, type IngredientSheetDraft } from "@/lib/ingredient-sheet";
 import { missingState } from "@/lib/metrics";
@@ -334,12 +339,22 @@ async function Ingredient({
   const thawingPending = ingredient.requiresThawing
     ? await getThawingChangePending(ingredient.id)
     : false;
-  // El precio y el costo, en el local elegido arriba.
-  const place =
-    menus.costs || menus.pricesView ? (await resolveCostPlace(session.user_id)).place : null;
+  // El precio y el costo, en el local elegido arriba. Cada uno con su permiso (pedido de Soy, 2026-11-16): Compras
+  // ve el precio sin ver costos de recetas, y la Chef ve el costo sin ver precios.
+  const [costResolved, priceResolved] = await Promise.all([
+    menus.costs ? resolveCostPlace(session.user_id) : Promise.resolve(null),
+    menus.pricesView ? resolvePricePlace(session.user_id) : Promise.resolve(null),
+  ]);
+  const costPlace = costResolved?.place ?? null;
+  const place = priceResolved?.place ?? null;
   const [netCost, localCost, productPrices] = await Promise.all([
-    place && menus.costs
-      ? getIngredientNetCost(ingredient.id, place.id, ingredient.unitCode, wasteProcesses.cleaning)
+    costPlace && menus.costs
+      ? getIngredientNetCost(
+          ingredient.id,
+          costPlace.id,
+          ingredient.unitCode,
+          wasteProcesses.cleaning,
+        )
       : Promise.resolve(null),
     place && menus.pricesView ? getLocalCost(ingredient.id, place.id) : Promise.resolve(null),
     place && menus.pricesView ? getProductPrices(ingredient.id, place.id) : Promise.resolve([]),
@@ -408,7 +423,15 @@ async function Ingredient({
     thawing: thawing?.standardCleaning ?? null,
     requiresThawing: ingredient.requiresThawing,
   });
-  const missingPlace = "Elegí un local arriba para ver el precio.";
+  // Sin local: si el elegido arriba no deja ver precios (o costos), se dice; si no, se pide uno.
+  const missingPlace = priceResolved?.blockedActive
+    ? `No ves los precios de ${priceResolved.blockedActive}.`
+    : "Elegí un local arriba para ver el precio.";
+  const missingCostPlace = costResolved?.blockedActive
+    ? `No ves los costos de ${costResolved.blockedActive}.`
+    : "Elegí un local arriba para ver el costo.";
+  // En las filas de productos, corto: si el local de arriba no deja ver precios, no se pide elegir otro.
+  const noPlaceLabel = priceResolved?.blockedActive ? "Sin acceso" : "Elegí un local";
   const current = localCost ? bigUnitPrice(localCost.unit_cost, localCost.base_unit) : null;
   const activeProducts = ingredient.products.filter((p) => p.isActive).length;
   const published = usage.filter((u) => u.status === "published").length;
@@ -479,13 +502,13 @@ async function Ingredient({
               label={netCost ? `Costo neto ${netCost.per}` : "Costo neto"}
               value={netCost?.net != null ? formatMoney(netCost.net) : null}
               missingReason={
-                !place
-                  ? missingPlace
+                !costPlace
+                  ? missingCostPlace
                   : !netCost
                     ? "No ves los costos de este local."
                     : (lineStatusLabel(netCost.netStatus) ?? "Falta un dato.")
               }
-              period={place?.name ?? undefined}
+              period={costPlace?.name ?? undefined}
               comparison="con merma y descongelado"
               stale={netCost?.stale ?? false}
               asOf={netCost?.validFrom ? formatDate(netCost.validFrom) : null}
@@ -589,6 +612,8 @@ async function Ingredient({
                 ingredient={ingredient}
                 prices={menus.pricesView}
                 place={place?.name ?? null}
+                missingPlace={missingPlace}
+                noPlaceLabel={noPlaceLabel}
                 localCost={localCost}
                 productPrices={productPrices}
                 canManage={canManage}
@@ -853,6 +878,8 @@ function PurchaseCard({
   ingredient,
   prices,
   place,
+  missingPlace,
+  noPlaceLabel,
   localCost,
   productPrices,
   canManage,
@@ -867,6 +894,10 @@ function PurchaseCard({
   ingredient: IngredientDetail;
   prices: boolean;
   place: string | null;
+  // Por qué no hay local de precios: falta elegirlo o el elegido no deja verlos.
+  missingPlace: string;
+  // La etiqueta de una fila sin local de precios.
+  noPlaceLabel: string;
   localCost: LocalCost | null;
   productPrices: ProductPrice[];
   canManage: boolean;
@@ -894,9 +925,7 @@ function PurchaseCard({
     (canManage && pricedProducts !== null ? ingredient.products.length - products.length : 0);
   return (
     <>
-      {prices && place === null ? (
-        <p className="text-sm text-ink-muted">Elegí un local arriba para ver el precio.</p>
-      ) : null}
+      {prices && place === null ? <p className="text-sm text-ink-muted">{missingPlace}</p> : null}
       {noPrice ? (
         <p className="rounded-sm bg-warn px-3 py-1 text-sm text-warn-ink">
           {products.length === 0
@@ -919,7 +948,7 @@ function PurchaseCard({
           const big = price ? bigUnitPrice(price.unitCost, price.baseUnit) : null;
           const state = price
             ? priceState(price)
-            : { status: "none" as const, label: place ? "Sin precio" : "Elegí un local" };
+            : { status: "none" as const, label: place ? "Sin precio" : noPlaceLabel };
           return (
             <div className="flex min-h-touch items-center justify-between gap-2 text-sm desk:min-h-7">
               <span className="min-w-0 truncate text-ink">
@@ -952,6 +981,7 @@ function PurchaseCard({
             ingredient={ingredient}
             prices={prices}
             place={place}
+            noPlaceLabel={noPlaceLabel}
             productPrices={productPrices}
             canManage={canManage}
             pricedProducts={pricedProducts}
@@ -1138,6 +1168,7 @@ function ProductsDetail({
   ingredient,
   prices,
   place,
+  noPlaceLabel,
   productPrices,
   canManage,
   pricedProducts,
@@ -1148,6 +1179,7 @@ function ProductsDetail({
   ingredient: IngredientDetail;
   prices: boolean;
   place: string | null;
+  noPlaceLabel: string;
   productPrices: ProductPrice[];
   canManage: boolean;
   // Productos con precios: su envase y su contenido no cambian (ADR-0044). null: no lo puede editar.
@@ -1233,7 +1265,7 @@ function ProductsDetail({
                   const big = price ? bigUnitPrice(price.unitCost, price.baseUnit) : null;
                   const state = price
                     ? priceState(price)
-                    : { status: "none" as const, label: place ? "Sin precio" : "Elegí un local" };
+                    : { status: "none" as const, label: place ? "Sin precio" : noPlaceLabel };
                   return (
                     <tr key={p.id} className="border-b border-line">
                       <th scope="row" className="py-2 pr-3 text-left font-medium text-ink">
@@ -1279,7 +1311,7 @@ function ProductsDetail({
               const big = price ? bigUnitPrice(price.unitCost, price.baseUnit) : null;
               const state = price
                 ? priceState(price)
-                : { status: "none" as const, label: place ? "Sin precio" : "Elegí un local" };
+                : { status: "none" as const, label: place ? "Sin precio" : noPlaceLabel };
               return (
                 <li key={p.id} className="flex flex-col gap-1 rounded-sm border border-line p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">

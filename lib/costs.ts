@@ -32,13 +32,15 @@ export {
 // ---------------------------------------------------------------------------
 export type CostPlace = { id: string; name: string };
 
-async function costPlacesAndNames(): Promise<{
+// Los locales donde la sesión tiene el permiso: los costos de recetas (recipes.view_costs) o, para la ficha de
+// materia prima, los precios (prices.view: Compras ve precios sin ver costos; pedido de Soy, 2026-11-16).
+async function costPlacesAndNames(permission = "recipes.view_costs"): Promise<{
   places: CostPlace[];
   names: Map<string, string>;
 }> {
   const supabase = await createClient();
   const [{ data, error }, scopes] = await Promise.all([
-    supabase.schema("core").rpc("permitted_restaurant_ids", { p_permission: "recipes.view_costs" }),
+    supabase.schema("core").rpc("permitted_restaurant_ids", { p_permission: permission }),
     getMyScopes(),
   ]);
   if (error || !Array.isArray(data)) throw new Error("No pudimos cargar tus locales.");
@@ -68,17 +70,36 @@ export function pickCostPlace(
   );
 }
 
+export type ResolvedPlace = {
+  places: CostPlace[];
+  place: CostPlace | null;
+  // El local aplicado arriba cuando no es uno de los que dejan ver costos (o precios), para decirlo en vez de pedir uno.
+  blockedActive: string | null;
+};
+
 export async function resolveCostPlace(
   userId: string | undefined,
   requested?: string,
-): Promise<{
-  places: CostPlace[];
-  place: CostPlace | null;
-  // El local aplicado arriba cuando no es uno de los que dejan ver costos (para decirlo, en vez de pedir uno).
-  blockedActive: string | null;
-}> {
+): Promise<ResolvedPlace> {
+  return resolvePlace("recipes.view_costs", userId, requested);
+}
+
+// El local de los precios (prices.view), aparte del de los costos: Compras ve el precio del local elegido sin ver
+// costos de recetas, y la Chef ve costos sin ver precios.
+export async function resolvePricePlace(
+  userId: string | undefined,
+  requested?: string,
+): Promise<ResolvedPlace> {
+  return resolvePlace("prices.view", userId, requested);
+}
+
+async function resolvePlace(
+  permission: string,
+  userId: string | undefined,
+  requested?: string,
+): Promise<ResolvedPlace> {
   const [{ places, names }, activeId] = await Promise.all([
-    costPlacesAndNames(),
+    costPlacesAndNames(permission),
     getActiveRestaurantId(userId),
   ]);
   const place = pickCostPlace(places, requested, activeId);

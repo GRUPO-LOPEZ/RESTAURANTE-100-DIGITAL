@@ -1,8 +1,20 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-16._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, fusionado (PR #76, ADR-0052). Prompt 3, órdenes de compra, en `feat/ordenes-de-compra` (ADR-0053). PR #75 (pantalla de 1715 × 843) fusionado.**
+_Última actualización: 2026-11-16._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, fusionado (PR #76, ADR-0052). Prompt 3, órdenes de compra, fusionado (PR #77, ADR-0053). Next.js 16.4.6 (PR #78). PR #75 (pantalla de 1715 × 843) fusionado. Ahora: Compras ve el precio del local elegido (`fix/precio-local-compras`). Siguen el costo neto para la Chef y la importación de proveedores.**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
+
+## En curso: Compras ve el precio del local elegido (PR #80, rama `fix/precio-local-compras`)
+
+- **Pedido:** Soy respondió el 2026-11-16 la pregunta que estaba en «Para preguntar a Joaco» (ficha de materia prima): **Compras tiene que ver el precio del local que elige arriba, sin ver los costos de las recetas.** Quedó anotada en ADR-0052 y en el plan de la Fase 3 (llegó con el Prompt 2 ya fusionado).
+- **Hecho:** la ficha toma el local de los precios (`resolvePricePlace`, `prices.view`) y el de los costos (`resolveCostPlace`, `recipes.view_costs`) por separado. Si el local de arriba no deja ver precios, dice «No ves los precios de…» y las filas, «Sin acceso». Sin migración: la base ya controlaba `prices.view` por local.
+- **Pruebas:** `ficha-materia-prima.spec.ts` suma a Compras con un local elegido (monto a la vista, sin «Costo neto», sin scroll en 1440 × 900, 1600 × 900 y 1715 × 843, axe), y vuelve a «Todos mis locales» al final. Suite completa en verde: formato, Vitest 452, pgTAP 2755 y Playwright 298 (33 salteadas; un login del celular en rubros falló y pasó al repetirlo).
+- **Revisiones:** `security-auditor` sin hallazgos graves ni medios; `ui-reviewer`, tres medios corregidos.
+- **Estado al cerrar la sesión (2026-11-16):** PR #80 abierto, con GitHub Actions corriendo. **Falta:** que Actions dé verde y que Joaco apruebe la fusión. Después, el costo neto para la Chef (plan todavía no armado) y la importación de proveedores (plan aprobado).
+- **Actions (2026-11-17):** la primera corrida falló en `330_price_lists` (13 de 81) por la hora, no por el arreglo: la prueba usaba `current_date` (UTC) y a las 21 h de la Argentina las listas «llegaban mañana». Ahora usa `pg_temp.today_ar()`. Se comprobó corriéndola en una zona donde ya es mañana: la vieja falla 13 y la nueva pasa las 81. pgTAP entero en verde.
+- **Sigue (orden de Joaco):**
+  1. **La Chef ve el costo neto de la materia prima** (decisión de Joaco, 2026-11-16). Hoy no lo ve: `costing.ingredient_line_cost` y `resolve_price` piden `prices.view`, y la Chef tiene costos sin precios. PR aparte, con migración y pgTAP.
+  2. La importación de proveedores desde planilla (P1; plan aprobado).
 
 ## Antes: pantalla real de 1715 × 843 (rama `feat/pantalla-1715x843`, ADR-0051, PR #75 fusionado el 2026-11-16)
 
@@ -135,8 +147,8 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
     - el menú del controller se pasaba por 1 px en 900 de alto con «Órdenes de compra»: el espacio entre grupos bajó de 8 a 4 px;
     - la ficha de proveedor y Subrecetas esperaban la pantalla anterior (el interruptor guardado en Sí y el título «Avisos de recetas»);
     - Calidad en el celular: falla intermitente (título doble un instante), pasó al repetirla.
-- **Aviso de Next.js:** el build avisa de una vulnerabilidad moderada en 16.4.2 (GHSA-mfr8-8qww-v76h, se corrige en 16.4.6; afecta a `use cache` con `unstable_cache()`, que no usamos). Actualizar, en un PR aparte, con OK de Joaco.
-- **Pendiente:** el PR de este prompt (el #76 ya está fusionado).
+- **Aviso de Next.js:** el build avisaba de una vulnerabilidad moderada en 16.4.2 (GHSA-mfr8-8qww-v76h). Actualizado a 16.4.6 en el PR #78, fusionado.
+- **Fusionado:** PR #77, el 2026-11-16, con Actions en verde.
 
 ## Antes: Módulo 2 «Facturas», compras (pedido de Soy, 2026-11-14)
 
@@ -228,7 +240,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - la falla fue `rubros` («un rubro con insumos pide el destino…», en la computadora). Esta rama no toca rubros, y en el celular pasó en la misma corrida. Corrida sola, 3 veces seguidas: 24 de 24 en verde. Es una prueba inestable: el panel no llegó a abrirse;
   - la ficha entra sin scroll en 1440 × 900, 1600 × 900 y 1920 × 1080, con Compras (edita) y con la Chef (solo lee).
 - **Capturas:** `docs/capturas/ficha-materia-prima-sin-scroll/`. Compras editando la Cebolla en 1440, 1600 y 1920, el Gerente con precio de su local en 1440 y el celular.
-- **Para preguntar a Joaco (no es de esta rama, pasa igual en `main`):** la ficha elige el local entre los que dejan ver costos de recetas (`resolveCostPlace` usa `recipes.view_costs`). Compras ve precios pero no costos, y por eso nunca ve el precio de un local: aunque elija uno arriba, la ficha dice «Elegí un local arriba». ¿Compras tiene que ver el precio del local elegido?
+- **Respondida por Soy (2026-11-16):** Compras ve el precio del local elegido arriba, sin ver costos de recetas. Se resolvió en `fix/precio-local-compras`.
 - **Pendiente:**
   1. PR «feat(materias-primas): ficha en una pantalla sin scroll». Esperar el verde de Actions antes de fusionar.
   2. **Con 14 alérgenos no está probado** (el seed tiene 8): mirarlo en staging.
