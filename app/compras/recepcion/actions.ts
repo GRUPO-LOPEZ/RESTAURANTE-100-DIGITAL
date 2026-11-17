@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { toActionState, type ActionState } from "@/lib/auth/results";
-import { closeSchema, type ReceiptResult } from "@/lib/receipts";
+import { closeSchema } from "@/lib/receipts";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones de la recepción (Fase 3, Prompt 4, ADR-0056). Cada una llama a una función de la base, que controla el
@@ -168,15 +168,9 @@ export async function uploadLinePhotoAction(formData: FormData): Promise<LinePho
   return { status: "ok", path: up.path, url: signed.data?.signedUrl ?? null };
 }
 
-export type CloseState = ActionState & {
-  result?: ReceiptResult;
-  orderStatus?: string | null;
-  requesterName?: string | null;
-  newUnmapped?: number;
-};
-
-// Cerrar: todo junto, en una transacción de la base.
-export async function closeReceiptAction(payload: unknown): Promise<CloseState> {
+// Cerrar: todo junto, en una transacción de la base. Si sale bien, lleva a la recepción cerrada con el aviso (así el
+// «Listo» sobrevive a la página que se vuelve a armar y a una recarga).
+export async function closeReceiptAction(payload: unknown): Promise<ActionState> {
   const parsed = closeSchema.safeParse(payload);
   if (!parsed.success)
     return {
@@ -196,15 +190,6 @@ export async function closeReceiptAction(payload: unknown): Promise<CloseState> 
   });
   const state = toActionState(data, error);
   if (state.status !== "ok") return state;
-  const result = z
-    .object({
-      receipt_result: z.enum(["complete", "partial", "with_differences"]),
-      order_status: z.string().nullable(),
-      requester_name: z.string().nullable(),
-      new_unmapped: z.number(),
-    })
-    .safeParse(data);
-  if (!result.success) return { status: "bad", message: "No pudimos cerrar la recepción." };
   const { data: row } = await supabase
     .schema("purchasing")
     .from("receipts")
@@ -212,11 +197,6 @@ export async function closeReceiptAction(payload: unknown): Promise<CloseState> 
     .eq("id", p.receipt_id)
     .maybeSingle();
   revalidate(row?.purchase_order_id);
-  return {
-    status: "ok",
-    result: result.data.receipt_result,
-    orderStatus: result.data.order_status,
-    requesterName: result.data.requester_name,
-    newUnmapped: result.data.new_unmapped,
-  };
+  revalidatePath(`/compras/recepcion/${p.receipt_id}`);
+  redirect(`/compras/recepcion/${p.receipt_id}?aviso=cerrada`);
 }

@@ -365,7 +365,11 @@ export async function getOrderNotices(): Promise<
     id: n.id,
     title: n.title,
     body: n.body,
-    link: n.link && /^\/compras\/ordenes\/[0-9a-f-]{36}$/.test(n.link) ? n.link : null,
+    // La ficha de una OC (o la sección de su recepción, ADR-0056) o la recepción: nada más.
+    link:
+      n.link && /^\/compras\/(ordenes\/[0-9a-f-]{36}(\?seccion=recepcion)?|recepcion)$/.test(n.link)
+        ? n.link
+        : null,
     createdAt: n.created_at,
   }));
 }

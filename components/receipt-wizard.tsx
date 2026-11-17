@@ -8,7 +8,6 @@ import {
   closeReceiptAction,
   uploadLinePhotoAction,
   uploadReceiptPhotoAction,
-  type CloseState,
 } from "@/app/compras/recepcion/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -107,7 +106,6 @@ export function ReceiptWizard({ receipt }: { receipt: Receipt }) {
   const [cashText, setCashText] = useState("");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<CloseState | null>(null);
   const [closing, startClosing] = useTransition();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -120,7 +118,7 @@ export function ReceiptWizard({ receipt }: { receipt: Receipt }) {
       return;
     }
     headingRef.current?.focus();
-  }, [step, done]);
+  }, [step]);
 
   const lines: PendingLine[] = receipt.pending.map((l) => ({
     purchaseOrderLineId: l.purchaseOrderLineId,
@@ -240,45 +238,12 @@ export function ReceiptWizard({ receipt }: { receipt: Receipt }) {
         reason: reason.trim() || undefined,
         lines: buildCloseLines(lines, decisions, extraLines),
       });
-      if (result.status === "ok") setDone(result);
-      else {
+      // Si cerró bien, la acción lleva a la recepción cerrada (con el aviso «Listo»): acá solo llegan los errores.
+      if (result.status !== "ok") {
         setError(result.message ?? "No pudimos cerrar la recepción. Probá de nuevo.");
         errorRef.current?.focus();
       }
     });
-  }
-
-  if (done) {
-    const orderText =
-      done.orderStatus === "received"
-        ? `La orden ${receipt.orderNumber} quedó recibida.`
-        : done.orderStatus === "partially_received"
-          ? `La orden ${receipt.orderNumber} quedó recibida en parte: lo que falta se recibe cuando llegue.`
-          : "La recepción quedó guardada.";
-    return (
-      <Card className="flex flex-col gap-4">
-        <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold text-ink outline-none">
-          Listo
-        </h2>
-        <Notice status="ok">
-          {orderText}
-          {done.requesterName ? ` Se avisó a ${done.requesterName}.` : ""}
-          {cash ? " El efectivo queda para que Compras lo confirme." : ""}
-        </Notice>
-        <div className="flex flex-col gap-2 desk:flex-row">
-          {receipt.orderId ? (
-            <Button asChild>
-              <Link href={`/compras/ordenes/${receipt.orderId}?seccion=recepcion`}>
-                Ver la orden
-              </Link>
-            </Button>
-          ) : null}
-          <Button asChild variant="outline">
-            <Link href="/compras/recepcion">Recibir otra</Link>
-          </Button>
-        </div>
-      </Card>
-    );
   }
 
   return (

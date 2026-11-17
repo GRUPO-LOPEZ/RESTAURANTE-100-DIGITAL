@@ -321,6 +321,7 @@ async function Detail({
           {receipts.length > 0 ? (
             <Card
               id={anchor}
+              aria-label="Recepción"
               tabIndex={-1}
               className="flex flex-col gap-3 outline-none target:border-primary focus-visible:outline-2 focus-visible:outline-primary"
             >
