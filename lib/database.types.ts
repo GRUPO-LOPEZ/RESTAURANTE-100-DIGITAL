@@ -3645,6 +3645,47 @@ export type Database = {
           unit_cost: number;
         }[];
       };
+      ingredient_line_cost_internal: {
+        Args: {
+          p_as_of: string;
+          p_basis: string;
+          p_ingredient_id: string;
+          p_process_id: string;
+          p_quantity: number;
+          p_restaurant_id: string;
+          p_unit_id: string;
+        };
+        Returns: {
+          base_quantity: number;
+          inherited: boolean;
+          line_cost: number;
+          price_level: string;
+          price_record_id: string;
+          purchase_quantity: number;
+          stale: boolean;
+          status: string;
+          unit_cost: number;
+          valid_from: string;
+        }[];
+      };
+      ingredient_net_cost: {
+        Args: {
+          p_ingredient_id: string;
+          p_process_id?: string;
+          p_quantity: number;
+          p_restaurant_id: string;
+          p_unit_id: string;
+        };
+        Returns: {
+          gross: number;
+          gross_status: string;
+          inherited: boolean;
+          net: number;
+          net_status: string;
+          stale: boolean;
+          valid_from: string;
+        }[];
+      };
       ingredient_product_prices: {
         Args: { p_ingredient_id: string; p_restaurant_id: string };
         Returns: {

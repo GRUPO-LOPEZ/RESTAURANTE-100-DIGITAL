@@ -350,11 +350,29 @@ test.describe("en la computadora", () => {
     await page.goto(sheet);
     await expect(card(page, "Alérgenos")).toBeInViewport();
     await expect(page.getByRole("button", { name: "Guardar cambios" })).toHaveCount(0);
-    // La Chef ve costos sin ver precios: el costo neto sí, el precio no.
-    await expect(page.locator('[data-slot="kpi"]', { hasText: "Costo neto" })).toBeVisible();
+    // La Chef ve costos sin ver precios: el costo neto sí, el precio no. Con un local elegido arriba, la base le calcula
+    // el neto (ADR-0054): el indicador dice por kg, el local y el motivo real (la Cebolla no tiene limpieza aprobada),
+    // no «No ves los costos». El monto, con una merma aprobada, lo controla pgTAP (360).
+    await page.goto(`${sheet}?local=${PASTAS_CENTRO}`);
+    await localSettled(page);
+    const net = page.locator('[data-slot="kpi"]', { hasText: "Costo neto" });
+    await expect(net).toContainText("Costo neto por kg");
+    await expect(net).toContainText("Demo Pastas Centro");
+    await expect(net).toContainText("Falta el rendimiento");
+    await expect(net).not.toContainText("No ves los costos");
     await expect(page.locator('[data-slot="kpi"]', { hasText: "Precio vigente" })).toHaveCount(0);
-    await noVerticalScroll(page);
+    await expect(card(page, "Cómo se compra")).not.toContainText("$");
+    for (const [width, height] of [
+      [1440, 900],
+      [1715, 843],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await noVerticalScroll(page);
+    }
     await axe(page);
+    // La Chef vuelve a «Todos mis locales»: el local elegido queda guardado y lo verían las pruebas que siguen.
+    await chooseLocal(page, { label: "Todos mis locales" });
+    await page.setViewportSize({ width: 1440, height: 900 });
     await logout(page);
     await login(page, "compras@ejemplo.test");
     // Compras ve el precio del local elegido arriba, sin ver costos de recetas (pedido de Soy, 2026-11-16).
