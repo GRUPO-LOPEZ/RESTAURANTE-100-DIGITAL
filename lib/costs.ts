@@ -384,38 +384,26 @@ export async function getIngredientNetCost(
     .eq("code", baseUnit)
     .maybeSingle();
   if (!units) return null;
-  const line = (basis: "purchase" | "clean") =>
-    client.schema("costing").rpc("ingredient_line_cost", {
-      p_ingredient_id: ingredientId,
-      p_restaurant_id: restaurantId,
-      p_quantity: perBase.factor,
-      p_unit_id: units.id,
-      p_basis: basis,
-      ...(basis === "clean" && cleaningProcessId ? { p_process_id: cleaningProcessId } : {}),
-    });
-  const [gross, net, price] = await Promise.all([
-    line("purchase"),
-    line("clean"),
-    client.schema("costing").rpc("resolve_price", {
-      p_ingredient_id: ingredientId,
-      p_restaurant_id: restaurantId,
-    }),
-  ]);
-  // Sin permiso para ver precios en ese local no hay costo que mostrar.
-  if ([gross, net, price].some((r) => r.error?.code === "42501")) return null;
-  if (gross.error || net.error || price.error)
-    throw new Error("No pudimos calcular el costo neto.");
-  const g = gross.data?.[0];
-  const n = net.data?.[0];
-  const p = price.data?.[0];
+  // Pide recipes.view_costs, no prices.view: la Chef ve el costo sin ver la lista de precios (ADR-0054).
+  const { data, error } = await client.schema("costing").rpc("ingredient_net_cost", {
+    p_ingredient_id: ingredientId,
+    p_restaurant_id: restaurantId,
+    p_quantity: perBase.factor,
+    p_unit_id: units.id,
+    ...(cleaningProcessId ? { p_process_id: cleaningProcessId } : {}),
+  });
+  // Sin permiso para ver costos en ese local no hay costo que mostrar.
+  if (error?.code === "42501") return null;
+  if (error) throw new Error("No pudimos calcular el costo neto.");
+  const c = data?.[0];
   return {
-    gross: num(g?.line_cost ?? null),
-    net: num(n?.line_cost ?? null),
-    netStatus: cleaningProcessId ? (n?.status ?? "missing_yield") : "missing_yield",
+    gross: num(c?.gross ?? null),
+    net: num(c?.net ?? null),
+    netStatus: c?.net_status ?? "missing_yield",
     per: perBase.label,
-    stale: p?.stale ?? false,
-    inherited: p?.inherited ?? false,
-    validFrom: p?.valid_from ?? null,
+    stale: c?.stale ?? false,
+    inherited: c?.inherited ?? false,
+    validFrom: c?.valid_from ?? null,
   };
 }
 
