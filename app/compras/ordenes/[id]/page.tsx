@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense, cache } from "react";
 
 import {
@@ -11,6 +11,9 @@ import { ActionForm } from "@/components/action-form";
 import { ActionModal } from "@/components/action-modal";
 import { AppShell, Loading } from "@/components/app-shell";
 import { BackLink } from "@/components/back-link";
+import { FocusTarget } from "@/components/focus-target";
+import { ReceiptReport } from "@/components/receipt-report";
+import { StartReceiptButton } from "@/components/receipt-start";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { FormSelect, FormTextarea } from "@/components/ui/form";
@@ -27,6 +30,7 @@ import {
 } from "@/lib/purchase-orders";
 import { CopyButton } from "@/components/copy-button";
 import { getOrderDetail } from "@/lib/purchase-orders-data";
+import { getOrderReceipts } from "@/lib/receipts-data";
 
 // Ficha de una orden de compra (Fase 3, Prompt 3, ADR-0053): las líneas, la línea de tiempo (creada, a aprobar,
 // en cola de envío, novedades) y el mensaje al proveedor. Mientras nadie despache la cola (decisión 9 de Soy), el texto
@@ -114,6 +118,9 @@ async function Actions({ params }: { params: PageProps<"/compras/ordenes/[id]">[
   const [o, menus] = await Promise.all([load(params), getMenus()]);
   if (!o) return null;
   const canSend = menus.ordersCreate && o.status === "draft";
+  // Recibir (ADR-0056): quien recibe, con la OC enviada, con novedad o recibida en parte (la base controla el local).
+  const canReceive =
+    menus.receive && ["sent", "with_news", "partially_received"].includes(o.status);
   const canNews = menus.orderNews && ["sent", "with_news", "partially_received"].includes(o.status);
   // Cancela quien la pidió o Compras (decisión de Joaco, 2026-11-16; la base lo vuelve a controlar).
   const canCancel =
@@ -121,6 +128,7 @@ async function Actions({ params }: { params: PageProps<"/compras/ordenes/[id]">[
     ["draft", "pending_approval", "sent", "with_news"].includes(o.status);
   return (
     <div className="flex flex-wrap gap-2">
+      {canReceive ? <StartReceiptButton orderId={o.id} number={o.number} resume={false} /> : null}
       {canSend ? (
         <ActionModal
           label={o.requiresApproval ? "Enviar a aprobación" : "Mandar OC"}
@@ -209,6 +217,12 @@ async function Detail({
 }) {
   const [o, raw] = await Promise.all([load(params), searchParams]);
   if (!o) notFound();
+  // El aviso de una recepción lleva a su sección: el foco va ahí (FocusTarget). El id lleva el comienzo del de la OC:
+  // Next guarda oculta la ficha anterior y no tiene que haber dos «#recepcion».
+  const anchor = `recepcion-${o.id.slice(0, 8)}`;
+  if (first(raw.seccion) === "recepcion") redirect(`/compras/ordenes/${o.id}#${anchor}`);
+  const receipts = await getOrderReceipts(o.id);
+  const closedCount = receipts.filter((r) => r.status === "closed").length;
   const notice = NOTICES[first(raw.aviso) ?? ""];
   // La línea de tiempo: lo que dice la orden y sus novedades, en orden.
   const timeline = [
@@ -232,6 +246,7 @@ async function Detail({
 
   return (
     <div className="flex flex-col gap-4">
+      <FocusTarget />
       {notice ? <Notice status={notice.status}>{notice.text}</Notice> : null}
       <div className="grid gap-4 desk:grid-cols-[3fr_2fr]">
         <Card className="flex flex-col gap-3">
@@ -301,6 +316,41 @@ async function Detail({
                 {o.message.body}
               </pre>
               <CopyButton text={o.message.body} label="Copiar mensaje" />
+            </Card>
+          ) : null}
+          {receipts.length > 0 ? (
+            <Card
+              id={anchor}
+              tabIndex={-1}
+              className="flex flex-col gap-3 outline-none target:border-primary focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <CardTitle>Recepción</CardTitle>
+              {receipts.map((r, i) =>
+                r.status === "open" ? (
+                  <p key={r.id} className="text-sm text-ink">
+                    {r.receivedByName} empezó a recibirla.{" "}
+                    {r.canReceive ? (
+                      <Link
+                        href={`/compras/recepcion/${r.id}`}
+                        className="text-primary underline-offset-4 hover:underline"
+                      >
+                        Retomar la recepción
+                      </Link>
+                    ) : null}
+                  </p>
+                ) : (
+                  <div key={r.id} className={i > 0 ? "border-t border-line pt-3" : undefined}>
+                    <ReceiptReport
+                      receipt={r}
+                      heading={
+                        closedCount > 1 && r.closedAt
+                          ? `Recepción del ${formatDate(r.closedAt)}`
+                          : undefined
+                      }
+                    />
+                  </div>
+                ),
+              )}
             </Card>
           ) : null}
           {o.status === "pending_approval" ? (

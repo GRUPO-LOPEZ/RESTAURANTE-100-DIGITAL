@@ -14,6 +14,8 @@ export type NavIcon =
   | "suppliers"
   | "priceLists"
   | "orders"
+  | "receipts"
+  | "inventory"
   | "rubros"
   | "costs"
   | "reports"
@@ -41,6 +43,8 @@ export type NavMenus = {
   suppliers: boolean;
   priceLists: boolean;
   orders: boolean;
+  receive: boolean;
+  inventory: boolean;
   costs: boolean;
   reports: boolean;
   quality: boolean;
@@ -86,6 +90,13 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
         // Órdenes de compra (Fase 3, ADR-0053): quien pide (también el cocinero) y quien las controla.
         ...(menus.orders
           ? [{ href: "/compras/ordenes", label: "Órdenes de compra", icon: "orders" as const }]
+          : []),
+        // Recepción e inventario (Fase 3, ADR-0056): quien recibe en un local; el inventario, quien lo controla.
+        ...(menus.receive
+          ? [{ href: "/compras/recepcion", label: "Recepción", icon: "receipts" as const }]
+          : []),
+        ...(menus.inventory
+          ? [{ href: "/inventario", label: "Inventario", icon: "inventory" as const }]
           : []),
         // Listas de precios (Fase 3, ADR-0052): Compras y quien controla precios. El cocinero no.
         ...(menus.priceLists

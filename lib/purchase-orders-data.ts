@@ -344,7 +344,8 @@ export async function getOrderDetail(
   };
 }
 
-// Novedades sin leer de mis órdenes (order_news). El cocinero no tiene la bandeja de Aprobaciones: las ve en el
+// Novedades sin leer de mis órdenes (order_news) y sus recepciones (receipt_report y, para Compras, receipt_differences;
+// ADR-0056). El cocinero no tiene la bandeja de Aprobaciones: las ve en el
 // listado de órdenes. La RLS de core.notifications deja ver solo las propias.
 export async function getOrderNotices(): Promise<
   { id: string; title: string; body: string | null; link: string | null; createdAt: string }[]
@@ -354,7 +355,7 @@ export async function getOrderNotices(): Promise<
     .schema("core")
     .from("notifications")
     .select("id, title, body, link, created_at")
-    .eq("kind", "order_news")
+    .in("kind", ["order_news", "receipt_report", "receipt_differences"])
     .is("read_at", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })

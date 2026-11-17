@@ -12,7 +12,7 @@ import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Notice } from "@/components/ui/notice";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { EmptyState } from "@/components/ui/states";
-import { requireMenu } from "@/lib/auth/session";
+import { getMenus, requireMenu } from "@/lib/auth/session";
 import { pickCostPlace } from "@/lib/costs";
 import { first, formatDateTime, getActiveRestaurantId } from "@/lib/data";
 import { missingState } from "@/lib/metrics";
@@ -39,11 +39,30 @@ export default function CalidadPage({ searchParams }: PageProps<"/calidad">) {
     <AppShell
       title="¿Qué tan completo y confiable está el recetario?"
       description="Tocá lo que falta para ver qué corregir."
+      actions={
+        <Suspense fallback={null}>
+          <LotLink />
+        </Suspense>
+      }
     >
       <Suspense fallback={<Loading />}>
         <Quality searchParams={searchParams} />
       </Suspense>
     </AppShell>
+  );
+}
+
+// P9 (ADR-0056): el lote de lo recibido se sigue desde Inventario. Lo ve quien ve el inventario.
+async function LotLink() {
+  const menus = await getMenus();
+  if (!menus.inventory) return null;
+  return (
+    <Link
+      href="/inventario#inv-lote"
+      className="inline-flex min-h-touch items-center text-primary underline-offset-4 hover:underline desk:min-h-control"
+    >
+      Buscar un lote
+    </Link>
   );
 }
 

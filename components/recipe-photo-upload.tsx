@@ -9,27 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import type { ActionState } from "@/lib/auth/results";
 import { fieldErrors, schemas } from "@/lib/forms/schemas";
+import { shrinkPhoto } from "@/lib/photos";
 import { MEDIA_KIND_LABELS, PHOTO_MAX_BYTES, type MediaKind } from "@/lib/recipe-format";
-
-// Lado más largo de la foto que se sube: suficiente para la cocina, liviana para el celular.
-const MAX_SIDE = 1600;
-
-// Achica la foto en el navegador (sin dependencias nuevas) y la pasa a JPEG.
-async function shrink(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  // Sin contexto (celular con poca memoria y foto enorme) no se sube una imagen en blanco.
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("foto");
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("foto"))), "image/jpeg", 0.82),
-  );
-}
 
 // Subir una foto de la receta: elegirla (o sacarla con el celular), decir qué muestra y el motivo.
 export function RecipePhotoUpload({ recipeId }: { recipeId: string }) {
@@ -64,7 +45,7 @@ export function RecipePhotoUpload({ recipeId }: { recipeId: string }) {
     if (showErrors(found)) return;
     startTransition(async () => {
       try {
-        const photo = await shrink(file as File);
+        const photo = await shrinkPhoto(file as File);
         if (photo.size > PHOTO_MAX_BYTES) {
           showErrors({ photo: "La foto pesa demasiado aun achicada. Probá con otra." });
           return;
