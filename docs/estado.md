@@ -12,6 +12,13 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Revisión:** `ui-reviewer` sin graves. Corregido: lo abierto a mano vale en la pantalla (cada pantalla arma su barra), margen para que el foco no se recorte, avisos según el estado real del grupo, y pruebas de teclado y de avisos.
 - **En paralelo:** `chore/dependencias` (worktree `.claude/worktrees/dependencias`): actualizaciones menores, ESLint 10 y las actions v7. Quedan afuera TypeScript 7 (typescript-eslint no lo soporta) y @types/node 26 (el proyecto usa Node 24).
 
+## Para retomar (cierre del 2026-11-17)
+
+- **PRs abiertos, en orden de fusión:** #82 (importación de proveedores, Actions en verde), #83 (recepción y stock) y #84 (botón «Recibir mercadería», base `feat/recepcion`). Falta la aprobación de Joaco. Después del #82, traer `main` al #83.
+- **`feat/menu-corto`** (worktree `.claude/worktrees/menu-corto`, sale de `feat/recepcion`): commit hecho y subido, **sin PR**. Ya pasaron solas `layout.spec`, Vitest y la prueba de costos (tres veces). **Falta:** `npm run db:reset` y `npm run test` completo desde Bash (se cortó al cerrar la sesión). Si da verde, PR «feat(navegacion): grupos plegados cuando el menú no entra» con base `feat/recepcion`.
+- **`chore/dependencias`** (worktree `.claude/worktrees/dependencias`, sale de `main`): 5 commits subidos, **sin PR**. Lint, tipos, Vitest, `next build` y format:check en verde. **Falta:** `npx playwright install chromium` (Playwright 1.65.1), la suite completa (nunca a la vez que la del menú) y el PR. Reemplaza a #79, #8, #4, #3 y #2. **#6 y #7 cerrados** el 2026-11-17 con su motivo (TS 7 sin soporte de typescript-eslint; @types/node 26 con Node 24). Pendiente de decidir: ignorar los saltos mayores de `typescript` y `@types/node` en `.github/dependabot.yml`.
+- **Después:** el plan del Prompt 5 (facturas, control de 3 vías y costos) y mirar la recepción en un celular real.
+
 ## En curso: Prompt 4, recepción y stock (rama `feat/recepcion`, ADR-0056)
 
 - **Qué es:** «pedido → recepción». Lo que llega se valida renglón por renglón contra la OC, con la foto del papel como llegó y la del papel firmado, y entra al stock (D8: todavía nada descuenta). Se recibe también sin OC.
