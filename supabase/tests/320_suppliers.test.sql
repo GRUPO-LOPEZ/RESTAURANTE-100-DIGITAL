@@ -327,14 +327,14 @@ select is((pg_temp.q(pg_temp.u(408), format('select purchasing.supplier_sheet_st
 create temporary table created (n int, id text);
 insert into created
 values (1, pg_temp.q(pg_temp.u(408), $$select purchasing.create_supplier('00000000-0000-4000-8000-000000000001',
-                                         'Proveedor Nuevo Uno S.A.', '30-50000001-1', 'Alta de prueba')::text$$)),
+                                         'Proveedor Nuevo Uno S.A.', '30-50000009-7', 'Alta de prueba')::text$$)),
        (2, pg_temp.q(pg_temp.u(408), $$select purchasing.create_supplier('00000000-0000-4000-8000-000000000001',
                                          'Proveedor Nuevo Dos S.A.', '', 'Alta de prueba')::text$$));
 select is((select s.code from catalog.suppliers s join created c on c.id = s.id::text where c.n = 1), 'PROV-0001',
           'el alta da el código PROV-0001');
 select is((select s.code from catalog.suppliers s join created c on c.id = s.id::text where c.n = 2), 'PROV-0002',
           'y el siguiente, PROV-0002 (sin CUIT: el puesto del mercado no tiene)');
-select is((select tax_id from catalog.suppliers where code = 'PROV-0001'), '30500000011', 'el CUIT queda sin guiones');
+select is((select tax_id from catalog.suppliers where code = 'PROV-0001'), '30500000097', 'el CUIT queda sin guiones');
 select is(pg_temp.q(pg_temp.u(409), $$select purchasing.create_supplier('00000000-0000-4000-8000-000000000001', 'X S.A.', null, 'Prueba')::text$$),
           'ERROR 42501', 'la cocinera no da de alta');
 

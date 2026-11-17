@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
+import { findSheet, norm, openWorkbook, text, value, type Cell } from "@/lib/imports/xlsx";
 
 // Lector del recetario de Excel (ADR-0027, PR 2). Convierte el archivo en las filas que espera
 // imports.stage_rows: materias primas (solapa INSUMOS), preparaciones (pre-elaborado) y platos
@@ -9,14 +10,9 @@ import ExcelJS from "exceljs";
 
 export const MAX_FILE_BYTES = 15 * 1024 * 1024; // como el bucket
 export const MAX_ROWS = 10_000; // como imports.stage_rows
-// Topes del archivo descomprimido (revisión de seguridad, M1): un .xlsx chico puede descomprimirse en
-// varios GB ("zip bomb"). El recetario real de Nonnos ocupa 53 MB descomprimido.
-export const MAX_UNZIPPED_BYTES = 250 * 1024 * 1024;
-const MAX_ZIP_ENTRIES = 5_000;
 // Filas que se recorren por solapa, aunque el Excel diga que tiene más.
 const MAX_SHEET_ROWS = 20_000;
 
-type Cell = string | number | null;
 export type StageRow = {
   sheet: string;
   row_number: number;
@@ -32,37 +28,8 @@ export type ReadResult =
   { ok: true; rows: StageRow[]; sha256: string } | { ok: false; message: string };
 
 // ---------------------------------------------------------------------------
-// Celdas
+// Celdas (lo común está en lib/imports/xlsx.ts)
 // ---------------------------------------------------------------------------
-// El valor de una celda: el resultado de una fórmula, el texto de un texto con formato; un error de
-// Excel (#N/A, #VALUE!) queda vacío.
-function value(cell: ExcelJS.Cell | undefined): Cell {
-  const v: unknown = cell?.value;
-  if (v === null || v === undefined) return null;
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  if (typeof v === "string") return v.trim() === "" ? null : v.trim();
-  if (v instanceof Date) return null;
-  if (typeof v === "object") {
-    if ("error" in v) return null;
-    if ("result" in v) return value({ value: (v as { result: unknown }).result } as ExcelJS.Cell);
-    if ("richText" in v) {
-      const text = (v as { richText: { text: string }[] }).richText
-        .map((r) => r.text)
-        .join("")
-        .trim();
-      return text === "" ? null : text;
-    }
-    if ("text" in v) return value({ value: (v as { text: unknown }).text } as ExcelJS.Cell);
-  }
-  return null;
-}
-
-function text(v: Cell): string | null {
-  if (v === null) return null;
-  const s = String(v).replace(/\s+/g, " ").trim();
-  return s === "" ? null : s.slice(0, 200);
-}
-
 function num(v: Cell): number | null {
   if (typeof v === "number") return v;
   if (typeof v === "string" && /^-?\d+([.,]\d+)?$/.test(v.trim()))
@@ -77,16 +44,6 @@ function code(v: Cell): string | null {
   return s && /^[A-Za-z0-9-]{1,30}$/.test(s) ? s.toUpperCase() : null;
 }
 
-// Para comparar encabezados: sin tildes, en minúsculas y sin espacios de más.
-function norm(v: Cell): string {
-  return String(v ?? "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
 function rowCells(sheet: ExcelJS.Worksheet, r: number): Cell[] {
   const row = sheet.getRow(r);
   // Indexada desde 1, como las columnas de Excel; sin huecos (la 0 queda vacía).
@@ -98,43 +55,6 @@ function rowCells(sheet: ExcelJS.Worksheet, r: number): Cell[] {
 
 function lastRow(sheet: ExcelJS.Worksheet): number {
   return Math.min(sheet.rowCount, MAX_SHEET_ROWS);
-}
-
-function findSheet(wb: ExcelJS.Workbook, name: string): ExcelJS.Worksheet | undefined {
-  return wb.worksheets.find((ws) => norm(ws.name) === name);
-}
-
-// Lo que dice el índice del zip (directorio central) sobre el contenido, antes de descomprimir nada:
-// cuántos archivos tiene y cuánto ocupan descomprimidos. Un zip sin índice legible o con formato
-// ZIP64 (para archivos de más de 4 GB) no es un recetario.
-export function zipTooLarge(file: ArrayBuffer): boolean {
-  const view = new DataView(file);
-  const min = Math.max(0, file.byteLength - 22 - 65_535);
-  let end = -1;
-  for (let i = file.byteLength - 22; i >= min; i--) {
-    if (view.getUint32(i, true) === 0x06054b50) {
-      end = i;
-      break;
-    }
-  }
-  if (end < 0) return true;
-  const entries = view.getUint16(end + 10, true);
-  let at = view.getUint32(end + 16, true);
-  if (entries === 0xffff || at === 0xffffffff || entries > MAX_ZIP_ENTRIES) return true;
-  let total = 0;
-  for (let n = 0; n < entries; n++) {
-    if (at + 46 > file.byteLength || view.getUint32(at, true) !== 0x02014b50) return true;
-    const size = view.getUint32(at + 24, true);
-    if (size === 0xffffffff) return true;
-    total += size;
-    if (total > MAX_UNZIPPED_BYTES) return true;
-    at +=
-      46 +
-      view.getUint16(at + 28, true) +
-      view.getUint16(at + 30, true) +
-      view.getUint16(at + 32, true);
-  }
-  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -356,35 +276,14 @@ function readBlocks(sheet: ExcelJS.Worksheet, kind: "preparation" | "dish"): Sta
 // Entrada
 // ---------------------------------------------------------------------------
 export async function readRecipeBook(file: ArrayBuffer): Promise<ReadResult> {
-  if (file.byteLength === 0) return { ok: false, message: "El archivo está vacío." };
-  if (file.byteLength > MAX_FILE_BYTES)
-    return {
-      ok: false,
-      message: "El archivo pasa los 15 MB. Sacale las solapas que no son del recetario.",
-    };
-  // Un .xlsx es un zip: empieza con "PK\x03\x04". Se mira el contenido, no la extensión.
-  const head = new Uint8Array(file, 0, 4);
-  if (head[0] !== 0x50 || head[1] !== 0x4b || head[2] !== 0x03 || head[3] !== 0x04)
-    return {
-      ok: false,
-      message:
-        "El archivo no es un Excel (.xlsx). Guardalo como «Libro de Excel» y probá de nuevo.",
-    };
-  if (zipTooLarge(file))
-    return {
-      ok: false,
-      message:
-        "El Excel es demasiado grande por dentro. Sacale las solapas que no son del recetario.",
-    };
-  const wb = new ExcelJS.Workbook();
-  try {
-    await wb.xlsx.load(file);
-  } catch {
-    return {
-      ok: false,
-      message: "No pudimos leer el Excel. Revisá que se abra bien y guardalo de nuevo.",
-    };
-  }
+  const opened = await openWorkbook(file, {
+    maxBytes: MAX_FILE_BYTES,
+    tooBig: "El archivo pasa los 15 MB. Sacale las solapas que no son del recetario.",
+    tooBigInside:
+      "El Excel es demasiado grande por dentro. Sacale las solapas que no son del recetario.",
+  });
+  if (!opened.ok) return opened;
+  const wb = opened.wb;
   const supplies = findSheet(wb, "insumos");
   const preparations = findSheet(wb, "pre-elaborado");
   const dishes = findSheet(wb, "platos");

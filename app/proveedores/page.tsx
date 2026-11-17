@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { FileSpreadsheet } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { CreateModal } from "@/components/create-modal";
 import { ReliabilityFilter } from "@/components/costs/reliability-filter";
 import { NewSupplierForm } from "@/components/new-supplier-form";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { Card, CardTitle } from "@/components/ui/card";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Field, Input, Select } from "@/components/ui/field";
@@ -57,14 +60,23 @@ async function Actions() {
   const menus = await getMenus();
   if (!menus.suppliersManage) return null;
   return (
-    <CreateModal
-      href="/proveedores/nuevo"
-      label="Nuevo proveedor"
-      title="Nuevo proveedor"
-      description="Se crea con código automático y te lleva a su ficha para completar días, canal, facturación y pago."
-    >
-      <NewSupplierForm />
-    </CreateModal>
+    <div className="flex flex-wrap items-center gap-2">
+      {/* La carga inicial, de muchos a la vez (ADR-0055). En la computadora: el celular es para consultar. */}
+      <Button asChild variant="outline" className="hidden desk:inline-flex">
+        <Link href="/proveedores/importar">
+          <FileSpreadsheet aria-hidden="true" />
+          Importar desde planilla
+        </Link>
+      </Button>
+      <CreateModal
+        href="/proveedores/nuevo"
+        label="Nuevo proveedor"
+        title="Nuevo proveedor"
+        description="Se crea con código automático y te lleva a su ficha para completar días, canal, facturación y pago."
+      >
+        <NewSupplierForm />
+      </CreateModal>
+    </div>
   );
 }
 
@@ -82,7 +94,10 @@ async function Suppliers({
 }) {
   await requireMenu("suppliers");
   const raw = await searchParams;
-  const params = plainParams(raw);
+  // El aviso de la importación se ve una vez: no viaja en los filtros, el orden ni las páginas.
+  const params = Object.fromEntries(
+    Object.entries(plainParams(raw)).filter(([k]) => k !== "aviso" && k !== "n"),
+  );
   const list = parseList(raw, SUPPLIER_SORT_KEYS, "name");
   const menus = await getMenus();
   const inactive = first(raw.estado) === "inactivos";
@@ -190,8 +205,17 @@ async function Suppliers({
     },
   ];
 
+  // Vuelta de la importación (ADR-0055): cuántos se crearon.
+  const imported = first(raw.aviso) === "importados" ? Number(first(raw.n) ?? "") : NaN;
+
   return (
     <div className="flex flex-col gap-4">
+      {Number.isInteger(imported) && imported > 0 ? (
+        <Notice status="ok">
+          {imported === 1 ? "Se creó 1 proveedor" : `Se crearon ${imported} proveedores`} desde la
+          planilla. Completá en cada ficha las cuentas de pago y los números de cliente.
+        </Notice>
+      ) : null}
       <FilterBar label="Filtros de proveedores" active={active}>
         <Field id="prov-q" label="Buscar" className="w-full desk:w-72">
           <Input type="search" name="q" defaultValue={search} placeholder="Nombre, código o CUIT" />

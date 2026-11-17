@@ -6003,6 +6003,10 @@ export type Database = {
         Args: { p_group_id: string; p_name: string; p_reason: string; p_tax_id: string };
         Returns: string;
       };
+      create_supplier_internal: {
+        Args: { p_group_id: string; p_name: string; p_tax_id: string };
+        Returns: string;
+      };
       days_from: { Args: { p_value: Json }; Returns: number[] };
       discard_article: { Args: { p_id: string; p_reason: string }; Returns: Json };
       distinct_billing_modes: {
@@ -6018,6 +6022,10 @@ export type Database = {
         }[];
       };
       expected_delivery: { Args: { p_from: string; p_supplier_id: string }; Returns: string };
+      import_suppliers: {
+        Args: { p_confirm: boolean; p_group_id: string; p_reason: string; p_rows: Json };
+        Returns: Json;
+      };
       link_article: {
         Args: { p_id: string; p_purchase_product_id: string; p_reason: string };
         Returns: Json;
@@ -6234,6 +6242,10 @@ export type Database = {
           p_reason: string;
           p_supplier_id: string;
         };
+        Returns: Json;
+      };
+      save_supplier_sheet_internal: {
+        Args: { p_changes: Json; p_supplier_id: string };
         Returns: Json;
       };
       send_order_internal: { Args: { p_order_id: string }; Returns: undefined };
