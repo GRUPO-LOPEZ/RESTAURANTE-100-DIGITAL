@@ -33,7 +33,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Capturas:** `docs/capturas/recepcion/`.
 - **Suite completa (2026-11-17):** lint, tipos, Vitest (466), pgTAP y Playwright (302 pasaron). Una sola falla, en `costos.spec` («un precio nuevo muestra a qué recetas les pegó»): el clic en «Proponer precio» llegó antes de que la página terminara de cargar. Corrida sola pasa, en celular y computadora. No toca recepción.
 - **Ojo:** `npm run test` corre pgTAP sobre la base como está. Después de correr Playwright o sacar capturas, hacer `npm run db:reset` antes, o fallan la 100 y la 340 por datos que quedaron (como PCE-0005).
-- **Sigue (otro PR, pedido de Joaco):** el botón «Recibir mercadería» en el Inicio, que reemplaza al acceso directo en la barra del celular.
+- **Botón «Recibir mercadería» en el Inicio (rama `feat/recibir-en-inicio`, sale de `feat/recepcion`):** en el encabezado, para quien recibe; secundario al lado de «Ver qué falta corregir», principal en el Inicio simple. `inicio.spec.ts` (14 de 14) prueba la cocinera, el Jefe de Cocina (sin scroll en 1440 × 900 y 1715 × 843) y que el Controller no lo ve. Capturas en `docs/capturas/inicio-recibir/`. `ui-reviewer` sin graves: se igualó el ancho de los botones en el celular y se rehízo una captura en 1440 × 900. Se fusiona después del PR #83.
 - **Falta:** mirarlo en un celular real.
 
 ## Antes: la Chef ve el costo neto (rama `fix/costo-neto-chef`, ADR-0054)

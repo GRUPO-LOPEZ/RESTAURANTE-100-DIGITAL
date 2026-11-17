@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense, cache } from "react";
-import { BookOpen, ClipboardCheck, History, KeyRound, Users } from "lucide-react";
+import { BookOpen, ClipboardCheck, History, KeyRound, PackageCheck, Users } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { DataLine, HomeBoardView } from "@/components/home-board";
@@ -80,14 +80,27 @@ async function Description({ searchParams }: { searchParams: Params }) {
   return place ? <DataLine placeId={place.id} /> : null;
 }
 
-// La única acción del encabezado: ir a lo que falta corregir en el local elegido.
+// Las acciones del encabezado: recibir mercadería (quien recibe, también desde el celular, ADR-0056) e ir a lo que
+// falta corregir en el local elegido. Con las dos, la principal es la de Calidad.
 async function Actions({ searchParams }: { searchParams: Params }) {
-  const { place } = await boardPlace(searchParams);
-  if (!place) return null;
+  const { menus, place } = await boardPlace(searchParams);
+  if (!place && !menus.receive) return null;
   return (
-    <Button asChild>
-      <Link href={`/calidad?local=${place.id}`}>Ver qué falta corregir</Link>
-    </Button>
+    <>
+      {menus.receive ? (
+        <Button asChild variant={place ? "outline" : "default"} className="w-full desk:w-auto">
+          <Link href={place ? `/compras/recepcion?local=${place.id}` : "/compras/recepcion"}>
+            <PackageCheck aria-hidden="true" />
+            Recibir mercadería
+          </Link>
+        </Button>
+      ) : null}
+      {place ? (
+        <Button asChild className="w-full desk:w-auto">
+          <Link href={`/calidad?local=${place.id}`}>Ver qué falta corregir</Link>
+        </Button>
+      ) : null}
+    </>
   );
 }
 
