@@ -31,8 +31,10 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - Playwright `recepcion.spec.ts` con axe: la compuerta (el Gerente recibe en el celular una OC con un faltante y la cocinera ve el aviso), «Recibir sin OC», el informe y el inventario sin scroll en las cuatro pantallas.
 - **Revisiones:** `db-reviewer`, `security-auditor` y `ui-reviewer`, sin graves. Lo corregido y lo anotado está en ADR-0056.
 - **Capturas:** `docs/capturas/recepcion/`.
-- **Para decidir (Joaco):** un acceso directo a Recepción en la barra inferior del celular. Hoy está en «Menú».
-- **Falta:** mirarlo en un celular real, la suite completa y el PR.
+- **Suite completa (2026-11-17):** lint, tipos, Vitest (466), pgTAP y Playwright (302 pasaron). Una sola falla, en `costos.spec` («un precio nuevo muestra a qué recetas les pegó»): el clic en «Proponer precio» llegó antes de que la página terminara de cargar. Corrida sola pasa, en celular y computadora. No toca recepción.
+- **Ojo:** `npm run test` corre pgTAP sobre la base como está. Después de correr Playwright o sacar capturas, hacer `npm run db:reset` antes, o fallan la 100 y la 340 por datos que quedaron (como PCE-0005).
+- **Sigue (otro PR, pedido de Joaco):** el botón «Recibir mercadería» en el Inicio, que reemplaza al acceso directo en la barra del celular.
+- **Falta:** mirarlo en un celular real.
 
 ## Antes: la Chef ve el costo neto (rama `fix/costo-neto-chef`, ADR-0054)
 
