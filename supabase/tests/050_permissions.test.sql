@@ -84,7 +84,7 @@ select is(
         'purchasing.accept_price_list', 'purchasing.add_price_list_attachment', 'purchasing.can_read_own_document',
         'purchasing.can_upload_document', 'purchasing.cancel_order', 'purchasing.create_price_list',
         'purchasing.create_supplier', 'purchasing.discard_article', 'purchasing.document_parts',
-        'purchasing.expected_delivery', 'purchasing.link_article', 'purchasing.list_frequency_days',
+        'purchasing.expected_delivery', 'purchasing.import_suppliers', 'purchasing.link_article', 'purchasing.list_frequency_days',
         'purchasing.net_list_price', 'purchasing.normalize_name', 'purchasing.normalize_sku',
         'purchasing.order_ingredient_search', 'purchasing.order_lines',
         'purchasing.order_list', 'purchasing.price_list_changes', 'purchasing.price_list_expired',
