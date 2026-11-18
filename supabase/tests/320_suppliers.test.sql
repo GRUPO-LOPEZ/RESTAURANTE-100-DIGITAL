@@ -61,13 +61,14 @@ grant execute on function pg_temp.stamp(uuid) to authenticated;
 -- Estructura
 -- ---------------------------------------------------------------------------
 select has_schema('purchasing', 'existe el esquema purchasing');
--- Las 5 del proveedor, las 5 de artículos y listas (Prompt 2, ADR-0052) y las 4 de órdenes de compra (Prompt 3, ADR-0053).
+-- Las 5 del proveedor, las 5 de artículos y listas (Prompt 2, ADR-0052), las 4 de órdenes de compra (Prompt 3, ADR-0053)
+-- y las 2 de recepciones (Prompt 4, ADR-0056).
 select tables_are('purchasing', array['supplier_terms', 'supplier_payment_terms', 'supplier_payment_accounts',
                                       'supplier_categories', 'supplier_customer_numbers', 'unmapped_articles',
                                       'article_aliases', 'price_lists', 'price_list_items', 'attachments',
                                       'purchase_orders', 'purchase_order_lines', 'purchase_order_events',
-                                      'outbound_messages'],
-                  'purchasing tiene las tablas del proveedor, de listas de precios y de órdenes de compra');
+                                      'outbound_messages', 'receipts', 'receipt_lines'],
+                  'purchasing tiene las tablas del proveedor, de listas de precios, de órdenes de compra y de recepciones');
 select ok((select bool_and(c.relrowsecurity) from pg_class c join pg_namespace n on n.oid = c.relnamespace
             where n.nspname = 'purchasing' and c.relkind = 'r'), 'RLS activo en todas las tablas de purchasing');
 select ok((select bool_and(obj_description(c.oid, 'pg_class') is not null)
@@ -77,9 +78,9 @@ select ok((select bool_and(col_description(a.attrelid, a.attnum) is not null)
              from pg_attribute a join pg_class c on c.oid = a.attrelid join pg_namespace n on n.oid = c.relnamespace
             where n.nspname = 'purchasing' and c.relkind = 'r' and a.attnum > 0 and not a.attisdropped),
           'cada columna tiene su comentario');
-select ok((select count(*) = 14 from pg_trigger t join pg_class c on c.oid = t.tgrelid
+select ok((select count(*) = 16 from pg_trigger t join pg_class c on c.oid = t.tgrelid
              join pg_namespace n on n.oid = c.relnamespace
-            where n.nspname = 'purchasing' and t.tgname = 'log_change'), 'las 14 tablas se auditan');
+            where n.nspname = 'purchasing' and t.tgname = 'log_change'), 'las 16 tablas se auditan');
 select ok(not has_table_privilege('authenticated', 'purchasing.supplier_terms', 'insert')
           and not has_table_privilege('authenticated', 'purchasing.supplier_payment_accounts', 'update'),
           'la API no escribe directo');
@@ -97,8 +98,8 @@ select ok((select bool_and(core.valid_cuit(tax_id)) from catalog.suppliers where
 -- ---------------------------------------------------------------------------
 -- Permisos
 -- ---------------------------------------------------------------------------
-select ok((select count(*) = 9 from core.permissions where module = 'purchasing' and deleted_at is null),
-          '9 permisos de compras (3 de proveedores, 2 de listas de precios y 4 de órdenes de compra)');
+select ok((select count(*) = 10 from core.permissions where module = 'purchasing' and deleted_at is null),
+          '10 permisos de compras (3 de proveedores, 2 de listas de precios, 4 de órdenes de compra y recibir)');
 select ok((select is_sensitive from core.permissions where code = 'purchasing.manage_suppliers')
           and (select is_sensitive from core.permissions where code = 'purchasing.view_payment_terms'),
           'administrar y ver el pago son sensibles');
@@ -106,8 +107,8 @@ select is((select array_agg(p.code order by p.code) from core.role_permissions r
              join core.permissions p on p.id = rp.permission_id
             where r.code = 'superadmin' and p.module = 'purchasing' and rp.deleted_at is null),
           array['purchasing.approve_orders', 'purchasing.create_orders', 'purchasing.manage_price_lists',
-                'purchasing.manage_suppliers', 'purchasing.record_order_news', 'purchasing.view_orders',
-                'purchasing.view_price_lists', 'purchasing.view_suppliers'],
+                'purchasing.manage_suppliers', 'purchasing.receive', 'purchasing.record_order_news',
+                'purchasing.view_orders', 'purchasing.view_price_lists', 'purchasing.view_suppliers'],
           'el superadmin tiene los de Compras, a quien puede suspender (G2)');
 -- La matriz entera de compras, rol por rol (como la 140 con el catálogo).
 select is((select array_agg(r.code || '=' || p.code order by r.code, p.code)
@@ -116,26 +117,28 @@ select is((select array_agg(r.code || '=' || p.code order by r.code, p.code)
             where p.module = 'purchasing' and rp.deleted_at is null),
           array['auditor=purchasing.view_orders', 'auditor=purchasing.view_price_lists',
                 'auditor=purchasing.view_suppliers', 'brand_director=purchasing.create_orders',
-                'brand_director=purchasing.record_order_news', 'brand_director=purchasing.view_orders',
+                'brand_director=purchasing.receive', 'brand_director=purchasing.record_order_news', 'brand_director=purchasing.view_orders',
                 'brand_director=purchasing.view_price_lists', 'brand_director=purchasing.view_suppliers',
                 'controller=purchasing.view_orders', 'controller=purchasing.view_payment_terms',
                 'controller=purchasing.view_price_lists', 'controller=purchasing.view_suppliers',
-                'cook=purchasing.create_orders', 'cook=purchasing.view_orders',
+                'cook=purchasing.create_orders', 'cook=purchasing.receive', 'cook=purchasing.view_orders',
                 'cook=purchasing.view_suppliers', 'executive_chef=purchasing.create_orders',
                 'executive_chef=purchasing.view_orders', 'executive_chef=purchasing.view_suppliers',
                 'general_management=purchasing.manage_suppliers', 'general_management=purchasing.view_orders',
                 'general_management=purchasing.view_payment_terms', 'general_management=purchasing.view_price_lists',
                 'general_management=purchasing.view_suppliers', 'head_chef=purchasing.create_orders',
-                'head_chef=purchasing.view_orders', 'head_chef=purchasing.view_suppliers',
+                'head_chef=purchasing.receive', 'head_chef=purchasing.view_orders', 'head_chef=purchasing.view_suppliers',
                 'purchasing=purchasing.approve_orders', 'purchasing=purchasing.create_orders',
                 'purchasing=purchasing.manage_price_lists', 'purchasing=purchasing.manage_suppliers',
-                'purchasing=purchasing.record_order_news', 'purchasing=purchasing.view_orders',
+                'purchasing=purchasing.receive', 'purchasing=purchasing.record_order_news', 'purchasing=purchasing.view_orders',
                 'purchasing=purchasing.view_price_lists', 'purchasing=purchasing.view_suppliers',
-                'restaurant_manager=purchasing.create_orders', 'restaurant_manager=purchasing.record_order_news',
+                'restaurant_manager=purchasing.create_orders', 'restaurant_manager=purchasing.receive',
+                'restaurant_manager=purchasing.record_order_news',
                 'restaurant_manager=purchasing.view_orders', 'restaurant_manager=purchasing.view_price_lists',
                 'restaurant_manager=purchasing.view_suppliers', 'superadmin=purchasing.approve_orders',
                 'superadmin=purchasing.create_orders', 'superadmin=purchasing.manage_price_lists',
-                'superadmin=purchasing.manage_suppliers', 'superadmin=purchasing.record_order_news',
+                'superadmin=purchasing.manage_suppliers', 'superadmin=purchasing.receive',
+                'superadmin=purchasing.record_order_news',
                 'superadmin=purchasing.view_orders', 'superadmin=purchasing.view_price_lists',
                 'superadmin=purchasing.view_suppliers'],
           'la matriz de compras, rol por rol');

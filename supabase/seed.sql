@@ -846,6 +846,63 @@ begin
 end
 $$;
 
+-- Recepciones (Fase 3, Prompt 4, ADR-0056): Compras pide y recibe dos OC en Demo Parrilla Centro, con las mismas
+-- funciones que la app. Una llega completa; la otra, con un faltante, un renglón con lote, algo que no estaba y un pago
+-- en efectivo. Las fotos son filas de archivo inventadas, sin imagen: las fotos reales las suben las pruebas de
+-- Playwright. Todo inventado.
+create function pg_temp.receipt_photo(p_receipt uuid, p_kind purchasing.doc_kind) returns void language plpgsql as $$
+declare
+  v_path text := format('00000000-0000-4000-8000-000000000001/receipts/%s/%s.jpg', p_receipt, gen_random_uuid());
+begin
+  insert into storage.objects (bucket_id, name, owner_id, metadata)
+  values ('purchasing-documents', v_path, '00000000-0000-4000-8000-000000000408',
+          '{"mimetype": "image/jpeg", "size": 0}');
+  perform purchasing.add_receipt_attachment(p_receipt, v_path, p_kind, 1::smallint);
+end
+$$;
+do $$
+declare
+  v_par     uuid := '00000000-0000-4000-8000-000000000203';
+  v_order   uuid;
+  v_receipt uuid;
+  v_lines   jsonb;
+begin
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000408');
+  -- Verdulería: llega todo bien.
+  v_order := (purchasing.save_order_draft(null, v_par, '00000000-0000-4000-8000-000000000901',
+                                          pg_temp.lines('00000000-0000-4000-8000-000000000901', 2),
+                                          null, null, 'Verdura para la parrilla') ->> 'purchase_order_id')::uuid;
+  perform purchasing.submit_order(v_order, 'Verdura para la parrilla');
+  v_receipt := (purchasing.start_receipt(v_order) ->> 'receipt_id')::uuid;
+  perform pg_temp.receipt_photo(v_receipt, 'receipt_original');
+  perform pg_temp.receipt_photo(v_receipt, 'receipt_signed');
+  select jsonb_agg(jsonb_build_object('purchase_order_line_id', l.id, 'ok', true) order by l.line_order) into v_lines
+    from purchasing.purchase_order_lines l where l.purchase_order_id = v_order and l.deleted_at is null;
+  perform purchasing.close_receipt(v_receipt, 'remito', 'R 0001-00001234', v_lines, null, null);
+  -- Lácteos: falta parte de un renglón, otro trae lote y llega algo que no estaba (un artículo que el sistema ya conoce:
+  -- lo que no reconoce va a la cola de mapeo, y eso se prueba en la pgTAP 370). Se pagó en efectivo.
+  v_order := (purchasing.save_order_draft(null, v_par, '00000000-0000-4000-8000-000000000903',
+                                          pg_temp.lines('00000000-0000-4000-8000-000000000903', 3),
+                                          null, null, 'Lácteos para la parrilla') ->> 'purchase_order_id')::uuid;
+  perform purchasing.submit_order(v_order, 'Lácteos para la parrilla');
+  v_receipt := (purchasing.start_receipt(v_order) ->> 'receipt_id')::uuid;
+  perform pg_temp.receipt_photo(v_receipt, 'receipt_original');
+  perform pg_temp.receipt_photo(v_receipt, 'receipt_signed');
+  select jsonb_agg(case l.line_order
+                     when 2 then jsonb_build_object('purchase_order_line_id', l.id, 'ok', false, 'issue', 'missing',
+                                                    'received_quantity', 1, 'note', 'Mandaron uno solo')
+                     when 3 then jsonb_build_object('purchase_order_line_id', l.id, 'ok', true, 'lot_code', 'L-2611-A')
+                     else jsonb_build_object('purchase_order_line_id', l.id, 'ok', true) end
+                   order by l.line_order)
+         || jsonb_build_array(jsonb_build_object('name', 'Manteca, pan de 5 kg', 'received_quantity', 1))
+    into v_lines
+    from purchasing.purchase_order_lines l where l.purchase_order_id = v_order and l.deleted_at is null;
+  perform purchasing.close_receipt(v_receipt, 'invoice_remito', 'A 0003-00004567', v_lines, 15000,
+                                   'Faltó parte del pedido y llegó manteca que no estaba en la OC');
+  perform set_config('request.jwt.claims', '', true);
+end
+$$;
+
 -- Los costos de las recetas: en la base los calcula la cola cada minuto.
 select costing.process_recalc_queue(10000);
 

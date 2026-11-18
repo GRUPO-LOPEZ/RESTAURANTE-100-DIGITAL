@@ -96,7 +96,9 @@ export function Sidebar({
               </ul>
             ) : (
               <details key={g.label} open className="group/navgroup">
-                <summary className="flex min-h-control-sm cursor-pointer list-none items-center justify-between rounded-sm px-3 text-xs font-medium tracking-wide text-nav-ink/80 uppercase hover:text-nav-active [&::-webkit-details-marker]:hidden">
+                {/* Título de grupo de 28 px (decisión de Joaco, 2026-11-17, ADR-0056): con Recepción e Inventario, el
+                    menú del Controller entra sin scroll en 900 de alto. Nunca menos de 24 px (WCAG 2.5.8). */}
+                <summary className="flex min-h-7 cursor-pointer list-none items-center justify-between rounded-sm px-3 text-xs font-medium tracking-wide text-nav-ink/80 uppercase hover:text-nav-active [&::-webkit-details-marker]:hidden">
                   {g.label}
                   <ChevronDown
                     aria-hidden="true"

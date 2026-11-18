@@ -2926,7 +2926,9 @@ export type Database = {
         | "supplier_account_changed"
         | "unmapped_article"
         | "price_list_expired"
-        | "order_news";
+        | "order_news"
+        | "receipt_report"
+        | "receipt_differences";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -4757,6 +4759,109 @@ export type Database = {
       [_ in never]: never;
     };
   };
+  inventory: {
+    Tables: {
+      stock_movements: {
+        Row: {
+          brand_id: string;
+          created_at: string;
+          created_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          kind: Database["inventory"]["Enums"]["movement_kind"];
+          lot_code: string | null;
+          occurred_at: string;
+          packages: number | null;
+          purchase_product_id: string | null;
+          quantity: number;
+          restaurant_id: string;
+          source_id: string;
+          source_table: string;
+          unit_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          kind: Database["inventory"]["Enums"]["movement_kind"];
+          lot_code?: string | null;
+          occurred_at: string;
+          packages?: number | null;
+          purchase_product_id?: string | null;
+          quantity: number;
+          restaurant_id: string;
+          source_id: string;
+          source_table: string;
+          unit_id: string;
+        };
+        Update: {
+          brand_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          kind?: Database["inventory"]["Enums"]["movement_kind"];
+          lot_code?: string | null;
+          occurred_at?: string;
+          packages?: number | null;
+          purchase_product_id?: string | null;
+          quantity?: number;
+          restaurant_id?: string;
+          source_id?: string;
+          source_table?: string;
+          unit_id?: string;
+        };
+        Relationships: [];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      movement_list: {
+        Args: {
+          p_from?: string;
+          p_ingredient_id?: string;
+          p_limit?: number;
+          p_lot?: string;
+          p_offset?: number;
+          p_restaurant_id?: string;
+          p_to?: string;
+        };
+        Returns: {
+          id: string;
+          ingredient_id: string;
+          ingredient_name: string;
+          kind: Database["inventory"]["Enums"]["movement_kind"];
+          lot_code: string;
+          occurred_at: string;
+          order_number: string;
+          package_name: string;
+          packages: number;
+          product_name: string;
+          purchase_order_id: string;
+          quantity: number;
+          restaurant_id: string;
+          restaurant_name: string;
+          supplier_name: string;
+          total: number;
+          unit_name: string;
+        }[];
+      };
+    };
+    Enums: {
+      movement_kind: "purchase_receipt" | "sale" | "adjustment" | "count";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   org: {
     Tables: {
       areas: {
@@ -5664,6 +5769,182 @@ export type Database = {
         };
         Relationships: [];
       };
+      receipt_lines: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string | null;
+          issue: Database["purchasing"]["Enums"]["receipt_issue"] | null;
+          line_order: number;
+          lot_code: string | null;
+          note: string | null;
+          ok: boolean;
+          purchase_order_line_id: string | null;
+          purchase_product_id: string | null;
+          receipt_id: string;
+          received_quantity: number;
+          received_weight: number | null;
+          unmapped_article_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id?: string | null;
+          issue?: Database["purchasing"]["Enums"]["receipt_issue"] | null;
+          line_order: number;
+          lot_code?: string | null;
+          note?: string | null;
+          ok: boolean;
+          purchase_order_line_id?: string | null;
+          purchase_product_id?: string | null;
+          receipt_id: string;
+          received_quantity: number;
+          received_weight?: number | null;
+          unmapped_article_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string | null;
+          issue?: Database["purchasing"]["Enums"]["receipt_issue"] | null;
+          line_order?: number;
+          lot_code?: string | null;
+          note?: string | null;
+          ok?: boolean;
+          purchase_order_line_id?: string | null;
+          purchase_product_id?: string | null;
+          receipt_id?: string;
+          received_quantity?: number;
+          received_weight?: number | null;
+          unmapped_article_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "receipt_lines_purchase_order_line_id_fkey";
+            columns: ["purchase_order_line_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_order_lines";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "receipt_lines_receipt_fkey";
+            columns: ["receipt_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "receipts";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "receipt_lines_unmapped_fkey";
+            columns: ["unmapped_article_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "unmapped_articles";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      receipts: {
+        Row: {
+          brand_id: string;
+          cash_paid_amount: number | null;
+          closed_at: string | null;
+          closed_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          paper_kind: Database["purchasing"]["Enums"]["paper_kind"] | null;
+          paper_number: string | null;
+          purchase_order_id: string | null;
+          received_by: string;
+          restaurant_id: string;
+          result: Database["purchasing"]["Enums"]["receipt_result"] | null;
+          status: Database["purchasing"]["Enums"]["receipt_status"];
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id: string;
+          cash_paid_amount?: number | null;
+          closed_at?: string | null;
+          closed_by?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          paper_kind?: Database["purchasing"]["Enums"]["paper_kind"] | null;
+          paper_number?: string | null;
+          purchase_order_id?: string | null;
+          received_by: string;
+          restaurant_id: string;
+          result?: Database["purchasing"]["Enums"]["receipt_result"] | null;
+          status?: Database["purchasing"]["Enums"]["receipt_status"];
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          brand_id?: string;
+          cash_paid_amount?: number | null;
+          closed_at?: string | null;
+          closed_by?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          paper_kind?: Database["purchasing"]["Enums"]["paper_kind"] | null;
+          paper_number?: string | null;
+          purchase_order_id?: string | null;
+          received_by?: string;
+          restaurant_id?: string;
+          result?: Database["purchasing"]["Enums"]["receipt_result"] | null;
+          status?: Database["purchasing"]["Enums"]["receipt_status"];
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "receipts_order_fkey";
+            columns: ["purchase_order_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_orders";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
       supplier_categories: {
         Row: {
           category_id: string;
@@ -6008,6 +6289,15 @@ export type Database = {
         Args: { p_page: number; p_price_list_id: string; p_reason: string; p_storage_path: string };
         Returns: Json;
       };
+      add_receipt_attachment: {
+        Args: {
+          p_kind: Database["purchasing"]["Enums"]["doc_kind"];
+          p_page?: number;
+          p_receipt_id: string;
+          p_storage_path: string;
+        };
+        Returns: Json;
+      };
       apply_lower_po_approval: { Args: { p_request_id: string }; Returns: undefined };
       apply_order_approval: { Args: { p_request_id: string }; Returns: undefined };
       can_in_restaurant: {
@@ -6028,6 +6318,17 @@ export type Database = {
           p_product_id: string;
         };
         Returns: undefined;
+      };
+      close_receipt: {
+        Args: {
+          p_cash_paid_amount: number;
+          p_id: string;
+          p_lines: Json;
+          p_paper_kind: Database["purchasing"]["Enums"]["paper_kind"];
+          p_paper_number: string;
+          p_reason: string;
+        };
+        Returns: Json;
       };
       create_price_list: {
         Args: {
@@ -6169,6 +6470,16 @@ export type Database = {
         }[];
       };
       order_message: { Args: { p_order_id: string }; Returns: string };
+      order_receipts: {
+        Args: { p_order_id: string };
+        Returns: {
+          closed_at: string;
+          id: string;
+          received_by_name: string;
+          result: Database["purchasing"]["Enums"]["receipt_result"];
+          status: Database["purchasing"]["Enums"]["receipt_status"];
+        }[];
+      };
       pending_article: {
         Args: { p_id: string };
         Returns: {
@@ -6239,6 +6550,42 @@ export type Database = {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
       };
+      raise_receipt_error: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
+      receipt_detail: { Args: { p_id: string }; Returns: Json };
+      receipt_photo_ok: { Args: { p_name: string }; Returns: boolean };
+      receipt_stock_quantity: {
+        Args: {
+          p_ingredient_id: string;
+          p_product_id: string;
+          p_quantity: number;
+          p_unit_id: string;
+          p_weight_kg: number;
+        };
+        Returns: number;
+      };
+      receivable_orders: {
+        Args: { p_restaurant_id: string };
+        Returns: {
+          expected_delivery_on: string;
+          id: string;
+          number: string;
+          open_receipt_id: string;
+          pending_lines: number;
+          status: Database["purchasing"]["Enums"]["po_status"];
+          supplier_id: string;
+          supplier_name: string;
+        }[];
+      };
+      receivable_suppliers: {
+        Args: { p_restaurant_id: string };
+        Returns: {
+          id: string;
+          name: string;
+        }[];
+      };
       record_order_news: {
         Args: {
           p_id: string;
@@ -6292,6 +6639,11 @@ export type Database = {
       send_order_internal: { Args: { p_order_id: string }; Returns: undefined };
       set_supplier_active: {
         Args: { p_active: boolean; p_id: string; p_reason: string };
+        Returns: Json;
+      };
+      start_receipt: { Args: { p_order_id: string; p_restaurant_id?: string }; Returns: Json };
+      start_receipt_without_order: {
+        Args: { p_restaurant_id: string; p_supplier_id: string };
         Returns: Json;
       };
       submit_order: { Args: { p_id: string; p_reason: string }; Returns: Json };
@@ -6350,9 +6702,16 @@ export type Database = {
         | "non_fiscal"
         | "handwritten_note";
       channel: "whatsapp" | "email" | "supplier_portal";
-      doc_kind: "price_list" | "other";
+      doc_kind: "price_list" | "other" | "receipt_original" | "receipt_signed" | "product_issue";
       list_frequency: "weekly" | "biweekly" | "monthly";
       message_status: "queued" | "sent" | "failed" | "cancelled";
+      paper_kind:
+        | "invoice"
+        | "invoice_remito"
+        | "remito"
+        | "electronic_remito"
+        | "non_fiscal"
+        | "handwritten_note";
       payment_method: "cash" | "transfer" | "check" | "echeq" | "card" | "electronic_code";
       payment_terms: "cash" | "cash_on_delivery" | "same_day_transfer" | "account";
       po_event_kind: "news" | "shortage" | "delivery_change" | "note" | "cancelled";
@@ -6366,6 +6725,9 @@ export type Database = {
         | "closed"
         | "cancelled";
       price_list_status: "received" | "accepted" | "replaced";
+      receipt_issue: "missing" | "extra" | "different_product" | "quality" | "expired";
+      receipt_result: "complete" | "partial" | "with_differences";
+      receipt_status: "open" | "closed";
       unmapped_status: "pending" | "resolved" | "discarded";
     };
     CompositeTypes: {
@@ -7925,6 +8287,8 @@ export const Constants = {
         "unmapped_article",
         "price_list_expired",
         "order_news",
+        "receipt_report",
+        "receipt_differences",
       ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
@@ -7964,6 +8328,11 @@ export const Constants = {
       row_kind: ["ingredient", "preparation", "dish", "line"],
     },
   },
+  inventory: {
+    Enums: {
+      movement_kind: ["purchase_receipt", "sale", "adjustment", "count"],
+    },
+  },
   org: {
     Enums: {
       site_type: ["restaurant", "central_kitchen", "production_unit"],
@@ -7987,9 +8356,17 @@ export const Constants = {
         "handwritten_note",
       ],
       channel: ["whatsapp", "email", "supplier_portal"],
-      doc_kind: ["price_list", "other"],
+      doc_kind: ["price_list", "other", "receipt_original", "receipt_signed", "product_issue"],
       list_frequency: ["weekly", "biweekly", "monthly"],
       message_status: ["queued", "sent", "failed", "cancelled"],
+      paper_kind: [
+        "invoice",
+        "invoice_remito",
+        "remito",
+        "electronic_remito",
+        "non_fiscal",
+        "handwritten_note",
+      ],
       payment_method: ["cash", "transfer", "check", "echeq", "card", "electronic_code"],
       payment_terms: ["cash", "cash_on_delivery", "same_day_transfer", "account"],
       po_event_kind: ["news", "shortage", "delivery_change", "note", "cancelled"],
@@ -8004,6 +8381,9 @@ export const Constants = {
         "cancelled",
       ],
       price_list_status: ["received", "accepted", "replaced"],
+      receipt_issue: ["missing", "extra", "different_product", "quality", "expired"],
+      receipt_result: ["complete", "partial", "with_differences"],
+      receipt_status: ["open", "closed"],
       unmapped_status: ["pending", "resolved", "discarded"],
     },
   },

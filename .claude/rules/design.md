@@ -85,6 +85,7 @@ Cada estado sale de una regla verificable y cada tarjeta enlaza a los registros 
     - 28 px: las filas de lista y los botones de una grilla de estados (por ejemplo, los alérgenos);
     - 32 px: los enlaces «Ver …», los botones chicos de una tarjeta (ranking, «Editar» de una fila, quitar un chip) y los controles de un formulario angosto (36 px si entran).
     - Nunca menos de 24 px (WCAG 2.5.8) y siempre 44 px en el celular.
+  - Excepción (ADR-0056, decisión de Joaco del 2026-11-17): los títulos de grupo de la barra lateral miden 28 px, para que la navegación entre en 1440 × 900.
 - Sin degradados, sin sombras pesadas, sin fondos con imágenes ni texturas.
 - Íconos de trazo, del mismo set en todo el sistema (Lucide), **siempre con texto al lado** o con nombre accesible.
 

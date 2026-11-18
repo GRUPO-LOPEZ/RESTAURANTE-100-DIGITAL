@@ -1,10 +1,42 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-17._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, fusionado (PR #76, ADR-0052). Prompt 3, órdenes de compra, fusionado (PR #77, ADR-0053). Next.js 16.4.6 (PR #78). PR #75 (pantalla de 1715 × 843) fusionado. Compras ve el precio del local elegido: PR #80, fusionado. La Chef ve el costo neto: PR #81, fusionado (ADR-0054). Ahora: la importación de proveedores y un CUIT por proveedor (`feat/importar-proveedores`, ADR-0055). Después: Prompt 4, recepción y stock.**
+_Última actualización: 2026-11-18._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, fusionado (PR #76, ADR-0052). Prompt 3, órdenes de compra, fusionado (PR #77, ADR-0053). Next.js 16.4.6 (PR #78). PR #75 (pantalla de 1715 × 843) fusionado. Compras ve el precio del local elegido: PR #80, fusionado. La Chef ve el costo neto: PR #81, fusionado (ADR-0054). Importación de proveedores y un CUIT por proveedor: PR #82, fusionado (ADR-0055). Ahora: Prompt 4, recepción y stock (PR #83).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## En curso: importar proveedores desde planilla (rama `feat/importar-proveedores`, ADR-0055)
+## En curso: Prompt 4, recepción y stock (rama `feat/recepcion`, ADR-0056)
+
+- **Qué es:** «pedido → recepción». Lo que llega se valida renglón por renglón contra la OC, con la foto del papel como llegó y la del papel firmado, y entra al stock (D8: todavía nada descuenta). Se recibe también sin OC.
+- **Hecho:**
+  - **Base:**
+    - las tablas `purchasing.receipts`, `purchasing.receipt_lines` e `inventory.stock_movements` (esquema nuevo en la API);
+    - los permisos `purchasing.receive` e `inventory.view`;
+    - `close_receipt`, en una sola transacción;
+    - fotos en `purchasing-documents`;
+    - el efectivo protegido por columna;
+    - el seed con dos recepciones inventadas en Demo Parrilla Centro.
+  - **Pantallas:**
+    - `/compras/recepcion`, con cuatro pasos en el celular;
+    - el informe en la ficha de la OC;
+    - `/inventario`, con filtro por lote;
+    - «Buscar un lote» en Calidad.
+  - **Decisiones de Joaco (2026-11-17):**
+    - los títulos de grupo de la barra lateral pasan a 28 px;
+    - lo vencido no suma stock;
+    - toda recepción sin OC avisa a Compras;
+    - un peso que se aleja más de un 20 % de lo estimado se observa.
+- **Pruebas:**
+  - pgTAP `370_receipts` (82) y `371_stock_movements` (30). Se actualizaron las listas de 000, 040, 050 y 320;
+  - Vitest de `lib/receipts.ts` y `lib/photos.ts`;
+  - Playwright `recepcion.spec.ts` con axe: la compuerta (el Gerente recibe en el celular una OC con un faltante y la cocinera ve el aviso), «Recibir sin OC», el informe y el inventario sin scroll en las cuatro pantallas.
+- **Revisiones:** `db-reviewer`, `security-auditor` y `ui-reviewer`, sin graves. Lo corregido y lo anotado está en ADR-0056.
+- **Capturas:** `docs/capturas/recepcion/`.
+- **Suite completa (2026-11-17):** lint, tipos, Vitest (466), pgTAP y Playwright (302 pasaron). Una sola falla, en `costos.spec` («un precio nuevo muestra a qué recetas les pegó»): el clic en «Proponer precio» llegó antes de que la página terminara de cargar. Corrida sola pasa, en celular y computadora. No toca recepción.
+- **Ojo:** `npm run test` corre pgTAP sobre la base como está. Después de correr Playwright o sacar capturas, hacer `npm run db:reset` antes, o fallan la 100 y la 340 por datos que quedaron (como PCE-0005).
+- **Sigue (otro PR, pedido de Joaco):** el botón «Recibir mercadería» en el Inicio, que reemplaza al acceso directo en la barra del celular.
+- **Falta:** mirarlo en un celular real.
+
+## Fusionado: importar proveedores desde planilla (PR #82, 2026-11-18, ADR-0055)
 
 - **Qué es:** la P1 de la Fase 3 (ADR-0050): cargar de una vez los ~30 proveedores reales en producción, desde la app y por Compras. La planilla real nunca entra al repositorio: todo se probó con planillas inventadas.
 - **Hecho:**
@@ -22,7 +54,6 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - `ui-reviewer`: un grave corregido (si fallaba «Crear» no se veía el aviso) y sus medios.
 - **Capturas:** `docs/capturas/importar-proveedores/`.
 - **Suite completa con `main` (ya tiene el #81), 2026-11-17:** en verde. Playwright: 302 pasaron, 36 salteadas (las de un solo proyecto), ninguna falló.
-- **Falta:** la revisión y la fusión del PR.
 
 ## Fusionado: la Chef ve el costo neto (PR #81, 2026-11-17, ADR-0054)
 
