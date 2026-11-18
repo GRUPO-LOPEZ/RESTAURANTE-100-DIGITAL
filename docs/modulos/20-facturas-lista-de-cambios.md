@@ -1,6 +1,6 @@
 # Facturas (lista de cambios para Soy)
 
-Quinta entrega del módulo de compras y facturas (Fase 3). Va en dos partes: **esta es la base** (lo que el sistema controla y guarda). Las pantallas llegan en la segunda. Detalle técnico en ADR-0058.
+Quinta entrega del módulo de compras y facturas (Fase 3), en dos partes: **la base** (lo que el sistema controla y guarda) y **las pantallas**. Detalle técnico en ADR-0058.
 
 ## Qué cambia
 
@@ -39,12 +39,22 @@ Quinta entrega del módulo de compras y facturas (Fase 3). Va en dos partes: **e
 - **El cocinero y el chef no ven facturas.** El gerente ve las de su local, sin poder cambiarlas.
 - **Se suman las alícuotas de 2,5 % y 5 %** (tu respuesta P5), también al cargar un precio a mano.
 
+## Las pantallas (segunda parte)
+
+- **«Facturas»**, en el grupo Compras del menú. La ven Compras, el Controller, Dirección y los gerentes (solo las de su local, sin cambiarlas). El cocinero y el chef no.
+- **El listado:** pestañas por estado (cargadas, observadas, conformes, pagadas, canceladas), filtros de proveedor y fecha, y qué no pasó en cada una.
+- **«Nueva factura»:** se elige el proveedor y las órdenes recibidas que cubre; se escriben el número, la fecha y el CAE. Las líneas salen solas de lo que llegó, con el precio de la lista.
+- **La ficha de la factura, en una pantalla:**
+  - arriba, el total, la diferencia contra lo recibido, la diferencia contra la lista y el vencimiento;
+  - los datos y el pie, las líneas como planilla (con ✓ o ✕ y la explicación) y «Todo junto»: la foto, la orden y su recepción, los controles y las notas;
+  - se corrige donde se ve y se guarda todo junto, con un motivo;
+  - los botones **Controlar**, **Dar por conforme** y **Cancelar**.
+- **En el celular** se consulta, y se puede dar por conforme.
+- **El origen del precio:** en la ficha de cada materia prima y en Costos se ve de qué factura salió el precio («Factura A 0003-00012345 · Proveedor»). Se abre con un clic.
+- **Capturas:** `docs/capturas/facturas/`.
+
 ## Lo que todavía no está
 
-- **Las pantallas** (segunda parte):
-  - el listado de facturas;
-  - la ficha con todo junto: foto, recepción, controles y notas;
-  - el origen «Factura A 0003-00012345 · Proveedor» en la ficha de la materia prima y en Costos.
 - **Los pagos y el tablero de compras** (Prompt 6).
 
 ## Para probar en staging
@@ -57,4 +67,4 @@ Las facturas de prueba están en **Demo Parrilla Centro**, todas inventadas:
 - una con impuestos internos y percepción, sin orden;
 - una por peso, un comprobante X y una nota a mano, cargados.
 
-Se van a poder ver con las pantallas de la segunda parte.
+Se ven en **Compras → Facturas**, con el local elegido arriba.
