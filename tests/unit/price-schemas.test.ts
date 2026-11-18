@@ -99,6 +99,7 @@ describe("cómo se muestran los precios", () => {
       document: "no_invoice",
       vatRate: null,
       source: "test_value",
+      origin: null,
     });
     const rows = [
       row("futuro", "2999-01-01"),

@@ -335,7 +335,20 @@ function PriceItem({
         IVA {formatMoney(row.grossPackagePrice)}
       </span>
       <span className="text-sm text-ink-muted tabular-nums">
-        {DOCUMENT_LABELS[row.document]}
+        {row.origin ? (
+          row.origin.canOpen ? (
+            <Link
+              href={`/compras/facturas/${row.origin.invoiceId}`}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              {row.origin.label} · {row.origin.supplier}
+            </Link>
+          ) : (
+            `${row.origin.label} · ${row.origin.supplier}`
+          )
+        ) : (
+          DOCUMENT_LABELS[row.document]
+        )}
         {row.vatRate !== null ? ` (${String(row.vatRate).replace(".", ",")} %)` : ""} · desde el{" "}
         {formatDate(row.validFrom)}
       </span>

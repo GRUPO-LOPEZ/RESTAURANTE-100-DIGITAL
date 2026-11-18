@@ -1,3 +1,4 @@
+import { getPriceOrigins, type PriceOrigin } from "@/lib/invoices-data";
 import {
   COSTS_PAGE,
   lineStatusLabel,
@@ -497,6 +498,7 @@ export type ImpactRow = {
 };
 
 export async function getPriceImpact(priceRecordId: string): Promise<{
+  origin: PriceOrigin | null;
   ingredient: string | null;
   validFrom: string | null;
   calculatedAt: string | null;
@@ -508,7 +510,9 @@ export async function getPriceImpact(priceRecordId: string): Promise<{
     .schema("costing")
     .rpc("price_impact", { p_price_record_id: priceRecordId, p_limit: IMPACT_PAGE });
   if (error) throw new Error("No pudimos cargar el impacto del precio.");
+  const origins = await getPriceOrigins([priceRecordId]);
   return {
+    origin: origins.get(priceRecordId) ?? null,
     ingredient: data[0]?.ingredient ?? null,
     validFrom: data[0]?.valid_from ?? null,
     calculatedAt: data[0]?.calculated_at ?? null,

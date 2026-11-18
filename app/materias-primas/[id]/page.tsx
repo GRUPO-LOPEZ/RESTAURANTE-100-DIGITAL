@@ -70,6 +70,7 @@ import { priceState, type IngredientSheetDraft } from "@/lib/ingredient-sheet";
 import { missingState } from "@/lib/metrics";
 import { formatMoney } from "@/lib/money";
 import { getLocalCost, getProductPrices, type LocalCost, type ProductPrice } from "@/lib/prices";
+import type { PriceOrigin } from "@/lib/invoices-data";
 import { bigUnitPrice } from "@/lib/recipe-sheet";
 import { createdRecently } from "@/lib/recipes";
 import {
@@ -1292,6 +1293,7 @@ function ProductsDetail({
                           </td>
                           <td className="py-2 pr-3 text-ink tabular-nums">
                             {price?.validFrom ? formatDate(price.validFrom) : "—"}
+                            {price?.origin ? <PriceOriginLine origin={price.origin} /> : null}
                           </td>
                           <td className="py-2">
                             <Badge status={state.status}>{state.label}</Badge>
@@ -1957,5 +1959,20 @@ function YieldTestForm({
       </div>
       <Reason id="mp-motivo-ensayo" />
     </ActionForm>
+  );
+}
+
+// De qué factura salió el precio (ADR-0058): «Factura A 0003-00012345 · Proveedor». Quien ve facturas la abre.
+function PriceOriginLine({ origin }: { origin: PriceOrigin }) {
+  const text = `${origin.label} · ${origin.supplier}`;
+  return origin.canOpen ? (
+    <Link
+      href={`/compras/facturas/${origin.invoiceId}`}
+      className="block text-sm text-primary underline-offset-4 hover:underline"
+    >
+      {text}
+    </Link>
+  ) : (
+    <span className="block text-sm text-ink-muted">{text}</span>
   );
 }

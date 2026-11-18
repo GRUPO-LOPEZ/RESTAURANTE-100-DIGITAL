@@ -30,7 +30,7 @@ async function Impact({ params }: { params: PageProps<"/costos/impacto/[id]">["p
   await requireMenu("costs");
   const { id } = await params;
   if (!uuidOrUndefined(id)) notFound();
-  const { ingredient, validFrom, calculatedAt, total, rows } = await getPriceImpact(id);
+  const { origin, ingredient, validFrom, calculatedAt, total, rows } = await getPriceImpact(id);
   const places = [...new Set(rows.map((r) => r.restaurantId))];
   const biggest = rows.reduce<number | null>(
     (max, r) =>
@@ -57,6 +57,22 @@ async function Impact({ params }: { params: PageProps<"/costos/impacto/[id]">["p
               el {validFrom ? formatDate(validFrom) : "—"} · Calculado:{" "}
               {calculatedAt ? formatDateTime(calculatedAt) : "—"}
             </CardDescription>
+            {origin ? (
+              <p className="text-base text-ink">
+                Salió de la{" "}
+                {origin.canOpen ? (
+                  <Link
+                    href={`/compras/facturas/${origin.invoiceId}`}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    {origin.label}
+                  </Link>
+                ) : (
+                  origin.label
+                )}{" "}
+                de {origin.supplier}, conforme.
+              </p>
+            ) : null}
           </Card>
           <div className="grid gap-4 sm:grid-cols-3">
             <Kpi label="Recetas afectadas" value={total} />

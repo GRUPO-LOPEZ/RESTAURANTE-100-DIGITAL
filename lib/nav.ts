@@ -15,6 +15,7 @@ export type NavIcon =
   | "priceLists"
   | "orders"
   | "receipts"
+  | "invoices"
   | "inventory"
   | "rubros"
   | "costs"
@@ -44,6 +45,7 @@ export type NavMenus = {
   priceLists: boolean;
   orders: boolean;
   receive: boolean;
+  invoices: boolean;
   inventory: boolean;
   costs: boolean;
   reports: boolean;
@@ -81,7 +83,7 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
     },
     {
       // Compras (Fase 3, pedido de Joaco del 2026-11-18, ADR-0057): todo el circuito en un grupo, en el orden en que
-      // se trabaja. Facturas y Pagos (Prompts 5 y 6) se suman acá.
+      // se trabaja. Pagos (Prompt 6) se suma acá.
       label: "Compras",
       items: [
         // Proveedores (ADR-0050): los ve quien ve su ficha, también el cocinero.
@@ -105,6 +107,11 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
         // Recepción e inventario (ADR-0056): quien recibe en un local; el inventario, quien lo controla.
         ...(menus.receive
           ? [{ href: "/compras/recepcion", label: "Recepción", icon: "receipts" as const }]
+          : []),
+        // Facturas (ADR-0058): quien ve facturas en algún local (Compras, Controller, Dirección, gerentes). El cocinero
+        // y el chef no.
+        ...(menus.invoices
+          ? [{ href: "/compras/facturas", label: "Facturas", icon: "invoices" as const }]
           : []),
         ...(menus.inventory
           ? [{ href: "/inventario", label: "Inventario", icon: "inventory" as const }]
@@ -215,6 +222,7 @@ const MODULES: { href: string; label: string }[] = [
   { href: "/costos", label: "Costos" },
   { href: "/listas-de-precios", label: "Listas de precios" },
   { href: "/compras/ordenes", label: "Órdenes de compra" },
+  { href: "/compras/facturas", label: "Facturas" },
   { href: "/reportes", label: "Reportes" },
   { href: "/calidad", label: "Calidad" },
   { href: "/aprobaciones", label: "Aprobaciones" },
