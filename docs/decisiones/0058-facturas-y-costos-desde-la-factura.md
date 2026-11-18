@@ -105,6 +105,23 @@ Hasta ahora, un precio entraba a costos solo si alguien lo proponía y el Contro
   - cada fila del control se audita;
   - el dinero va en `numeric(18,4)`, como en el recetario (ADR-0020), y no en el `numeric(14,4)` de la regla general.
 
+### Segunda pasada (2026-11-18)
+
+Corregido en `20261209160000_invoice_review_fixes_2.sql`, con pruebas en la 380:
+
+- **Una factura vieja no pisa un costo más nuevo:**
+  - es la que queda conforme después de otra más nueva;
+  - si es anterior al último precio del producto en el local o al que vale hoy ahí, **no registra precio**;
+  - queda conforme para el pago, y el costo vigente sigue siendo el de la compra más nueva («costo vigente = última compra conforme»).
+- **Una línea de la OC, una línea de la factura:** índice único. Lo que el chef mapea después se asocia de a una línea.
+- **Las notas no dejan la factura conforme sola** si quien controla la cargó, la corrigió o le sumó notas. Las notas de crédito y los descuentos no superan el total de la factura.
+- **Quien cambia la foto de la factura queda anotado** (`edited_by`).
+- **La explicación de cantidad** dice cuánto ya está en otras facturas de la OC.
+- **Anotado:**
+  - `p_version` es opcional en la base; la pantalla (PR 5B) lo manda siempre;
+  - una factura cargada y olvidada de la misma OC frena a la buena hasta que se cancela (es conservador: nunca paga de más);
+  - quien aprieta «Controlar» sobre una lista que cargó otra persona la deja conforme a su nombre. Es lo que se decidió con la opción b.
+
 ## Opciones que se descartaron
 
 - **Crear una solicitud de aprobación por cada precio de factura**, como hoy. Duplicaba el conforme y frenaba la operación, que es justo lo que Soy pidió evitar.

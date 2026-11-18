@@ -21,7 +21,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - el conforme automático no vale si quien controla cargó o aceptó la lista vigente («doble firma»);
   - **Compras exige doble verificación**, como el Controller (`.claude/rules/security.md` actualizado; Playwright ingresa como Compras con `mfa: true`).
 - **Pruebas:**
-  - pgTAP 380 (90) y 381 (8);
+  - pgTAP 380 (97) y 381 (8);
   - ajustes en 040, 050, 210, 211, 320 y 330: las listas suman lo nuevo y los números del seed cambian; ninguna se debilitó (lo controló `db-reviewer`);
   - Vitest de `lib/invoices.ts`;
   - pgTAP completa: 62 archivos en verde.

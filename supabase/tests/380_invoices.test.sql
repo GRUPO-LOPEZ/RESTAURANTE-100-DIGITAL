@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(90);
+select plan(97);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -107,6 +107,16 @@ begin
   values ('purchasing-documents', v_path, pg_temp.u(408)::text, '{"mimetype": "image/jpeg", "size": 120000}');
   return pg_temp.q(pg_temp.u(408), format('select purchasing.add_invoice_attachment(%L, %L, %L, 1::smallint) ->> %L',
                                           'credit_debit_notes', p_note, v_path, 'status'));
+end
+$$;
+create function pg_temp.note_photo_by(p_note uuid, p_user int) returns text language plpgsql as $$
+declare
+  v_path text := format('00000000-0000-4000-8000-000000000001/credit_debit_notes/%s/%s.jpg', p_note, gen_random_uuid());
+begin
+  insert into storage.objects (bucket_id, name, owner_id, metadata)
+  values ('purchasing-documents', v_path, pg_temp.u(p_user)::text, '{"mimetype": "image/jpeg", "size": 120000}');
+  return pg_temp.q(pg_temp.u(p_user), format('select purchasing.add_invoice_attachment(%L, %L, %L, 1::smallint) ->> %L',
+                                             'credit_debit_notes', p_note, v_path, 'status'));
 end
 $$;
 -- El pie que cierra con las líneas y las percepciones (en A, IVA por línea).
@@ -208,7 +218,7 @@ begin
   return v_order;
 end
 $f$;
-insert into pg_temp.k select v.name, pg_temp.received_order() from (values ('oc'), ('oc2'), ('oc3'), ('oc4')) as v (name);
+insert into pg_temp.k select v.name, pg_temp.received_order() from (values ('oc'), ('oc2'), ('oc3'), ('oc4'), ('oc5'), ('oc6')) as v (name);
 select is((select count(*)::int from purchasing.purchase_orders
             where id in (pg_temp.k('oc'), pg_temp.k('oc2'), pg_temp.k('oc3'), pg_temp.k('oc4')) and status = 'received'),
   4, 'preparación: cuatro OC llegan enteras (32,80 kg del corte)');
@@ -482,6 +492,61 @@ select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.create_invoice(%
   pg_temp.u(903), pg_temp.u(203), pg_temp.k('oc'), pg_temp.header('invoice_a', 900008), 'X')),
   'Cada orden tiene que ser de este proveedor y este local, estar recibida y no estar facturada entera.',
   'una OC ya facturada entera no se vuelve a facturar');
+
+-- N1: una factura más vieja que el costo vigente del local queda conforme, pero no lo pisa.
+insert into pg_temp.k values ('a7', (pg_temp.q(pg_temp.u(408), format(
+  'select purchasing.create_invoice(%L, %L, array[%L]::uuid[], %L::jsonb, %L) ->> %L', pg_temp.u(903), pg_temp.u(203),
+  pg_temp.k('oc5'), pg_temp.header('invoice_a', 900010) || jsonb_build_object('issued_on', recipes.today() - 6),
+  'Factura vieja', 'invoice_id')))::uuid);
+select pg_temp.invoice_photo(pg_temp.k('a7'));
+select pg_temp.msg(pg_temp.u(408), format('select purchasing.save_invoice(%L, %L::jsonb, %L::jsonb, null, %L)',
+  pg_temp.k('a7'), '{}',
+  (select jsonb_agg(case when x ->> 'purchase_product_id' = pg_temp.u(3801)::text
+                         then x || '{"unit_price": 40000, "line_amount": 80000}'::jsonb
+                         else x || '{"unit_price": 7000, "line_amount": 229600}'::jsonb end)
+     from jsonb_array_elements(pg_temp.lines(pg_temp.k('a7'))) x), 'Como en el papel'));
+select pg_temp.msg(pg_temp.u(408), format('select purchasing.save_invoice(%L, %L::jsonb, null, null, %L)',
+                                          pg_temp.k('a7'), pg_temp.footer(pg_temp.k('a7')), 'El pie'));
+select pg_temp.q(pg_temp.u(408), format('select purchasing.run_invoice_checks(%L) ->> %L', pg_temp.k('a7'), 'status'));
+select is(pg_temp.q(pg_temp.u(407), format('select purchasing.approve_invoice(%L, %L) ->> %L', pg_temp.k('a7'),
+                                           'Llegó tarde, revisada', 'status')),
+          'released', 'una factura de hace 6 días, conforme después que las más nuevas');
+select is((select count(*)::int from costing.price_records r join purchasing.invoice_lines l on l.id = r.invoice_line_id
+            where l.invoice_id = pg_temp.k('a7')),
+          0, 'N1: no registra precio: es anterior al costo vigente del local');
+select is((select unit_cost from costing.price_rows(pg_temp.u(203), recipes.today(), pg_temp.u(827))),
+          1.20000000::numeric, 'y el costo vigente sigue siendo el de la compra más nueva ($ 1.200 el kg)');
+
+-- M4: quien suma la nota (y sube su foto) no deja la factura conforme sola, aunque cubra la diferencia.
+insert into pg_temp.k values ('a8', (pg_temp.q(pg_temp.u(408), format(
+  'select purchasing.create_invoice(%L, %L, array[%L]::uuid[], %L::jsonb, %L) ->> %L', pg_temp.u(903), pg_temp.u(203),
+  pg_temp.k('oc6'), pg_temp.header('invoice_a', 900011), 'Factura con diferencia', 'invoice_id')))::uuid);
+select pg_temp.invoice_photo(pg_temp.k('a8'));
+select pg_temp.msg(pg_temp.u(408), format('select purchasing.save_invoice(%L, %L::jsonb, %L::jsonb, null, %L)',
+  pg_temp.k('a8'), '{}',
+  (select jsonb_agg(case when x ->> 'purchase_product_id' = pg_temp.u(3801)::text
+                         then x || '{"unit_price": 50010, "line_amount": 100020}'::jsonb else x end)
+     from jsonb_array_elements(pg_temp.lines(pg_temp.k('a8'))) x), 'Como en el papel'));
+select pg_temp.msg(pg_temp.u(408), format('select purchasing.save_invoice(%L, %L::jsonb, null, null, %L)',
+                                          pg_temp.k('a8'), pg_temp.footer(pg_temp.k('a8')), 'El pie'));
+select pg_temp.q(pg_temp.u(408), format('select purchasing.run_invoice_checks(%L) ->> %L', pg_temp.k('a8'), 'status'));
+select is(pg_temp.msg(pg_temp.u(401), format('select purchasing.add_credit_debit_note(%L, %L::jsonb, %L)',
+  pg_temp.k('a8'), jsonb_build_object('note_kind', 'credit', 'issued_on', recipes.today(), 'net_amount', 99999999),
+  'Una nota enorme')),
+  'Las notas de crédito y los descuentos no pueden superar el total de la factura.',
+  'una nota de crédito no supera el total de la factura');
+insert into pg_temp.k values ('nc8', (pg_temp.q(pg_temp.u(401), format(
+  'select purchasing.add_credit_debit_note(%L, %L::jsonb, %L) ->> %L', pg_temp.k('a8'),
+  jsonb_build_object('note_kind', 'credit', 'issued_on', recipes.today(), 'net_amount', 20), 'Diferencia de precio',
+  'note_id')))::uuid);
+select is(pg_temp.note_photo_by(pg_temp.k('nc8'), 401), 'observed',
+          'M4: la nota cubre la diferencia, pero quien la sumó no deja la factura conforme sola');
+select ok(exists (select 1 from purchasing.invoice_checks where invoice_id = pg_temp.k('a8') and check_kind = 'notes'
+                   and not passed and explanation like 'Las notas cubren la diferencia, pero%'),
+          'y lo dice en simple');
+select is(pg_temp.q(pg_temp.u(407), format('select purchasing.approve_invoice(%L, %L) ->> %L', pg_temp.k('a8'),
+                                           'Nota revisada', 'status')),
+          'released', 'la da por conforme otra persona');
 
 -- Un artículo que no se reconoce, otra razón social y sin lista vigente.
 insert into pg_temp.k values ('a4', (pg_temp.q(pg_temp.u(408), format(
