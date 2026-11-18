@@ -33,7 +33,7 @@ test.describe("listas de precios", () => {
     const stamp = Date.now().toString(36).toUpperCase();
     const article = `Porotos alubia prueba ${stamp}`;
 
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.goto(`/listas-de-precios/nueva?proveedor=${ALMACEN}`);
     await expect(
       page.getByRole("heading", { level: 1, name: "Cargar lista de precios" }),
@@ -86,7 +86,7 @@ test.describe("listas de precios", () => {
     await logout(page);
 
     // En la lista, el artículo ya no está en la cola. Compras la acepta con motivo.
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.goto(listUrl);
     await expect(
       page.getByRole("row", { name: new RegExp(article) }).getByText("En la cola de mapeo"),
@@ -111,7 +111,7 @@ test.describe("listas de precios", () => {
     isMobile,
   }) => {
     test.skip(isMobile, "Solo en la computadora.");
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     for (const size of [
       { width: 1440, height: 900 },
       { width: 1715, height: 843 },
@@ -168,7 +168,7 @@ test("en el celular, la cola se resuelve con controles de 44 px", async ({ page,
 
 test("Rubros: «Va a recetas» es un sí/no de un clic", async ({ page, isMobile }) => {
   test.skip(isMobile, "Solo en la computadora.");
-  await login(page, COMPRAS);
+  await login(page, COMPRAS, { mfa: true });
   await page.goto("/rubros");
   const toggle = page.getByRole("button", { name: /^Recetas \(Limpieza\)$/ });
   await expect(toggle).toHaveAttribute("aria-pressed", "false");

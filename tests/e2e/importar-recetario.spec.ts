@@ -81,7 +81,7 @@ test("la Chef sube el recetario, Compras confirma las materias primas y la Chef,
 
   // Compras confirma las materias primas.
   const purchasing = await browser.newPage({ ...testInfo.project.use });
-  await login(purchasing, "compras@ejemplo.test");
+  await login(purchasing, "compras@ejemplo.test", { mfa: true });
   await purchasing.goto(url);
   await purchasing
     .getByLabel("Motivo de la confirmación")

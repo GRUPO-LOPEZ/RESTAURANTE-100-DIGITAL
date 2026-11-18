@@ -317,7 +317,7 @@ test.describe("administración con el sistema nuevo", () => {
       testInfo.project.name !== "celular",
       "Solo en el celular: en la computadora va en la barra lateral.",
     );
-    await login(page, "compras@ejemplo.test");
+    await login(page, "compras@ejemplo.test", { mfa: true });
     await expect(page.getByRole("button", { name: /^Salir/ })).toHaveCount(0);
     await page.locator("summary:visible", { hasText: "Menú" }).click();
     const menu = page.getByRole("navigation", { name: "Menú principal" });

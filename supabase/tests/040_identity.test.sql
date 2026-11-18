@@ -55,8 +55,8 @@ select is((select count(*)::int from core.permissions where deleted_at is null
   'hay 18 permisos de la Fase 1 (los 14 de M4 más permissions.manage, security.view, org.archive y users.view_admin_details, ADR-0015)');
 select is(
   (select array_agg(code order by level) from core.roles where requires_mfa),
-  array['superadmin', 'general_management', 'brand_director', 'restaurant_manager', 'controller'],
-  'llevan MFA los niveles 1 a 4 y Controller'
+  array['superadmin', 'general_management', 'brand_director', 'restaurant_manager', 'controller', 'purchasing'],
+  'llevan MFA los niveles 1 a 4, Controller y Compras (carga facturas que escriben costos, ADR-0058)'
 );
 select is((select array_agg(level order by level)::int[] from core.roles), array[1,2,3,4,5,6,7,8,9,10],
   'los niveles siguen el orden del Módulo Maestro');

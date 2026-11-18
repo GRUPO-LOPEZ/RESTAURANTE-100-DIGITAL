@@ -147,7 +147,7 @@ test.describe("en el celular", () => {
   });
 
   test("Compras recibe sin OC lo que trajo un proveedor", async ({ page }) => {
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.goto(`/compras/recepcion?local=${PCE}`);
     await page.getByLabel("Proveedor").selectOption({ label: "Lácteos Demo" });
     await page.getByRole("button", { name: "Recibir sin OC" }).click();
@@ -179,7 +179,7 @@ test.describe("en la computadora", () => {
   test("el informe en la OC muestra las fotos, lo observado y el efectivo a quien ve precios", async ({
     page,
   }) => {
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     // Las del seed son de la Parrilla (Compras puede tener otro local elegido arriba).
     await page.goto("/compras/ordenes?estado=todas&local=00000000-0000-4000-8000-000000000203");
     await page.getByRole("link", { name: "PAR-0002" }).click();

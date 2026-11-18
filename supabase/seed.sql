@@ -920,6 +920,16 @@ begin
   perform purchasing.add_invoice_attachment('invoices', p_invoice, v_path, 1::smallint);
 end
 $$;
+create function pg_temp.note_photo(p_note uuid) returns void language plpgsql as $f$
+declare
+  v_path text := format('00000000-0000-4000-8000-000000000001/credit_debit_notes/%s/%s.jpg', p_note, gen_random_uuid());
+begin
+  insert into storage.objects (bucket_id, name, owner_id, metadata)
+  values ('purchasing-documents', v_path, '00000000-0000-4000-8000-000000000408',
+          '{"mimetype": "image/jpeg", "size": 0}');
+  perform purchasing.add_invoice_attachment('credit_debit_notes', p_note, v_path, 1::smallint);
+end
+$f$;
 create function pg_temp.receive_all(p_order uuid) returns void language plpgsql as $$
 declare
   v_receipt uuid := (purchasing.start_receipt(p_order) ->> 'receipt_id')::uuid;
@@ -978,6 +988,7 @@ declare
   v_invoice   uuid;
   v_lines     jsonb;
   v_diff      numeric;
+  v_note      uuid;
 begin
   perform pg_temp.as_user('00000000-0000-4000-8000-000000000408');
 
@@ -991,6 +1002,10 @@ begin
   perform pg_temp.invoice_photo(v_invoice);
   perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
   perform purchasing.run_invoice_checks(v_invoice);
+  -- Compras aceptó la lista de ese proveedor: no queda conforme sola (doble firma). La da el Controller.
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000407');
+  perform purchasing.approve_invoice(v_invoice, 'Revisada contra la recepción y la lista');
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000408');
 
   -- 2. B conforme: la de la Verdulería, que llegó con remito R y la factura después.
   select id into v_order from purchasing.purchase_orders where restaurant_id = v_par and supplier_id = v_verduras;
@@ -1002,6 +1017,10 @@ begin
   perform pg_temp.invoice_photo(v_invoice);
   perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
   perform purchasing.run_invoice_checks(v_invoice);
+  -- Compras aceptó la lista de ese proveedor: no queda conforme sola (doble firma). La da el Controller.
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000407');
+  perform purchasing.approve_invoice(v_invoice, 'Revisada contra la recepción y la lista');
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000408');
 
   -- 3. Una nota de crédito que cierra una diferencia: Lácteos cobra $ 100 de más por envase en una línea (Demo Parrilla
   --    Centro); la nota por la diferencia la deja conforme, y el costo queda con el precio de la lista.
@@ -1022,10 +1041,16 @@ begin
   perform purchasing.save_invoice(v_invoice, '{}', v_lines, '[]', 'Las líneas como en el papel');
   perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
   perform purchasing.run_invoice_checks(v_invoice);
-  perform purchasing.add_credit_debit_note(v_invoice, jsonb_build_object(
+  v_note := purchasing.add_credit_debit_note(v_invoice, jsonb_build_object(
             'note_kind', 'credit', 'number', 'NC A 0003-00000077', 'issued_on', recipes.today(),
             'net_amount', v_diff, 'total_amount', round(v_diff * 1.21, 2)),
-          'El proveedor reconoce el precio de la lista');
+          'El proveedor reconoce el precio de la lista') ->> 'note_id';
+  -- La nota cuenta con su foto: al registrarla, se vuelve a controlar y la diferencia queda cubierta.
+  perform pg_temp.note_photo(v_note);
+  -- Compras aceptó la lista de ese proveedor: no queda conforme sola (doble firma). La da el Controller.
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000407');
+  perform purchasing.approve_invoice(v_invoice, 'Revisada contra la recepción y la lista');
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000408');
 
   -- 4. Observada por precio: la Verdulería cobra $ 1 más por envase en una línea (Demo Parrilla Centro).
   v_order := (purchasing.save_order_draft(null, v_par, v_verduras, pg_temp.lines(v_verduras, 2), null, null,

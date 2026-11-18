@@ -86,7 +86,7 @@ test("sin elegir local, se compara y se elige", async ({ page }) => {
 });
 
 test("Compras no ve columnas de lo que no puede ver", async ({ page }) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto(`/calidad?local=${PASTAS_CENTRO}`);
   await expect(page.getByText("Materias primas con precio").first()).toBeVisible();
   await expect(page.getByText("Recetas con costo completo")).toHaveCount(0);

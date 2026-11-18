@@ -95,7 +95,7 @@ test("alta de una materia prima en kilos: MPR y el rubro, y se calcula en gramos
 }, testInfo) => {
   test.setTimeout(90_000);
   const name = `Carne de códigos ${testInfo.project.name} ${Date.now() % 1_000_000}`;
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas");
   await page.getByRole("link", { name: "Nueva materia prima" }).click();
   const dialog = page.getByRole("dialog", { name: "Nueva materia prima" });
@@ -182,7 +182,7 @@ test("las tarjetas de rubros filtran la tabla: un clic filtra, otro clic o la �
 });
 
 test("las materias primas también se ordenan por rubro", async ({ page }) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas");
   const cards = page.getByRole("list", { name: "Rubros de compra" });
   const carnes = cards.getByRole("link", { name: /^Carnes/ });

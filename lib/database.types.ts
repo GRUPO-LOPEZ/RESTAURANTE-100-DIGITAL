@@ -5754,6 +5754,7 @@ export type Database = {
           discount_amount: number;
           due_on: string;
           due_on_source: Database["purchasing"]["Enums"]["due_on_source"];
+          edited_by: string[];
           exempt_amount: number;
           group_id: string;
           id: string;
@@ -5800,6 +5801,7 @@ export type Database = {
           discount_amount?: number;
           due_on: string;
           due_on_source: Database["purchasing"]["Enums"]["due_on_source"];
+          edited_by?: string[];
           exempt_amount?: number;
           group_id: string;
           id?: string;
@@ -5845,6 +5847,7 @@ export type Database = {
           discount_amount?: number;
           due_on?: string;
           due_on_source?: Database["purchasing"]["Enums"]["due_on_source"];
+          edited_by?: string[];
           exempt_amount?: number;
           group_id?: string;
           id?: string;
@@ -6840,6 +6843,7 @@ export type Database = {
           discount_amount: number;
           due_on: string;
           due_on_source: Database["purchasing"]["Enums"]["due_on_source"];
+          edited_by: string[];
           exempt_amount: number;
           group_id: string;
           id: string;
@@ -6878,7 +6882,10 @@ export type Database = {
       };
       apply_lower_po_approval: { Args: { p_request_id: string }; Returns: undefined };
       apply_order_approval: { Args: { p_request_id: string }; Returns: undefined };
-      approve_invoice: { Args: { p_id: string; p_reason: string }; Returns: Json };
+      approve_invoice: {
+        Args: { p_id: string; p_reason: string; p_version?: string };
+        Returns: Json;
+      };
       can_in_restaurant: {
         Args: { p_permission: string; p_restaurant_id: string };
         Returns: boolean;

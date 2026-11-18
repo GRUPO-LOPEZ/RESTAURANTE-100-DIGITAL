@@ -1,26 +1,49 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-18._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, fusionado (PR #76, ADR-0052). Prompt 3, órdenes de compra, fusionado (PR #77, ADR-0053). Next.js 16.4.6 (PR #78). PR #75 (pantalla de 1715 × 843) fusionado. Compras ve el precio del local elegido: PR #80, fusionado. La Chef ve el costo neto: PR #81, fusionado (ADR-0054). Importación de proveedores y un CUIT por proveedor: PR #82, fusionado (ADR-0055). Ahora: Prompt 4, recepción y stock (PR #83).**
+_Última actualización: 2026-11-18._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Ahora: Prompt 5, facturas, en dos PRs: 5A, la base (`feat/facturas-base`, ADR-0058), y después 5B, las pantallas.**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## En curso: menú con grupos plegados (rama `feat/menu-corto`, sale de `feat/recepcion`, ADR-0057)
+## En curso: Prompt 5A, base de facturas (rama `feat/facturas-base`, ADR-0058)
 
-- **Qué es:** con muchos menús, la barra lateral no entraba en 843 de alto (Superadmin, Director de Marca, Dirección, Gerente, Auditor y Controller). Joaco eligió grupos plegados: si no entra abierta, queda abierto solo el grupo de la pantalla actual y los demás se abren con un clic. Un grupo cerrado muestra sus avisos en el título. Contraída, sin espacio entre íconos (siguen de 36 px).
-- **Va en el mismo PR:** la prueba inestable de `costos.spec` («un precio nuevo…») vuelve a tocar «Proponer precio» si el primer clic llegó antes de la hidratación. Pasó tres veces seguidas, en celular y computadora, cada vez con la base recreada.
-- **Pruebas:** Vitest con las medidas reales (`design-system.test.ts`); `layout.spec.ts` con el superadmin plegado y sin scroll en 1440 × 900 y 1715 × 843, también contraída, y el Jefe de Cocina con todo abierto. `menuLink` abre el grupo si el enlace quedó plegado.
-- **Grupo «Compras»** (pedido de Joaco, 2026-11-18): Proveedores, Listas de precios, Órdenes de compra, Recepción e Inventario, entre «Base de conocimiento» y «Gestión y análisis» (que queda con Costos y Reportes). Facturas, Pagos y el Tablero de compras van ahí (actualizado `docs/fases/fase-3-plan.md`). Medido en 1715 × 843: ningún rol tiene scroll en el menú, y los que entraban abiertos siguen así (la Chef, 576 de 586 px).
-- **Revisión:** `ui-reviewer` sin graves. Corregido: lo abierto a mano vale en la pantalla (cada pantalla arma su barra), margen para que el foco no se recorte, avisos según el estado real del grupo, y pruebas de teclado y de avisos.
-- **En paralelo:** `chore/dependencias` (worktree `.claude/worktrees/dependencias`): actualizaciones menores, ESLint 10 y las actions v7. Quedan afuera TypeScript 7 (typescript-eslint no lo soporta) y @types/node 26 (el proyecto usa Node 24).
+- **Plan aprobado por Joaco (2026-11-18):** dos PRs, 5A la base y 5B las pantallas. Lo que va por peso se compara y se costea por kilo.
+- **Hecho:**
+  - **Migraciones:** `20261209110000_invoice_kinds`, `20261209120000_invoices`, `20261209130000_invoice_costs`, `20261209140000_invoice_functions` y `20261209150000_invoice_review_fixes`;
+  - **6 tablas:** facturas, OC que cubre, líneas, percepciones, controles (solo de inserción) y notas de crédito y débito;
+  - **el control de 3 vías:** cantidad, precio contra la lista vigente a la fecha, mapeo, totales, razón social, OC y notas;
+  - **costos:** el precio de cada línea de una factura conforme pasa a `costing.price_records` (origen `invoice`, del local, neto en A y final en las demás, por kilo en lo que va por peso). Las alícuotas de 2,5 % y 5 % se suman también al precio cargado a mano (P5);
+  - **seed:** 9 facturas inventadas en Demo Parrilla Centro y Pastas Norte (las 4 de Soy, una nota de crédito y una de cada forma de papel). Los avisos que dejan quedan leídos.
+- **Revisiones:** `db-reviewer` y `security-auditor` encontraron 3 graves, que `security-auditor` reprodujo. Están corregidos en la migración de correcciones, con pruebas:
+  - facturar dos veces lo mismo;
+  - quien corrige la factura después la daba por conforme;
+  - una sola persona de Compras podía fijar un costo.
+- **Decisiones de Joaco en la revisión (2026-11-18):**
+  - el conforme automático no vale si quien controla cargó o aceptó la lista vigente («doble firma»);
+  - **Compras exige doble verificación**, como el Controller (`.claude/rules/security.md` actualizado; Playwright ingresa como Compras con `mfa: true`).
+- **Pruebas:**
+  - pgTAP 380 (90) y 381 (8);
+  - ajustes en 040, 050, 210, 211, 320 y 330: las listas suman lo nuevo y los números del seed cambian; ninguna se debilitó (lo controló `db-reviewer`);
+  - Vitest de `lib/invoices.ts`;
+  - pgTAP completa: 62 archivos en verde.
+- **Falta:**
+  - la suite completa con Playwright;
+  - el PR;
+  - después, el PR 5B (pantallas, con «Facturas» en el grupo Compras).
 
-## Para retomar (cierre del 2026-11-17)
+## Para retomar
 
-- **PRs abiertos, en orden de fusión:** #82 (importación de proveedores, Actions en verde), #83 (recepción y stock) y #84 (botón «Recibir mercadería», base `feat/recepcion`). Falta la aprobación de Joaco. Después del #82, traer `main` al #83.
-- **`feat/menu-corto`** (worktree `.claude/worktrees/menu-corto`, sale de `feat/recepcion`): commit hecho y subido, **sin PR**. Ya pasaron solas `layout.spec`, Vitest y la prueba de costos (tres veces). **Falta:** `npm run db:reset` y `npm run test` completo desde Bash (se cortó al cerrar la sesión). Si da verde, PR «feat(navegacion): grupos plegados cuando el menú no entra» con base `feat/recepcion`.
-- **`chore/dependencias`** (worktree `.claude/worktrees/dependencias`, sale de `main`): 5 commits subidos, **sin PR**. Lint, tipos, Vitest, `next build` y format:check en verde. **Falta:** `npx playwright install chromium` (Playwright 1.65.1), la suite completa (nunca a la vez que la del menú) y el PR. Reemplaza a #79, #8, #4, #3 y #2. **#6 y #7 cerrados** el 2026-11-17 con su motivo (TS 7 sin soporte de typescript-eslint; @types/node 26 con Node 24). Pendiente de decidir: ignorar los saltos mayores de `typescript` y `@types/node` en `.github/dependabot.yml`.
-- **Después:** el plan del Prompt 5 (facturas, control de 3 vías y costos) y mirar la recepción en un celular real.
+- **`chore/dependencias`** (worktree `.claude/worktrees/dependencias`, con `main` del 2026-11-18): la suite completa dio Vitest y pgTAP en verde, y 5 fallas en Playwright: 3 de ingreso (no llegó a «Hola»), Calidad (dos títulos «Cómo está cada local», la pantalla anterior oculta) y la ficha de receta (no apareció el aviso «enviados a revisión»). **Falta ver** si alguna la causa la actualización (Playwright 1.65.1, React y Next). Reemplaza a #79, #8, #4, #3 y #2.
+- **Pruebas inestables para un PR aparte:** `escenarios.spec` («un precio inválido se explica») y `roles.spec` (el tooltip del permiso) fallaron también corridas solas; `sync-repo.test.ts` tarda 3 a 4 s por caso (el límite es 5 s).
+- **Ramas para borrar en GitHub** (el hook no deja que Claude Code borre ramas remotas): `feat/recepcion` y `feat/menu-corto`.
+- Mirar la recepción en un celular real.
 
-## En curso: Prompt 4, recepción y stock (rama `feat/recepcion`, ADR-0056)
+## Fusionado: menú con grupos plegados y grupo Compras (PR #85, 2026-11-18, ADR-0057)
+
+- **Qué es:** si el menú no entra abierto en 843 de alto, queda abierto solo el grupo de la pantalla actual; un grupo cerrado muestra sus avisos en el título. Grupo nuevo «Compras» (Proveedores, Listas de precios, Órdenes de compra, Recepción e Inventario; ahí van Facturas y Pagos).
+- **Medido en 1715 × 843:** ningún rol tiene scroll en el menú. `layout.spec.ts` lo cuida.
+- **Va en el mismo PR:** `costos.spec` y `rubros.spec` repiten el clic si llegó antes de que la página cargara.
+
+## Fusionado: Prompt 4, recepción y stock (PR #83, y el botón del Inicio, PR #84, 2026-11-18, ADR-0056)
 
 - **Qué es:** «pedido → recepción». Lo que llega se valida renglón por renglón contra la OC, con la foto del papel como llegó y la del papel firmado, y entra al stock (D8: todavía nada descuenta). Se recibe también sin OC.
 - **Hecho:**

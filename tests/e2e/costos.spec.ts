@@ -177,7 +177,7 @@ test("el Chef ve el costo por línea, sin precios", async ({ page }, testInfo) =
 });
 
 test("Compras y la Cocinera no ven costos", async ({ page }, testInfo) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   if (testInfo.project.name === "computadora")
     await expect(page.getByRole("link", { name: "Costos", exact: true })).toHaveCount(0);
   await page.goto("/costos");
@@ -201,7 +201,7 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
   const [ingredient, price] =
     testInfo.project.name === "celular" ? [uuid(808), "9000"] : [uuid(843), "45000"];
 
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto(`/materias-primas/${ingredient}?seccion=compra`);
   // «Proponer precio» abre su panel (ficha sin scroll, ADR-0046), también en el celular.
   // Si el clic llega antes de que la ficha termine de cargar (hidratación), el panel no se abre: se vuelve a tocar.

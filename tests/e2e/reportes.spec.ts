@@ -225,7 +225,7 @@ test("la Chef no saca el reporte de precios", async ({ page }) => {
 });
 
 test("Compras no tiene reportes", async ({ page }) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await expect(page.getByRole("link", { name: "Reportes", exact: true })).toHaveCount(0);
   await page.goto("/reportes");
   await expect(page).not.toHaveURL(/reportes/);

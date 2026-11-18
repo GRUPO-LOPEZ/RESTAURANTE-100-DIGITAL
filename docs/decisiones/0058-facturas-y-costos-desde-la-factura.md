@@ -74,6 +74,37 @@ Hasta ahora, un precio entraba a costos solo si alguien lo proponía y el Contro
 - **Inmutable.** Desde conforme, ni la factura ni sus líneas cambian (trigger): se corrige con una nota. Cancelar una cargada por error es un estado, con motivo.
 - **CUIT.** El del emisor tiene que ser el del proveedor. Uno de ejemplo (99-99999999-9) o una clase fiscal sin autorización no se guardan.
 
+## Revisión de base y de seguridad (2026-11-18)
+
+`db-reviewer` y `security-auditor` encontraron tres hallazgos graves, que `security-auditor` reprodujo en la base. Se corrigieron en `20261209150000_invoice_review_fixes.sql`, sin editar las migraciones anteriores, y cada uno tiene su prueba en la pgTAP 380.
+
+- **Facturar dos veces la misma mercadería pasaba sola.** Ahora no pasa:
+  - una OC facturada entera (cerrada) no se vuelve a facturar;
+  - el control de cantidad descuenta lo que ya está en otras facturas vigentes de esa línea de la OC;
+  - dos líneas de una factura no van contra la misma línea de la OC;
+  - al cargar, las líneas de la OC quedan bloqueadas y solo se prellena lo que falta facturar.
+- **Quien corrige la factura después la daba por conforme.**
+  - `edited_by` anota a quien guarda cambios o suma notas. Ni quien la cargó, ni quien la corrigió, ni quien le sumó una nota la da por conforme a mano.
+  - El conforme a mano puede recibir la versión que se miró (`p_version`): si la factura cambió mientras tanto, no se aprueba.
+- **Una sola persona de Compras podía fijar cualquier costo:** cargaba la lista, la aceptaba y controlaba la factura. **Decisión de Joaco (2026-11-18):** el conforme automático no vale si quien controla cargó o aceptó la lista vigente de ese proveedor. La factura queda observada («la da por conforme otra persona»).
+  - Consecuencia: con una sola persona en Compras, toda factura con lista la da por conforme el Controller. Así está armado el seed.
+- **Doble verificación para Compras.** **Decisión de Joaco (2026-11-18):** cargar y controlar facturas escribe costos, así que el rol Compras exige doble verificación, como el Controller, y «Cargar facturas» pasa a ser sensible. Se actualizó `.claude/rules/security.md` (el documento de Soy decía niveles 1 a 4 y Controller). Las pruebas de Playwright ingresan como Compras con doble verificación.
+- **Otros cambios:**
+  - **sin fecha futura;**
+  - **la historia no se reescribe:** un precio de factura no empieza antes del último precio de ese producto en el local ni del que vale hoy (`costing.valid_from_floor`, el mismo piso que el precio cargado a mano);
+  - **una nota de crédito cuenta con su foto:** al registrar la foto se vuelve a controlar;
+  - **lo que el chef mapea después** se asocia a su línea de la OC;
+  - **en la base, un trigger (`costing.check_invoice_price`)** exige que un precio de factura venga de una factura conforme, del mismo producto y local, aprobado por quien la dio por conforme;
+  - **la cobertura por notas** se calcula una vez por corrida;
+  - **validaciones de carga:** las claves de las percepciones se validan, el proveedor tiene que estar activo y los errores de fecha o número salen en español.
+- **Quedó anotado, sin cambio:**
+  - los avisos van a quien tiene el permiso en todo el grupo, igual que en la recepción;
+  - el conforme a mano acepta fallas «duras» (totales, razón social), con motivo;
+  - en A, si la lista trae el precio con IVA, el esperado se redondea a 4 decimales;
+  - dos líneas del mismo producto dejan dos precios del mismo día y vale el último;
+  - cada fila del control se audita;
+  - el dinero va en `numeric(18,4)`, como en el recetario (ADR-0020), y no en el `numeric(14,4)` de la regla general.
+
 ## Opciones que se descartaron
 
 - **Crear una solicitud de aprobación por cada precio de factura**, como hoy. Duplicaba el conforme y frenaba la operación, que es justo lo que Soy pidió evitar.
