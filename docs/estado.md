@@ -8,7 +8,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 
 - **Plan aprobado por Joaco (2026-11-18):** dos PRs, 5A la base y 5B las pantallas. Lo que va por peso se compara y se costea por kilo.
 - **Hecho:**
-  - **Migraciones:** `20261209110000_invoice_kinds`, `20261209120000_invoices`, `20261209130000_invoice_costs`, `20261209140000_invoice_functions` y `20261209150000_invoice_review_fixes`;
+  - **Migraciones:** `20261209110000_invoice_kinds`, `20261209120000_invoices`, `20261209130000_invoice_costs`, `20261209140000_invoice_functions`, `20261209150000_invoice_review_fixes` y `20261209160000_invoice_review_fixes_2` (segunda pasada);
   - **6 tablas:** facturas, OC que cubre, líneas, percepciones, controles (solo de inserción) y notas de crédito y débito;
   - **el control de 3 vías:** cantidad, precio contra la lista vigente a la fecha, mapeo, totales, razón social, OC y notas;
   - **costos:** el precio de cada línea de una factura conforme pasa a `costing.price_records` (origen `invoice`, del local, neto en A y final en las demás, por kilo en lo que va por peso). Las alícuotas de 2,5 % y 5 % se suman también al precio cargado a mano (P5);
@@ -24,17 +24,16 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - pgTAP 380 (97) y 381 (8);
   - ajustes en 040, 050, 210, 211, 320 y 330: las listas suman lo nuevo y los números del seed cambian; ninguna se debilitó (lo controló `db-reviewer`);
   - Vitest de `lib/invoices.ts`;
-  - pgTAP completa: 62 archivos en verde.
+  - **suite completa (2026-11-18, base recién recreada):** lint, tipos, formato, Vitest (496) y pgTAP en verde. En Playwright pasaron 306, 42 se saltearon y fallaron 2 en el celular, que no tocan facturas y pasaron al repetirlas (4 de 4):
+    - `admin.spec` («Dirección ve los 4 locales»), la primera de la corrida: el ingreso tardó más de 5 s;
+    - `recepcion.spec` («Compras recibe sin OC»): la pantalla tenía dos selectores «Proveedor» a la vez (la pantalla anterior todavía montada). Queda para el PR de pruebas inestables.
 - **Falta:**
-  - la suite completa con Playwright;
-  - el PR;
   - después, el PR 5B (pantallas, con «Facturas» en el grupo Compras).
 
 ## Para retomar
 
 - **`chore/dependencias`** (worktree `.claude/worktrees/dependencias`, con `main` del 2026-11-18): la suite completa dio Vitest y pgTAP en verde, y 5 fallas en Playwright: 3 de ingreso (no llegó a «Hola»), Calidad (dos títulos «Cómo está cada local», la pantalla anterior oculta) y la ficha de receta (no apareció el aviso «enviados a revisión»). **Falta ver** si alguna la causa la actualización (Playwright 1.65.1, React y Next). Reemplaza a #79, #8, #4, #3 y #2.
-- **Pruebas inestables para un PR aparte:** `escenarios.spec` («un precio inválido se explica») y `roles.spec` (el tooltip del permiso) fallaron también corridas solas; `sync-repo.test.ts` tarda 3 a 4 s por caso (el límite es 5 s).
-- **Ramas para borrar en GitHub** (el hook no deja que Claude Code borre ramas remotas): `feat/recepcion` y `feat/menu-corto`.
+- **Pruebas inestables para un PR aparte:** `escenarios.spec` («un precio inválido se explica») y `roles.spec` (el tooltip del permiso) fallaron también corridas solas; `recepcion.spec` («Compras recibe sin OC») vio dos selectores «Proveedor»; `sync-repo.test.ts` tarda 3 a 4 s por caso (el límite es 5 s).
 - Mirar la recepción en un celular real.
 
 ## Fusionado: menú con grupos plegados y grupo Compras (PR #85, 2026-11-18, ADR-0057)
