@@ -102,10 +102,16 @@ test("Compras crea un rubro, le cambia el nombre en la tarjeta, lo da de baja y 
 test("un rubro con insumos pide el destino antes de darlo de baja", async ({ page }) => {
   await login(page, "compras@ejemplo.test");
   await page.goto("/rubros");
-  await card(page, "Carnes")
-    .getByRole("button", { name: /^Activo \(dar de baja/ })
-    .click();
+  // Si el clic llega antes de que la página termine de cargar (hidratación), la ventana no se abre: se vuelve a tocar.
   const dialog = page.getByRole("dialog", { name: "Dar de baja «Carnes»" });
+  await expect(async () => {
+    if (!(await dialog.isVisible())) {
+      await card(page, "Carnes")
+        .getByRole("button", { name: /^Activo \(dar de baja/ })
+        .click();
+    }
+    await expect(dialog).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   const target = dialog.getByLabel("Pasar a");
   await expect(target).toHaveAttribute("required", "");
   await expect(target.getByRole("option", { name: /Carnes$/ })).toHaveCount(0);

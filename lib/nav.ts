@@ -77,28 +77,18 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
           ? [{ href: "/materias-primas", label: "Materias primas", icon: "ingredients" as const }]
           : []),
         ...(menus.rubros ? [{ href: "/rubros", label: "Rubros", icon: "rubros" as const }] : []),
-        // Proveedores (Fase 3, ADR-0050): los ve quien ve su ficha, también el cocinero.
-        ...(menus.suppliers
-          ? [{ href: "/proveedores", label: "Proveedores", icon: "suppliers" as const }]
-          : []),
       ],
     },
     {
-      label: "Gestión y análisis",
+      // Compras (Fase 3, pedido de Joaco del 2026-11-18, ADR-0057): todo el circuito en un grupo, en el orden en que
+      // se trabaja. Facturas y Pagos (Prompts 5 y 6) se suman acá.
+      label: "Compras",
       items: [
-        ...(menus.costs ? [{ href: "/costos", label: "Costos", icon: "costs" as const }] : []),
-        // Órdenes de compra (Fase 3, ADR-0053): quien pide (también el cocinero) y quien las controla.
-        ...(menus.orders
-          ? [{ href: "/compras/ordenes", label: "Órdenes de compra", icon: "orders" as const }]
+        // Proveedores (ADR-0050): los ve quien ve su ficha, también el cocinero.
+        ...(menus.suppliers
+          ? [{ href: "/proveedores", label: "Proveedores", icon: "suppliers" as const }]
           : []),
-        // Recepción e inventario (Fase 3, ADR-0056): quien recibe en un local; el inventario, quien lo controla.
-        ...(menus.receive
-          ? [{ href: "/compras/recepcion", label: "Recepción", icon: "receipts" as const }]
-          : []),
-        ...(menus.inventory
-          ? [{ href: "/inventario", label: "Inventario", icon: "inventory" as const }]
-          : []),
-        // Listas de precios (Fase 3, ADR-0052): Compras y quien controla precios. El cocinero no.
+        // Listas de precios (ADR-0052): Compras y quien controla precios. El cocinero no.
         ...(menus.priceLists
           ? [
               {
@@ -108,6 +98,23 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
               },
             ]
           : []),
+        // Órdenes de compra (ADR-0053): quien pide (también el cocinero) y quien las controla.
+        ...(menus.orders
+          ? [{ href: "/compras/ordenes", label: "Órdenes de compra", icon: "orders" as const }]
+          : []),
+        // Recepción e inventario (ADR-0056): quien recibe en un local; el inventario, quien lo controla.
+        ...(menus.receive
+          ? [{ href: "/compras/recepcion", label: "Recepción", icon: "receipts" as const }]
+          : []),
+        ...(menus.inventory
+          ? [{ href: "/inventario", label: "Inventario", icon: "inventory" as const }]
+          : []),
+      ],
+    },
+    {
+      label: "Gestión y análisis",
+      items: [
+        ...(menus.costs ? [{ href: "/costos", label: "Costos", icon: "costs" as const }] : []),
         ...(menus.reports
           ? [{ href: "/reportes", label: "Reportes", icon: "reports" as const }]
           : []),
@@ -145,6 +152,36 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
     },
   ];
   return groups.filter((g) => g.items.length > 0);
+}
+
+// Grupos plegados (ADR-0057, decisión de Joaco del 2026-11-17): si el menú no entra abierto en la pantalla más baja
+// medida (1715 × 843, ADR-0051), los grupos arrancan cerrados salvo el de la pantalla actual. Se cuenta en vez de medir
+// en el navegador: el servidor y el navegador muestran lo mismo y no hay salto al cargar. Los altos son los de
+// components/sidebar.tsx (medidos en la pantalla): título de grupo 28 px, acceso 36 px y 4 px entre cada cosa.
+const NAV_ITEM = 36 + 4;
+const NAV_GROUP_TITLE = 28;
+// 843 de alto menos la barra de arriba (64), el pie (persona, Mi cuenta, Salir y Contraer: 149), los márgenes (16) y el
+// margen del foco alrededor de la lista (8).
+const NAV_ROOM = 843 - 64 - 149 - 16 - 8;
+// En Linux la letra ocupa un poco más (Actions mide 8 a 10 px de más): se deja margen.
+const NAV_MARGIN = 20;
+
+export function navHeight(groups: NavGroup[]): number {
+  const items = groups.reduce((n, g) => n + g.items.length, 0);
+  return groups.length * NAV_GROUP_TITLE + items * NAV_ITEM - 4;
+}
+
+export function navFits(groups: NavGroup[]): boolean {
+  return navHeight(groups) <= NAV_ROOM - NAV_MARGIN;
+}
+
+// El grupo de la pantalla actual (también en sus pantallas internas), o null si ninguno la tiene.
+export function currentGroup(groups: NavGroup[], pathname: string): string | null {
+  return (
+    groups.find((g) =>
+      g.items.some((i) => [i.href, ...(i.also ?? [])].some((h) => isCurrent(pathname, h))),
+    )?.label ?? null
+  );
 }
 
 // Barra inferior del celular: Inicio, Recetas, Reportes y Control (Aprobaciones o, si no, Calidad).

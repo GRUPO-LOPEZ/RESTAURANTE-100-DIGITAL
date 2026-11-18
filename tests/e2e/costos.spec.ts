@@ -204,8 +204,14 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
   await login(page, "compras@ejemplo.test");
   await page.goto(`/materias-primas/${ingredient}?seccion=compra`);
   // «Proponer precio» abre su panel (ficha sin scroll, ADR-0046), también en el celular.
-  await page.getByRole("button", { name: "Proponer precio" }).filter({ visible: true }).click();
+  // Si el clic llega antes de que la ficha termine de cargar (hidratación), el panel no se abre: se vuelve a tocar.
   const panel = page.getByRole("dialog", { name: "Proponer precio" });
+  await expect(async () => {
+    if (!(await panel.isVisible())) {
+      await page.getByRole("button", { name: "Proponer precio" }).filter({ visible: true }).click();
+    }
+    await expect(panel).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   await panel.locator("#precio-producto").selectOption({ index: 1 });
   await panel.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
   await panel.locator("#precio-envase").fill(price);

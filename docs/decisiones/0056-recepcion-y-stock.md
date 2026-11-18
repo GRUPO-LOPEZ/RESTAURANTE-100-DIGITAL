@@ -142,7 +142,7 @@ Al cerrar:
 
 ## Riesgos y pendientes
 
-- **La navegación de Dirección y del superadmin** ya se pasaba de 900 de alto antes de este PR, y sigue pasándose: unos 65 y 145 px. Queda un PR aparte para rediseñarla en los roles con muchos menús.
+- **La navegación de Dirección y del superadmin** ya se pasaba de 900 de alto antes de este PR, y sigue pasándose: unos 65 y 145 px. **Resuelto en ADR-0057** (grupos plegados).
 - **Las fotos del seed son filas inventadas, sin imagen:** la pantalla dice «guardada (no se puede mostrar)». Las fotos reales salen de las pruebas de Playwright.
 - **La cámara del navegador cambia según el teléfono.** Se probó con archivos (`setInputFiles`); falta mirarlo en un celular real.
 - **La factura y el pago quedan a medias** hasta los Prompts 5 y 6.
