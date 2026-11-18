@@ -144,7 +144,7 @@ test.describe("en la computadora", () => {
 
     // Una nota de crédito por la diferencia ($ 3 × 2 cajones). Cuenta recién con su foto; como la sumó quien la cargó,
     // no la deja conforme sola.
-    await page.getByRole("button", { name: "Nota", exact: true }).click();
+    await page.getByRole("button", { name: "Agregar nota" }).click();
     const noteDialog = page.getByRole("dialog", { name: "Nota de crédito, débito o descuento" });
     await noteDialog.getByLabel("Número").fill("NC 0001-00000077");
     await noteDialog.getByLabel("Importe sin IVA").fill("6");

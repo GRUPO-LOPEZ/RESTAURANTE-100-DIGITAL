@@ -28,6 +28,7 @@ import {
   headerAmounts,
   invoiceChanges,
   invoicePayload,
+  isClassA,
   isFiscal,
   lineAmount,
   linesNet,
@@ -186,9 +187,11 @@ const small = "desk:min-h-8 desk:px-2";
 // Para leer: la etiqueta a la izquierda y el valor a la derecha, en un renglón (las tarjetas son angostas).
 function ReadRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 items-baseline justify-between gap-3 border-b border-line py-1 last:border-b-0">
+    <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 border-b border-line py-1 last:border-b-0">
       <dt className="text-sm text-ink">{label}</dt>
-      <dd className="text-right text-base break-words text-ink tabular-nums">{value || "—"}</dd>
+      <dd className="ml-auto min-w-0 text-right text-base [overflow-wrap:anywhere] text-ink tabular-nums">
+        {value || "—"}
+      </dd>
     </div>
   );
 }
@@ -218,6 +221,7 @@ function Split({ edit, read }: { edit: React.ReactNode; read: React.ReactNode })
 function HeaderInput({
   field,
   label,
+  tip,
   inputMode = "text",
   type = "text",
   maxLength,
@@ -225,6 +229,7 @@ function HeaderInput({
 }: {
   field: HeaderField;
   label: string;
+  tip?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   type?: string;
   maxLength?: number;
@@ -234,9 +239,12 @@ function HeaderInput({
   const id = `${prefix}-${field}`;
   return (
     <div className={cn("flex min-w-0 flex-col gap-1", className)}>
-      <label htmlFor={id} className={labelClass}>
-        {label}
-      </label>
+      <span className="flex items-center gap-1">
+        <label htmlFor={id} className={labelClass}>
+          {label}
+        </label>
+        {tip ? <InfoTip label={label.toLowerCase()}>{tip}</InfoTip> : null}
+      </span>
       <Input
         id={id}
         type={type}
@@ -306,7 +314,8 @@ export function HeaderSection({ legalEntityTaxId }: { legalEntityTaxId: string |
           <HeaderInput field="issued_on" label="Fecha" type="date" className="col-span-2" />
           <HeaderInput
             field="due_on"
-            label="Vencimiento impreso (vacío: según la condición de pago)"
+            label="Vencimiento impreso"
+            tip="El que dice el papel. Vacío: sale de la condición de pago del proveedor (contado, el mismo día; cuenta corriente, la fecha más los días)."
             type="date"
             className="col-span-2"
           />
@@ -409,14 +418,19 @@ export function FooterSection() {
         }
       />
       {/* La cuenta, con palabra: las partes suman el total (±0,01), como invoices_totals_check. */}
-      <p className="flex flex-wrap items-center gap-2 text-sm text-ink" role="status">
-        {diff === null ? (
-          <Badge status="bad">Hay un importe que no se entiende</Badge>
-        ) : Math.abs(diff) <= 0.01 ? (
-          <Badge status="ok">La cuenta cierra</Badge>
-        ) : (
-          <Badge status="bad">No cierra por {formatMoney(Math.abs(diff))}</Badge>
-        )}
+      <p className="flex flex-wrap items-center gap-2 text-sm text-ink">
+        <span aria-live="polite">
+          {diff === null ? (
+            <Badge status="bad">Hay un importe que no se entiende</Badge>
+          ) : Math.abs(diff) <= 0.01 ? (
+            <Badge status="ok">La cuenta cierra</Badge>
+          ) : (
+            <Badge status="bad">No cierra</Badge>
+          )}
+        </span>
+        {diff !== null && Math.abs(diff) > 0.01 ? (
+          <span className="text-ink tabular-nums">Diferencia {formatMoney(Math.abs(diff))}</span>
+        ) : null}
         <span className="text-ink-muted tabular-nums">Suma de las líneas {formatMoney(net)}</span>
       </p>
       <div className="flex flex-wrap items-center gap-2">
@@ -480,29 +494,24 @@ function TaxesPanel({
               >
                 {editable ? (
                   <>
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor={`${id}-kind`} className={labelClass}>
-                        Qué es
-                      </label>
-                      <Select
-                        id={`${id}-kind`}
-                        value={t.tax_kind}
-                        onChange={(e) =>
-                          setDraft((d) => ({
-                            ...d,
-                            taxes: d.taxes.map((x, j) =>
-                              j === i ? { ...x, tax_kind: e.target.value as InvoiceTaxKind } : x,
-                            ),
-                          }))
-                        }
-                      >
-                        {(Object.keys(TAX_KIND_LABELS) as InvoiceTaxKind[]).map((k) => (
-                          <option key={k} value={k}>
-                            {TAX_KIND_LABELS[k]}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
+                    <Segmented
+                      name={`${id}-kind`}
+                      legend={`Qué es (percepción ${i + 1})`}
+                      options={(Object.keys(TAX_KIND_LABELS) as InvoiceTaxKind[]).map((k) => ({
+                        value: k,
+                        label: TAX_KIND_LABELS[k],
+                      }))}
+                      value={t.tax_kind}
+                      onChange={(v) =>
+                        setDraft((d) => ({
+                          ...d,
+                          taxes: d.taxes.map((x, j) =>
+                            j === i ? { ...x, tax_kind: v as InvoiceTaxKind } : x,
+                          ),
+                        }))
+                      }
+                      className="-m-1"
+                    />
                     <div className="grid grid-cols-3 gap-2">
                       {(
                         [
@@ -625,6 +634,10 @@ export function LinesSection() {
   }
   const cellInput = cn(small, "w-full min-w-16 text-right tabular-nums");
   const columns = fiscalVat ? 4 : 3;
+  // En A se compara el neto; en las demás, el precio final (como el control).
+  const priceLabel = isClassA(draft.header.invoice_class as InvoiceClass)
+    ? "Precio sin IVA"
+    : "Precio";
   return (
     <div className="flex min-w-0 flex-col gap-2">
       {/* Cada línea en dos filas: arriba qué es (el papel y el producto reconocido); abajo los números y su control. Así
@@ -637,7 +650,7 @@ export function LinesSection() {
               Cantidad
             </th>
             <th scope="col" className="py-1 pr-2 text-right font-medium">
-              Precio sin IVA
+              {priceLabel}
             </th>
             {fiscalVat ? (
               <th scope="col" className="py-1 pr-2 text-right font-medium">
@@ -657,50 +670,64 @@ export function LinesSection() {
           const checks = l.id && !isChanged ? (lineChecks[l.id] ?? []) : [];
           const name = l.raw_name || "la línea nueva";
           return (
-            <tbody key={l.key} className={cn("border-b border-line", isChanged && "bg-line/50")}>
+            <tbody
+              key={l.key}
+              className={cn(
+                "border-b border-line",
+                isChanged && "outline-1 outline-ink outline-dashed",
+              )}
+            >
               <tr>
-                <th scope="rowgroup" colSpan={columns} className="pt-2 text-left font-normal">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="block text-ink">{l.raw_name || "Línea nueva"}</span>
-                      <span className="block text-sm text-ink-muted">
-                        {l.line_class !== "product"
-                          ? LINE_CLASS_LABELS[l.line_class]
-                          : l.product
-                            ? l.product
-                            : "Sin reconocer: lo mapea el chef"}
-                        {l.bonus1_pct > 0 || l.bonus2_pct > 0
-                          ? ` · bonif. ${[l.bonus1_pct, l.bonus2_pct].filter((b) => b > 0).join(" + ")} %`
-                          : ""}
-                      </span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {isChanged ? (
-                        <span className="text-sm text-ink">Sin guardar</span>
-                      ) : (
-                        <CheckMarks checks={checks} />
-                      )}
-                      {editable ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="hidden size-8 shrink-0 desk:inline-flex"
-                          aria-label={`Quitar la línea ${i + 1}: ${l.raw_name || "nueva"}`}
-                          onClick={() =>
-                            setDraft((d) => ({ ...d, lines: d.lines.filter((_, j) => j !== i) }))
-                          }
-                        >
-                          <Trash2 aria-hidden="true" />
-                        </Button>
-                      ) : null}
-                    </div>
+                <th
+                  scope="rowgroup"
+                  colSpan={columns - 1}
+                  className="pt-2 text-left align-top font-normal"
+                >
+                  <span className="block text-ink">{l.raw_name || "Línea nueva"}</span>
+                  <span className="block text-sm text-ink-muted">
+                    {l.line_class !== "product"
+                      ? LINE_CLASS_LABELS[l.line_class]
+                      : !l.product
+                        ? "Sin reconocer: lo mapea el chef"
+                        : l.product !== l.raw_name
+                          ? l.product
+                          : "Reconocido"}
+                    {l.bonus1_pct > 0 || l.bonus2_pct > 0
+                      ? ` · bonif. ${[l.bonus1_pct, l.bonus2_pct].filter((b) => b > 0).join(" + ")} %`
+                      : ""}
+                  </span>
+                </th>
+                <td className="pt-2 text-right align-top">
+                  <div className="flex items-center justify-end gap-1">
+                    {isChanged ? (
+                      <span className="text-sm text-ink">Sin guardar</span>
+                    ) : (
+                      <CheckMarks checks={checks} />
+                    )}
+                    {editable ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="hidden size-8 shrink-0 desk:inline-flex"
+                        aria-label={`Quitar la línea ${i + 1}: ${l.raw_name || "nueva"}`}
+                        onClick={() =>
+                          setDraft((d) => ({ ...d, lines: d.lines.filter((_, j) => j !== i) }))
+                        }
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </Button>
+                    ) : null}
                   </div>
-                  {editable && l.id === null ? (
-                    <div className="mt-1 hidden grid-cols-[2fr_1fr] gap-2 desk:grid">
+                </td>
+              </tr>
+              {editable && l.id === null ? (
+                <tr className="hidden desk:table-row">
+                  <td colSpan={columns} className="pt-1">
+                    <div className="flex flex-col gap-2">
                       <div className="flex flex-col gap-1">
                         <label htmlFor={`${id}-nombre`} className={labelClass}>
-                          Qué es
+                          Qué es (línea {i + 1})
                         </label>
                         <Input
                           id={`${id}-nombre`}
@@ -710,29 +737,22 @@ export function LinesSection() {
                           onChange={(e) => update(i, { raw_name: e.target.value })}
                         />
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <label htmlFor={`${id}-clase`} className={labelClass}>
-                          Clase
-                        </label>
-                        <Select
-                          id={`${id}-clase`}
-                          value={l.line_class}
-                          className={small}
-                          onChange={(e) =>
-                            update(i, { line_class: e.target.value as InvoiceLineClass })
-                          }
-                        >
-                          {NEW_LINE_CLASSES.map((c) => (
-                            <option key={c} value={c}>
-                              {LINE_CLASS_LABELS[c]}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
+                      <Segmented
+                        name={`${id}-clase`}
+                        legend={`Clase (línea ${i + 1})`}
+                        options={NEW_LINE_CLASSES.map((c) => ({
+                          value: c,
+                          label: LINE_CLASS_LABELS[c],
+                        }))}
+                        value={l.line_class}
+                        onChange={(v) => update(i, { line_class: v as InvoiceLineClass })}
+                        compact
+                        className="-m-1"
+                      />
                     </div>
-                  ) : null}
-                </th>
-              </tr>
+                  </td>
+                </tr>
+              ) : null}
               <tr className="align-top">
                 <td className="py-1 pr-2 text-right tabular-nums">
                   <Split
@@ -765,7 +785,7 @@ export function LinesSection() {
                     edit={
                       <>
                         <label htmlFor={`${id}-precio`} className="sr-only">
-                          Precio sin IVA de {name}
+                          {priceLabel} de {name}
                           {l.by_weight ? " por kilo" : ""}
                         </label>
                         <Input

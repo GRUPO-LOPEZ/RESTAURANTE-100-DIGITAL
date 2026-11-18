@@ -6,7 +6,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(29);
+select plan(33);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -81,9 +81,23 @@ select is(pg_temp.q(null, 'select count(*) from purchasing.invoice_list()'), 'ER
 -- Órdenes para facturar
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(408), format('select count(*) from purchasing.invoiceable_orders(%L)', pg_temp.u(203))),
-          (select count(*)::text from purchasing.purchase_orders
-            where restaurant_id = pg_temp.u(203) and status in ('received', 'partially_received')),
-          'Compras ve las OC recibidas de Demo Parrilla Centro que faltan facturar');
+          (select count(*)::text from purchasing.purchase_orders o
+            where o.restaurant_id = pg_temp.u(203) and o.status in ('received', 'partially_received')
+              and not exists (select 1 from purchasing.invoice_orders io join purchasing.invoices i on i.id = io.invoice_id
+                               where io.purchase_order_id = o.id and i.status in ('loaded', 'observed'))),
+          'Compras ve las OC recibidas de Demo Parrilla Centro sin una factura en curso');
+select is(pg_temp.q(pg_temp.u(408), format('select count(*) from purchasing.invoiceable_orders(%L) where number = %L',
+                                           pg_temp.u(203), 'PAR-0005')),
+          '0', 'una OC con su factura observada no se ofrece otra vez: se termina o se cancela esa');
+select pg_temp.q(pg_temp.u(408), format('select purchasing.cancel_invoice(%L, %L) ->> %L', pg_temp.inv(2002),
+                                        'Se cargó con el artículo equivocado', 'status'));
+select is(pg_temp.q(pg_temp.u(408), format('select count(*) from purchasing.invoiceable_orders(%L) where number = %L',
+                                           pg_temp.u(203), 'PAR-0005')),
+          '1', 'cancelada la factura, la OC se puede volver a facturar');
+select is(pg_temp.q(pg_temp.u(408), format('select purchasing.can_upload_document(%L)',
+                                           format('00000000-0000-4000-8000-000000000001/invoices/%s/%s.html',
+                                                  pg_temp.inv(12), gen_random_uuid()))),
+          'false', 'la foto de una factura se sube como .jpg o .pdf, nada más');
 select is(pg_temp.q(pg_temp.u(408), format('select count(*) from purchasing.invoiceable_orders(%L) where status = %L',
                                            pg_temp.u(203), 'closed')),
           '0', 'una OC facturada entera (cerrada) no se ofrece');
@@ -124,6 +138,7 @@ select is(pg_temp.q(pg_temp.u(407), format('select count(*) from costing.price_o
 -- ---------------------------------------------------------------------------
 select is(purchasing.money_text(3403) || ' | ' || purchasing.money_text(-1234567.891), '$ 3.403,00 | -$ 1.234.567,89',
           'la plata, con punto de miles y coma decimal, a centavos');
+select is(purchasing.money_text(-0.004), '$ 0,00', 'lo que redondea a cero no lleva signo');
 select is(purchasing.number_text(2.5) || ' | ' || purchasing.number_text(1250) || ' | ' || purchasing.number_text(0.462),
           '2,5 | 1.250 | 0,462', 'las cantidades, sin ceros de más');
 select ok(not exists (select 1 from purchasing.invoice_checks where explanation ~ '\d\.\d{4}'),

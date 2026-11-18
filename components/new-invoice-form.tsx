@@ -30,7 +30,7 @@ export function NewInvoiceForm({
   if (!place)
     return (
       <p className="text-base text-ink">
-        Elegí arriba el local donde se recibió la mercadería y volvé a abrir «Nueva factura».
+        Elegí arriba, en «Local», dónde se recibió la mercadería.
       </p>
     );
   const fiscal = isFiscal(invoiceClass);

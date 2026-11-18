@@ -59,10 +59,10 @@ async function Impact({ params }: { params: PageProps<"/costos/impacto/[id]">["p
             </CardDescription>
             {origin ? (
               <p className="text-base text-ink">
-                Salió de la{" "}
+                Salió de:{" "}
                 {origin.canOpen ? (
                   <Link
-                    href={`/compras/facturas/${origin.invoiceId}`}
+                    href={`/compras/facturas/${origin.invoiceId}?volver=${encodeURIComponent(`/costos/impacto/${id}`)}`}
                     className="text-primary underline-offset-4 hover:underline"
                   >
                     {origin.label}
@@ -70,7 +70,7 @@ async function Impact({ params }: { params: PageProps<"/costos/impacto/[id]">["p
                 ) : (
                   origin.label
                 )}{" "}
-                de {origin.supplier}, conforme.
+                {origin.supplier ? `de ${origin.supplier}` : ""}, conforme.
               </p>
             ) : null}
           </Card>

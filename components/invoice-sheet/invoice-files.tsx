@@ -65,7 +65,7 @@ export function InvoiceFileUpload({
     <div className={cn("flex flex-col gap-1", className)}>
       <label
         htmlFor={id}
-        className="inline-flex min-h-touch w-fit cursor-pointer items-center gap-1.5 rounded-sm border border-line bg-surface px-3 text-sm font-medium text-ink hover:bg-line/50 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary desk:min-h-8"
+        className="inline-flex min-h-touch w-fit cursor-pointer items-center gap-2 rounded-sm border border-line bg-surface px-3 text-sm font-medium text-ink hover:bg-line/50 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary desk:min-h-8"
       >
         <Upload aria-hidden="true" className="size-4" />
         {pending ? "Subiendo…" : label}

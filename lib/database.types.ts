@@ -7069,6 +7069,7 @@ export type Database = {
           unmapped_article_id: string;
         }[];
       };
+      money_text: { Args: { p_value: number }; Returns: string };
       net_list_price: {
         Args: {
           p_bonus_per_unit_amount: number;
@@ -7114,6 +7115,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      number_text: { Args: { p_value: number }; Returns: string };
       order_ingredient_search: {
         Args: { p_query: string; p_restaurant_id: string };
         Returns: {

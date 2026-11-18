@@ -97,7 +97,9 @@ async function Heading({ params }: { params: PageProps<"/compras/facturas/[id]">
 }
 
 function backHref(volver: string | undefined): string {
-  return volver && /^\/compras\/facturas(\?|$)/.test(volver) ? volver : "/compras/facturas";
+  return volver && /^\/(compras\/facturas(\?|$)|materias-primas\/|costos\/)/.test(volver)
+    ? volver
+    : "/compras/facturas";
 }
 
 async function Back({
@@ -106,8 +108,10 @@ async function Back({
   searchParams: PageProps<"/compras/facturas/[id]">["searchParams"];
 }) {
   const query = await searchParams;
+  const href = backHref(first(query.volver));
+  if (!href.startsWith("/compras/facturas")) return <BackLink href={href}>Volver</BackLink>;
   return (
-    <BackLink href={backHref(first(query.volver))} label="Volver a facturas">
+    <BackLink href={href} label="Volver a facturas">
       Facturas
     </BackLink>
   );
@@ -136,9 +140,10 @@ async function Actions({ params }: { params: PageProps<"/compras/facturas/[id]">
   const a = inv.access;
   if (!a.can_edit && !a.can_approve) return null;
   return (
-    <div className="hidden items-center gap-2 desk:flex">
+    <div className="flex items-center gap-2">
       {a.can_edit ? (
         <ActionModal
+          className="hidden desk:inline-flex"
           label="Cancelar"
           accessibleName="Cancelar la factura"
           icon="none"
@@ -168,6 +173,7 @@ async function Actions({ params }: { params: PageProps<"/compras/facturas/[id]">
           label="Dar por conforme"
           icon="none"
           variant="default"
+          className="min-h-touch desk:min-h-control"
           title="Dar por conforme"
           description="No pasó el control. Si la revisaste y está bien, queda conforme y liberada a pago, y su precio pasa a ser el costo."
         >
@@ -194,6 +200,8 @@ async function Actions({ params }: { params: PageProps<"/compras/facturas/[id]">
           action={runInvoiceChecksAction}
           submitLabel="Controlar"
           pendingLabel="Controlando…"
+          variant={a.can_approve ? "outline" : "default"}
+          className="hidden desk:flex desk:flex-col desk:gap-2"
         >
           <input type="hidden" name="invoiceId" value={inv.id} />
         </ActionForm>
@@ -204,7 +212,10 @@ async function Actions({ params }: { params: PageProps<"/compras/facturas/[id]">
 
 const NOTICES: Record<string, { status: "ok" | "info" | "warn"; text: string }> = {
   observada: { status: "warn", text: "Quedó observada: mirá qué no pasó en «Controles»." },
-  conforme: { status: "ok", text: "Quedó conforme y liberada a pago. Su precio pasa a ser el costo." },
+  conforme: {
+    status: "ok",
+    text: "Quedó conforme y liberada a pago. Su precio pasa a ser el costo.",
+  },
   cancelada: { status: "info", text: "Factura cancelada. Queda en la historia." },
   guardado: { status: "ok", text: "Cambios guardados. Controlala de nuevo." },
   creada: {
@@ -291,7 +302,11 @@ function Metrics({ inv }: { inv: InvoiceDetail }) {
   const totals = inv.checks.find((c) => c.kind === "totals");
   const quantityRows = inv.checks.filter((c) => c.kind === "quantity");
   const quantityFails = failed("quantity").length;
-  const priceDiff = priceDifference(inv.checks, inv.quantities);
+  const price = priceDifference(inv.checks, inv.quantities);
+  const noList =
+    price.withoutList === 1
+      ? "1 línea sin lista de precios."
+      : `${price.withoutList} líneas sin lista de precios.`;
   const notControlled = "Se ve al controlar la factura.";
   const due = dueState(inv.dueOn, todayInArgentina(), inv.status);
   return (
@@ -325,16 +340,34 @@ function Metrics({ inv }: { inv: InvoiceDetail }) {
         }
         emptyLabel="Sin datos"
         status={quantityFails === 0 ? "ok" : "warn"}
-        statusLabel={quantityFails === 0 ? "Al día" : "Con diferencias"}
+        statusLabel={quantityFails === 0 ? "Coincide" : "Con diferencias"}
       />
       <Metric
         compact
         label="Contra la lista"
-        value={!controlled || priceDiff === null ? null : formatMoney(priceDiff)}
-        missingReason={!controlled ? notControlled : "Sin lista de precios para comparar."}
+        // Si una línea no tiene lista, no hay con qué decir «igual»: falta el dato (métricas confiables).
+        value={
+          !controlled || price.value === null || (price.value === 0 && price.withoutList > 0)
+            ? null
+            : formatMoney(price.value)
+        }
+        missingReason={
+          !controlled
+            ? notControlled
+            : price.withoutList > 0
+              ? noList
+              : "Sin lista de precios para comparar."
+        }
+        period={price.value !== null && price.value > 0 ? "de más" : undefined}
         emptyLabel="Sin datos"
-        status={priceDiff === 0 ? "ok" : "warn"}
-        statusLabel={priceDiff === 0 ? "Igual a la lista" : "Con diferencias"}
+        status={price.value === 0 && price.withoutList === 0 ? "ok" : "warn"}
+        statusLabel={
+          price.value === 0 && price.withoutList === 0
+            ? "Igual a la lista"
+            : price.withoutList > 0
+              ? "Sin lista"
+              : "Con diferencias"
+        }
       />
       <Metric
         compact
@@ -370,30 +403,40 @@ const LINE_KINDS: InvoiceCheckKind[] = ["mapping", "quantity", "price"];
 function Together({ inv }: { inv: InvoiceDetail }) {
   const a = inv.access;
   const isA = isClassA(inv.invoiceClass);
-  const rows: { kind: InvoiceCheckKind; passed: boolean; text: string }[] = [];
+  const rows: { kind: InvoiceCheckKind; title: string; passed: boolean; text: string }[] = [];
   for (const kind of LINE_KINDS) {
     const all = inv.checks.filter((c) => c.kind === kind && c.lineId);
     if (all.length === 0) continue;
     const bad = all.filter((c) => !c.passed);
     rows.push({
       kind,
+      title: CHECK_LABELS[kind],
       passed: bad.length === 0,
       text:
         bad.length === 0
-          ? `Las ${all.length} líneas pasan.`
+          ? all.length === 1
+            ? "La línea pasa."
+            : `Las ${all.length} líneas pasan.`
           : bad.length === 1
             ? `1 línea no pasa: ${bad[0]?.explanation ?? ""}`
             : `${bad.length} líneas no pasan. Mirá el control de cada una.`,
     });
   }
   for (const kind of HEADER_KINDS) {
-    for (const c of inv.checks.filter((x) => x.kind === kind && !x.lineId)) {
-      rows.push({ kind, passed: c.passed, text: c.explanation });
+    const own = inv.checks.filter((x) => x.kind === kind && !x.lineId);
+    for (const [i, c] of own.entries()) {
+      // Si el mismo control tiene otra fila (las notas cubren, pero las sumó quien controla), esa es la doble firma.
+      rows.push({
+        kind,
+        title: i > 0 && !c.passed ? "Doble firma" : CHECK_LABELS[kind],
+        passed: c.passed,
+        text: c.explanation,
+      });
     }
   }
-  // Una regla de la factura que no es de una línea (por ejemplo, la doble firma va como precio sin línea).
+  // Una regla de la factura que no es de una línea: la doble firma (quien controla cargó o aceptó la lista).
   for (const c of inv.checks.filter((x) => LINE_KINDS.includes(x.kind) && !x.lineId)) {
-    rows.push({ kind: c.kind, passed: c.passed, text: c.explanation });
+    rows.push({ kind: c.kind, title: "Doble firma", passed: c.passed, text: c.explanation });
   }
 
   return (
@@ -477,7 +520,7 @@ function Together({ inv }: { inv: InvoiceDetail }) {
                   {r.passed ? "Pasa" : "No pasa"}
                 </Badge>
                 <span>
-                  <span className="font-medium">{CHECK_LABELS[r.kind]}.</span> {r.text}
+                  <span className="font-medium">{r.title}.</span> {r.text}
                 </span>
               </li>
             ))}
@@ -498,7 +541,7 @@ function Together({ inv }: { inv: InvoiceDetail }) {
           </h3>
           {a.can_add_note ? (
             <ActionModal
-              label="Nota"
+              label="Agregar nota"
               size="sm"
               title="Nota de crédito, débito o descuento"
               description="Cuenta para el control recién con su foto. Una conforme se corrige así."

@@ -75,7 +75,7 @@ async function Actions({
       description={
         place
           ? `En ${place.name}. Las líneas salen de lo recibido en las órdenes que elijas; después la ajustás al papel en su ficha.`
-          : "Elegí el local arriba."
+          : "Las facturas se cargan de a un local."
       }
     >
       <NewInvoiceForm place={place} orders={orders} suppliers={suppliers} />
@@ -100,7 +100,8 @@ async function Invoices({
     uuidOrUndefined(first(raw.local)) ??
     (await getActiveRestaurantId(session.user_id)) ??
     undefined;
-  const suppliers = await getSuppliers();
+  const [suppliers, menus] = await Promise.all([getSuppliers(), getMenus()]);
+  const canCreate = menus.invoicesManage;
   const supplierId = uuidOrUndefined(first(raw.proveedor));
   const supplier = suppliers.find((s) => s.id === supplierId);
   const date = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
@@ -152,7 +153,7 @@ async function Invoices({
       cell: (r) => (
         <Link
           href={`/compras/facturas/${r.id}?volver=${encodeURIComponent(here)}`}
-          className="inline-flex min-h-touch items-center font-medium text-primary tabular-nums underline-offset-4 hover:underline desk:min-h-0"
+          className="inline-flex min-h-touch items-center font-medium whitespace-nowrap text-primary tabular-nums underline-offset-4 hover:underline desk:min-h-0"
         >
           {invoiceLabel(r.invoice_class, r.point_of_sale, r.number)}
         </Link>
@@ -164,7 +165,7 @@ async function Invoices({
       key: "issued",
       header: "Fecha",
       mobile: "line",
-      cell: (r) => <span className="tabular-nums">{shortDate(r.issued_on)}</span>,
+      cell: (r) => <span className="whitespace-nowrap tabular-nums">{shortDate(r.issued_on)}</span>,
     },
     {
       key: "total",
@@ -247,7 +248,11 @@ async function Invoices({
             list={list}
             path={PATH}
             params={params}
-            empty={<EmptyState title="No hay facturas con esos filtros." />}
+            empty={
+              <EmptyState title="No hay facturas con esos filtros.">
+                {canCreate ? "Cargá la primera con «Nueva factura»." : "Las carga Compras."}
+              </EmptyState>
+            }
           />
         )}
         {total > 0 ? (

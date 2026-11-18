@@ -1293,7 +1293,12 @@ function ProductsDetail({
                           </td>
                           <td className="py-2 pr-3 text-ink tabular-nums">
                             {price?.validFrom ? formatDate(price.validFrom) : "—"}
-                            {price?.origin ? <PriceOriginLine origin={price.origin} /> : null}
+                            {price?.origin ? (
+                              <PriceOriginLine
+                                origin={price.origin}
+                                back={`/materias-primas/${ingredient.id}`}
+                              />
+                            ) : null}
                           </td>
                           <td className="py-2">
                             <Badge status={state.status}>{state.label}</Badge>
@@ -1963,11 +1968,11 @@ function YieldTestForm({
 }
 
 // De qué factura salió el precio (ADR-0058): «Factura A 0003-00012345 · Proveedor». Quien ve facturas la abre.
-function PriceOriginLine({ origin }: { origin: PriceOrigin }) {
-  const text = `${origin.label} · ${origin.supplier}`;
+function PriceOriginLine({ origin, back }: { origin: PriceOrigin; back: string }) {
+  const text = origin.supplier ? `${origin.label} · ${origin.supplier}` : origin.label;
   return origin.canOpen ? (
     <Link
-      href={`/compras/facturas/${origin.invoiceId}`}
+      href={`/compras/facturas/${origin.invoiceId}?volver=${encodeURIComponent(back)}`}
       className="block text-sm text-primary underline-offset-4 hover:underline"
     >
       {text}

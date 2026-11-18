@@ -527,23 +527,26 @@ export function failedLabel(kinds: string[]): string {
   return known.map((k) => CHECK_LABELS[k]).join(" · ");
 }
 
-// La diferencia de precio contra la lista, en pesos: lo facturado de más (o de menos) en las líneas que no pasaron.
-// null si el control no comparó precios.
+// La diferencia de precio contra la lista, en pesos: lo facturado de más en las líneas que no pasaron (la misma regla
+// que el control: lo cobrado de menos no compensa). Cuántas líneas no tienen lista para comparar: si hay alguna, no se
+// puede decir «igual a la lista» (métricas confiables). value es null si el control no comparó ningún precio.
 export function priceDifference(
   checks: CheckRow[],
   quantities: Map<string, number>,
-): number | null {
-  const rows = checks.filter(
-    (c) => c.kind === "price" && c.lineId !== null && c.expected !== null && c.actual !== null,
-  );
-  if (rows.length === 0) return null;
-  const diff = rows
+): { value: number | null; withoutList: number } {
+  const lines = checks.filter((c) => c.kind === "price" && c.lineId !== null);
+  const compared = lines.filter((c) => c.expected !== null && c.actual !== null);
+  const withoutList = lines.length - compared.length;
+  if (compared.length === 0) return { value: null, withoutList };
+  const diff = compared
     .filter((c) => !c.passed)
     .reduce(
-      (s, c) => s + ((c.actual ?? 0) - (c.expected ?? 0)) * (quantities.get(c.lineId ?? "") ?? 0),
+      (s, c) =>
+        s +
+        Math.max((c.actual ?? 0) - (c.expected ?? 0), 0) * (quantities.get(c.lineId ?? "") ?? 0),
       0,
     );
-  return Math.round(diff * 100) / 100;
+  return { value: Math.round(diff * 100) / 100, withoutList };
 }
 
 // El vencimiento de pago: vencido (crítico), en 7 días o menos (atención) o al día. Pagada o cancelada: no aplica.

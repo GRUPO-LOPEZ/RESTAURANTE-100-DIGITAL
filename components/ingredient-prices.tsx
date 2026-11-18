@@ -341,10 +341,10 @@ function PriceItem({
               href={`/compras/facturas/${row.origin.invoiceId}`}
               className="text-primary underline-offset-4 hover:underline"
             >
-              {row.origin.label} · {row.origin.supplier}
+              {originText(row.origin)}
             </Link>
           ) : (
-            `${row.origin.label} · ${row.origin.supplier}`
+            originText(row.origin)
           )
         ) : (
           DOCUMENT_LABELS[row.document]
@@ -366,4 +366,9 @@ function PriceItem({
       ) : null}
     </li>
   );
+}
+
+// «Factura A 0003-00012345 · Proveedor» (sin el proveedor si la sesión no ve proveedores).
+function originText(origin: { label: string; supplier: string | null }): string {
+  return origin.supplier ? `${origin.label} · ${origin.supplier}` : origin.label;
 }

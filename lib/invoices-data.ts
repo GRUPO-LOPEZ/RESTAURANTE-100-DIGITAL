@@ -415,7 +415,13 @@ export async function getInvoiceDetail(id: string): Promise<InvoiceDetail | null
 // ---------------------------------------------------------------------------
 // El origen de un precio de factura (ficha de la materia prima e impacto de un precio)
 // ---------------------------------------------------------------------------
-export type PriceOrigin = { invoiceId: string; label: string; supplier: string; canOpen: boolean };
+// El proveedor es nulo si la sesión no ve proveedores (costing.price_origins).
+export type PriceOrigin = {
+  invoiceId: string;
+  label: string;
+  supplier: string | null;
+  canOpen: boolean;
+};
 
 export async function getPriceOrigins(priceRecordIds: string[]): Promise<Map<string, PriceOrigin>> {
   const ids = [...new Set(priceRecordIds)];
@@ -429,7 +435,12 @@ export async function getPriceOrigins(priceRecordIds: string[]): Promise<Map<str
   return new Map(
     data.map((o) => [
       o.price_record_id,
-      { invoiceId: o.invoice_id, label: o.label, supplier: o.supplier_name, canOpen: o.can_open },
+      {
+        invoiceId: o.invoice_id,
+        label: o.label,
+        supplier: (o.supplier_name as string | null) ?? null,
+        canOpen: o.can_open,
+      },
     ]),
   );
 }
