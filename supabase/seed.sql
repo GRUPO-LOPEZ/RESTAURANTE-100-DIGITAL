@@ -903,6 +903,235 @@ begin
 end
 $$;
 
+-- Facturas (Fase 3, Prompt 5, ADR-0058): Compras las carga con las mismas funciones que la app. Todo inventado:
+-- números, CAE e importes de prueba, con los CUIT ficticios de los proveedores del seed. Nunca una factura real.
+-- - Las cuatro de Soy: una A conforme (la factura-remito de Lácteos en Demo Parrilla Centro) y una B conforme (la de la
+--   Verdulería, que llegó con remito R y la factura después), una observada por precio y una observada por un artículo
+--   que el sistema no reconoce; y una nota de crédito que cierra una diferencia.
+-- - La forma de cada papel real: factura-remito por peso con dos bonificaciones, A con 10,5 % y 21 %, impuestos internos
+--   y percepciones (sin OC: la da por conforme otra persona), comprobante X y nota a mano.
+create function pg_temp.invoice_photo(p_invoice uuid) returns void language plpgsql as $$
+declare
+  v_path text := format('00000000-0000-4000-8000-000000000001/invoices/%s/%s.jpg', p_invoice, gen_random_uuid());
+begin
+  insert into storage.objects (bucket_id, name, owner_id, metadata)
+  values ('purchasing-documents', v_path, '00000000-0000-4000-8000-000000000408',
+          '{"mimetype": "image/jpeg", "size": 0}');
+  perform purchasing.add_invoice_attachment('invoices', p_invoice, v_path, 1::smallint);
+end
+$$;
+create function pg_temp.receive_all(p_order uuid) returns void language plpgsql as $$
+declare
+  v_receipt uuid := (purchasing.start_receipt(p_order) ->> 'receipt_id')::uuid;
+  v_lines   jsonb;
+begin
+  perform pg_temp.receipt_photo(v_receipt, 'receipt_original');
+  perform pg_temp.receipt_photo(v_receipt, 'receipt_signed');
+  select jsonb_agg(jsonb_build_object('purchase_order_line_id', l.id, 'ok', true) order by l.line_order) into v_lines
+    from purchasing.purchase_order_lines l where l.purchase_order_id = p_order and l.deleted_at is null;
+  perform purchasing.close_receipt(v_receipt, 'remito', null, v_lines, null, null);
+end
+$$;
+-- Las líneas de una factura, tal como están, para cambiarlas y volver a guardarlas.
+create function pg_temp.invoice_lines(p_invoice uuid) returns jsonb language sql as $$
+  select coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
+           'line_class', l.line_class, 'purchase_product_id', l.purchase_product_id,
+           'purchase_order_line_id', l.purchase_order_line_id, 'raw_name', l.raw_name, 'supplier_sku', l.supplier_sku,
+           'units', l.units, 'billed_quantity', l.billed_quantity, 'list_price', l.list_price,
+           'bonus1_pct', l.bonus1_pct, 'bonus2_pct', l.bonus2_pct, 'bonus_per_unit_amount', l.bonus_per_unit_amount,
+           'unit_price', l.unit_price, 'vat_rate', l.vat_rate, 'is_exempt', l.is_exempt,
+           'internal_tax_amount', l.internal_tax_amount, 'line_amount', l.line_amount)) order by l.line_order), '[]')
+    from purchasing.invoice_lines l where l.invoice_id = p_invoice and l.deleted_at is null
+$$;
+-- El pie que cierra con las líneas y las percepciones: en A, neto + IVA por línea; en las demás, el importe final.
+create function pg_temp.invoice_footer(p_invoice uuid) returns jsonb language sql as $$
+  select jsonb_build_object(
+           'net_amount', x.net, 'exempt_amount', x.exempt, 'vat_amount', x.vat, 'internal_tax_amount', x.internal,
+           'perception_amount', x.perception, 'total_amount', x.net + x.exempt + x.vat + x.internal + x.perception)
+    from (select coalesce(sum(l.line_amount) filter (where not l.is_exempt), 0) as net,
+                 coalesce(sum(l.line_amount) filter (where l.is_exempt), 0) as exempt,
+                 case when purchasing.invoice_is_a(i.invoice_class)
+                      then coalesce(sum(round(l.line_amount * coalesce(l.vat_rate, 0) / 100, 2)), 0) else 0 end as vat,
+                 coalesce(sum(l.internal_tax_amount), 0) as internal,
+                 coalesce((select sum(t.tax_amount) from purchasing.invoice_taxes t
+                            where t.invoice_id = i.id and t.deleted_at is null), 0) as perception
+            from purchasing.invoices i
+            left join purchasing.invoice_lines l on l.invoice_id = i.id and l.deleted_at is null
+           where i.id = p_invoice
+           group by i.id, i.invoice_class) x
+$$;
+create function pg_temp.product(p_supplier uuid, p_n int) returns uuid language sql as $$
+  select id from catalog.purchase_products
+   where supplier_id = p_supplier and deleted_at is null order by code offset p_n - 1 limit 1
+$$;
+do $$
+declare
+  v_par       uuid := '00000000-0000-4000-8000-000000000203';
+  v_pno       uuid := '00000000-0000-4000-8000-000000000202';
+  v_verduras  uuid := '00000000-0000-4000-8000-000000000901';
+  v_frigo     uuid := '00000000-0000-4000-8000-000000000902';
+  v_lacteos   uuid := '00000000-0000-4000-8000-000000000903';
+  v_almacen   uuid := '00000000-0000-4000-8000-000000000904';
+  v_interna   uuid := '00000000-0000-4000-8000-000000000906';
+  v_receiver  text := '30000000001';
+  v_order     uuid;
+  v_invoice   uuid;
+  v_lines     jsonb;
+  v_diff      numeric;
+begin
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000408');
+
+  -- 1. A conforme: la factura-remito de Lácteos que llegó con la recepción de Demo Parrilla Centro (lo recibido).
+  select id into v_order from purchasing.purchase_orders where restaurant_id = v_par and supplier_id = v_lacteos;
+  v_invoice := (purchasing.create_invoice(v_lacteos, v_par, array[v_order], jsonb_build_object(
+                  'invoice_class', 'invoice_remito_a', 'point_of_sale', 3, 'number', 4567, 'authorization_kind', 'cae',
+                  'authorization_code', '75000000000001', 'issuer_tax_id', '30-50000003-8',
+                  'receiver_tax_id', v_receiver, 'issued_on', recipes.today() - 1), 'Factura-remito de Lácteos')
+                ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+  perform purchasing.run_invoice_checks(v_invoice);
+
+  -- 2. B conforme: la de la Verdulería, que llegó con remito R y la factura después.
+  select id into v_order from purchasing.purchase_orders where restaurant_id = v_par and supplier_id = v_verduras;
+  v_invoice := (purchasing.create_invoice(v_verduras, v_par, array[v_order], jsonb_build_object(
+                  'invoice_class', 'invoice_b', 'point_of_sale', 2, 'number', 1234, 'authorization_kind', 'cae',
+                  'authorization_code', '75000000000002', 'issuer_tax_id', '30500000011',
+                  'receiver_tax_id', v_receiver, 'issued_on', recipes.today() - 1, 'remito_refs', 'R 0001-00001234'),
+                  'Factura B de la Verdulería, después del remito') ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+  perform purchasing.run_invoice_checks(v_invoice);
+
+  -- 3. Una nota de crédito que cierra una diferencia: Lácteos cobra $ 100 de más por envase en una línea (Demo Parrilla
+  --    Centro); la nota por la diferencia la deja conforme, y el costo queda con el precio de la lista.
+  v_order := (purchasing.save_order_draft(null, v_par, v_lacteos, pg_temp.lines(v_lacteos, 2), null, null,
+                                          'Lácteos para la parrilla') ->> 'purchase_order_id')::uuid;
+  perform purchasing.submit_order(v_order, 'Lácteos para la parrilla');
+  perform pg_temp.receive_all(v_order);
+  v_invoice := (purchasing.create_invoice(v_lacteos, v_par, array[v_order], jsonb_build_object(
+                  'invoice_class', 'invoice_a', 'point_of_sale', 3, 'number', 4600, 'authorization_kind', 'cae',
+                  'authorization_code', '75000000000003', 'issuer_tax_id', '30500000038',
+                  'receiver_tax_id', v_receiver, 'issued_on', recipes.today() - 1), 'Factura A de Lácteos')
+                ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  v_lines := pg_temp.invoice_lines(v_invoice);
+  v_diff := 100 * (v_lines -> 0 ->> 'billed_quantity')::numeric;
+  v_lines := jsonb_set(jsonb_set(v_lines, '{0,unit_price}', to_jsonb((v_lines -> 0 ->> 'unit_price')::numeric + 100)),
+                       '{0,line_amount}', to_jsonb((v_lines -> 0 ->> 'line_amount')::numeric + v_diff));
+  perform purchasing.save_invoice(v_invoice, '{}', v_lines, '[]', 'Las líneas como en el papel');
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+  perform purchasing.run_invoice_checks(v_invoice);
+  perform purchasing.add_credit_debit_note(v_invoice, jsonb_build_object(
+            'note_kind', 'credit', 'number', 'NC A 0003-00000077', 'issued_on', recipes.today(),
+            'net_amount', v_diff, 'total_amount', round(v_diff * 1.21, 2)),
+          'El proveedor reconoce el precio de la lista');
+
+  -- 4. Observada por precio: la Verdulería cobra $ 1 más por envase en una línea (Demo Parrilla Centro).
+  v_order := (purchasing.save_order_draft(null, v_par, v_verduras, pg_temp.lines(v_verduras, 2), null, null,
+                                          'Verdura para la parrilla') ->> 'purchase_order_id')::uuid;
+  perform purchasing.submit_order(v_order, 'Verdura para la parrilla');
+  perform pg_temp.receive_all(v_order);
+  v_invoice := (purchasing.create_invoice(v_verduras, v_par, array[v_order], jsonb_build_object(
+                  'invoice_class', 'invoice_a', 'point_of_sale', 1, 'number', 2001, 'authorization_kind', 'cae',
+                  'authorization_code', '75000000000004', 'issuer_tax_id', '30500000011',
+                  'receiver_tax_id', v_receiver, 'issued_on', recipes.today() - 1), 'Factura A de la Verdulería')
+                ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  v_lines := pg_temp.invoice_lines(v_invoice);
+  v_lines := jsonb_set(jsonb_set(v_lines, '{0,unit_price}', to_jsonb((v_lines -> 0 ->> 'unit_price')::numeric + 1)),
+                       '{0,line_amount}', to_jsonb((v_lines -> 0 ->> 'line_amount')::numeric
+                                                   + (v_lines -> 0 ->> 'billed_quantity')::numeric));
+  perform purchasing.save_invoice(v_invoice, '{}', v_lines, '[]', 'Las líneas como en el papel');
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+  perform purchasing.run_invoice_checks(v_invoice);
+
+  -- 5. Observada por un artículo que el sistema no reconoce: la Verdulería suma un zapallo que no estaba en la OC.
+  v_order := (purchasing.save_order_draft(null, v_par, v_verduras, pg_temp.lines(v_verduras, 1), null, null,
+                                          'Más verdura para la parrilla') ->> 'purchase_order_id')::uuid;
+  perform purchasing.submit_order(v_order, 'Más verdura para la parrilla');
+  perform pg_temp.receive_all(v_order);
+  v_invoice := (purchasing.create_invoice(v_verduras, v_par, array[v_order], jsonb_build_object(
+                  'invoice_class', 'invoice_a', 'point_of_sale', 1, 'number', 2002, 'authorization_kind', 'cae',
+                  'authorization_code', '75000000000005', 'issuer_tax_id', '30500000011',
+                  'receiver_tax_id', v_receiver, 'issued_on', recipes.today()), 'Factura A de la Verdulería')
+                ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  v_lines := pg_temp.invoice_lines(v_invoice)
+             || jsonb_build_array(jsonb_build_object('raw_name', 'Zapallo anco x 20 kg', 'supplier_sku', 'VD-ZAP-20',
+                                                     'billed_quantity', 1, 'unit_price', 6400, 'vat_rate', 10.5));
+  perform purchasing.save_invoice(v_invoice, '{}', v_lines, '[]', 'Las líneas como en el papel');
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+  perform purchasing.run_invoice_checks(v_invoice);
+
+  -- 6. A con 10,5 % y 21 %, impuestos internos, flete y percepción de IIBB, sin OC (P4: la da por conforme otra persona).
+  v_invoice := (purchasing.create_invoice(v_almacen, v_pno, null, jsonb_build_object(
+                  'invoice_class', 'invoice_a', 'point_of_sale', 5, 'number', 12001, 'authorization_kind', 'cae',
+                  'authorization_code', '75000000000006', 'issuer_tax_id', '30500000046',
+                  'receiver_tax_id', v_receiver, 'issued_on', recipes.today() - 2, 'due_on', recipes.today() + 13),
+                  'Factura A del Almacén, sin OC') ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  v_lines := jsonb_build_array(
+    jsonb_build_object('purchase_product_id', pg_temp.product(v_almacen, 1), 'raw_name', 'Artículo de almacén 1',
+                       'billed_quantity', 4, 'list_price', 2500, 'bonus1_pct', 10, 'unit_price', 2250,
+                       'vat_rate', 10.5, 'line_amount', 9000),
+    jsonb_build_object('purchase_product_id', pg_temp.product(v_almacen, 2), 'raw_name', 'Artículo de almacén 2',
+                       'billed_quantity', 2, 'unit_price', 5000, 'vat_rate', 21, 'internal_tax_amount', 1200,
+                       'line_amount', 10000),
+    jsonb_build_object('line_class', 'freight', 'raw_name', 'Flete', 'billed_quantity', 1, 'unit_price', 3000,
+                       'vat_rate', 21, 'line_amount', 3000));
+  perform purchasing.save_invoice(v_invoice, '{}', v_lines,
+                                  jsonb_build_array(jsonb_build_object('tax_kind', 'iibb', 'jurisdiction', 'CABA',
+                                                                       'rate_pct', 3, 'tax_amount', 660)),
+                                  'Las líneas como en el papel');
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+  perform purchasing.run_invoice_checks(v_invoice);
+
+  -- 7. Factura-remito por peso con dos bonificaciones (Frigorífico): 8 piezas, 32,80 kg. Cargada, sin controlar.
+  v_invoice := (purchasing.create_invoice(v_frigo, v_par, null, jsonb_build_object(
+                  'invoice_class', 'invoice_remito_a', 'point_of_sale', 2, 'number', 7001, 'authorization_kind', 'cae',
+                  'authorization_code', '75000000000007', 'issuer_tax_id', '30500000029',
+                  'receiver_tax_id', v_receiver, 'issued_on', recipes.today()), 'Factura-remito del Frigorífico')
+                ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  perform purchasing.save_invoice(v_invoice, '{}', jsonb_build_array(
+            jsonb_build_object('purchase_product_id', pg_temp.product(v_frigo, 1), 'raw_name', 'Corte por kg (8 piezas)',
+                               'units', 8, 'billed_quantity', 32.8, 'list_price', 10000, 'bonus1_pct', 15,
+                               'bonus2_pct', 10, 'unit_price', 7650, 'vat_rate', 10.5, 'line_amount', 250920)),
+          '[]', 'Las líneas como en el papel');
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+
+  -- 8. Comprobante X de la planta interna. Cargado, sin controlar.
+  v_invoice := (purchasing.create_invoice(v_interna, v_pno, null, jsonb_build_object(
+                  'invoice_class', 'non_fiscal', 'number', 15, 'issued_on', recipes.today(),
+                  'supplier_balance_amount', 48000), 'Comprobante X de la planta interna') ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  perform purchasing.save_invoice(v_invoice, '{}', jsonb_build_array(
+            jsonb_build_object('purchase_product_id', pg_temp.product(v_interna, 1), 'raw_name', 'Ricota balde 5 kg',
+                               'billed_quantity', 2, 'unit_price', 12000, 'line_amount', 24000)),
+          '[]', 'Las líneas como en el papel');
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+
+  -- 9. Nota de pedido escrita a mano (la Verdulería, en el mercado). Cargada, sin controlar.
+  v_invoice := (purchasing.create_invoice(v_verduras, v_par, null, jsonb_build_object(
+                  'invoice_class', 'handwritten_note', 'number', 12, 'issued_on', recipes.today()),
+                  'Nota a mano de la Verdulería') ->> 'invoice_id')::uuid;
+  perform pg_temp.invoice_photo(v_invoice);
+  perform purchasing.save_invoice(v_invoice, '{}', jsonb_build_array(
+            jsonb_build_object('purchase_product_id', pg_temp.product(v_verduras, 1), 'raw_name', 'Verdura del mercado',
+                               'billed_quantity', 1, 'unit_price', 8500, 'line_amount', 8500)),
+          '[]', 'Las líneas como en el papel');
+  perform purchasing.save_invoice(v_invoice, pg_temp.invoice_footer(v_invoice), null, null, 'El pie como en el papel');
+
+  perform set_config('request.jwt.claims', '', true);
+end
+$$;
+-- Los avisos que dejan las facturas del seed (variación de precio a Dirección, factura observada a Compras y artículo
+-- para mapear a los chefs) quedan leídos: cada uno arranca con su bandeja como antes. La pgTAP 380 prueba los avisos.
+update core.notifications set read_at = now()
+ where kind in ('price_variation', 'invoice_observed')
+    or (kind = 'unmapped_article' and body like 'Llegaron en la %');
+
 -- Los costos de las recetas: en la base los calcula la cola cada minuto.
 select costing.process_recalc_queue(10000);
 

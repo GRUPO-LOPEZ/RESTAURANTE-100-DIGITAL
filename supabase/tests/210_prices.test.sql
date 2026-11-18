@@ -167,7 +167,8 @@ select throws_ok($$insert into costing.price_records (group_id, purchase_product
                                                        document_type, source)
                    values (pg_temp.u(1), pg_temp.product('DEMO-PROD-030'), 'group', '2026-01-01', 10, 'no_invoice', 'manual')$$,
   '23514', null, 'un precio sin aprobación solo puede ser un valor de prueba');
-select is((select base_quantity from costing.price_records where purchase_product_id = pg_temp.product('DEMO-PROD-001')),
+select is((select base_quantity from costing.price_records where purchase_product_id = pg_temp.product('DEMO-PROD-001')
+                                                         and source = 'test_value'),
   10000.000000, 'cada precio guarda el contenido del envase en la unidad de uso (cajón de 10 kg = 10.000 g)');
 select throws_ok($$update costing.price_records set package_price = 1 where purchase_product_id = pg_temp.product('DEMO-PROD-001')$$,
   '42501', 'Un precio aprobado no se cambia ni se borra: cargá un precio nuevo.', 'un precio no se cambia, ni siquiera como dueño de la tabla');
@@ -187,12 +188,12 @@ insert into costing.price_records (group_id, purchase_product_id, scope_type, br
 values (pg_temp.u(1), pg_temp.product('DEMO-PROD-012'), 'brand', pg_temp.u(102), current_date - 2, 20000, 'no_invoice', 'test_value');
 insert into costing.price_records (group_id, purchase_product_id, scope_type, restaurant_id, valid_from, package_price, document_type, source)
 values (pg_temp.u(1), pg_temp.product('DEMO-PROD-012'), 'restaurant', pg_temp.u(202), current_date - 2, 21000, 'no_invoice', 'test_value');
-select is(pg_temp.prices_seen(407), '54', 'el Controller ve todos (51 de grupo, 2 de marca y 1 de local)');
+select is(pg_temp.prices_seen(407), '61', 'el Controller ve todos (51 de grupo, 2 de marca, 1 de local y 7 de las facturas del seed, de local)');
 select is(pg_temp.prices_seen(404), '52', 'el Gerente de Pastas Centro ve los de grupo y los de su marca, no los de Parrilla ni de Pastas Norte');
 select is(pg_temp.prices_seen(411), '53', 'la Gerente de los dos locales de Pastas ve también el de Pastas Norte');
 select is(pg_temp.prices_seen(403), '53', 'la Directora de Pastas ve los de su marca y sus locales, no los de Parrilla');
 select is(pg_temp.prices_seen(405) || '/' || pg_temp.prices_seen(409), '0/0', 'el Chef y la Cocinera no ven ningún precio');
-select is(pg_temp.prices_seen(410), '54', 'el Auditor los ve todos');
+select is(pg_temp.prices_seen(410), '61', 'el Auditor los ve todos');
 
 -- La auditoría guarda el precio, pero el historial lo oculta a quien no ve costos.
 select is((select core.hide_costs(new_values) ->> 'package_price' || '/' || (core.hide_costs(new_values) ->> 'net_package_price')
