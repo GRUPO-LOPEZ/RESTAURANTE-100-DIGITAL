@@ -243,3 +243,11 @@ export function sheetRows(page: Page, name: string) {
     .or(page.getByRole("list", { name }).getByRole("listitem"))
     .filter({ visible: true });
 }
+
+// Un CUIT inventado con su dígito verificador, a partir de sus primeros 10 números. Como la base no deja repetir un
+// CUIT en el grupo (ADR-0055), las pruebas que dan de alta proveedores usan uno distinto en cada corrida.
+export function inventedCuit(base: string): string {
+  const w = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+  const r = 11 - (w.reduce((acc, x, i) => acc + Number(base[i]) * x, 0) % 11);
+  return `${base.slice(0, 2)}-${base.slice(2)}-${r === 11 ? 0 : r === 10 ? 9 : r}`;
+}

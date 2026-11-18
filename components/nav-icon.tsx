@@ -8,12 +8,14 @@ import {
   KeyRound,
   LayoutDashboard,
   Package,
+  PackageCheck,
   ReceiptText,
   ShoppingCart,
   Tags,
   Truck,
   ShieldCheck,
   Users,
+  Warehouse,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +31,8 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   suppliers: Truck,
   priceLists: ReceiptText,
   orders: ShoppingCart,
+  receipts: PackageCheck,
+  inventory: Warehouse,
   costs: Calculator,
   reports: FileText,
   quality: ShieldCheck,
