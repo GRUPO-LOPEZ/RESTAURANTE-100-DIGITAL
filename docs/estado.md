@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-17._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, fusionado (PR #76, ADR-0052). Prompt 3, órdenes de compra, fusionado (PR #77, ADR-0053). Next.js 16.4.6 (PR #78). PR #75 (pantalla de 1715 × 843) fusionado. Compras ve el precio del local elegido: PR #80, fusionado. La Chef ve el costo neto (`fix/costo-neto-chef`, ADR-0054): PR abierto. Ahora: la importación de proveedores (`feat/importar-proveedores`, ADR-0055).**
+_Última actualización: 2026-11-18._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049) y la ficha de proveedor (PR #74, ADR-0050). Prompt 2, artículos y listas de precios, fusionado (PR #76, ADR-0052). Prompt 3, órdenes de compra, fusionado (PR #77, ADR-0053). Next.js 16.4.6 (PR #78). PR #75 (pantalla de 1715 × 843) fusionado. Compras ve el precio del local elegido: PR #80, fusionado. La Chef ve el costo neto: PR #81, fusionado (ADR-0054). Importación de proveedores y un CUIT por proveedor: PR #82, fusionado (ADR-0055). Ahora: Prompt 4, recepción y stock (PR #83).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
@@ -36,7 +36,26 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Sigue (otro PR, pedido de Joaco):** el botón «Recibir mercadería» en el Inicio, que reemplaza al acceso directo en la barra del celular.
 - **Falta:** mirarlo en un celular real.
 
-## Antes: la Chef ve el costo neto (rama `fix/costo-neto-chef`, ADR-0054)
+## Fusionado: importar proveedores desde planilla (PR #82, 2026-11-18, ADR-0055)
+
+- **Qué es:** la P1 de la Fase 3 (ADR-0050): cargar de una vez los ~30 proveedores reales en producción, desde la app y por Compras. La planilla real nunca entra al repositorio: todo se probó con planillas inventadas.
+- **Hecho:**
+  - **Pantalla `/proveedores/importar`:** bajar la plantilla, subir el Excel, ver qué pasa con cada fila (se crea, se omite o tiene error) y confirmar con motivo. Si una fila tiene error, no se crea ninguno. En el celular, un aviso: se hace en la computadora.
+  - **Base:** `purchasing.import_suppliers`, con vista previa que hace todo y lo deshace. El alta y la ficha pasaron a internas con envoltorios: un solo camino de escritura, con origen `import` o `manual`. No entran las cuentas de pago ni los números de cliente.
+  - **Un CUIT por proveedor (decisión de Joaco, 2026-11-17):** índice único sobre el CUIT normalizado, en `20261207130000_supplier_tax_id_unique.sql`. Vale para el alta, la ficha y la importación.
+  - **Tope real del zip:** se mide lo descomprimido de verdad, no lo que dice el índice del archivo. Vale también para el recetario.
+- **Pruebas:**
+  - pgTAP `350_supplier_import`: 41 controles;
+  - `320` (77) y `050` (73) en verde. La `320` y `proveedores.spec.ts` usaban un CUIT repetido o fijo: ahora usan uno inventado y distinto, y controlan lo mismo;
+  - Vitest: 27 del lector y del zip (466 en total);
+  - Playwright `importar-proveedores.spec.ts` con axe: sin scroll en 1440 × 900, 1600 × 900, 1715 × 843 y 1920 × 1080; también el aviso en el celular.
+- **Revisiones:**
+  - `db-reviewer` y `security-auditor`: sin graves. Medios corregidos: la base limita las claves de cada fila y los envoltorios prueban su origen `manual`; el tope del zip ahora es real;
+  - `ui-reviewer`: un grave corregido (si fallaba «Crear» no se veía el aviso) y sus medios.
+- **Capturas:** `docs/capturas/importar-proveedores/`.
+- **Suite completa con `main` (ya tiene el #81), 2026-11-17:** en verde. Playwright: 302 pasaron, 36 salteadas (las de un solo proyecto), ninguna falló.
+
+## Fusionado: la Chef ve el costo neto (PR #81, 2026-11-17, ADR-0054)
 
 - **Pedido:** Joaco, 2026-11-16: «sí, que la Chef vea el costo neto, en otro PR». Hallazgo menor de `security-auditor` en el PR #80.
 - **Problema:** la Chef tiene `recipes.view_costs` y no `prices.view`. El costo neto de la ficha de materia prima salía de `costing.ingredient_line_cost`, que pide `prices.view`, y el indicador decía «No ves los costos de este local».
@@ -51,7 +70,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Límite:** en el seed ninguna materia prima tiene la limpieza aprobada, así que en la pantalla el neto dice «Falta el rendimiento». El monto lo controla pgTAP.
 - **Revisiones:** `db-reviewer` y `security-auditor` sin hallazgos graves ni medios. Se aplicaron sus menores: rechaza materia prima o local borrados, la fecha del precio se busca aparte, y la prueba fija las columnas y usa un segundo grupo de verdad.
 - **Suite completa:** lint, tipos, Vitest y formato en verde; pgTAP en verde (las dos de rendimiento que fallaron por carga de la máquina pasan solas, 34 y 96 ms); Playwright 298 pasan y 1 falla de login en el celular (admin), que pasa sola.
-- **Falta:** que el PR pase Actions y la aprobación de Joaco.
+- **Actions:** en verde (1 h 14 min). Fusionado por pedido de Joaco.
 
 ## Compras ve el precio del local elegido (PR #80, fusionado el 2026-11-17)
 

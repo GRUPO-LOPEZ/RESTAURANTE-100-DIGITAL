@@ -4,7 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout } from "./helpers";
+import { inventedCuit, login, logout } from "./helpers";
 
 const COMPRAS = "compras@ejemplo.test";
 const COCINERA = "cocinero@ejemplo.test";
@@ -95,15 +95,18 @@ test.describe("ficha de proveedor", () => {
     await login(page, COMPRAS);
     await page.goto("/proveedores");
     const name = `Proveedor de prueba ${Date.now()} S.A.`;
+    // Un CUIT por proveedor: uno nuevo en cada corrida, y el mismo con el verificador cambiado para el error.
+    const cuit = inventedCuit(`20${String(Date.now()).slice(-8)}`);
+    const wrong = cuit.slice(0, -1) + ((Number(cuit.slice(-1)) + 1) % 10);
     await page.getByRole("link", { name: "Nuevo proveedor" }).click();
     const dialog = page.getByRole("dialog", { name: "Nuevo proveedor" });
     await dialog.getByLabel("Razón social").fill(name);
-    await dialog.getByLabel("CUIT").fill("20-12345678-7");
+    await dialog.getByLabel("CUIT").fill(wrong);
     await dialog.getByLabel("Motivo").fill("Alta de prueba");
     await dialog.getByRole("button", { name: "Crear y completar la ficha" }).click();
     // Un CUIT con el verificador mal no se acepta.
     await expect(dialog.getByText("El CUIT no es válido: revisá los números.")).toBeVisible();
-    await dialog.getByLabel("CUIT").fill("20-12345678-6");
+    await dialog.getByLabel("CUIT").fill(cuit);
     await dialog.getByRole("button", { name: "Crear y completar la ficha" }).click();
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
     await expect(
