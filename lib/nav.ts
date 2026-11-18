@@ -77,28 +77,18 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
           ? [{ href: "/materias-primas", label: "Materias primas", icon: "ingredients" as const }]
           : []),
         ...(menus.rubros ? [{ href: "/rubros", label: "Rubros", icon: "rubros" as const }] : []),
-        // Proveedores (Fase 3, ADR-0050): los ve quien ve su ficha, también el cocinero.
-        ...(menus.suppliers
-          ? [{ href: "/proveedores", label: "Proveedores", icon: "suppliers" as const }]
-          : []),
       ],
     },
     {
-      label: "Gestión y análisis",
+      // Compras (Fase 3, pedido de Joaco del 2026-11-18, ADR-0057): todo el circuito en un grupo, en el orden en que
+      // se trabaja. Facturas y Pagos (Prompts 5 y 6) se suman acá.
+      label: "Compras",
       items: [
-        ...(menus.costs ? [{ href: "/costos", label: "Costos", icon: "costs" as const }] : []),
-        // Órdenes de compra (Fase 3, ADR-0053): quien pide (también el cocinero) y quien las controla.
-        ...(menus.orders
-          ? [{ href: "/compras/ordenes", label: "Órdenes de compra", icon: "orders" as const }]
+        // Proveedores (ADR-0050): los ve quien ve su ficha, también el cocinero.
+        ...(menus.suppliers
+          ? [{ href: "/proveedores", label: "Proveedores", icon: "suppliers" as const }]
           : []),
-        // Recepción e inventario (Fase 3, ADR-0056): quien recibe en un local; el inventario, quien lo controla.
-        ...(menus.receive
-          ? [{ href: "/compras/recepcion", label: "Recepción", icon: "receipts" as const }]
-          : []),
-        ...(menus.inventory
-          ? [{ href: "/inventario", label: "Inventario", icon: "inventory" as const }]
-          : []),
-        // Listas de precios (Fase 3, ADR-0052): Compras y quien controla precios. El cocinero no.
+        // Listas de precios (ADR-0052): Compras y quien controla precios. El cocinero no.
         ...(menus.priceLists
           ? [
               {
@@ -108,6 +98,23 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
               },
             ]
           : []),
+        // Órdenes de compra (ADR-0053): quien pide (también el cocinero) y quien las controla.
+        ...(menus.orders
+          ? [{ href: "/compras/ordenes", label: "Órdenes de compra", icon: "orders" as const }]
+          : []),
+        // Recepción e inventario (ADR-0056): quien recibe en un local; el inventario, quien lo controla.
+        ...(menus.receive
+          ? [{ href: "/compras/recepcion", label: "Recepción", icon: "receipts" as const }]
+          : []),
+        ...(menus.inventory
+          ? [{ href: "/inventario", label: "Inventario", icon: "inventory" as const }]
+          : []),
+      ],
+    },
+    {
+      label: "Gestión y análisis",
+      items: [
+        ...(menus.costs ? [{ href: "/costos", label: "Costos", icon: "costs" as const }] : []),
         ...(menus.reports
           ? [{ href: "/reportes", label: "Reportes", icon: "reports" as const }]
           : []),

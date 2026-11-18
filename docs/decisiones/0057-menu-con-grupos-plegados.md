@@ -40,6 +40,12 @@ Con facturas y pagos (Prompts 5 y 6) se suman más accesos.
 - **Los roles que entran abiertos** (Cocinero, Chefs, Jefe de Cocina, Compras) no cambian.
 - **Barra contraída (solo íconos):** sin espacio entre íconos, que siguen en 36 px, y con una línea entre grupos. Los 17 del superadmin pasan de 712 a 624 px (con el margen del foco) y entran en 843.
 
+## Grupo «Compras» (pedido de Joaco, 2026-11-18)
+
+Las pantallas de compras estaban repartidas: Proveedores en «Base de conocimiento» y el resto en «Gestión y análisis», mezclado con Costos y Reportes. Se juntan en un grupo nuevo, **«Compras»**, entre «Base de conocimiento» y «Gestión y análisis», en el orden en que se trabaja: Proveedores, Listas de precios, Órdenes de compra, Recepción e Inventario. **Facturas, Pagos y el Tablero de compras** (Prompts 5 y 6) se suman ahí. Esto reemplaza lo que decían ADR-0050, ADR-0052, ADR-0053 y ADR-0056 sobre el grupo de cada pantalla.
+
+Un grupo más suma 28 px al menú abierto. Los roles que entraban abiertos siguen entrando (el que más ocupa, la Chef, queda en 576 de 586 px). Los demás ya estaban plegados.
+
 ## Consecuencias
 
 - **Hay un clic más** para llegar a un grupo cerrado. Lo compensan el buscador de arriba y que el grupo actual siempre está abierto.
