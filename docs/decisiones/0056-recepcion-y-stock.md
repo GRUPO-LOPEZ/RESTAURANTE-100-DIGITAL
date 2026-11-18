@@ -138,7 +138,7 @@ Al cerrar:
 - El filtro por lote usa `like`: se mide con `explain analyze` cuando crezca.
 - El efectivo se oculta con `prices.view` en la ficha y con `hide_costs` en el historial; hoy coinciden en todos los roles.
 - No se puede anular una recepción abierta: se retoma y se cierra.
-- La pantalla no tiene un acceso directo a Recepción en la barra inferior del celular: está en «Menú». Queda para que decida Joaco (revisión de interfaz, M4).
+- La barra inferior del celular no suma Recepción (sigue en «Menú»). En su lugar, **«Recibir mercadería» va en el encabezado del Inicio** (decisión de Joaco, 2026-11-17, PR aparte), para quien tiene `purchasing.receive`. Con el tablero es un botón secundario, al lado de «Ver qué falta corregir», y lleva el local del tablero; en el Inicio simple (la cocinera) es el principal.
 
 ## Riesgos y pendientes
 
