@@ -51,3 +51,12 @@ Un grupo más suma 28 px al menú abierto. Los roles que entraban abiertos sigue
 - **Hay un clic más** para llegar a un grupo cerrado. Lo compensan el buscador de arriba y que el grupo actual siempre está abierto.
 - **El Controller, el Auditor, el Gerente y Dirección** también ven los grupos plegados: en 843 de alto no entraban.
 - **Si cambian los altos** de los accesos o del pie, hay que actualizar las constantes de `lib/nav.ts`. Lo cuida `layout.spec.ts`: el superadmin no puede tener scroll en el menú en 1440 × 900 ni en 1715 × 843, tampoco con la barra contraída.
+
+## Agregado (2026-11-18): la barra contraída con Facturas
+
+Con «Facturas» (ADR-0058), el superadmin tiene 18 accesos. Contraída, la barra los muestra todos (36 px cada uno) y se pasaba 27 px en 1715 × 843.
+
+**Decisión de Joaco:** contraída, si los íconos de 36 px no entran, van de 32 px. Se descartaron poner «Mi cuenta» y «Salir» lado a lado en el pie, porque quedaba justo con los ~10 px de más de Linux, y plegar por grupos también contraída, por ser más trabajo y cambiar cómo se usa el menú.
+
+- Lo cuenta `collapsedFits` en `lib/nav.ts`, con el pie contraído medido (121 px), y lo prueba Vitest.
+- 32 px pasa WCAG 2.5.8 (mínimo 24) y el celular no cambia.

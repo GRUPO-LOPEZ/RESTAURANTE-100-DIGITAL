@@ -182,6 +182,17 @@ export function navFits(groups: NavGroup[]): boolean {
   return navHeight(groups) <= NAV_ROOM - NAV_MARGIN;
 }
 
+// Contraída (solo íconos), todos los accesos van a la vista, seguidos (36 px cada uno) y con una línea de 1 px entre
+// grupos. El pie contraído mide 121 px (sin el nombre de la persona; medido en 1715 × 843). Si no entran, los íconos
+// pasan a 32 px (decisión de Joaco del 2026-11-18, al sumar Facturas: 18 accesos se pasaban 27 px).
+const NAV_ICON = 36;
+const NAV_ROOM_COLLAPSED = 843 - 64 - 121 - 16 - 8;
+
+export function collapsedFits(groups: NavGroup[]): boolean {
+  const items = groups.reduce((n, g) => n + g.items.length, 0);
+  return items * NAV_ICON + Math.max(groups.length - 1, 0) <= NAV_ROOM_COLLAPSED - NAV_MARGIN;
+}
+
 // El grupo de la pantalla actual (también en sus pantallas internas), o null si ninguno la tiene.
 export function currentGroup(groups: NavGroup[], pathname: string): string | null {
   return (

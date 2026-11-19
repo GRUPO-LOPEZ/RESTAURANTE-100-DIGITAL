@@ -1,10 +1,10 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-18._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Ahora: Prompt 5, facturas, en dos PRs: 5A, la base (PR #86, abierto), y 5B, las pantallas (`feat/facturas-pantallas`, ADR-0058).**
+_Última actualización: 2026-11-18._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Fusionados la base de facturas (PR #86, ADR-0058) y las pruebas en paralelo en GitHub (PR #87, ADR-0059). Ahora: 5B, las pantallas de facturas (`feat/facturas-pantallas`).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## En curso: Prompt 5B, pantallas de facturas (rama `feat/facturas-pantallas`, sale de `feat/facturas-base`)
+## En curso: Prompt 5B, pantallas de facturas (rama `feat/facturas-pantallas`)
 
 - **Pantallas:**
   - `/compras/facturas` (listado con pestañas y filtros);
@@ -25,9 +25,13 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - `db-reviewer`: sin graves (se corrigió el medio);
   - `ui-reviewer`: un grave («Contra la lista» decía «igual» sin lista) y los medios, corregidos.
 - **Capturas:** `docs/capturas/facturas/`.
-- **Falta:** la suite completa y el PR. El PR 5B va contra `feat/facturas-base`: **al fusionar el #86 no borrar la rama** hasta cambiar la base del 5B a `main` (si no, GitHub cierra el 5B, como pasó con #84 y #85).
+- **Menú contraído (decisión de Joaco, 2026-11-18):** con «Facturas», el superadmin tiene 18 accesos y contraído se pasaba 27 px en 1715 × 843. Ahora, si no entran, los íconos van de 32 px (`collapsedFits`, ADR-0057 y design.md).
+- **Suite completa (2026-11-18, base recién recreada):** lint, tipos, Vitest (516) y pgTAP en verde. En Playwright pasaron 305, se saltearon 46 y fallaron 7:
+  - la del menú contraído, que se arregló;
+  - 6 que pasaron solas, 12 de 12 en el celular y la computadora: el ingreso lento de la corrida larga (`cuenta`, `precios` ×2, `costos` ×2) y `escenarios`, ya anotada como inestable.
+- **Falta:** el PR (contra `main`, que ya tiene el #86). Después se puede borrar la rama `feat/facturas-base`.
 
-## Abierto: Prompt 5A, base de facturas (PR #86, rama `feat/facturas-base`, ADR-0058)
+## Fusionado: Prompt 5A, base de facturas (PR #86, 2026-11-18, ADR-0058)
 
 - **Plan aprobado por Joaco (2026-11-18):** dos PRs, 5A la base y 5B las pantallas. Lo que va por peso se compara y se costea por kilo.
 - **Hecho:**
@@ -50,7 +54,6 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - **suite completa (2026-11-18, base recién recreada):** lint, tipos, formato, Vitest (496) y pgTAP en verde. En Playwright pasaron 306, 42 se saltearon y fallaron 2 en el celular, que no tocan facturas y pasaron al repetirlas (4 de 4):
     - `admin.spec` («Dirección ve los 4 locales»), la primera de la corrida: el ingreso tardó más de 5 s;
     - `recepcion.spec` («Compras recibe sin OC»): la pantalla tenía dos selectores «Proveedor» a la vez (la pantalla anterior todavía montada). Queda para el PR de pruebas inestables.
-- **Falta:** que Joaco lo revise y lo fusione.
 
 ## Para retomar
 
