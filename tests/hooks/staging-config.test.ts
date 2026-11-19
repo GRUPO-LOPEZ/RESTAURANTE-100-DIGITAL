@@ -167,9 +167,10 @@ describe("Staging: recetas de prueba (la prueba de la Fase 2 para Soy)", () => {
   const script = read("supabase/staging/demo-recipes.sql");
 
   it("se cargan solo a mano, con la opción tildada, y sin las contraseñas de la demo", () => {
-    const step = baseJob
-      .slice(baseJob.indexOf("name: Cargar materias primas, precios y recetas de prueba"))
-      .split("- name:")[0];
+    const step =
+      baseJob
+        .slice(baseJob.indexOf("name: Cargar materias primas, precios y recetas de prueba"))
+        .split("- name:")[0] ?? "";
     expect(step).toContain(
       "if: github.event_name == 'workflow_dispatch' && inputs.load_demo_recipes",
     );
