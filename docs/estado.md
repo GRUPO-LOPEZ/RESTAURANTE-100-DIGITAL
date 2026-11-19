@@ -18,6 +18,16 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - borrar en GitHub las ramas `feat/facturas-base`, `feat/facturas-pantallas`, `ci/playwright-en-paralelo`, `chore/dependencias` y `fix/facturas-pruebas-en-tandas`;
   - pedirle a Soy que active la protección de `main` (hoy no tiene ninguna).
 
+## En curso, en paralelo: prueba de la Fase 2 para Soy en staging (rama `feat/prueba-fase-2-soy`)
+
+- **Pedido:** Joaco, 2026-11-19: «con Soy queremos hacer una prueba: que inventes y cargues materias primas, recetas y costos, para que vea que todo funciona». Elegido: en staging, vía Actions, tamaño mediano.
+- **Hecho:** `supabase/staging/demo-recipes.sql` y la opción «Cargar materias primas, precios y recetas de prueba» de **Publicar en staging**. Carga, con las funciones de la app y la sesión de cada persona de prueba, 3 proveedores ficticios, 28 materias primas, 54 precios aprobados (grupo y Demo Pastas Centro) y 13 recetas de Demo Pastas publicadas y asignadas. A propósito: los Ñoquis salen desactualizados y el Risotto incompleto. Guía y recorrido para Soy: `docs/guias/prueba-fase-2-soy.md`.
+- **Pruebas:** ensayo en la base local con `DRY_RUN=1` (todo y rollback, sin dejar datos): los costos coinciden con las cuentas a mano de la guía; las guardas de «ya cargado» y de nombres repetidos frenan sin tocar nada. `staging-config.test.ts` suma 2 controles (25 en verde en ese archivo).
+- **Revisiones:** `db-reviewer` y `security-auditor` sin hallazgos graves. Se aplicaron sus medios y menores: cada aprobación tiene que dar «aprobada» y lleva el motivo con el número de corrida; antes de confirmar, un control exige 28 materias primas, 54 precios, 13 recetas y el estado esperado de cada costo (si no, deshace todo; probado forzando un error); la salvia se ajusta al plazo de vencimiento del grupo; guardas de personas activas, locales y rubros por tabla; CUIT en el rango ficticio del seed.
+- **PR #91 fusionado (2026-11-19).** La primera corrida en staging frenó en la guarda, sin cargar nada: «Faltan estos rubros activos en el grupo: MP-ALM». El arroz arborio estaba en Almacén, que existe en la base local por el seed pero no es un rubro de Soy. Pasa a MP-HAR (Harinas, cereales y legumbres). Ensayo local con Almacén desactivado, como en staging: carga todo y los costos no cambian.
+- **PR #92 fusionado.** La segunda corrida llegó al final pero el control deshizo todo: las 13 recetas salían «incompletas» porque los locales de staging no tienen razón social (el seed la carga, `demo-data.sql` no) y el motor no sabe si el costo va con o sin IVA (`missing_legal_entity`). Arreglo (rama `fix/prueba-soy-razon-social`): si a un local de Demo Pastas le falta, la Superadministradora de prueba crea «Demo Pastas S.R.L. (ficticia)», responsable inscripta, y se la asigna. Ensayo local imitando staging (sin razón social y sin Almacén): carga todo con los números de la guía.
+- **Falta:** fusionar el arreglo, volver a correr **Publicar en staging** con la opción tildada y el recorrido con Soy.
+
 ## Fusionado: Prompt 5B, pantallas de facturas (PR #88, 2026-11-19)
 
 - **Pantallas:**

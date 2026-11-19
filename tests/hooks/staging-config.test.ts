@@ -163,6 +163,40 @@ describe("Staging: cuándo se publica", () => {
   });
 });
 
+describe("Staging: recetas de prueba (la prueba de la Fase 2 para Soy)", () => {
+  const script = read("supabase/staging/demo-recipes.sql");
+
+  it("se cargan solo a mano, con la opción tildada, y sin las contraseñas de la demo", () => {
+    const step =
+      baseJob
+        .slice(baseJob.indexOf("name: Cargar materias primas, precios y recetas de prueba"))
+        .split("- name:")[0] ?? "";
+    expect(step).toContain(
+      "if: github.event_name == 'workflow_dispatch' && inputs.load_demo_recipes",
+    );
+    expect(step).toContain("psql -X --no-password -f supabase/staging/demo-recipes.sql");
+    // Exactamente estas variables: ni las contraseñas de la demo ni el token de Supabase.
+    const env = [...step.matchAll(/^ {10}(\w+):/gm)].map(([, name]) => name).sort();
+    expect(env).toEqual(["PGPASSWORD", "PGSSLMODE", "STAGING_DB_URL"]);
+    // Corre en la base de staging, después de comprobar que el destino es staging.
+    expect(baseJob.indexOf("name: Verificar que el destino es staging")).toBeGreaterThan(-1);
+    expect(
+      baseJob.indexOf("name: Cargar materias primas, precios y recetas de prueba"),
+    ).toBeGreaterThan(baseJob.indexOf("name: Verificar que el destino es staging"));
+  });
+
+  it("el script frena sin el grupo de prueba, no repite la carga y es todo o nada", () => {
+    expect(script).toContain("\\set ON_ERROR_STOP on");
+    expect(script).toContain("Falta el Grupo Demo");
+    expect(script).toContain("ya estaba cargada: no se cambia nada");
+    expect(script).toMatch(/^begin;$/m);
+    expect(script).toMatch(/^ {2}commit;$/m);
+    // Solo datos inventados: precios de prueba y proveedores marcados como ficticios.
+    expect(script).toContain("'test_value'");
+    expect(script).not.toMatch(/service_role|encrypted_password|auth\.users/);
+  });
+});
+
 describe("Staging: claves y código de terceros", () => {
   it("nunca carga el seed local ni usa la clave service_role", () => {
     expect(workflow).not.toContain("--include-seed");
