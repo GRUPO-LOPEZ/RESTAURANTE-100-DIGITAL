@@ -9,6 +9,8 @@ create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
 select plan(34);
+-- La fecha de la Argentina (la que usa la base), para las consultas que corren con la sesión de una persona.
+select set_config('test.today', recipes.today()::text, true);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -65,7 +67,7 @@ $$;
 create function pg_temp.pay(p_supplier int, p_method text, p_amount numeric, p_allocations jsonb,
                             p_user int default 408, p_restaurant int default 203) returns text language sql as $$
   select pg_temp.msg(pg_temp.u(p_user), format(
-    'select purchasing.register_payment(%L, %L, recipes.today(), %L, %L, %s, %L, %L::jsonb, %L)',
+    'select purchasing.register_payment(%L, %L, current_setting(''test.today'')::date, %L, %L, %s, %L, %L::jsonb, %L)',
     pg_temp.u(p_restaurant), pg_temp.u(p_supplier), p_method,
     case when p_method = 'cash' then null
          else (select id from purchasing.supplier_payment_accounts
@@ -113,19 +115,19 @@ select is((select purchasing.payment_unapplied(p.id) from purchasing.payments p
 select is(pg_temp.pay(903, 'transfer', 100, pg_temp.alloc(4567, 100), 408, 202),
           'El pago y la factura tienen que ser del mismo local y proveedor.', 'un pago es de un local');
 select is(pg_temp.q(pg_temp.u(407), format(
-            'select purchasing.register_payment(%L, %L, recipes.today(), %L, null, 10, null, %L::jsonb, %L) ->> %L',
+            'select purchasing.register_payment(%L, %L, current_setting(''test.today'')::date, %L, null, 10, null, %L::jsonb, %L) ->> %L',
             pg_temp.u(203), pg_temp.u(901), 'cash', '[]', 'Prueba', 'result')),
           'denied', 'el Controller no registra pagos');
 select is(pg_temp.msg(pg_temp.u(408), format(
-            'select purchasing.register_payment(%L, %L, recipes.today() + 1, %L, null, 10, null, %L::jsonb, %L)',
+            'select purchasing.register_payment(%L, %L, current_setting(''test.today'')::date + 1, %L, null, 10, null, %L::jsonb, %L)',
             pg_temp.u(203), pg_temp.u(901), 'cash', '[]', 'Prueba')),
           'La fecha del pago no puede ser posterior a hoy.', 'sin fecha futura');
 select is(pg_temp.msg(pg_temp.u(408), format(
-            'select purchasing.register_payment(%L, %L, recipes.today(), %L, null, 10, null, %L::jsonb, %L)',
+            'select purchasing.register_payment(%L, %L, current_setting(''test.today'')::date, %L, null, 10, null, %L::jsonb, %L)',
             pg_temp.u(203), pg_temp.u(903), 'transfer', '[]', 'Prueba')),
           'Elegí una cuenta activa del proveedor para ese medio de pago.', 'una transferencia va a una cuenta del proveedor');
 select is(pg_temp.msg(pg_temp.u(408), format(
-            'select purchasing.register_payment(%L, %L, recipes.today(), %L, null, 10, null, %L::jsonb, %L)',
+            'select purchasing.register_payment(%L, %L, current_setting(''test.today'')::date, %L, null, 10, null, %L::jsonb, %L)',
             pg_temp.u(203), pg_temp.u(901), 'cash', '[]', ' ')),
           'Escribí el motivo del pago.', 'con motivo');
 
@@ -154,8 +156,9 @@ select is(pg_temp.q(pg_temp.u(408), format('select purchasing.void_payment(%L, %
           'voided', 'un pago se anula, con motivo');
 select is(pg_temp.status(1234) || ' ' || pg_temp.balance(1234), 'released 3000.0000',
           'la factura vuelve a liberada con su saldo');
-select is(pg_temp.msg(null, format('update purchasing.payments set payment_amount = 1 where reference = %L', 'TRF-000123')),
-          'Un pago registrado no cambia: anulalo, con motivo, y registralo de nuevo.', 'un pago registrado no cambia');
+-- Ni siquiera el dueño de la base: lo frena el trigger (las personas ni pueden escribir la tabla).
+select throws_ok($$update purchasing.payments set payment_amount = 1 where reference = 'TRF-000123'$$, '42501',
+                 'Un pago registrado no cambia: anulalo, con motivo, y registralo de nuevo.', 'un pago registrado no cambia');
 
 -- ---------------------------------------------------------------------------
 -- Agenda (bordes) y avisos (una sola vez)

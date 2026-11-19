@@ -2930,7 +2930,8 @@ export type Database = {
         | "receipt_report"
         | "receipt_differences"
         | "invoice_observed"
-        | "price_variation";
+        | "price_variation"
+        | "payment_due";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -5944,6 +5945,158 @@ export type Database = {
         };
         Relationships: [];
       };
+      payment_allocations: {
+        Row: {
+          allocated_amount: number;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          invoice_id: string;
+          payment_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          allocated_amount: number;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          invoice_id: string;
+          payment_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          allocated_amount?: number;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          invoice_id?: string;
+          payment_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_invoice_fkey";
+            columns: ["invoice_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "payment_allocations_payment_fkey";
+            columns: ["payment_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "payments";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      payments: {
+        Row: {
+          brand_id: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          method: Database["purchasing"]["Enums"]["payment_method"];
+          notes: string | null;
+          paid_on: string;
+          payment_account_id: string | null;
+          payment_amount: number;
+          receipt_id: string | null;
+          reference: string | null;
+          restaurant_id: string;
+          status: Database["purchasing"]["Enums"]["payment_status"];
+          supplier_id: string;
+          updated_at: string;
+          updated_by: string | null;
+          voided_at: string | null;
+          voided_by: string | null;
+          voided_reason: string | null;
+          withholding_amount: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          method: Database["purchasing"]["Enums"]["payment_method"];
+          notes?: string | null;
+          paid_on: string;
+          payment_account_id?: string | null;
+          payment_amount: number;
+          receipt_id?: string | null;
+          reference?: string | null;
+          restaurant_id: string;
+          status?: Database["purchasing"]["Enums"]["payment_status"];
+          supplier_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
+          voided_reason?: string | null;
+          withholding_amount?: number | null;
+        };
+        Update: {
+          brand_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          method?: Database["purchasing"]["Enums"]["payment_method"];
+          notes?: string | null;
+          paid_on?: string;
+          payment_account_id?: string | null;
+          payment_amount?: number;
+          receipt_id?: string | null;
+          reference?: string | null;
+          restaurant_id?: string;
+          status?: Database["purchasing"]["Enums"]["payment_status"];
+          supplier_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
+          voided_reason?: string | null;
+          withholding_amount?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payments_payment_account_id_fkey";
+            columns: ["payment_account_id"];
+            isOneToOne: false;
+            referencedRelation: "supplier_payment_accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "payments_receipt_id_fkey";
+            columns: ["receipt_id"];
+            isOneToOne: false;
+            referencedRelation: "receipts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       price_list_items: {
         Row: {
           bonus_per_unit_amount: number;
@@ -6816,6 +6969,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      add_payment_attachment: {
+        Args: { p_page?: number; p_payment_id: string; p_storage_path: string };
+        Returns: Json;
+      };
       add_price_list_attachment: {
         Args: { p_page: number; p_price_list_id: string; p_reason: string; p_storage_path: string };
         Returns: Json;
@@ -6828,6 +6985,10 @@ export type Database = {
           p_storage_path: string;
         };
         Returns: Json;
+      };
+      allocate_payment: {
+        Args: { p_amount: number; p_invoice_id: string; p_payment_id: string };
+        Returns: undefined;
       };
       apply_invoice_header: {
         Args: {
@@ -6892,6 +7053,11 @@ export type Database = {
       };
       apply_lower_po_approval: { Args: { p_request_id: string }; Returns: undefined };
       apply_order_approval: { Args: { p_request_id: string }; Returns: undefined };
+      apply_payment_credit: {
+        Args: { p_allocations: Json; p_payment_id: string; p_reason: string };
+        Returns: Json;
+      };
+      apply_receipt_cash: { Args: { p_payment_id: string }; Returns: number };
       approve_invoice: {
         Args: { p_id: string; p_reason: string; p_version?: string };
         Returns: Json;
@@ -6906,6 +7072,21 @@ export type Database = {
       can_upload_document: { Args: { p_name: string }; Returns: boolean };
       cancel_invoice: { Args: { p_id: string; p_reason: string }; Returns: Json };
       cancel_order: { Args: { p_id: string; p_reason: string }; Returns: Json };
+      cash_to_confirm: {
+        Args: { p_restaurant_id?: string };
+        Returns: {
+          order_number: string;
+          paid_on: string;
+          payment_amount: number;
+          payment_id: string;
+          purchase_order_id: string;
+          receipt_id: string;
+          restaurant_id: string;
+          restaurant_name: string;
+          supplier_id: string;
+          supplier_name: string;
+        }[];
+      };
       check_invoice: {
         Args: { p_id: string };
         Returns: Database["purchasing"]["Enums"]["invoice_status"];
@@ -6929,6 +7110,10 @@ export type Database = {
           p_paper_number: string;
           p_reason: string;
         };
+        Returns: Json;
+      };
+      confirm_cash_payment: {
+        Args: { p_amount: number; p_id: string; p_reason: string };
         Returns: Json;
       };
       create_invoice: {
@@ -6991,6 +7176,7 @@ export type Database = {
         Returns: Json;
       };
       invoice_access: { Args: { p_id: string }; Returns: Json };
+      invoice_balance: { Args: { p_id: string }; Returns: number };
       invoice_is_a: {
         Args: { p_class: Database["purchasing"]["Enums"]["invoice_class"] };
         Returns: boolean;
@@ -7092,6 +7278,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      notify_due_payments: { Args: { p_day?: string }; Returns: number };
       notify_expired_price_lists: { Args: Record<PropertyKey, never>; Returns: number };
       notify_requester: {
         Args: {
@@ -7181,6 +7368,35 @@ export type Database = {
           status: Database["purchasing"]["Enums"]["receipt_status"];
         }[];
       };
+      payable_invoices: { Args: { p_restaurant_id: string; p_supplier_id: string }; Returns: Json };
+      payment_message: { Args: { p_id: string }; Returns: string };
+      payment_schedule_list: {
+        Args: {
+          p_limit?: number;
+          p_offset?: number;
+          p_restaurant_id?: string;
+          p_supplier_id?: string;
+          p_tab?: string;
+        };
+        Returns: {
+          balance_amount: number;
+          days_left: number;
+          due_on: string;
+          due_state: string;
+          invoice_class: Database["purchasing"]["Enums"]["invoice_class"];
+          invoice_id: string;
+          issued_on: string;
+          number: number;
+          point_of_sale: number;
+          restaurant_id: string;
+          restaurant_name: string;
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
+          total_amount: number;
+        }[];
+      };
+      payment_unapplied: { Args: { p_id: string }; Returns: number };
       pending_article: {
         Args: { p_id: string };
         Returns: {
@@ -7239,6 +7455,7 @@ export type Database = {
           valid_from: string;
         }[];
       };
+      purchasing_dashboard: { Args: { p_restaurant_id?: string }; Returns: Json };
       qty_text: { Args: { p_value: number }; Returns: string };
       raise_friendly: {
         Args: { p_constraint: string; p_message: string; p_state: string };
@@ -7249,6 +7466,10 @@ export type Database = {
         Returns: undefined;
       };
       raise_order_error: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
+      raise_payment_error: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
       };
@@ -7297,6 +7518,20 @@ export type Database = {
           p_id: string;
           p_kind: Database["purchasing"]["Enums"]["po_event_kind"];
           p_message: string;
+        };
+        Returns: Json;
+      };
+      register_payment: {
+        Args: {
+          p_account_id: string;
+          p_allocations: Json;
+          p_amount: number;
+          p_method: Database["purchasing"]["Enums"]["payment_method"];
+          p_paid_on: string;
+          p_reason: string;
+          p_reference: string;
+          p_restaurant_id: string;
+          p_supplier_id: string;
         };
         Returns: Json;
       };
@@ -7362,6 +7597,10 @@ export type Database = {
         Returns: Json;
       };
       submit_order: { Args: { p_id: string; p_reason: string }; Returns: Json };
+      supplier_account: {
+        Args: { p_movements?: number; p_restaurant_id?: string; p_supplier_id: string };
+        Returns: Json;
+      };
       supplier_list: {
         Args: {
           p_active?: boolean;
@@ -7405,6 +7644,7 @@ export type Database = {
       };
       valid_days: { Args: { p_days: number[] }; Returns: boolean };
       visible_document_paths: { Args: Record<PropertyKey, never>; Returns: string[] };
+      void_payment: { Args: { p_id: string; p_reason: string }; Returns: Json };
       write_invoice_lines: {
         Args: {
           p_inv: Omit<
@@ -7445,7 +7685,8 @@ export type Database = {
         | "receipt_signed"
         | "product_issue"
         | "invoice_original"
-        | "credit_note";
+        | "credit_note"
+        | "payment_receipt";
       due_on_source: "printed" | "terms";
       invoice_check_kind:
         "quantity" | "price" | "mapping" | "totals" | "legal_entity" | "order" | "notes";
@@ -7472,6 +7713,7 @@ export type Database = {
         | "non_fiscal"
         | "handwritten_note";
       payment_method: "cash" | "transfer" | "check" | "echeq" | "card" | "electronic_code";
+      payment_status: "to_confirm" | "registered" | "receipt_queued" | "voided";
       payment_terms: "cash" | "cash_on_delivery" | "same_day_transfer" | "account";
       po_event_kind: "news" | "shortage" | "delivery_change" | "note" | "cancelled";
       po_status:
@@ -9050,6 +9292,7 @@ export const Constants = {
         "receipt_differences",
         "invoice_observed",
         "price_variation",
+        "payment_due",
       ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
@@ -9126,6 +9369,7 @@ export const Constants = {
         "product_issue",
         "invoice_original",
         "credit_note",
+        "payment_receipt",
       ],
       due_on_source: ["printed", "terms"],
       invoice_check_kind: [
@@ -9175,6 +9419,7 @@ export const Constants = {
         "handwritten_note",
       ],
       payment_method: ["cash", "transfer", "check", "echeq", "card", "electronic_code"],
+      payment_status: ["to_confirm", "registered", "receipt_queued", "voided"],
       payment_terms: ["cash", "cash_on_delivery", "same_day_transfer", "account"],
       po_event_kind: ["news", "shortage", "delivery_change", "note", "cancelled"],
       po_status: [
