@@ -12,6 +12,12 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
   - **Pruebas:** pgTAP 390 (61) y 391 (con el caso 34: el tablero en 16 a 18 ms con 500 facturas), Vitest del tablero y del reparto, Playwright `pagos.spec.ts` con axe. Suite completa en verde en local.
   - **Revisiones:** base y seguridad (apta) corregidas; diseño: el grave (menú con dos actuales) y los 7 medios corregidos. Anotado sin cambio: comparación entre locales, paginar «Para confirmar», «Ver los N» en pagos próximos y sin mapear.
 - **Compuerta de la Fase 3:** antes de cargar proveedores reales, Soy prueba en staging con los datos de prueba los 3 pasos de la lista de cambios (pagar una factura en dos partes, el efectivo al recibir y el tablero como Compras y como chef). Recién con su visto bueno se cargan proveedores reales en producción.
+- **Prueba de la Fase 3 para Soy en staging** (rama `feat/prueba-compras-soy`, pedido de Joaco del 2026-11-19): `supabase/staging/demo-purchasing.sql` y la opción «Cargar compras, facturas y pagos de prueba» de **Publicar en staging**. Guía y recorrido: `docs/guias/prueba-fase-3-soy.md`.
+  - Se apoya en la prueba de la Fase 2: sus 3 proveedores ficticios y sus materias primas, en Demo Pastas Centro. Carga 5 listas, 8 OC, 7 recepciones, 6 facturas, una nota de crédito y 2 pagos, con las funciones de la app y la sesión de cada persona de prueba.
+  - Deja las 3 tareas de la compuerta para Soy: pagar en dos partes, confirmar el efectivo y dar conforme la factura de ese efectivo.
+  - Fotos: la imagen «FACTURA DE PRUEBA» (`supabase/staging/factura-de-prueba.jpg`). El script deja el registro vacío en Storage y el paso «Subir las fotos de prueba» lo reemplaza con la CLI (`storage rm` y `storage cp`, sin claves nuevas).
+  - Ensayada en local imitando staging: sin código de local, sin razón social y sin Almacén. Las 3 tareas de Soy, probadas con la sesión de la Superadministradora.
+  - **Falta:** que Joaco fusione y la lance (con la Fase 2 ya cargada).
 - **Dependencias (#89):** en verde en GitHub. Falta fusionarlo (reemplaza a #79, #8, #4, #3 y #2, que se cierran).
 - **Para Joaco:**
   - después de fusionar, volver a correr «Crear el superadministrador de prueba» en staging (Actions → Publicar en staging): el rol `superadmin_test` copia los permisos al correrse y no tiene los de pagos ni del tablero;

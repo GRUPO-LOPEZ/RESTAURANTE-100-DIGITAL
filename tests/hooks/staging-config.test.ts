@@ -197,6 +197,67 @@ describe("Staging: recetas de prueba (la prueba de la Fase 2 para Soy)", () => {
   });
 });
 
+describe("Staging: compras de prueba (la prueba de la Fase 3 para Soy)", () => {
+  const script = read("supabase/staging/demo-purchasing.sql");
+  const stepOf = (name: string) =>
+    baseJob.slice(baseJob.indexOf(`name: ${name}`)).split("- name:")[0] ?? "";
+  const load = stepOf("Cargar compras, facturas y pagos de prueba");
+  const photos = stepOf("Subir las fotos de prueba");
+
+  it("se cargan solo a mano, con la opción tildada, después de las recetas y sin otras claves", () => {
+    for (const step of [load, photos]) {
+      expect(step).toContain(
+        "if: github.event_name == 'workflow_dispatch' && inputs.load_demo_purchasing",
+      );
+    }
+    // Ensayar (DRY_RUN) no sube fotos.
+    expect(photos).toContain("&& !inputs.demo_purchasing_dry_run");
+    expect(load).toContain('if [ "$DRY" = "true" ]; then export DRY_RUN=1; fi');
+    expect(load).toContain("-f supabase/staging/demo-purchasing.sql");
+    const envOf = (step: string) =>
+      [...step.matchAll(/^ {10}(\w+):/gm)].map(([, name]) => name).sort();
+    expect(envOf(load)).toEqual(["DRY", "FILES_OUT", "PGPASSWORD", "PGSSLMODE", "STAGING_DB_URL"]);
+    // Las fotos solo con el token de la CLI: ni la base ni las contraseñas de la demo. Y solo si el proyecto
+    // conectado es el de staging que se verificó.
+    expect(envOf(photos)).toEqual(["EXPECTED_REF", "SUPABASE_ACCESS_TOKEN"]);
+    expect(photos).toContain("EXPECTED_REF: ${{ steps.target.outputs.project_ref }}");
+    expect(photos).toContain('"$(cat supabase/.temp/project-ref 2>/dev/null)" != "$EXPECTED_REF"');
+    const at = (name: string) => baseJob.indexOf(`name: ${name}`);
+    expect(at("Cargar compras, facturas y pagos de prueba")).toBeGreaterThan(
+      at("Cargar materias primas, precios y recetas de prueba"),
+    );
+    expect(at("Subir las fotos de prueba")).toBeGreaterThan(
+      at("Cargar compras, facturas y pagos de prueba"),
+    );
+  });
+
+  it("sube solo la imagen de prueba, al bucket de compras y a rutas del Grupo Demo", () => {
+    expect(photos).toContain("supabase/staging/factura-de-prueba.jpg");
+    expect(photos).toContain('"ss:///purchasing-documents/$path"');
+    expect(photos).toContain("^00000000-0000-4000-8000-000000000001/");
+    // Las órdenes de la CLI: de a un archivo, en el proyecto conectado (el de staging).
+    const cli = photos.split("\n").filter((l) => l.includes("supabase storage"));
+    expect(cli).toHaveLength(2);
+    for (const line of cli) {
+      expect(line).toContain("--linked");
+      expect(line).not.toMatch(/ (--local|--recursive|-r)( |$)/);
+    }
+  });
+
+  it("el script frena sin la Fase 2, no repite la carga y es todo o nada", () => {
+    expect(script).toContain("\\set ON_ERROR_STOP on");
+    expect(script).toContain("Falta la prueba de la Fase 2");
+    expect(script).toContain("ya estaba cargada: no se cambia nada");
+    expect(script).toMatch(/^begin;$/m);
+    expect(script).toMatch(/^ {2}commit;$/m);
+    // Solo datos inventados y con las funciones de la app: nada de usuarios, claves ni escrituras directas en compras.
+    expect(script).not.toMatch(/service_role|encrypted_password|auth\.users/);
+    expect(script).not.toMatch(
+      /insert into purchasing\.(invoices|payments|price_lists|purchase_orders|receipts)/,
+    );
+  });
+});
+
 describe("Staging: claves y código de terceros", () => {
   it("nunca carga el seed local ni usa la clave service_role", () => {
     expect(workflow).not.toContain("--include-seed");
