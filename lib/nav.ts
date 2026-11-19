@@ -16,6 +16,8 @@ export type NavIcon =
   | "orders"
   | "receipts"
   | "invoices"
+  | "payments"
+  | "purchasingBoard"
   | "inventory"
   | "rubros"
   | "costs"
@@ -46,6 +48,8 @@ export type NavMenus = {
   orders: boolean;
   receive: boolean;
   invoices: boolean;
+  payments: boolean;
+  purchasingBoard: boolean;
   inventory: boolean;
   costs: boolean;
   reports: boolean;
@@ -83,9 +87,12 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
     },
     {
       // Compras (Fase 3, pedido de Joaco del 2026-11-18, ADR-0057): todo el circuito en un grupo, en el orden en que
-      // se trabaja. Pagos (Prompt 6) se suma acá.
+      // se trabaja, con el Tablero de compras arriba (Prompt 6, ADR-0060).
       label: "Compras",
       items: [
+        ...(menus.purchasingBoard
+          ? [{ href: "/compras", label: "Tablero de compras", icon: "purchasingBoard" as const }]
+          : []),
         // Proveedores (ADR-0050): los ve quien ve su ficha, también el cocinero.
         ...(menus.suppliers
           ? [{ href: "/proveedores", label: "Proveedores", icon: "suppliers" as const }]
@@ -112,6 +119,10 @@ export function navGroups(menus: NavMenus, unread: number): NavGroup[] {
         // y el chef no.
         ...(menus.invoices
           ? [{ href: "/compras/facturas", label: "Facturas", icon: "invoices" as const }]
+          : []),
+        // Pagos (ADR-0060): agenda de vencimientos y cuenta corriente, para quien ve pagos.
+        ...(menus.payments
+          ? [{ href: "/compras/pagos", label: "Pagos", icon: "payments" as const }]
           : []),
         ...(menus.inventory
           ? [{ href: "/inventario", label: "Inventario", icon: "inventory" as const }]
@@ -182,15 +193,19 @@ export function navFits(groups: NavGroup[]): boolean {
   return navHeight(groups) <= NAV_ROOM - NAV_MARGIN;
 }
 
-// Contraída (solo íconos), todos los accesos van a la vista, seguidos (36 px cada uno) y con una línea de 1 px entre
-// grupos. El pie contraído mide 121 px (sin el nombre de la persona; medido en 1715 × 843). Si no entran, los íconos
-// pasan a 32 px (decisión de Joaco del 2026-11-18, al sumar Facturas: 18 accesos se pasaban 27 px).
-const NAV_ICON = 36;
+// Contraída (solo íconos), todos los accesos van a la vista, seguidos y con una línea de 1 px entre grupos. El pie
+// contraído mide 121 px (sin el nombre de la persona; medido en 1715 × 843). Los íconos van de 36 px; si no entran, de
+// 32 (decisión de Joaco del 2026-11-18, al sumar Facturas) y, si tampoco, de 28 (al sumar Pagos y el Tablero de
+// compras, ADR-0060). 28 es el último escalón: el próximo módulo que sume accesos tiene que plegar por grupos.
 const NAV_ROOM_COLLAPSED = 843 - 64 - 121 - 16 - 8;
 
-export function collapsedFits(groups: NavGroup[]): boolean {
+export function collapsedIconSize(groups: NavGroup[]): 36 | 32 | 28 {
   const items = groups.reduce((n, g) => n + g.items.length, 0);
-  return items * NAV_ICON + Math.max(groups.length - 1, 0) <= NAV_ROOM_COLLAPSED - NAV_MARGIN;
+  const lines = Math.max(groups.length - 1, 0);
+  for (const size of [36, 32] as const) {
+    if (items * size + lines <= NAV_ROOM_COLLAPSED - NAV_MARGIN) return size;
+  }
+  return 28;
 }
 
 // El grupo de la pantalla actual (también en sus pantallas internas), o null si ninguno la tiene.
@@ -234,6 +249,7 @@ const MODULES: { href: string; label: string }[] = [
   { href: "/listas-de-precios", label: "Listas de precios" },
   { href: "/compras/ordenes", label: "Órdenes de compra" },
   { href: "/compras/facturas", label: "Facturas" },
+  { href: "/compras/pagos", label: "Pagos" },
   { href: "/reportes", label: "Reportes" },
   { href: "/calidad", label: "Calidad" },
   { href: "/aprobaciones", label: "Aprobaciones" },
