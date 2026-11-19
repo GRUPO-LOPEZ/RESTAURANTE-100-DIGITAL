@@ -15,7 +15,7 @@ Una trattoria inventada dentro de **Demo Pastas**, en staging, para ver el circu
 | Preparaciones       | 4        | Salsa pomodoro, Ragú de osobuco, Masa al huevo y Fondo de verduras                                                                                                        |
 | Platos              | 9        | Tagliatelle al ragú, Fettuccine al pomodoro, Carbonara, Alfredo, Ñoquis de espinaca, Risotto alla milanese, Pollo al romero, Lasaña de berenjenas y Peceto al vino blanco |
 
-Las 13 recetas quedan publicadas y asignadas a los dos locales de Demo Pastas.
+Las 13 recetas quedan publicadas y asignadas a los dos locales de Demo Pastas. Si esos locales no tienen razón social (en staging no la carga `demo-data.sql`), la Superadministradora de prueba les asigna una ficticia, «Demo Pastas S.R.L. (ficticia)», responsable inscripta: sin ella el sistema no sabe si el costo va con o sin IVA y deja las recetas incompletas.
 
 **Dos casos a propósito**, para ver que el sistema avisa en vez de inventar un número:
 
