@@ -65,7 +65,8 @@ test("el Controller abre un indicador y llega a la ficha", async ({ page }) => {
 test("quien no ve borradores los cuenta, sin ver sus nombres", async ({ page }) => {
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto(`/calidad/recipe_approved?local=${PASTAS_CENTRO}`);
-  await expect(page.getByText(/que no podés ver/)).toBeVisible();
+  // Visible: aplicar ?local= navega una vez más y Next guarda oculta la pantalla anterior, con el mismo aviso.
+  await expect(page.getByText(/que no podés ver/).locator("visible=true")).toBeVisible();
   await expect(page.getByText("Risotto de hongos")).toHaveCount(0);
   await axe(page);
 });
