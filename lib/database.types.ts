@@ -6008,6 +6008,7 @@ export type Database = {
           brand_id: string;
           created_at: string;
           created_by: string | null;
+          currency: string;
           deleted_at: string | null;
           deleted_by: string | null;
           group_id: string;
@@ -6034,6 +6035,7 @@ export type Database = {
           brand_id: string;
           created_at?: string;
           created_by?: string | null;
+          currency?: string;
           deleted_at?: string | null;
           deleted_by?: string | null;
           group_id: string;
@@ -6059,6 +6061,7 @@ export type Database = {
           brand_id?: string;
           created_at?: string;
           created_by?: string | null;
+          currency?: string;
           deleted_at?: string | null;
           deleted_by?: string | null;
           group_id?: string;
@@ -7091,6 +7094,7 @@ export type Database = {
         Args: { p_id: string };
         Returns: Database["purchasing"]["Enums"]["invoice_status"];
       };
+      check_payment_lines: { Args: { p_lines: Json }; Returns: undefined };
       close_article: {
         Args: {
           p_a: Omit<
@@ -7539,6 +7543,7 @@ export type Database = {
         Args: { p_approver: string; p_id: string; p_run_id: string };
         Returns: undefined;
       };
+      release_overpayment: { Args: { p_invoice_id: string }; Returns: number };
       request_lower_po_approval: {
         Args: { p_reason: string; p_supplier_id: string };
         Returns: Json;

@@ -8,7 +8,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(34);
+select plan(52);
 -- La fecha de la Argentina (la que usa la base), para las consultas que corren con la sesión de una persona.
 select set_config('test.today', recipes.today()::text, true);
 
@@ -178,8 +178,75 @@ select ok(purchasing.notify_due_payments() >= 1, 'avisa las facturas por vencer 
 select is(purchasing.notify_due_payments(), 0, 'una sola vez por factura');
 
 -- ---------------------------------------------------------------------------
+-- Revisión: la nota que llega después de pagar, aplicar lo que quedó a cuenta, renglones y estados
+-- ---------------------------------------------------------------------------
+-- La A de Lácteos (4600) está pagada entera: una nota de crédito tardía la deja pagada y lo de más vuelve a cuenta.
+select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.add_credit_debit_note(%L, %L::jsonb, %L)',
+            pg_temp.inv(4600), jsonb_build_object('note_kind', 'credit', 'issued_on', current_setting('test.today'),
+                                                  'net_amount', 300), 'Bonificación que llegó tarde')), 'sin error',
+          'una nota de crédito entra también a una factura pagada');
+select is(pg_temp.status(4600) || ' ' || pg_temp.balance(4600), 'paid 0.0000', 'queda pagada, sin saldo negativo');
+select is((select purchasing.payment_unapplied(id) from purchasing.payments where reference = 'TRF-000123'),
+          300.0000::numeric, 'y lo pagado de más vuelve a quedar a cuenta del pago');
+select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.add_credit_debit_note(%L, %L::jsonb, %L)',
+            pg_temp.inv(4600), jsonb_build_object('note_kind', 'debit', 'issued_on', current_setting('test.today'),
+                                                  'net_amount', 50), 'Flete que faltaba')) || ' ' || pg_temp.status(4600),
+          'sin error released', 'una nota de débito sobre una pagada la vuelve a liberada, con su saldo');
+select is(pg_temp.q(pg_temp.u(408), format('select purchasing.apply_payment_credit(%L, %L::jsonb, %L) ->> %L',
+            (select id from purchasing.payments where reference = 'TRF-000123'), pg_temp.alloc(4600, 50),
+            'Lo que quedó a cuenta', 'unapplied')),
+          '250.00', 'lo que quedó a cuenta se aplica a otra factura liberada');
+select is(pg_temp.status(4600), 'paid', 'y la deja pagada');
+select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.apply_payment_credit(%L, %L::jsonb, %L)',
+            (select id from purchasing.payments where reference = 'TRF-000123'),
+            '[{"invoice_id": "no-es-un-id", "amount": 1}]', 'Prueba')),
+          'Una de las facturas a pagar no se entiende.', 'un renglón mal escrito se explica en español');
+select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.apply_payment_credit(%L, %L::jsonb, %L)',
+            (select id from purchasing.payments where reference = 'TRF-000123'),
+            jsonb_build_array(jsonb_build_object('invoice_id', pg_temp.inv(4567))), 'Prueba')),
+          'Escribí cuánto se paga de cada factura (mayor que cero).', 'un renglón sin monto, también');
+select throws_ok($$update purchasing.invoices set status = 'released' where number = 4600$$, '42501',
+                 'Una factura conforme no cambia: corregila con una nota de crédito o débito.',
+                 'una pagada sin saldo no vuelve a liberada');
+
+-- El efectivo confirmado ANTES de que se libere su factura se aplica al liberarla (trigger on_invoice_released).
+alter table purchasing.invoices disable trigger guard_invoice;
+update purchasing.invoices set status = 'approved' where number = 4567;
+alter table purchasing.invoices enable trigger guard_invoice;
+select is(pg_temp.q(pg_temp.u(408), format('select purchasing.register_payment(%L, %L, %L, %L, null, 1000, null, null, %L) ->> %L',
+            pg_temp.u(203), pg_temp.u(903), current_setting('test.today'), 'cash', 'Prueba', 'result')),
+          'applied', 'un pago en efectivo a cuenta de Lácteos');
+select is((select count(*)::int from purchasing.payments where status = 'to_confirm'), 0,
+          'confirmar dos veces no se puede: ya no queda efectivo para confirmar');
+
+-- ---------------------------------------------------------------------------
+-- Auditoría
+-- ---------------------------------------------------------------------------
+select ok(exists (select 1 from audit.audit_events e where e.table_name = 'payments' and e.action = 'insert'
+                    and e.reason = 'Pago de prueba' and e.source = 'manual'),
+          'cada pago queda en el historial, con su motivo y su origen');
+select ok(exists (select 1 from audit.audit_events e where e.table_name = 'payment_allocations' and e.action = 'insert'),
+          'y cada aplicación también');
+select ok(exists (select 1 from audit.audit_events e where e.table_name = 'payments' and e.action = 'update'
+                    and e.reason = 'Se cargó dos veces'),
+          'anular queda con su motivo');
+
+-- ---------------------------------------------------------------------------
 -- RLS y Storage
 -- ---------------------------------------------------------------------------
+select is(pg_temp.msg(pg_temp.u(408), format('insert into purchasing.payments (group_id, brand_id, restaurant_id, supplier_id, paid_on, method, payment_amount) select group_id, brand_id, id, %L, current_date, %L, 1 from org.restaurants where id = %L',
+            pg_temp.u(901), 'cash', pg_temp.u(203))),
+          'permission denied for table payments', 'nadie escribe la tabla directo: solo las funciones');
+select is(pg_temp.q(pg_temp.u(409), 'select count(*) from purchasing.payment_allocations'), '0',
+          'el cocinero no ve las aplicaciones');
+select is(pg_temp.q(pg_temp.u(408), format('select purchasing.can_upload_document(%L)',
+            format('00000000-0000-4000-8000-000000000001/payments/%s/%s.jpg',
+                   (select id from purchasing.payments where reference = 'TRF-000123'), gen_random_uuid()))),
+          'true', 'Compras sube el comprobante de un pago');
+select is(pg_temp.q(pg_temp.u(404), format('select purchasing.can_upload_document(%L)',
+            format('00000000-0000-4000-8000-000000000001/payments/%s/%s.jpg',
+                   (select id from purchasing.payments where reference = 'TRF-000123'), gen_random_uuid()))),
+          'false', 'el gerente de otro local no');
 select is(pg_temp.q(pg_temp.u(409), 'select count(*) from purchasing.payments'), '0', 'el cocinero no ve pagos');
 select is(pg_temp.q(pg_temp.u(404), 'select count(*) from purchasing.payments'), '0',
           'el gerente de otro local no ve los pagos de Demo Parrilla Centro');
