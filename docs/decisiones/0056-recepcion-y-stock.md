@@ -138,11 +138,11 @@ Al cerrar:
 - El filtro por lote usa `like`: se mide con `explain analyze` cuando crezca.
 - El efectivo se oculta con `prices.view` en la ficha y con `hide_costs` en el historial; hoy coinciden en todos los roles.
 - No se puede anular una recepción abierta: se retoma y se cierra.
-- La pantalla no tiene un acceso directo a Recepción en la barra inferior del celular: está en «Menú». Queda para que decida Joaco (revisión de interfaz, M4).
+- La barra inferior del celular no suma Recepción (sigue en «Menú»). En su lugar, **«Recibir mercadería» va en el encabezado del Inicio** (decisión de Joaco, 2026-11-17, PR aparte), para quien tiene `purchasing.receive`. Con el tablero es un botón secundario, al lado de «Ver qué falta corregir», y lleva el local del tablero; en el Inicio simple (la cocinera) es el principal.
 
 ## Riesgos y pendientes
 
-- **La navegación de Dirección y del superadmin** ya se pasaba de 900 de alto antes de este PR, y sigue pasándose: unos 65 y 145 px. Queda un PR aparte para rediseñarla en los roles con muchos menús.
+- **La navegación de Dirección y del superadmin** ya se pasaba de 900 de alto antes de este PR, y sigue pasándose: unos 65 y 145 px. **Resuelto en ADR-0057** (grupos plegados).
 - **Las fotos del seed son filas inventadas, sin imagen:** la pantalla dice «guardada (no se puede mostrar)». Las fotos reales salen de las pruebas de Playwright.
 - **La cámara del navegador cambia según el teléfono.** Se probó con archivos (`setInputFiles`); falta mirarlo en un celular real.
 - **La factura y el pago quedan a medias** hasta los Prompts 5 y 6.

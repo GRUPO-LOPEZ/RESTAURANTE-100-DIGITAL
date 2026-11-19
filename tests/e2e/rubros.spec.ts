@@ -26,7 +26,7 @@ test("Compras crea un rubro, le cambia el nombre en la tarjeta, lo da de baja y 
   page,
 }, testInfo) => {
   const name = `Prueba ${testInfo.project.name} ${Date.now() % 1_000_000}`;
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/rubros");
   await expect(page.getByRole("heading", { name: "Rubros", level: 1 })).toBeVisible();
   await expect(
@@ -100,12 +100,18 @@ test("Compras crea un rubro, le cambia el nombre en la tarjeta, lo da de baja y 
 });
 
 test("un rubro con insumos pide el destino antes de darlo de baja", async ({ page }) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/rubros");
-  await card(page, "Carnes")
-    .getByRole("button", { name: /^Activo \(dar de baja/ })
-    .click();
+  // Si el clic llega antes de que la página termine de cargar (hidratación), la ventana no se abre: se vuelve a tocar.
   const dialog = page.getByRole("dialog", { name: "Dar de baja «Carnes»" });
+  await expect(async () => {
+    if (!(await dialog.isVisible())) {
+      await card(page, "Carnes")
+        .getByRole("button", { name: /^Activo \(dar de baja/ })
+        .click();
+    }
+    await expect(dialog).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   const target = dialog.getByLabel("Pasar a");
   await expect(target).toHaveAttribute("required", "");
   await expect(target.getByRole("option", { name: /Carnes$/ })).toHaveCount(0);
@@ -120,7 +126,7 @@ test("un rubro con insumos pide el destino antes de darlo de baja", async ({ pag
 });
 
 test("el buscador y el orden se aplican solos", async ({ page }) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/rubros");
   // El de la pantalla (la barra superior tiene la búsqueda global).
   await page.locator("#rub-buscar").fill("lacteos");
@@ -174,7 +180,7 @@ test("Dirección administra los rubros de compra y ve los de menú sin editarlos
 test("en la computadora: 5 columnas y sin scroll; en el celular, 2 columnas", async ({
   page,
 }, info) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   const columns = () =>
     grid(page, "Rubros de compra").evaluate(
       (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,

@@ -22,7 +22,7 @@ async function noHorizontalScroll(page: Page) {
 test("Compras busca por alias, crea una materia prima y la ve en su ficha", async ({
   page,
 }, testInfo) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await (await menuLink(page, "Materias primas")).click();
   await expect(page.getByRole("heading", { level: 1, name: "Materias primas" })).toBeVisible();
   // Las 50 del seed más las que crean otras corridas de esta misma prueba.
@@ -94,7 +94,7 @@ test("Compras busca por alias, crea una materia prima y la ve en su ficha", asyn
 });
 
 test("el código no se escribe y un nombre repetido se rechaza en español", async ({ page }) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas/nueva");
   // El código es de solo lectura: lo arma la base con el rubro (ADR-0041).
   await expect(page.locator("#mp-alta-codigo")).toHaveAttribute("readonly", "");
@@ -149,7 +149,7 @@ test("el Cocinero no ve Materias primas y, si entra por la dirección, vuelve al
 test("la lista de materias primas se ordena, se pagina y filtra por estado", async ({
   page,
 }, info) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas");
   await expect(page.getByRole("status").filter({ hasText: /^Filas 1 a 15 de \d+$/ })).toBeVisible();
   if (info.project.name === "computadora") {
@@ -201,7 +201,7 @@ test("la ficha muestra todo a la vista y vuelve a la lista con sus filtros", asy
   page,
   isMobile,
 }, info) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas?q=mozzarella&estado=active");
   await page.getByRole("link", { name: "Mozzarella", exact: true }).first().click();
   await expect(page.getByRole("heading", { name: "Mozzarella" })).toBeVisible();
@@ -264,7 +264,7 @@ test("la ficha muestra todo a la vista y vuelve a la lista con sus filtros", asy
 
 // Al cerrar el modal de alta, el foco vuelve al botón que lo abrió (WCAG 2.4.3, revisión de diseño del PR 3).
 test("el modal de alta devuelve el foco al cerrarse", async ({ page }) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas");
   const open = page.getByRole("link", { name: "Nueva materia prima" });
   await expect(open).toHaveAttribute("aria-haspopup", "dialog");

@@ -56,7 +56,7 @@ test.describe("en la computadora", () => {
     // Una materia prima nueva para esta prueba: así no cambia las de las otras.
     const run = `${Date.now() % 1_000_000_000}`;
     const name = `Ficha de prueba ${run}`;
-    await login(page, "compras@ejemplo.test");
+    await login(page, "compras@ejemplo.test", { mfa: true });
     await page.goto("/materias-primas");
     await page.getByRole("link", { name: "Nueva materia prima" }).click();
     const create = page.getByRole("dialog", { name: "Nueva materia prima" });
@@ -263,7 +263,7 @@ test.describe("en la computadora", () => {
   test("con precios, la unidad de recetas queda fija, el rubro se cambia y el envase del producto también queda fijo", async ({
     page,
   }, testInfo) => {
-    await login(page, "compras@ejemplo.test");
+    await login(page, "compras@ejemplo.test", { mfa: true });
     // La Cebolla tiene precios y ninguna otra prueba la usa: se le cambia el rubro y se le devuelve.
     await page.goto("/materias-primas/00000000-0000-4000-8000-000000000802");
     await expect(page.getByRole("heading", { name: "Cebolla", exact: true })).toBeVisible();
@@ -302,7 +302,7 @@ test.describe("en la computadora", () => {
   test("la ficha entra en una pantalla y los enlaces de antes llevan a su tarjeta", async ({
     page,
   }) => {
-    await login(page, "compras@ejemplo.test");
+    await login(page, "compras@ejemplo.test", { mfa: true });
     const sheet = "/materias-primas/00000000-0000-4000-8000-000000000802";
     for (const size of [
       { width: 1440, height: 900 },
@@ -374,7 +374,7 @@ test.describe("en la computadora", () => {
     await chooseLocal(page, { label: "Todos mis locales" });
     await page.setViewportSize({ width: 1440, height: 900 });
     await logout(page);
-    await login(page, "compras@ejemplo.test");
+    await login(page, "compras@ejemplo.test", { mfa: true });
     // Compras ve el precio del local elegido arriba, sin ver costos de recetas (pedido de Soy, 2026-11-16).
     await page.goto(`${sheet}?local=${PASTAS_CENTRO}`);
     await localSettled(page);
@@ -421,7 +421,7 @@ test.describe("en la computadora", () => {
 
 test("en el celular la ficha es de consulta", async ({ page, isMobile }, testInfo) => {
   test.skip(!isMobile, "Solo en el celular.");
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas/00000000-0000-4000-8000-000000000819");
   await expect(page.getByRole("heading", { name: "Mozzarella", exact: true })).toBeVisible();
   // Se lee todo; no hay campos, barra ni paneles para cargar.

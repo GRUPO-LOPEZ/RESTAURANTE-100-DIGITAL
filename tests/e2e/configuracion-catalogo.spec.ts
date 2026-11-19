@@ -17,7 +17,7 @@ test("Compras crea una subcategoría, la usa en el alta y la da de baja vacía",
   page,
 }, testInfo) => {
   const name = `Prueba ${testInfo.project.name} ${Date.now() % 1_000_000}`;
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas");
   await page.getByRole("link", { name: "Configuración" }).click();
   await expect(page.getByRole("heading", { name: "Configuración del catálogo" })).toBeVisible();
@@ -59,7 +59,7 @@ test("Compras crea una subcategoría, la usa en el alta y la da de baja vacía",
 });
 
 test("un rubro no se da de baja desde la configuración: lleva a Rubros", async ({ page }) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas/configuracion");
   const item = page.getByRole("listitem").filter({ hasText: "Cambiar el nombre de «Carnes»" });
   await expect(item.getByText("Es un rubro: se da de baja en Rubros.")).toBeVisible();

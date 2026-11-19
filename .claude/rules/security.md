@@ -30,7 +30,7 @@ El Módulo Maestro de Usuarios redactado por Soy **es ley** y se guarda completo
 ## Cuentas
 
 - Alta solo por invitación de un administrador autorizado.
-- MFA obligatorio para niveles 1 a 4 y para Controller.
+- MFA obligatorio para niveles 1 a 4, para Controller y para Compras (ADR-0058: Compras carga facturas que escriben costos; decisión de Joaco, 2026-11-18).
 - Desactivar una cuenta cierra sus sesiones al instante y conserva toda su historia.
 
 ## Ambientes

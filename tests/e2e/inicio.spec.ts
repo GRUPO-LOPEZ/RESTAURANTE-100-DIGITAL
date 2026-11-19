@@ -99,6 +99,8 @@ test("el Controller ve el tablero en una pantalla y llega a lo que falta", async
   );
   // Cada indicador sigue la regla (los bordes exactos, como la mitad justa, los prueba Vitest).
   await kpisFollowRule(page);
+  // El Controller no recibe mercadería (ADR-0056): sin el botón.
+  await expect(page.getByRole("link", { name: "Recibir mercadería" })).toHaveCount(0);
   await axe(page);
   await noOverflow(page);
 
@@ -308,16 +310,39 @@ test("el Jefe de Cocina ve lo técnico, sin costos", async ({ page }, testInfo) 
   );
   await expect(page.getByText("Mayor costo por porción")).toHaveCount(0);
   await expect(page.getByText("Materias primas sin precio")).toHaveCount(0);
+  // Quien recibe tiene «Recibir mercadería» arriba, con el local del tablero; la acción principal sigue siendo Calidad.
+  const receive = page.getByRole("link", { name: "Recibir mercadería" });
+  await expect(receive).toBeVisible();
+  await expect(receive).toHaveAttribute("href", /^\/compras\/recepcion\?local=[0-9a-f-]{36}$/);
+  await expect(page.getByRole("link", { name: "Ver qué falta corregir" })).toBeVisible();
   await axe(page);
+  await noOverflow(page);
+  if (testInfo.project.name === "computadora") {
+    for (const size of [
+      { width: 1440, height: 900 },
+      { width: 1715, height: 843 },
+    ]) {
+      await page.setViewportSize(size);
+      await noVerticalScroll(page);
+    }
+  }
+  await receive.click();
+  await expect(page.getByRole("heading", { name: "¿Qué llegó?" })).toBeVisible();
 });
 
-test("la Cocinera ve el Inicio simple, sin el tablero", async ({ page }) => {
+test("la Cocinera ve el Inicio simple, sin el tablero", async ({ page }, testInfo) => {
   await login(page, "cocinero@ejemplo.test");
   await expect(page.getByRole("heading", { name: "Tus roles" })).toBeVisible();
   await expect(page.locator('[data-slot="kpi"]')).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Ranking" })).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Accesos" })).toBeVisible();
   await axe(page);
+  await noOverflow(page);
+  if (testInfo.project.name === "computadora") await noVerticalScroll(page);
+  // Recibir mercadería, a un toque desde el Inicio (también en el celular, donde la barra de abajo no lo tiene).
+  await page.getByRole("link", { name: "Recibir mercadería" }).click();
+  await expect(page).toHaveURL(/\/compras\/recepcion/);
+  await expect(page.getByRole("heading", { name: "¿Qué llegó?" })).toBeVisible();
 });
 
 test("sin elegir local, se pide elegir uno", async ({ page }) => {

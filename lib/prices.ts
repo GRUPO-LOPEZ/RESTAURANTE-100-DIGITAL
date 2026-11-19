@@ -24,7 +24,8 @@ export const SOURCE_LABELS: Record<PriceSource, string> = {
   excel_import: "Importado de Excel",
   invoice: "Factura",
 };
-export const VAT_RATES = ["21", "10.5", "27", "0"] as const;
+// Con 2,5 % y 5 % (P5, ADR-0058).
+export const VAT_RATES = ["21", "10.5", "27", "5", "2.5", "0"] as const;
 
 export { formatMoney, perBaseLabel } from "@/lib/money";
 

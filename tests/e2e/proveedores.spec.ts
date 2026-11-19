@@ -41,7 +41,7 @@ test.describe("listado de proveedores", () => {
     page,
     isMobile,
   }) => {
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.goto("/proveedores");
     await expect(page.getByRole("heading", { level: 1, name: "Proveedores" })).toBeVisible();
     await expect(page.getByText("Frigorífico Demo").locator("visible=true").first()).toBeVisible();
@@ -92,7 +92,7 @@ test.describe("ficha de proveedor", () => {
     isMobile,
   }) => {
     test.skip(isMobile, "La ficha se carga en la computadora.");
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.goto("/proveedores");
     const name = `Proveedor de prueba ${Date.now()} S.A.`;
     // Un CUIT por proveedor: uno nuevo en cada corrida, y el mismo con el verificador cambiado para el error.
@@ -176,7 +176,7 @@ test.describe("ficha de proveedor", () => {
       { width: 1715, height: 843 },
       { width: 1920, height: 1080 },
     ];
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     const editing: number[] = [];
     for (const size of sizes) {
       await page.setViewportSize(size);
@@ -206,7 +206,7 @@ test.describe("ficha de proveedor", () => {
 
   test("en el celular es de consulta, con 44 px", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Solo celular.");
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.goto(FRIGORIFICO);
     await expect(
       page.getByText("lunes, miércoles y viernes").locator("visible=true"),

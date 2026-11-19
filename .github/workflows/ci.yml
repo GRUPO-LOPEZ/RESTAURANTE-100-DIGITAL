@@ -1,5 +1,9 @@
 # Pruebas en cada pull request y en cada push a main (prompt maestro, secciones 8 y 9).
 # Una tarea está terminada solo cuando todo esto pasa en verde.
+#
+# En paralelo (ADR-0059): las revisiones rápidas (lint, formato, tipos y Vitest), la base (pgTAP) y Playwright partido
+# en 4 tandas, cada una en su máquina y con su propia Supabase local. Al final, un trabajo junta los 4 reportes en uno.
+# El flujo sigue llamándose «Pruebas»: deploy-staging.yml espera que termine en verde.
 name: Pruebas
 
 on:
@@ -14,14 +18,14 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CI: true
+
 jobs:
-  pruebas:
-    name: Lint, tipos, Vitest, pgTAP y Playwright
+  revisiones:
+    name: Lint, formato, tipos y Vitest
     runs-on: ubuntu-latest
-    # Playwright corre con un solo proceso (comparten la base) y ya pasa los 35 minutos.
-    timeout-minutes: 90
-    env:
-      CI: true
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -58,11 +62,62 @@ jobs:
       - name: Pruebas de lógica (Vitest)
         run: npm run test:unit
 
+  base:
+    name: Base de datos (pgTAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Supabase LOCAL dentro del runner, con la misma versión de CLI que package.json. Nunca se conecta a staging ni
+      # a producción desde este flujo. Los mismos servicios que las tandas de Playwright.
+      - name: Levantar Supabase local
+        run: npx supabase start -x studio,imgproxy,realtime,postgres-meta,vector,logflare,supavisor
+
+      - name: Aplicar migraciones desde cero
+        run: npx supabase db reset
+
+      - name: Pruebas de base de datos (pgTAP)
+        run: npm run test:db
+
+      - name: Apagar Supabase local
+        if: always()
+        run: npx supabase stop --no-backup
+
+  flujos:
+    name: Playwright ${{ matrix.tanda }}/4
+    runs-on: ubuntu-latest
+    # Cada tanda es un cuarto de la suite (hoy, unos 25 minutos de pruebas más la base y el build).
+    timeout-minutes: 60
+    strategy:
+      # Si una tanda falla, las otras siguen: así se ven todas las fallas de una vez.
+      fail-fast: false
+      matrix:
+        tanda: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
       # Supabase LOCAL dentro del runner, con la misma versión de CLI que package.json.
-      # Nunca se conecta a staging ni a producción desde este job.
+      # Nunca se conecta a staging ni a producción desde este flujo.
       # Las Edge Functions (edge-runtime) hacen falta para el ingreso (auth-login, ADR-0010).
       # Mailpit hace falta para la prueba de recuperar la contraseña (lee el correo con el enlace).
-      # Storage (storage-api) hace falta para las fotos de las recetas (ADR-0023, PR 3).
+      # Storage (storage-api) hace falta para las fotos (recetas, recepción y facturas).
       - name: Levantar Supabase local
         run: npx supabase start -x studio,imgproxy,realtime,postgres-meta,vector,logflare,supavisor
 
@@ -82,31 +137,77 @@ jobs:
       - name: Aplicar migraciones desde cero
         run: npx supabase db reset
 
-      - name: Pruebas de base de datos (pgTAP)
-        run: npm run test:db
+      # El navegador y lo compilado de Next se guardan entre corridas: no se bajan ni se recompilan de cero.
+      - name: Caché del navegador de Playwright
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Instalar navegador de Playwright
         # Sin --with-deps: la imagen de GitHub ya trae las librerías de Chromium y apt dependía de los espejos de
         # Ubuntu, que el 11/11/2026 dejaron de resolverse desde las máquinas de GitHub (solo faltaban fuentes que no usamos).
         run: npx playwright install chromium
 
+      - name: Caché de Next
+        uses: actions/cache@v6
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**') }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
       - name: Build
         run: npm run build
 
-      # pgTAP deja la base como estaba (todo en transacciones con rollback): no hace falta recrearla.
+      # La base ya está recién creada: el arranque de Playwright no la vuelve a recrear.
       - name: Pruebas de flujos y accesibilidad (Playwright + axe)
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.tanda }}/4 --reporter=blob,github
         env:
           E2E_SKIP_RESET: "1"
 
-      - name: Guardar reporte de Playwright
-        if: failure()
+      - name: Guardar el reporte de la tanda
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: blob-report-${{ matrix.tanda }}
+          path: blob-report/
+          retention-days: 3
+
+      - name: Apagar Supabase local
+        if: always()
+        run: npx supabase stop --no-backup
+
+  reporte:
+    name: Reporte de Playwright
+    # Junta las 4 tandas en un solo reporte, también (y sobre todo) si alguna falló.
+    if: ${{ !cancelled() }}
+    needs: flujos
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Bajar los reportes de las tandas
+        uses: actions/download-artifact@v8
+        with:
+          path: blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Juntar los reportes
+        run: npx playwright merge-reports --reporter html ./blob-reports
+
+      - name: Guardar el reporte de Playwright
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
-
-      - name: Apagar Supabase local
-        if: always()
-        run: npx supabase stop --no-backup

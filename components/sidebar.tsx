@@ -7,11 +7,12 @@ import { ChevronDown, LogOut, PanelLeftClose, PanelLeftOpen, UserRound } from "l
 
 import { signOut } from "@/app/ingresar/actions";
 import { NavIconGlyph } from "@/components/nav-icon";
-import { SIDEBAR_COOKIE, isCurrent, type NavGroup } from "@/lib/nav";
+import { SIDEBAR_COOKIE, currentGroup, isCurrent, navFits, type NavGroup } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 // Barra lateral fija (ADR-0036), desde 800 px: 240 px expandida o 68 px solo con íconos. Logo arriba;
-// grupos plegables (antes que scroll); usuario, Mi cuenta y Salir abajo. El activo va marcado.
+// grupos plegables (antes que scroll); usuario, Mi cuenta y Salir abajo. El activo va marcado. Si el menú no entra
+// abierto en 843 de alto (ADR-0057), los grupos arrancan cerrados salvo el de la pantalla actual.
 export function Sidebar({
   groups,
   collapsedInitial,
@@ -23,6 +24,12 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(collapsedInitial);
+  const fits = navFits(groups);
+  const current = currentGroup(groups, pathname);
+  // Lo que la persona abrió o cerró a mano en esta pantalla. Cada pantalla arma su barra (AppShell va en cada página):
+  // en la siguiente vuelve a lo básico, con el grupo de esa pantalla abierto.
+  const [manual, setManual] = useState<Record<string, boolean>>({});
+  const isOpen = (label: string) => manual[label] ?? (fits || label === current);
   const toggle = () => {
     const next = !collapsed;
     setCollapsed(next);
@@ -66,14 +73,18 @@ export function Sidebar({
         </Link>
       </div>
       <nav aria-label="Menú principal" className="flex min-h-0 flex-1 flex-col gap-1 px-3 pb-3">
-        {/* 4 px entre grupos (antes 8): con Órdenes de compra, el menú del controller entra sin scroll en 900 de alto. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+        {/* Contraída, sin espacio entre íconos (36 px cada uno) y con una línea entre grupos: los 17 accesos del
+            superadmin entran en 843 de alto (ADR-0057). p-1: el contorno del foco (2 px, a 2 px) no queda recortado por
+            el scroll. */}
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col overflow-y-auto p-1",
+            collapsed ? "gap-0" : "gap-1",
+          )}
+        >
           {groups.map((g) =>
             collapsed ? (
-              <ul
-                key={g.label}
-                className="flex flex-col gap-1 border-t border-nav-ink/15 pt-2 first:border-0 first:pt-0"
-              >
+              <ul key={g.label} className="flex flex-col border-t border-nav-ink/15 first:border-0">
                 {g.items.map((i) => (
                   <li key={i.href}>
                     <Link
@@ -95,11 +106,26 @@ export function Sidebar({
                 ))}
               </ul>
             ) : (
-              <details key={g.label} open className="group/navgroup">
+              <details
+                key={g.label}
+                open={isOpen(g.label)}
+                onToggle={(e) => {
+                  const open = e.currentTarget.open;
+                  if (open !== isOpen(g.label)) setManual((m) => ({ ...m, [g.label]: open }));
+                }}
+                className="group/navgroup"
+              >
                 {/* Título de grupo de 28 px (decisión de Joaco, 2026-11-17, ADR-0056): con Recepción e Inventario, el
                     menú del Controller entra sin scroll en 900 de alto. Nunca menos de 24 px (WCAG 2.5.8). */}
-                <summary className="flex min-h-7 cursor-pointer list-none items-center justify-between rounded-sm px-3 text-xs font-medium tracking-wide text-nav-ink/80 uppercase hover:text-nav-active [&::-webkit-details-marker]:hidden">
-                  {g.label}
+                <summary className="flex min-h-7 cursor-pointer list-none items-center gap-2 rounded-sm px-3 text-xs font-medium tracking-wide text-nav-ink/80 uppercase hover:text-nav-active [&::-webkit-details-marker]:hidden">
+                  <span className="flex-1">{g.label}</span>
+                  {/* Cerrado, el grupo no esconde sus avisos: el número va en el título. */}
+                  {!isOpen(g.label) && unreadOf(g) > 0 ? (
+                    <span className="rounded-sm bg-warn px-1.5 text-xs font-medium tracking-normal text-warn-ink normal-case tabular-nums">
+                      {unreadOf(g)}
+                      <span className="sr-only"> avisos sin leer</span>
+                    </span>
+                  ) : null}
                   <ChevronDown
                     aria-hidden="true"
                     className="size-4 transition-transform group-open/navgroup:rotate-180"
@@ -174,4 +200,9 @@ export function Sidebar({
       </nav>
     </aside>
   );
+}
+
+// Los avisos sin leer de un grupo (la suma de sus accesos).
+function unreadOf(group: NavGroup): number {
+  return group.items.reduce((n, i) => n + (i.count ?? 0), 0);
 }

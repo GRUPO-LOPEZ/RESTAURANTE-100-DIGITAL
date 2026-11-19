@@ -648,7 +648,10 @@ export const schemas = {
       reason: reasonField,
     })
     .superRefine((v, ctx) => {
-      if (v.document_type === "invoice" && !["0", "10.5", "21", "27"].includes(v.vat_rate ?? ""))
+      if (
+        v.document_type === "invoice" &&
+        !["0", "2.5", "5", "10.5", "21", "27"].includes(v.vat_rate ?? "")
+      )
         ctx.addIssue({ code: "custom", path: ["vat_rate"], message: "Elegí la alícuota de IVA." });
       const price = Number(v.package_price.replace(",", "."));
       const discount = Number((v.discount_amount || "0").replace(",", "."));

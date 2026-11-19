@@ -63,7 +63,7 @@ test("Compras propone, el Controller aprueba y una suba grande pasa a Dirección
   const [n, name] =
     testInfo.project.name === "celular" ? [25, "Queso provolone"] : [28, "Harina 0000"];
 
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto(ingredient(n));
   await expect(
     page.getByRole("heading", { name: "Precios de compra", exact: true }).filter({ visible: true }),
@@ -88,7 +88,7 @@ test("Compras propone, el Controller aprueba y una suba grande pasa a Dirección
   await logout(page);
 
   // Una suba grande: el Controller la aprueba y pasa a Dirección General.
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto(ingredient(n));
   await propose(page, "20000");
   await logout(page);

@@ -12,6 +12,7 @@ Cuarta entrega del módulo de compras y facturas (Fase 3). Detalle técnico en A
   5. **Resumen:** si se pagó en efectivo, el importe, y el motivo si hubo observaciones. **«Cerrar recepción».**
 - **Quien pidió la orden** recibe el aviso: «Llegó la orden», «Llegó parte de la orden» o «Llegó con observaciones». En la ficha de la orden aparece la sección **Recepción**, con las dos fotos, lo observado y los lotes.
 - **Compras** recibe un aviso si hubo observaciones o si se pagó en efectivo, para confirmar el importe. También puede recibir.
+- **«Recibir mercadería» en el Inicio:** quien recibe lo tiene arriba de todo, a un toque, también en el celular.
 - **Recibir sin orden:** si llega mercadería sin orden de compra, «Recibir sin OC», se elige el proveedor y se anota lo que llegó.
 - **Inventario** (Dirección, directores de marca, gerentes, chefs, jefes de cocina, Controller y Auditor): lo que entró al stock de cada local, en la unidad de uso, con su lote. Se puede **buscar un lote**, también desde Calidad.
 
