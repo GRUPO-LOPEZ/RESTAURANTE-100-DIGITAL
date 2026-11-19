@@ -21,6 +21,10 @@ on:
         description: "Crear el superadministrador de prueba, SIN doble verificación (temporal, ADR-0037)"
         type: boolean
         default: false
+      load_demo_recipes:
+        description: "Cargar materias primas, precios y recetas de prueba (la prueba de la Fase 2 para Soy)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -149,6 +153,17 @@ jobs:
             exit 1
           fi
           psql -X --no-password -f supabase/staging/demo-data.sql "$STAGING_DB_URL"
+
+      # Materias primas, precios y recetas inventados, cargados con las funciones de la app y la sesión de cada
+      # persona de prueba (docs/guias/prueba-fase-2-soy.md). Necesita las personas de prueba; si ya se cargó, o si
+      # choca con algo que ya está, no toca nada.
+      - name: Cargar materias primas, precios y recetas de prueba
+        if: github.event_name == 'workflow_dispatch' && inputs.load_demo_recipes
+        env:
+          STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
+        run: psql -X --no-password -f supabase/staging/demo-recipes.sql "$STAGING_DB_URL"
 
       # Temporal (ADR-0037): un superadministrador de prueba sin doble verificación, para testear. El script
       # se niega a correr si no está el grupo ficticio de prueba. La contraseña sale de un secreto propio.
