@@ -71,7 +71,7 @@ test.describe("en la computadora", () => {
     const uno = { name: `Importado Uno ${stamp}`, cuit: cuit(`30${stamp}`) };
     const dos = { name: `Importado Dos ${stamp}`, cuit: cuit(`33${stamp}`) };
 
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/proveedores");
     await page.getByRole("link", { name: "Importar desde planilla" }).click();
@@ -182,7 +182,7 @@ test("en el celular, la importación avisa que se hace en la computadora", async
   isMobile,
 }) => {
   test.skip(!isMobile, "solo en el celular");
-  await login(page, COMPRAS);
+  await login(page, COMPRAS, { mfa: true });
   await page.goto("/proveedores");
   await expect(page.getByRole("link", { name: "Importar desde planilla" })).toHaveCount(0);
   await page.goto("/proveedores/importar");

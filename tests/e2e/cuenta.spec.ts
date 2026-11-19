@@ -166,8 +166,8 @@ test.describe("recuperar la contraseña y mi cuenta", () => {
   }) => {
     const other = await browser.newContext();
     const otherPage = await other.newPage();
-    await login(otherPage, "compras@ejemplo.test");
-    await login(page, "compras@ejemplo.test");
+    await login(otherPage, "compras@ejemplo.test", { mfa: true });
+    await login(page, "compras@ejemplo.test", { mfa: true });
     await page.goto("/mi-cuenta?seccion=sesiones");
     await page.getByRole("button", { name: /^Cerrar (la otra sesión|las otras)/ }).click();
     // Ya no quedan otras sesiones en la lista.

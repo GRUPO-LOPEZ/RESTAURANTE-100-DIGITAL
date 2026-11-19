@@ -2928,7 +2928,9 @@ export type Database = {
         | "price_list_expired"
         | "order_news"
         | "receipt_report"
-        | "receipt_differences";
+        | "receipt_differences"
+        | "invoice_observed"
+        | "price_variation";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -3143,6 +3145,7 @@ export type Database = {
           gross_package_price: number;
           group_id: string;
           id: string;
+          invoice_line_id: string | null;
           net_package_price: number;
           notes: string | null;
           package_price: number;
@@ -3175,6 +3178,7 @@ export type Database = {
           gross_package_price: number;
           group_id: string;
           id?: string;
+          invoice_line_id?: string | null;
           net_package_price: number;
           notes?: string | null;
           package_price: number;
@@ -3206,6 +3210,7 @@ export type Database = {
           gross_package_price?: number;
           group_id?: string;
           id?: string;
+          invoice_line_id?: string | null;
           net_package_price?: number;
           notes?: string | null;
           package_price?: number;
@@ -3231,6 +3236,7 @@ export type Database = {
           deleted_by: string | null;
           group_id: string;
           id: string;
+          invoice_weight_tolerance_pct: number;
           lookback_days: number;
           stale_days: number;
           updated_at: string;
@@ -3246,6 +3252,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id: string;
           id?: string;
+          invoice_weight_tolerance_pct?: number;
           lookback_days?: number;
           stale_days?: number;
           updated_at?: string;
@@ -3260,6 +3267,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
+          invoice_weight_tolerance_pct?: number;
           lookback_days?: number;
           stale_days?: number;
           updated_at?: string;
@@ -5371,6 +5379,506 @@ export type Database = {
         };
         Relationships: [];
       };
+      credit_debit_notes: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          invoice_id: string;
+          issued_on: string;
+          net_amount: number;
+          note_kind: Database["purchasing"]["Enums"]["note_kind"];
+          number: string | null;
+          reason: string;
+          total_amount: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          invoice_id: string;
+          issued_on: string;
+          net_amount: number;
+          note_kind: Database["purchasing"]["Enums"]["note_kind"];
+          number?: string | null;
+          reason: string;
+          total_amount: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          invoice_id?: string;
+          issued_on?: string;
+          net_amount?: number;
+          note_kind?: Database["purchasing"]["Enums"]["note_kind"];
+          number?: string | null;
+          reason?: string;
+          total_amount?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "credit_debit_notes_invoice_fkey";
+            columns: ["invoice_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      invoice_checks: {
+        Row: {
+          actual_amount: number | null;
+          check_kind: Database["purchasing"]["Enums"]["invoice_check_kind"];
+          created_at: string;
+          created_by: string | null;
+          entry_number: number;
+          expected_amount: number | null;
+          explanation: string;
+          group_id: string;
+          id: string;
+          invoice_id: string;
+          invoice_line_id: string | null;
+          passed: boolean;
+          run_at: string;
+          run_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          actual_amount?: number | null;
+          check_kind: Database["purchasing"]["Enums"]["invoice_check_kind"];
+          created_at?: string;
+          created_by?: string | null;
+          entry_number?: never;
+          expected_amount?: number | null;
+          explanation: string;
+          group_id: string;
+          id?: string;
+          invoice_id: string;
+          invoice_line_id?: string | null;
+          passed: boolean;
+          run_at?: string;
+          run_id: string;
+        };
+        Update: {
+          actual_amount?: number | null;
+          check_kind?: Database["purchasing"]["Enums"]["invoice_check_kind"];
+          created_at?: string;
+          created_by?: string | null;
+          entry_number?: never;
+          expected_amount?: number | null;
+          explanation?: string;
+          group_id?: string;
+          id?: string;
+          invoice_id?: string;
+          invoice_line_id?: string | null;
+          passed?: boolean;
+          run_at?: string;
+          run_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoice_checks_invoice_fkey";
+            columns: ["invoice_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "invoice_checks_invoice_line_id_fkey";
+            columns: ["invoice_line_id"];
+            isOneToOne: false;
+            referencedRelation: "invoice_lines";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      invoice_lines: {
+        Row: {
+          billed_quantity: number;
+          bonus_per_unit_amount: number;
+          bonus1_pct: number;
+          bonus2_pct: number;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          internal_tax_amount: number;
+          invoice_id: string;
+          is_exempt: boolean;
+          line_amount: number;
+          line_class: Database["purchasing"]["Enums"]["invoice_line_class"];
+          line_order: number;
+          list_price: number | null;
+          purchase_order_line_id: string | null;
+          purchase_product_id: string | null;
+          raw_name: string;
+          supplier_sku: string | null;
+          unit_price: number;
+          units: number | null;
+          unmapped_article_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          vat_rate: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          billed_quantity: number;
+          bonus_per_unit_amount?: number;
+          bonus1_pct?: number;
+          bonus2_pct?: number;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          internal_tax_amount?: number;
+          invoice_id: string;
+          is_exempt?: boolean;
+          line_amount: number;
+          line_class?: Database["purchasing"]["Enums"]["invoice_line_class"];
+          line_order: number;
+          list_price?: number | null;
+          purchase_order_line_id?: string | null;
+          purchase_product_id?: string | null;
+          raw_name: string;
+          supplier_sku?: string | null;
+          unit_price: number;
+          units?: number | null;
+          unmapped_article_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_rate?: number | null;
+        };
+        Update: {
+          billed_quantity?: number;
+          bonus_per_unit_amount?: number;
+          bonus1_pct?: number;
+          bonus2_pct?: number;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          internal_tax_amount?: number;
+          invoice_id?: string;
+          is_exempt?: boolean;
+          line_amount?: number;
+          line_class?: Database["purchasing"]["Enums"]["invoice_line_class"];
+          line_order?: number;
+          list_price?: number | null;
+          purchase_order_line_id?: string | null;
+          purchase_product_id?: string | null;
+          raw_name?: string;
+          supplier_sku?: string | null;
+          unit_price?: number;
+          units?: number | null;
+          unmapped_article_id?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_rate?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_invoice_fkey";
+            columns: ["invoice_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "invoice_lines_purchase_order_line_id_fkey";
+            columns: ["purchase_order_line_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_order_lines";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invoice_lines_unmapped_fkey";
+            columns: ["unmapped_article_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "unmapped_articles";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      invoice_orders: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          invoice_id: string;
+          purchase_order_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          invoice_id: string;
+          purchase_order_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          invoice_id?: string;
+          purchase_order_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoice_orders_invoice_fkey";
+            columns: ["invoice_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "invoice_orders_order_fkey";
+            columns: ["purchase_order_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "purchase_orders";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      invoice_taxes: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          invoice_id: string;
+          jurisdiction: string | null;
+          rate_pct: number | null;
+          regime: string | null;
+          tax_amount: number;
+          tax_kind: Database["purchasing"]["Enums"]["invoice_tax_kind"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          invoice_id: string;
+          jurisdiction?: string | null;
+          rate_pct?: number | null;
+          regime?: string | null;
+          tax_amount: number;
+          tax_kind: Database["purchasing"]["Enums"]["invoice_tax_kind"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          invoice_id?: string;
+          jurisdiction?: string | null;
+          rate_pct?: number | null;
+          regime?: string | null;
+          tax_amount?: number;
+          tax_kind?: Database["purchasing"]["Enums"]["invoice_tax_kind"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoice_taxes_invoice_fkey";
+            columns: ["invoice_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      invoices: {
+        Row: {
+          approved_at: string | null;
+          approved_by: string | null;
+          authorization_code: string | null;
+          authorization_expires_on: string | null;
+          authorization_kind: Database["purchasing"]["Enums"]["authorization_kind"] | null;
+          brand_id: string;
+          cancelled_reason: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          discount_amount: number;
+          due_on: string;
+          due_on_source: Database["purchasing"]["Enums"]["due_on_source"];
+          edited_by: string[];
+          exempt_amount: number;
+          group_id: string;
+          id: string;
+          internal_tax_amount: number;
+          invoice_class: Database["purchasing"]["Enums"]["invoice_class"];
+          issued_on: string;
+          issuer_tax_id: string | null;
+          legal_entity_id: string | null;
+          legal_entity_tax_id: string | null;
+          loaded_by: string;
+          net_amount: number;
+          notes: string | null;
+          number: number;
+          observed_reason: string | null;
+          perception_amount: number;
+          point_of_sale: number | null;
+          receiver_tax_id: string | null;
+          remito_refs: string | null;
+          restaurant_id: string;
+          rounding_amount: number;
+          status: Database["purchasing"]["Enums"]["invoice_status"];
+          supplier_balance_amount: number | null;
+          supplier_id: string;
+          supplier_order_ref: string | null;
+          total_amount: number;
+          updated_at: string;
+          updated_by: string | null;
+          vat_amount: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          authorization_code?: string | null;
+          authorization_expires_on?: string | null;
+          authorization_kind?: Database["purchasing"]["Enums"]["authorization_kind"] | null;
+          brand_id: string;
+          cancelled_reason?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          discount_amount?: number;
+          due_on: string;
+          due_on_source: Database["purchasing"]["Enums"]["due_on_source"];
+          edited_by?: string[];
+          exempt_amount?: number;
+          group_id: string;
+          id?: string;
+          internal_tax_amount?: number;
+          invoice_class: Database["purchasing"]["Enums"]["invoice_class"];
+          issued_on: string;
+          issuer_tax_id?: string | null;
+          legal_entity_id?: string | null;
+          legal_entity_tax_id?: string | null;
+          loaded_by: string;
+          net_amount?: number;
+          notes?: string | null;
+          number: number;
+          observed_reason?: string | null;
+          perception_amount?: number;
+          point_of_sale?: number | null;
+          receiver_tax_id?: string | null;
+          remito_refs?: string | null;
+          restaurant_id: string;
+          rounding_amount?: number;
+          status?: Database["purchasing"]["Enums"]["invoice_status"];
+          supplier_balance_amount?: number | null;
+          supplier_id: string;
+          supplier_order_ref?: string | null;
+          total_amount?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_amount?: number;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          authorization_code?: string | null;
+          authorization_expires_on?: string | null;
+          authorization_kind?: Database["purchasing"]["Enums"]["authorization_kind"] | null;
+          brand_id?: string;
+          cancelled_reason?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          discount_amount?: number;
+          due_on?: string;
+          due_on_source?: Database["purchasing"]["Enums"]["due_on_source"];
+          edited_by?: string[];
+          exempt_amount?: number;
+          group_id?: string;
+          id?: string;
+          internal_tax_amount?: number;
+          invoice_class?: Database["purchasing"]["Enums"]["invoice_class"];
+          issued_on?: string;
+          issuer_tax_id?: string | null;
+          legal_entity_id?: string | null;
+          legal_entity_tax_id?: string | null;
+          loaded_by?: string;
+          net_amount?: number;
+          notes?: string | null;
+          number?: number;
+          observed_reason?: string | null;
+          perception_amount?: number;
+          point_of_sale?: number | null;
+          receiver_tax_id?: string | null;
+          remito_refs?: string | null;
+          restaurant_id?: string;
+          rounding_amount?: number;
+          status?: Database["purchasing"]["Enums"]["invoice_status"];
+          supplier_balance_amount?: number | null;
+          supplier_id?: string;
+          supplier_order_ref?: string | null;
+          total_amount?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_amount?: number;
+        };
+        Relationships: [];
+      };
       outbound_messages: {
         Row: {
           body: string;
@@ -6285,6 +6793,19 @@ export type Database = {
         };
         Returns: string;
       };
+      add_credit_debit_note: {
+        Args: { p_invoice_id: string; p_note: Json; p_reason: string };
+        Returns: Json;
+      };
+      add_invoice_attachment: {
+        Args: {
+          p_page?: number;
+          p_source_id: string;
+          p_source_table: string;
+          p_storage_path: string;
+        };
+        Returns: Json;
+      };
       add_price_list_attachment: {
         Args: { p_page: number; p_price_list_id: string; p_reason: string; p_storage_path: string };
         Returns: Json;
@@ -6298,8 +6819,73 @@ export type Database = {
         };
         Returns: Json;
       };
+      apply_invoice_header: {
+        Args: {
+          p_header: Json;
+          p_inv: Omit<
+            Database["purchasing"]["Tables"]["invoices"]["Row"],
+            Database["purchasing"]["Tables"]["invoices"]["ComputedFields"]
+          >;
+        };
+        Returns: {
+          approved_at: string | null;
+          approved_by: string | null;
+          authorization_code: string | null;
+          authorization_expires_on: string | null;
+          authorization_kind: Database["purchasing"]["Enums"]["authorization_kind"] | null;
+          brand_id: string;
+          cancelled_reason: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          discount_amount: number;
+          due_on: string;
+          due_on_source: Database["purchasing"]["Enums"]["due_on_source"];
+          edited_by: string[];
+          exempt_amount: number;
+          group_id: string;
+          id: string;
+          internal_tax_amount: number;
+          invoice_class: Database["purchasing"]["Enums"]["invoice_class"];
+          issued_on: string;
+          issuer_tax_id: string | null;
+          legal_entity_id: string | null;
+          legal_entity_tax_id: string | null;
+          loaded_by: string;
+          net_amount: number;
+          notes: string | null;
+          number: number;
+          observed_reason: string | null;
+          perception_amount: number;
+          point_of_sale: number | null;
+          receiver_tax_id: string | null;
+          remito_refs: string | null;
+          restaurant_id: string;
+          rounding_amount: number;
+          status: Database["purchasing"]["Enums"]["invoice_status"];
+          supplier_balance_amount: number | null;
+          supplier_id: string;
+          supplier_order_ref: string | null;
+          total_amount: number;
+          updated_at: string;
+          updated_by: string | null;
+          vat_amount: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "invoices";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       apply_lower_po_approval: { Args: { p_request_id: string }; Returns: undefined };
       apply_order_approval: { Args: { p_request_id: string }; Returns: undefined };
+      approve_invoice: {
+        Args: { p_id: string; p_reason: string; p_version?: string };
+        Returns: Json;
+      };
       can_in_restaurant: {
         Args: { p_permission: string; p_restaurant_id: string };
         Returns: boolean;
@@ -6308,7 +6894,12 @@ export type Database = {
       can_read_own_document: { Args: { p_name: string }; Returns: boolean };
       can_see_payment: { Args: { p_group_id: string }; Returns: boolean };
       can_upload_document: { Args: { p_name: string }; Returns: boolean };
+      cancel_invoice: { Args: { p_id: string; p_reason: string }; Returns: Json };
       cancel_order: { Args: { p_id: string; p_reason: string }; Returns: Json };
+      check_invoice: {
+        Args: { p_id: string };
+        Returns: Database["purchasing"]["Enums"]["invoice_status"];
+      };
       close_article: {
         Args: {
           p_a: Omit<
@@ -6327,6 +6918,16 @@ export type Database = {
           p_paper_kind: Database["purchasing"]["Enums"]["paper_kind"];
           p_paper_number: string;
           p_reason: string;
+        };
+        Returns: Json;
+      };
+      create_invoice: {
+        Args: {
+          p_header: Json;
+          p_order_ids: string[];
+          p_reason: string;
+          p_restaurant_id: string;
+          p_supplier_id: string;
         };
         Returns: Json;
       };
@@ -6364,9 +6965,32 @@ export type Database = {
         }[];
       };
       expected_delivery: { Args: { p_from: string; p_supplier_id: string }; Returns: string };
+      expected_invoice_price: {
+        Args: { p_is_a: boolean; p_list_id: string; p_product_id: string };
+        Returns: {
+          bonus_per_unit_amount: number;
+          bonus1_pct: number;
+          bonus2_pct: number;
+          expected_price: number;
+          list_price: number;
+          vat_rate: number;
+        }[];
+      };
       import_suppliers: {
         Args: { p_confirm: boolean; p_group_id: string; p_reason: string; p_rows: Json };
         Returns: Json;
+      };
+      invoice_is_a: {
+        Args: { p_class: Database["purchasing"]["Enums"]["invoice_class"] };
+        Returns: boolean;
+      };
+      invoice_label: {
+        Args: {
+          p_class: Database["purchasing"]["Enums"]["invoice_class"];
+          p_number: number;
+          p_point_of_sale: number;
+        };
+        Returns: string;
       };
       link_article: {
         Args: { p_id: string; p_purchase_product_id: string; p_reason: string };
@@ -6379,6 +7003,21 @@ export type Database = {
       match_article: {
         Args: { p_name: string; p_sku: string; p_supplier_id: string };
         Returns: string;
+      };
+      match_invoice_article: {
+        Args: {
+          p_inv: Omit<
+            Database["purchasing"]["Tables"]["invoices"]["Row"],
+            Database["purchasing"]["Tables"]["invoices"]["ComputedFields"]
+          >;
+          p_name: string;
+          p_sku: string;
+        };
+        Returns: {
+          is_new: boolean;
+          purchase_product_id: string;
+          unmapped_article_id: string;
+        }[];
       };
       net_list_price: {
         Args: {
@@ -6415,6 +7054,16 @@ export type Database = {
         Returns: undefined;
       };
       notify_unmapped: { Args: { p_count: number; p_supplier_id: string }; Returns: undefined };
+      notify_unmapped_invoice: {
+        Args: {
+          p_count: number;
+          p_inv: Omit<
+            Database["purchasing"]["Tables"]["invoices"]["Row"],
+            Database["purchasing"]["Tables"]["invoices"]["ComputedFields"]
+          >;
+        };
+        Returns: undefined;
+      };
       order_ingredient_search: {
         Args: { p_query: string; p_restaurant_id: string };
         Returns: {
@@ -6510,6 +7159,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      price_list_at: { Args: { p_date: string; p_supplier_id: string }; Returns: string };
       price_list_changes: {
         Args: { p_price_list_id: string };
         Returns: {
@@ -6539,6 +7189,10 @@ export type Database = {
       };
       qty_text: { Args: { p_value: number }; Returns: string };
       raise_friendly: {
+        Args: { p_constraint: string; p_message: string; p_state: string };
+        Returns: undefined;
+      };
+      raise_invoice_error: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
       };
@@ -6594,6 +7248,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      release_invoice: {
+        Args: { p_approver: string; p_id: string; p_run_id: string };
+        Returns: undefined;
+      };
       request_lower_po_approval: {
         Args: { p_reason: string; p_supplier_id: string };
         Returns: Json;
@@ -6609,6 +7267,11 @@ export type Database = {
           p_reason: string;
           p_units_per_package: number;
         };
+        Returns: Json;
+      };
+      run_invoice_checks: { Args: { p_id: string }; Returns: Json };
+      save_invoice: {
+        Args: { p_header: Json; p_id: string; p_lines: Json; p_reason: string; p_taxes: Json };
         Returns: Json;
       };
       save_order_draft: {
@@ -6690,9 +7353,30 @@ export type Database = {
       };
       valid_days: { Args: { p_days: number[] }; Returns: boolean };
       visible_document_paths: { Args: Record<PropertyKey, never>; Returns: string[] };
+      write_invoice_lines: {
+        Args: {
+          p_inv: Omit<
+            Database["purchasing"]["Tables"]["invoices"]["Row"],
+            Database["purchasing"]["Tables"]["invoices"]["ComputedFields"]
+          >;
+          p_lines: Json;
+        };
+        Returns: number;
+      };
+      write_invoice_taxes: {
+        Args: {
+          p_inv: Omit<
+            Database["purchasing"]["Tables"]["invoices"]["Row"],
+            Database["purchasing"]["Tables"]["invoices"]["ComputedFields"]
+          >;
+          p_taxes: Json;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       article_source: "price_list" | "invoice" | "receipt";
+      authorization_kind: "cae" | "cai" | "caea";
       billing_mode:
         | "a"
         | "b"
@@ -6702,9 +7386,32 @@ export type Database = {
         | "non_fiscal"
         | "handwritten_note";
       channel: "whatsapp" | "email" | "supplier_portal";
-      doc_kind: "price_list" | "other" | "receipt_original" | "receipt_signed" | "product_issue";
+      doc_kind:
+        | "price_list"
+        | "other"
+        | "receipt_original"
+        | "receipt_signed"
+        | "product_issue"
+        | "invoice_original"
+        | "credit_note";
+      due_on_source: "printed" | "terms";
+      invoice_check_kind:
+        "quantity" | "price" | "mapping" | "totals" | "legal_entity" | "order" | "notes";
+      invoice_class:
+        | "invoice_a"
+        | "invoice_b"
+        | "invoice_c"
+        | "invoice_remito_a"
+        | "non_fiscal"
+        | "handwritten_note";
+      invoice_line_class:
+        "product" | "freight" | "service" | "rounding" | "deposit" | "free_of_charge";
+      invoice_status:
+        "loaded" | "in_control" | "observed" | "approved" | "released" | "paid" | "cancelled";
+      invoice_tax_kind: "iibb" | "vat_perception" | "municipal" | "other";
       list_frequency: "weekly" | "biweekly" | "monthly";
       message_status: "queued" | "sent" | "failed" | "cancelled";
+      note_kind: "credit" | "debit" | "discount";
       paper_kind:
         | "invoice"
         | "invoice_remito"
@@ -8289,6 +8996,8 @@ export const Constants = {
         "order_news",
         "receipt_report",
         "receipt_differences",
+        "invoice_observed",
+        "price_variation",
       ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
@@ -8346,6 +9055,7 @@ export const Constants = {
   purchasing: {
     Enums: {
       article_source: ["price_list", "invoice", "receipt"],
+      authorization_kind: ["cae", "cai", "caea"],
       billing_mode: [
         "a",
         "b",
@@ -8356,9 +9066,54 @@ export const Constants = {
         "handwritten_note",
       ],
       channel: ["whatsapp", "email", "supplier_portal"],
-      doc_kind: ["price_list", "other", "receipt_original", "receipt_signed", "product_issue"],
+      doc_kind: [
+        "price_list",
+        "other",
+        "receipt_original",
+        "receipt_signed",
+        "product_issue",
+        "invoice_original",
+        "credit_note",
+      ],
+      due_on_source: ["printed", "terms"],
+      invoice_check_kind: [
+        "quantity",
+        "price",
+        "mapping",
+        "totals",
+        "legal_entity",
+        "order",
+        "notes",
+      ],
+      invoice_class: [
+        "invoice_a",
+        "invoice_b",
+        "invoice_c",
+        "invoice_remito_a",
+        "non_fiscal",
+        "handwritten_note",
+      ],
+      invoice_line_class: [
+        "product",
+        "freight",
+        "service",
+        "rounding",
+        "deposit",
+        "free_of_charge",
+      ],
+      invoice_status: [
+        "loaded",
+        "in_control",
+        "observed",
+        "approved",
+        "released",
+        "paid",
+        "cancelled",
+      ],
+      invoice_tax_kind: ["iibb", "vat_perception", "municipal", "other"],
       list_frequency: ["weekly", "biweekly", "monthly"],
       message_status: ["queued", "sent", "failed", "cancelled"],
+      note_kind: ["credit", "debit", "discount"],
       paper_kind: [
         "invoice",
         "invoice_remito",

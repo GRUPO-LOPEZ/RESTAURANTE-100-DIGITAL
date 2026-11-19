@@ -70,7 +70,7 @@ test.describe("en la computadora", () => {
     await logout(page);
 
     // Compras la ve en la bandeja, con sus líneas, y la aprueba.
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.goto("/aprobaciones");
     const card = page
       .locator("li", { hasText: number })
@@ -101,7 +101,7 @@ test.describe("en la computadora", () => {
   });
 
   test("el listado y la ficha entran en las pantallas de la computadora", async ({ page }) => {
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     for (const size of [
       { width: 1440, height: 900 },
       { width: 1715, height: 843 },
@@ -122,7 +122,7 @@ test.describe("en la computadora", () => {
   });
 
   test("un local sin código no puede pedir", async ({ page }) => {
-    await login(page, COMPRAS);
+    await login(page, COMPRAS, { mfa: true });
     await page.goto("/compras/ordenes/nueva?local=00000000-0000-4000-8000-000000000204");
     await expect(page.getByText("Falta el código del local.")).toBeVisible();
   });

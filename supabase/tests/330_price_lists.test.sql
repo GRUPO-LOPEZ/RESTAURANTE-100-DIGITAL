@@ -123,7 +123,7 @@ select is(pg_temp.q(pg_temp.u(407), 'select count(*)::text from purchasing.price
 select is(pg_temp.q(pg_temp.u(405), 'select count(*)::text from purchasing.price_lists'), '0',
           'la Chef no ve listas de precios');
 select is(pg_temp.q(pg_temp.u(405), 'select count(*)::text from purchasing.unmapped_articles where status = ''pending'''),
-          '3', 'pero ve los 3 artículos de la cola');
+          '4', 'pero ve los 4 artículos de la cola (3 de listas y 1 de una factura del seed)');
 select is(pg_temp.q(pg_temp.u(409), 'select count(*)::text from purchasing.unmapped_articles'), '0',
           'la Cocinera no ve la cola');
 select is(pg_temp.q(pg_temp.u(408),

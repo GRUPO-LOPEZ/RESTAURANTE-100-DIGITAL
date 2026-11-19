@@ -247,7 +247,7 @@ select is((select approved_by from costing.price_records where approval_request_
 
 select ok(pg_temp.propose(405, 1, 9000, 0) like 'ERROR No tenés permiso para proponer precios%', 'el Chef no propone precios');
 select is(pg_temp.propose(408, 1, 9000, 0, 'group', null, 'invoice', null),
-  'ERROR Con factura, elegí la alícuota de IVA (0, 10,5, 21 o 27); sin factura no lleva IVA.', 'con factura, la alícuota es obligatoria');
+  'ERROR Con factura, elegí la alícuota de IVA (0; 2,5; 5; 10,5; 21 o 27); sin factura no lleva IVA.', 'con factura, la alícuota es obligatoria');
 
 -- Variación grande (8.400 → 12.000, 42,86 %): el Controller aprueba y pasa a Dirección.
 insert into reqs values ('grande', pg_temp.propose(408, 1, 12000, 0));

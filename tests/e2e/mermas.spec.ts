@@ -37,7 +37,7 @@ test("Compras marca una materia prima como congelada (falta su merma, nunca se s
   isMobile,
 }) => {
   const name = isMobile ? "Bola de lomo" : "Nalga";
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   await openIngredient(page, name);
   await expect(waste(page, "Merma de descongelado")).toContainText("No aplica");
   await axe(page);
@@ -122,7 +122,7 @@ test("las unidades se eligen como «Kilogramo (kg)» y Compras suma una nueva", 
   page,
   isMobile,
 }, testInfo) => {
-  await login(page, "compras@ejemplo.test");
+  await login(page, "compras@ejemplo.test", { mfa: true });
   if (!isMobile) {
     await openIngredient(page, "Comino", "Precios de compra");
     await page.getByRole("button", { name: "Agregar producto de compra" }).click();
