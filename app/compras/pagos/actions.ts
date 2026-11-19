@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { toActionState, type ActionState } from "@/lib/auth/results";
@@ -189,14 +190,11 @@ export async function confirmCashAction(
   const state = toActionState(data, error);
   if (state.status !== "ok") return state;
   revalidate();
+  // El aviso va en la página: la fila (y su ventana) desaparece de «Para confirmar» al confirmar.
   const left = z.object({ unapplied: z.number() }).safeParse(data);
-  return {
-    status: "ok",
-    message:
-      left.success && left.data.unapplied > 0.005
-        ? "Efectivo confirmado. Quedó a cuenta: se aplica solo cuando su factura quede conforme."
-        : "Efectivo confirmado y aplicado a su factura.",
-  };
+  redirect(
+    `/compras/pagos?estado=para-confirmar&aviso=${left.success && left.data.unapplied > 0.005 ? "efectivo-a-cuenta" : "efectivo-aplicado"}`,
+  );
 }
 
 // ---------------------------------------------------------------------------

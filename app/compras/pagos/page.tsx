@@ -11,6 +11,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Field, Select } from "@/components/ui/field";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { Notice } from "@/components/ui/notice";
 import { FormInput, FormTextarea } from "@/components/ui/form";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/states";
@@ -78,6 +79,13 @@ async function Actions({
 
 const PATH = "/compras/pagos";
 
+// Lo que vuelve de una acción que se lleva la fila (?aviso=).
+const NOTICES: Record<string, string> = {
+  "efectivo-a-cuenta":
+    "Efectivo confirmado. Quedó a cuenta: se aplica solo cuando su factura quede conforme.",
+  "efectivo-aplicado": "Efectivo confirmado y aplicado a su factura.",
+};
+
 async function Payments({
   searchParams,
 }: {
@@ -134,8 +142,10 @@ async function Payments({
     const cash = (await getCashToConfirm(local)).filter(
       (c) => !supplier || c.supplier_id === supplier.id,
     );
+    const saved = NOTICES[first(raw.aviso) ?? ""];
     return (
       <div className="flex flex-col gap-4">
+        {saved ? <Notice status="ok">{saved}</Notice> : null}
         {filters}
         <Card className="flex flex-col gap-4">
           <CardTitle className="tabular-nums">
