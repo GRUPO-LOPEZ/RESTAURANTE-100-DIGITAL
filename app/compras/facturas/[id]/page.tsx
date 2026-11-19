@@ -217,6 +217,15 @@ const NOTICES: Record<string, { status: "ok" | "info" | "warn"; text: string }> 
     text: "Quedó conforme y liberada a pago. Su precio pasa a ser el costo.",
   },
   cancelada: { status: "info", text: "Factura cancelada. Queda en la historia." },
+  archivo: { status: "ok", text: "Archivo guardado." },
+  "nota-observada": {
+    status: "warn",
+    text: "Foto de la nota guardada. Se volvió a controlar: quedó observada.",
+  },
+  "nota-conforme": {
+    status: "ok",
+    text: "Foto de la nota guardada. Se volvió a controlar: quedó conforme y liberada a pago.",
+  },
   guardado: { status: "ok", text: "Cambios guardados. Controlala de nuevo." },
   creada: {
     status: "info",

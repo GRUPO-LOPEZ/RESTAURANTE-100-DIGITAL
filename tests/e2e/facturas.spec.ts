@@ -154,7 +154,10 @@ test.describe("en la computadora", () => {
     await page.keyboard.press("Escape");
     await expect(page.getByText("Sin foto")).toBeVisible();
     await page.getByLabel("Subir la foto de la nota").setInputFiles(await photo(page, "nota.jpg"));
-    await expect(page.getByText(/Se volvió a controlar: quedó observada/)).toBeVisible();
+    // El aviso, en la barra de la ficha: el botón de subir desaparece cuando la nota ya tiene su foto.
+    await expect(
+      notice(page).filter({ hasText: "Se volvió a controlar: quedó observada" }),
+    ).toBeVisible();
     await expect(page.getByText("Con foto")).toBeVisible();
     // Compras puede dar por conforme, pero no una que cargó: no tiene el botón y se le dice por qué.
     await expect(page.getByRole("button", { name: "Dar por conforme" })).toHaveCount(0);
@@ -201,6 +204,10 @@ test.describe("en la computadora", () => {
     await login(page, CONTROLLER, { mfa: true });
     await (await menuLink(page, "Facturas")).click();
     await expect(page.getByRole("heading", { level: 1, name: "Facturas" })).toBeVisible();
+    // El local lo elige la prueba: en GitHub corre en tandas y otra prueba pudo dejarle al Controller otro local
+    // guardado (ADR-0059).
+    await page.goto(`/compras/facturas?local=${PARRILLA}`);
+    await localSettled(page);
     const table = page.getByRole("table", { name: "Facturas" }).locator("visible=true");
     await page.getByRole("link", { name: "Observadas" }).click();
     await expect(table.getByText("Observada").first()).toBeVisible();
