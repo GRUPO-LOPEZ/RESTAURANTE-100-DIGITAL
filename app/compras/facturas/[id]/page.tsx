@@ -43,6 +43,8 @@ import {
   type InvoiceCheckKind,
 } from "@/lib/invoices";
 import { getInvoiceDetail, type InvoiceDetail } from "@/lib/invoices-data";
+import { METHOD_LABELS } from "@/lib/payments";
+import { getInvoicePayments, type InvoicePayments } from "@/lib/payments-data";
 import { formatMoney } from "@/lib/money";
 
 // Ficha de una factura (Fase 3, Prompt 5B, ADR-0058), con el patrón de las pantallas de carga sin scroll (ADR-0046):
@@ -242,6 +244,9 @@ async function Invoice({
 }) {
   const [inv, query] = await Promise.all([load(params), searchParams]);
   if (!inv) notFound();
+  // El saldo y los pagos: solo de una conforme o pagada, y solo para quien ve pagos (si no, la base devuelve nulo).
+  const payments =
+    inv.status === "released" || inv.status === "paid" ? await getInvoicePayments(inv.id) : null;
   const editable = inv.access.can_edit;
   const saved = NOTICES[first(query.aviso) ?? ""] ?? null;
   const lineChecks: Record<string, CheckRow[]> = {};
@@ -292,7 +297,7 @@ async function Invoice({
             <LinesSection />
           </Tile>
           <Tile id="todo-junto" title="Todo junto" scroll>
-            <Together inv={inv} />
+            <Together inv={inv} payments={payments} />
           </Tile>
         </div>
 
@@ -409,7 +414,7 @@ const link =
 const HEADER_KINDS: InvoiceCheckKind[] = ["order", "legal_entity", "totals", "notes"];
 const LINE_KINDS: InvoiceCheckKind[] = ["mapping", "quantity", "price"];
 
-function Together({ inv }: { inv: InvoiceDetail }) {
+function Together({ inv, payments }: { inv: InvoiceDetail; payments: InvoicePayments | null }) {
   const a = inv.access;
   const isA = isClassA(inv.invoiceClass);
   const rows: { kind: InvoiceCheckKind; title: string; passed: boolean; text: string }[] = [];
@@ -599,6 +604,49 @@ function Together({ inv }: { inv: InvoiceDetail }) {
           )}
         />
       </section>
+
+      {payments ? (
+        <section aria-labelledby="fc-pagos" className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-2">
+            <h3 id="fc-pagos" className="text-sm font-semibold text-ink">
+              Saldo y pagos
+            </h3>
+            <Link href={`/compras/pagos?proveedor=${inv.supplierId}`} className={link}>
+              Ver los pagos del proveedor
+            </Link>
+          </div>
+          <p className="flex flex-wrap items-center gap-2 text-sm text-ink tabular-nums">
+            Saldo {formatMoney(payments.balance)}
+            {payments.balance > 0.005 ? (
+              <Badge status={payments.payments.length > 0 ? "warn" : "info"}>
+                {payments.payments.length > 0 ? "Pagada en parte" : "Sin pagos"}
+              </Badge>
+            ) : (
+              <Badge status="ok">Pagada</Badge>
+            )}
+          </p>
+          {payments.payments.length > 0 ? (
+            <ShortList
+              label="Pagos de la factura"
+              items={payments.payments}
+              limit={4}
+              itemKey={(p) => p.payment_id}
+              empty={null}
+              renderItem={(p) => (
+                <span className="flex flex-wrap items-center gap-2 py-1 text-sm text-ink tabular-nums">
+                  <span>{shortDate(p.paid_on)}</span>
+                  <span className="font-medium">{METHOD_LABELS[p.method]}</span>
+                  {p.reference ? <span>{p.reference}</span> : null}
+                  <span>{formatMoney(p.allocated)}</span>
+                  {p.payment_amount - p.allocated > 0.005 ? (
+                    <span>de un pago de {formatMoney(p.payment_amount)}</span>
+                  ) : null}
+                </span>
+              )}
+            />
+          ) : null}
+        </section>
+      ) : null}
 
       <p className="text-xs text-ink-muted">
         La cargó {a.loaded_by_name}.

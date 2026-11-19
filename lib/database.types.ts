@@ -7220,6 +7220,7 @@ export type Database = {
           total_amount: number;
         }[];
       };
+      invoice_payments: { Args: { p_invoice_id: string }; Returns: Json };
       invoiceable_orders: {
         Args: { p_restaurant_id: string; p_supplier_id?: string };
         Returns: {

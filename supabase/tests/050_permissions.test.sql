@@ -87,7 +87,7 @@ select is(
         'purchasing.can_upload_document', 'purchasing.cancel_invoice', 'purchasing.cancel_order', 'purchasing.cash_to_confirm', 'purchasing.close_receipt', 'purchasing.confirm_cash_payment',
         'purchasing.create_invoice', 'purchasing.create_price_list',
         'purchasing.create_supplier', 'purchasing.discard_article', 'purchasing.document_parts',
-        'purchasing.expected_delivery', 'purchasing.import_suppliers', 'purchasing.invoice_access', 'purchasing.invoice_label', 'purchasing.invoice_list', 'purchasing.invoiceable_orders', 'purchasing.link_article', 'purchasing.list_frequency_days',
+        'purchasing.expected_delivery', 'purchasing.import_suppliers', 'purchasing.invoice_access', 'purchasing.invoice_label', 'purchasing.invoice_list', 'purchasing.invoice_payments', 'purchasing.invoiceable_orders', 'purchasing.link_article', 'purchasing.list_frequency_days',
         'purchasing.net_list_price', 'purchasing.normalize_name', 'purchasing.normalize_sku',
         'purchasing.order_ingredient_search', 'purchasing.order_lines',
         'purchasing.order_list', 'purchasing.order_receipts', 'purchasing.payable_invoices', 'purchasing.payment_schedule_list', 'purchasing.price_list_changes', 'purchasing.price_list_expired',

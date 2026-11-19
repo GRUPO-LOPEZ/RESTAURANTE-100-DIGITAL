@@ -8,7 +8,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(52);
+select plan(55);
 -- La fecha de la Argentina (la que usa la base), para las consultas que corren con la sesión de una persona.
 select set_config('test.today', recipes.today()::text, true);
 
@@ -250,6 +250,14 @@ select is(pg_temp.q(pg_temp.u(404), format('select purchasing.can_upload_documen
 select is(pg_temp.q(pg_temp.u(409), 'select count(*) from purchasing.payments'), '0', 'el cocinero no ve pagos');
 select is(pg_temp.q(pg_temp.u(404), 'select count(*) from purchasing.payments'), '0',
           'el gerente de otro local no ve los pagos de Demo Parrilla Centro');
+
+-- El saldo y los pagos de una factura (la ficha de la factura): la misma cuenta que invoice_balance, solo para quien ve pagos.
+select is(pg_temp.q(pg_temp.u(408), format('select (purchasing.invoice_payments(%L) ->> %L)::numeric', pg_temp.inv(1234), 'balance')),
+          pg_temp.balance(1234)::text, 'la ficha de la factura lee el saldo de invoice_balance');
+select is(pg_temp.q(pg_temp.u(409), format('select purchasing.invoice_payments(%L) is null', pg_temp.inv(1234))), 'true',
+          'el cocinero no ve el saldo ni los pagos de la factura');
+select is(pg_temp.q(pg_temp.u(404), format('select purchasing.invoice_payments(%L) is null', pg_temp.inv(1234))), 'true',
+          'el gerente de otro local tampoco');
 
 select * from finish();
 rollback;

@@ -219,6 +219,37 @@ export async function getSupplierAccount(
 }
 
 // ---------------------------------------------------------------------------
+// El saldo de una factura y sus pagos (ficha de la factura)
+// ---------------------------------------------------------------------------
+const invoicePayments = z.object({
+  balance: z.coerce.number(),
+  payments: z.array(
+    z.object({
+      payment_id: z.string(),
+      paid_on: z.string(),
+      method: z.enum(["cash", "transfer", "check", "echeq", "card", "electronic_code"]),
+      reference: z.string().nullable(),
+      allocated: z.coerce.number(),
+      payment_amount: z.coerce.number(),
+    }),
+  ),
+});
+export type InvoicePayments = z.infer<typeof invoicePayments>;
+
+// Nulo si la sesión no ve pagos en el local de la factura.
+export async function getInvoicePayments(invoiceId: string): Promise<InvoicePayments | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("purchasing")
+    .rpc("invoice_payments", { p_invoice_id: invoiceId });
+  if (error) failed("los pagos de la factura");
+  if (data === null) return null;
+  const parsed = invoicePayments.safeParse(data);
+  if (!parsed.success) failed("los pagos de la factura");
+  return parsed.data;
+}
+
+// ---------------------------------------------------------------------------
 // Tablero de compras
 // ---------------------------------------------------------------------------
 const board = z.object({
