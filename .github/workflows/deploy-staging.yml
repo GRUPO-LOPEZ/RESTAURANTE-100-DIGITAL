@@ -25,6 +25,14 @@ on:
         description: "Cargar materias primas, precios y recetas de prueba (la prueba de la Fase 2 para Soy)"
         type: boolean
         default: false
+      load_demo_purchasing:
+        description: "Cargar compras, facturas y pagos de prueba (la prueba de la Fase 3 para Soy; necesita la de la Fase 2)"
+        type: boolean
+        default: false
+      demo_purchasing_dry_run:
+        description: "Con la anterior: solo ensayar (hace todo, lo deshace y no sube fotos)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -164,6 +172,54 @@ jobs:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PGSSLMODE: require
         run: psql -X --no-password -f supabase/staging/demo-recipes.sql "$STAGING_DB_URL"
+
+      # Listas de precios, órdenes de compra, recepciones, facturas y pagos inventados, con las funciones de la app y la
+      # sesión de cada persona de prueba (docs/guias/prueba-fase-3-soy.md). Necesita la prueba de la Fase 2; si ya se
+      # cargó, no toca nada. Deja en un archivo las rutas de las fotos que faltan subir.
+      # Con «ensayar» tildada hace todo y lo deshace (DRY_RUN), y no sube fotos.
+      - name: Cargar compras, facturas y pagos de prueba
+        if: github.event_name == 'workflow_dispatch' && inputs.load_demo_purchasing
+        env:
+          STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
+          FILES_OUT: ${{ runner.temp }}/fotos-de-prueba.txt
+          DRY: ${{ inputs.demo_purchasing_dry_run }}
+        run: |
+          if [ "$DRY" = "true" ]; then export DRY_RUN=1; fi
+          psql -X --no-password -f supabase/staging/demo-purchasing.sql "$STAGING_DB_URL"
+
+      # Las fotos de los comprobantes de prueba: la imagen «FACTURA DE PRUEBA» en cada ruta que dejó el paso anterior.
+      # El script dejó el registro vacío que la app exige para adjuntar; la CLI no pisa un registro, así que primero lo
+      # borra (si no está, no falla) y después sube. Solo rutas con la forma <grupo>/<tabla>/<id>/<uuid>.jpg del Grupo
+      # Demo, en el proyecto conectado (--linked), que es el de staging verificado en «Verificar que el destino es staging»,
+      # como en los pasos de migraciones y funciones.
+      - name: Subir las fotos de prueba
+        if: github.event_name == 'workflow_dispatch' && inputs.load_demo_purchasing && !inputs.demo_purchasing_dry_run
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          EXPECTED_REF: ${{ steps.target.outputs.project_ref }}
+        run: |
+          if [ -z "$EXPECTED_REF" ]; then
+            echo "::error::Falta el proyecto de staging verificado. No se suben fotos."
+            exit 1
+          fi
+          list="$RUNNER_TEMP/fotos-de-prueba.txt"
+          uuid='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+          shape="^00000000-0000-4000-8000-000000000001/(receipts|invoices|credit_debit_notes|payments)/$uuid/$uuid\.jpg$"
+          count=0
+          while read -r path; do
+            [ -z "$path" ] && continue
+            if ! [[ "$path" =~ $shape ]]; then
+              echo "::error::Ruta de foto inesperada: $path"
+              exit 1
+            fi
+            npx --no-install supabase storage rm --experimental --yes --linked "ss:///purchasing-documents/$path"
+            npx --no-install supabase storage cp --experimental --linked --content-type image/jpeg \
+              supabase/staging/factura-de-prueba.jpg "ss:///purchasing-documents/$path"
+            count=$((count + 1))
+          done < "$list"
+          echo "Fotos de prueba subidas: $count"
 
       # Temporal (ADR-0037): un superadministrador de prueba sin doble verificación, para testear. El script
       # se niega a correr si no está el grupo ficticio de prueba. La contraseña sale de un secreto propio.
