@@ -192,15 +192,16 @@ jobs:
       # Las fotos de los comprobantes de prueba: la imagen «FACTURA DE PRUEBA» en cada ruta que dejó el paso anterior.
       # El script dejó el registro vacío que la app exige para adjuntar; la CLI no pisa un registro, así que primero lo
       # borra (si no está, no falla) y después sube. Solo rutas con la forma <grupo>/<tabla>/<id>/<uuid>.jpg del Grupo
-      # Demo, y solo si el proyecto conectado es el de staging que se verificó arriba.
+      # Demo, en el proyecto conectado (--linked), que es el de staging verificado en «Verificar que el destino es staging»,
+      # como en los pasos de migraciones y funciones.
       - name: Subir las fotos de prueba
         if: github.event_name == 'workflow_dispatch' && inputs.load_demo_purchasing && !inputs.demo_purchasing_dry_run
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           EXPECTED_REF: ${{ steps.target.outputs.project_ref }}
         run: |
-          if [ -z "$EXPECTED_REF" ] || [ "$(cat supabase/.temp/project-ref 2>/dev/null)" != "$EXPECTED_REF" ]; then
-            echo "::error::El proyecto conectado no es el de staging. No se suben fotos."
+          if [ -z "$EXPECTED_REF" ]; then
+            echo "::error::Falta el proyecto de staging verificado. No se suben fotos."
             exit 1
           fi
           list="$RUNNER_TEMP/fotos-de-prueba.txt"

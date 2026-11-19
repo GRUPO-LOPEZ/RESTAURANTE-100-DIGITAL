@@ -221,7 +221,7 @@ describe("Staging: compras de prueba (la prueba de la Fase 3 para Soy)", () => {
     // conectado es el de staging que se verificó.
     expect(envOf(photos)).toEqual(["EXPECTED_REF", "SUPABASE_ACCESS_TOKEN"]);
     expect(photos).toContain("EXPECTED_REF: ${{ steps.target.outputs.project_ref }}");
-    expect(photos).toContain('"$(cat supabase/.temp/project-ref 2>/dev/null)" != "$EXPECTED_REF"');
+    expect(photos).toContain('if [ -z "$EXPECTED_REF" ]; then');
     const at = (name: string) => baseJob.indexOf(`name: ${name}`);
     expect(at("Cargar compras, facturas y pagos de prueba")).toBeGreaterThan(
       at("Cargar materias primas, precios y recetas de prueba"),
