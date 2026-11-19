@@ -137,6 +137,10 @@ export async function registerPaymentAction(formData: FormData): Promise<Registe
             p_page: 1,
           })
         : null;
+    // Si se subió pero no se pudo registrar (por ejemplo, anularon el pago en el medio), no queda suelto en Storage.
+    if (path && uploaded && !uploaded.error && (!registered || registered.error)) {
+      await supabase.storage.from(BUCKET).remove([path]);
+    }
     receiptNote =
       registered && !registered.error
         ? ""

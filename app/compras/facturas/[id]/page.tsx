@@ -611,16 +611,26 @@ function Together({ inv, payments }: { inv: InvoiceDetail; payments: InvoicePaym
             <h3 id="fc-pagos" className="text-sm font-semibold text-ink">
               Saldo y pagos
             </h3>
-            <Link href={`/compras/pagos?proveedor=${inv.supplierId}`} className={link}>
+            <Link
+              href={`/compras/pagos?proveedor=${inv.supplierId}&estado=${payments.balance > 0.005 ? (inv.dueOn < todayInArgentina() ? "vencidas" : "") : "pagadas"}`.replace(
+                /&estado=$/,
+                "",
+              )}
+              className={link}
+            >
               Ver los pagos del proveedor
             </Link>
           </div>
           <p className="flex flex-wrap items-center gap-2 text-sm text-ink tabular-nums">
             Saldo {formatMoney(payments.balance)}
             {payments.balance > 0.005 ? (
-              <Badge status={payments.payments.length > 0 ? "warn" : "info"}>
-                {payments.payments.length > 0 ? "Pagada en parte" : "Sin pagos"}
-              </Badge>
+              inv.dueOn < todayInArgentina() ? (
+                <Badge status="bad">Vencida</Badge>
+              ) : (
+                <Badge status={payments.payments.length > 0 ? "warn" : "info"}>
+                  {payments.payments.length > 0 ? "Pagada en parte" : "Sin pagos"}
+                </Badge>
+              )
             ) : (
               <Badge status="ok">Pagada</Badge>
             )}
@@ -632,6 +642,12 @@ function Together({ inv, payments }: { inv: InvoiceDetail; payments: InvoicePaym
               limit={4}
               itemKey={(p) => p.payment_id}
               empty={null}
+              more={
+                <p className="text-sm text-ink">
+                  Y {payments.payments.length - 4} pagos más: están en «Ver los pagos del
+                  proveedor».
+                </p>
+              }
               renderItem={(p) => (
                 <span className="flex flex-wrap items-center gap-2 py-1 text-sm text-ink tabular-nums">
                   <span>{shortDate(p.paid_on)}</span>

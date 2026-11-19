@@ -250,6 +250,7 @@ const MODULES: { href: string; label: string }[] = [
   { href: "/compras/ordenes", label: "Órdenes de compra" },
   { href: "/compras/facturas", label: "Facturas" },
   { href: "/compras/pagos", label: "Pagos" },
+  { href: "/compras", label: "Tablero de compras" },
   { href: "/reportes", label: "Reportes" },
   { href: "/calidad", label: "Calidad" },
   { href: "/aprobaciones", label: "Aprobaciones" },
@@ -265,7 +266,11 @@ export function moduleOf(pathname: string): { href: string; label: string } | nu
   return MODULES.find((m) => isCurrent(pathname, m.href)) ?? null;
 }
 
-// Si un ítem es la pantalla actual: el inicio solo en "/", el resto también en sus pantallas internas.
+// Los ítems que son la pantalla de arriba de otras (el Inicio y el Tablero de compras, que está sobre Pagos, Facturas y
+// las demás de compras): son la actual solo en su propia dirección. Si no, se marcarían dos ítems a la vez.
+const EXACT = new Set(["/", "/compras"]);
+
+// Si un ítem es la pantalla actual: los de arriba, solo en su dirección; el resto, también en sus pantallas internas.
 export function isCurrent(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  return EXACT.has(href) ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }

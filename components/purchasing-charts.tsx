@@ -30,7 +30,7 @@ import {
 const SPEND_COLORS: Record<SpendBar["kind"], string> = {
   recipes: "var(--color-chart-strong-1)",
   other: "var(--color-chart-strong-2)",
-  rest: "var(--color-chart-strong-2)",
+  rest: "var(--color-chart-strong-6)",
   freight: "var(--color-chart-strong-3)",
   perception: "var(--color-chart-strong-5)",
 };
@@ -40,7 +40,8 @@ const LINE_COLORS = [
   "var(--color-chart-strong-2)",
   "var(--color-chart-strong-5)",
 ];
-// Además del color, cada línea lleva su forma de punto (el color nunca es la única señal).
+// Además del color, cada línea lleva su trazo (lleno, rayado, punteado), también en la leyenda: el color nunca es la
+// única señal.
 const LINE_DASH = [undefined, "6 3", "2 3", "10 4"];
 
 const compact = new Intl.NumberFormat("es-AR", { notation: "compact", maximumFractionDigits: 1 });
@@ -225,6 +226,7 @@ export function CostHistoryChart({ series }: { series: HistoryInput[] }) {
               strokeDasharray={LINE_DASH[i % LINE_DASH.length]}
               strokeWidth={2}
               dot={{ r: 3 }}
+              legendType="plainline"
               connectNulls
               isAnimationActive={false}
             />

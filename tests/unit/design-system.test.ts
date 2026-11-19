@@ -112,6 +112,10 @@ describe("la navegación global", () => {
     expect(isCurrent("/recetas", "/")).toBe(false);
     expect(isCurrent("/recetas/123/cocina", "/recetas")).toBe(true);
     expect(isCurrent("/recetasx", "/recetas")).toBe(false);
+    // El Tablero de compras está arriba de Pagos y Facturas: no se marca junto con ellos.
+    expect(isCurrent("/compras", "/compras")).toBe(true);
+    expect(isCurrent("/compras/pagos", "/compras")).toBe(false);
+    expect(isCurrent("/compras/pagos", "/compras/pagos")).toBe(true);
   });
 });
 

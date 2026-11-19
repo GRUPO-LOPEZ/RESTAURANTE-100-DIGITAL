@@ -60,6 +60,12 @@ test.describe("en la computadora", () => {
     await page.goto(`/compras/pagos?local=${PARRILLA}`);
     await localSettled(page);
     await expect(page.getByRole("heading", { level: 1, name: "Pagos" })).toBeVisible();
+    // En el menú, solo «Pagos» es la pantalla actual (el Tablero de compras está arriba, en /compras).
+    const nav = page
+      .locator("aside[data-sidebar]:visible")
+      .getByRole("navigation", { name: "Menú principal" });
+    await expect(nav.locator("[aria-current=page]")).toHaveCount(1);
+    await expect(nav.getByRole("link", { name: "Pagos" })).toHaveAttribute("aria-current", "page");
     await axe(page);
 
     const pay = async (amount: (balance: string) => string, reason: string) => {
@@ -141,7 +147,7 @@ test.describe("en la computadora", () => {
     await localSettled(page);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Demo Parrilla Centro");
     await boardReady(page);
-    await expect(page.getByRole("region", { name: "Gasto por rubro del mes" })).toBeVisible();
+    await expect(page.getByRole("region", { name: /^Gasto por rubro de/ })).toBeVisible();
     await expect(page.getByText("Sin acceso a importes.")).toHaveCount(0);
     for (const size of [
       { width: 1440, height: 900 },
@@ -179,7 +185,7 @@ test.describe("en el celular", () => {
     await page.goto(`/compras?local=${PARRILLA}`);
     await localSettled(page);
     await boardReady(page);
-    await expect(page.getByRole("region", { name: "Gasto por rubro del mes" })).toBeHidden();
+    await expect(page.getByRole("region", { name: /^Gasto por rubro de/ })).toBeHidden();
     await noOverflow(page);
     await axe(page);
   });

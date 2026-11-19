@@ -55,6 +55,8 @@ export function RegisterPayment({
   const [allocations, setAllocations] = useState<Record<string, string>>({});
   const [file, setFile] = useState<File | null>(null);
   const [state, setState] = useState<ActionState>({});
+  // El error de cada campo, junto al campo (además del aviso de abajo).
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, startSaving] = useTransition();
 
   function loadSupplier(id: string) {
@@ -64,6 +66,7 @@ export function RegisterPayment({
     setAccountId("");
     setMethod("cash");
     setState({});
+    setErrors({});
     if (!id) return;
     startLoading(async () => {
       const result = await loadPayableAction(restaurant.id, id);
@@ -107,13 +110,19 @@ export function RegisterPayment({
       reference,
       reason,
     });
-    if (!supplierId) return setState({ status: "bad", message: "Elegí el proveedor." });
-    if (!fields.success)
-      return setState({
-        status: "bad",
-        message: fields.error.issues[0]?.message ?? "Revisá el pago.",
-      });
-    if (!check.ok) return setState({ status: "bad", message: check.message });
+    const found: Record<string, string> = {};
+    if (!supplierId) found.supplier = "Elegí el proveedor.";
+    if (!fields.success) {
+      for (const issue of fields.error.issues) {
+        const key = String(issue.path[0] ?? "");
+        if (key && !found[key]) found[key] = issue.message;
+      }
+    }
+    if (fields.success && !check.ok) found.allocations = check.message;
+    setErrors(found);
+    const first = Object.values(found)[0];
+    if (first || !check.ok)
+      return setState({ status: "bad", message: "Revisá los campos marcados." });
     startSaving(async () => {
       try {
         const form = new FormData();
@@ -179,7 +188,7 @@ export function RegisterPayment({
         description={`En ${restaurant.name}. Un pago es de un local: lo que no se aplica a facturas queda a cuenta del proveedor.`}
       >
         <div className="flex flex-col gap-4">
-          <Field id={`${prefix}-proveedor`} label="Proveedor">
+          <Field id={`${prefix}-proveedor`} label="Proveedor" required error={errors.supplier}>
             <Select value={supplierId} onChange={(e) => loadSupplier(e.target.value)}>
               <option value="">Elegí el proveedor</option>
               {suppliers.map((s) => (
@@ -198,6 +207,8 @@ export function RegisterPayment({
                 id={`${prefix}-importe`}
                 label="Importe del pago"
                 hint="Se reparte solo entre las facturas, de la que vence antes. Podés corregir cada una."
+                required
+                error={errors.amount}
               >
                 <Input
                   inputMode="decimal"
@@ -257,7 +268,7 @@ export function RegisterPayment({
                     ? check.left > 0
                       ? `Quedan ${formatMoney(check.left)} a cuenta.`
                       : "Todo el pago se aplica a facturas."
-                    : readNumber(amount) !== null
+                    : readNumber(amount) !== null || errors.allocations
                       ? check.message
                       : ""}
                 </p>
@@ -282,7 +293,12 @@ export function RegisterPayment({
                 }}
               />
               {method !== "cash" ? (
-                <Field id={`${prefix}-cuenta`} label="Cuenta del proveedor">
+                <Field
+                  id={`${prefix}-cuenta`}
+                  label="Cuenta del proveedor"
+                  required
+                  error={errors.accountId}
+                >
                   <Select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -293,7 +309,7 @@ export function RegisterPayment({
                 </Field>
               ) : null}
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id={`${prefix}-fecha`} label="Fecha del pago">
+                <Field id={`${prefix}-fecha`} label="Fecha del pago" required error={errors.paidOn}>
                   <Input
                     type="date"
                     max={todayInArgentina()}
@@ -320,7 +336,13 @@ export function RegisterPayment({
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
               </Field>
-              <Field id={`${prefix}-motivo`} label="Motivo" hint="Queda en el historial.">
+              <Field
+                id={`${prefix}-motivo`}
+                label="Motivo"
+                hint="Queda en el historial."
+                required
+                error={errors.reason}
+              >
                 <Textarea
                   maxLength={500}
                   value={reason}

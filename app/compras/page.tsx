@@ -109,11 +109,22 @@ async function Board({ searchParams }: { searchParams: Params }) {
   const local = place ? `?local=${place.id}` : "";
   const amounts = board.can_see_amounts;
   const urgent = urgentCount(board.alert_kinds);
-  const parts = alertParts(
-    Object.fromEntries(Object.entries(board.alert_kinds).filter(([k]) => k !== "unmapped_article")),
+  const urgentKinds = Object.fromEntries(
+    Object.entries(board.alert_kinds).filter(([k, n]) => k !== "unmapped_article" && n > 0),
   );
+  const parts = alertParts(urgentKinds);
+  // «N en total» solo si hay más tipos de alarma que los 3 que se nombran.
+  const total =
+    Object.keys(urgentKinds).length > parts.length
+      ? [`${urgent.toLocaleString("es-AR")} en total`]
+      : [];
+  const month = new Intl.DateTimeFormat("es-AR", {
+    month: "long",
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).format(new Date());
   const bars = board.spend ? spendBars(board.spend) : [];
-  const history = (board.cost_history ?? []).filter((s) => (s.points ?? []).length > 0);
+  // Una variación pide al menos dos precios de la misma materia prima: con uno solo, la línea es un punto que no dice nada.
+  const history = (board.cost_history ?? []).filter((s) => (s.points ?? []).length >= 2);
   const alerts = board.alerts.filter((a) => a.kind !== "unmapped_article");
   const unmappedAlerts = board.alerts.filter((a) => a.kind === "unmapped_article");
   const allAlerts = (
@@ -129,15 +140,11 @@ async function Board({ searchParams }: { searchParams: Params }) {
   return (
     <>
       {urgent > 0 ? (
-        <AttentionStrip
-          parts={
-            urgent > parts.length ? [...parts, `${urgent.toLocaleString("es-AR")} en total`] : parts
-          }
-          href={alerts[0]?.link ?? `/compras${local}`}
-        />
+        <AttentionStrip parts={[...parts, ...total]} href={alerts[0]?.link ?? `/compras${local}`} />
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 desk:grid-cols-4 desk:gap-4">
+      {/* En el celular, de a uno: «Vencen esta semana» lleva un monto (design.md). */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 desk:grid-cols-4 desk:gap-4">
         <Metric
           compact
           label="Facturas observadas"
@@ -196,7 +203,7 @@ async function Board({ searchParams }: { searchParams: Params }) {
           página queda quieta: lo que no entra se desplaza dentro de su tarjeta (ADR-0051). En el celular, una debajo de
           otra, y solo las alarmas. */}
       <div className="grid gap-4 desk:min-h-0 desk:flex-[1_1_0px] desk:grid-cols-[5fr_5fr_4fr] desk:grid-rows-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <Tile title="Gasto por rubro del mes" scroll className="hidden desk:flex">
+        <Tile title={`Gasto por rubro de ${month}`} scroll className="hidden desk:flex">
           {!amounts ? (
             <p className="text-sm text-ink">Sin acceso a importes.</p>
           ) : bars.length === 0 ? (
@@ -209,7 +216,10 @@ async function Board({ searchParams }: { searchParams: Params }) {
           {!amounts ? (
             <p className="text-sm text-ink">Sin acceso a importes.</p>
           ) : history.length === 0 ? (
-            <p className="text-sm text-ink">Sin compras con precio en los últimos 90 días.</p>
+            <p className="text-sm text-ink">
+              Todavía no hay dos precios de la misma materia prima en los últimos 90 días: la
+              variación se ve desde la segunda factura conforme.
+            </p>
           ) : (
             <CostHistoryChart series={history} />
           )}
@@ -223,13 +233,13 @@ async function Board({ searchParams }: { searchParams: Params }) {
           <ShortList
             label="Alarmas"
             items={alerts}
-            limit={8}
+            limit={5}
             itemKey={(a) => `${a.kind}-${a.link}-${a.title}`}
             renderItem={(a) => <AlertRow alert={a} />}
             empty={<p className="text-sm text-ink">No hay alarmas pendientes.</p>}
             more={
               <ActionModal
-                label={`Ver las ${urgent.toLocaleString("es-AR")} alarmas`}
+                label={`Ver las ${alerts.length.toLocaleString("es-AR")} alarmas`}
                 variant="link"
                 icon="none"
                 size="sm"
@@ -261,9 +271,9 @@ async function Board({ searchParams }: { searchParams: Params }) {
             empty={<p className="text-sm text-ink">No hay facturas por pagar.</p>}
             renderItem={(p) => (
               <Link href={`/compras/facturas/${p.invoice_id}`} className={rowLink}>
-                <span className="min-w-0 truncate">
-                  <span className="text-primary">{p.supplier}</span>
-                  <span className="text-ink"> · {p.label}</span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-primary">{p.supplier}</span>
+                  <span className="truncate text-xs text-ink-muted">{p.label}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2 text-ink tabular-nums">
                   <span>{shortDate(p.due_on)}</span>
@@ -290,7 +300,7 @@ async function Board({ searchParams }: { searchParams: Params }) {
             label="Artículos sin mapear"
             items={unmappedAlerts}
             limit={4}
-            itemKey={(a) => a.title}
+            itemKey={(a) => `${a.kind}-${a.link}-${a.title}`}
             empty={
               <p className="text-sm text-ink">
                 {board.unmapped > 0

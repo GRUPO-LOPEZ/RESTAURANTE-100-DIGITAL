@@ -8,7 +8,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(55);
+select plan(61);
 -- La fecha de la Argentina (la que usa la base), para las consultas que corren con la sesión de una persona.
 select set_config('test.today', recipes.today()::text, true);
 
@@ -258,6 +258,33 @@ select is(pg_temp.q(pg_temp.u(409), format('select purchasing.invoice_payments(%
           'el cocinero no ve el saldo ni los pagos de la factura');
 select is(pg_temp.q(pg_temp.u(404), format('select purchasing.invoice_payments(%L) is null', pg_temp.inv(1234))), 'true',
           'el gerente de otro local tampoco');
+
+-- Revisión de base (migración 170000): los pagos anulados no figuran, una sola cuenta del saldo, el saldo a favor que
+-- no se puede devolver y el orden de la cuenta corriente.
+-- Con la sesión de Compras: sin sesión, invoice_payments devuelve nulo.
+select is(pg_temp.q(pg_temp.u(408), format('select jsonb_array_length(p -> %L) || %L || count(*) filter (where (e ->> %L)::numeric = 3000) from purchasing.invoice_payments(%L) p, jsonb_array_elements(p -> %L) e group by p',
+            'payments', ' ', 'allocated', pg_temp.inv(1234), 'payments')), '2 0',
+          'la ficha de la factura lista sus 2 pagos vigentes y no el anulado');
+select is(pg_temp.q(pg_temp.u(408), format('select jsonb_array_length(purchasing.invoice_payments(%L) -> %L)',
+            pg_temp.inv(4600), 'payments')), '1',
+          'después de la nota tardía, el pago figura una vez, con lo aplicado vigente');
+select is((select count(*)::int from reporting.v_invoice_balances v
+            where v.balance_amount is distinct from purchasing.invoice_balance(v.invoice_id)), 0,
+          'la vista de la agenda y invoice_balance dan el mismo saldo en todas las facturas');
+select throws_ok(format($q$insert into purchasing.credit_debit_notes (group_id, invoice_id, note_kind, issued_on, net_amount,
+                                                                     total_amount, reason)
+                           select group_id, id, %L, %L::date, total_amount * 10, total_amount * 10, %L
+                             from purchasing.invoices where number = 4600$q$,
+                         'credit', current_setting('test.today'), 'Prueba de saldo a favor'),
+                 '23514',
+                 'La nota deja la factura con saldo a favor y no hay pagos para devolver a cuenta: revisá el importe.',
+                 'una nota que deja saldo a favor sin pagos que devolver se rechaza');
+select is(pg_temp.q(pg_temp.u(408), format('select (a -> %L -> 0 ->> %L)::numeric = (a ->> %L)::numeric from purchasing.supplier_account(%L, %L, 50) a',
+            'movements', 'balance', 'balance', pg_temp.u(901), pg_temp.u(203))), 'true',
+          'la cuenta corriente: el movimiento de arriba lleva el saldo final (Verdulería)');
+select is(pg_temp.q(pg_temp.u(408), format('select (a -> %L -> 0 ->> %L)::numeric = (a ->> %L)::numeric from purchasing.supplier_account(%L, %L, 50) a',
+            'movements', 'balance', 'balance', pg_temp.u(903), pg_temp.u(203))), 'true',
+          'y también en Lácteos');
 
 select * from finish();
 rollback;

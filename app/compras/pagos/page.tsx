@@ -16,6 +16,8 @@ import { FormInput, FormTextarea } from "@/components/ui/form";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
+import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 import { getSuppliers } from "@/lib/catalog";
 import { first, getActiveRestaurantId, uuidOrUndefined } from "@/lib/data";
@@ -65,8 +67,33 @@ async function Actions({
     searchParams,
   ]);
   if (!menus.pay) return null;
-  const { place } = await resolveOrderPlace(session.user_id, first(raw.local), "purchasing.pay");
-  if (!place) return null;
+  const { place, places } = await resolveOrderPlace(
+    session.user_id,
+    first(raw.local),
+    "purchasing.pay",
+  );
+  if (!place) {
+    // Un pago es de un local: con «todos mis locales» arriba, el botón dice por qué no se puede.
+    if (places.length === 0) return null;
+    const why = "Elegí un local arriba para registrar un pago: cada pago es de un local.";
+    return (
+      <TooltipProvider>
+        <Tooltip content={why}>
+          <Button
+            type="button"
+            aria-disabled="true"
+            aria-describedby="pg-sin-local"
+            className="opacity-50"
+          >
+            Registrar pago
+            <span id="pg-sin-local" className="sr-only">
+              {why}
+            </span>
+          </Button>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
   const suppliers = await getSuppliersToPay(place.id);
   return (
     <RegisterPayment

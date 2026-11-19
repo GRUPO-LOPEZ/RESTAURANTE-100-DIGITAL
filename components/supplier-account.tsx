@@ -134,46 +134,50 @@ function AccountDetail({ account }: { account: SupplierAccount }) {
           )}
         </p>
       ) : null}
-      <table className="w-full border-collapse text-base">
-        <caption className="sr-only">Movimientos de la cuenta corriente</caption>
-        <thead>
-          <tr className="border-b border-line text-left text-sm text-ink-muted">
-            <th scope="col" className="py-1 pr-2 font-medium">
-              Fecha
-            </th>
-            <th scope="col" className="py-1 pr-2 font-medium">
-              Movimiento
-            </th>
-            <th scope="col" className="py-1 pr-2 text-right font-medium">
-              Importe
-            </th>
-            <th scope="col" className="py-1 text-right font-medium">
-              Saldo
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {account.movements.map((m) => (
-            <tr key={`${m.kind}-${m.source_id}`} className="border-b border-line">
-              <td className="py-1 pr-2 whitespace-nowrap tabular-nums">{shortDate(m.moved_on)}</td>
-              <td className="py-1 pr-2">
-                {m.kind === "invoice" ? (
-                  <Link href={`/compras/facturas/${m.source_id}`} className={link}>
-                    {m.label}
-                  </Link>
-                ) : (
-                  <span>
-                    {MOVEMENT_LABELS[m.kind]}
-                    {m.label ? ` · ${m.label}` : ""}
-                  </span>
-                )}
-              </td>
-              <td className="py-1 pr-2 text-right tabular-nums">{formatMoney(m.amount)}</td>
-              <td className="py-1 text-right tabular-nums">{formatMoney(m.balance)}</td>
+      <div className="relative overflow-x-auto">
+        <table className="w-full border-collapse text-base">
+          <caption className="sr-only">Movimientos de la cuenta corriente</caption>
+          <thead>
+            <tr className="border-b border-line text-left text-sm text-ink-muted">
+              <th scope="col" className="py-1 pr-2 font-medium">
+                Fecha
+              </th>
+              <th scope="col" className="py-1 pr-2 font-medium">
+                Movimiento
+              </th>
+              <th scope="col" className="py-1 pr-2 text-right font-medium">
+                Importe
+              </th>
+              <th scope="col" className="py-1 text-right font-medium">
+                Saldo
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {account.movements.map((m) => (
+              <tr key={`${m.kind}-${m.source_id}`} className="border-b border-line">
+                <td className="py-1 pr-2 whitespace-nowrap tabular-nums">
+                  {shortDate(m.moved_on)}
+                </td>
+                <td className="py-1 pr-2">
+                  {m.kind === "invoice" ? (
+                    <Link href={`/compras/facturas/${m.source_id}`} className={link}>
+                      {m.label}
+                    </Link>
+                  ) : (
+                    <span>
+                      {MOVEMENT_LABELS[m.kind]}
+                      {m.label ? ` · ${m.label}` : ""}
+                    </span>
+                  )}
+                </td>
+                <td className="py-1 pr-2 text-right tabular-nums">{formatMoney(m.amount)}</td>
+                <td className="py-1 text-right tabular-nums">{formatMoney(m.balance)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {account.movement_count > account.movements.length ? (
         <p className="text-sm text-ink-muted">
           Se ven los últimos {account.movements.length} de {account.movement_count} movimientos.
