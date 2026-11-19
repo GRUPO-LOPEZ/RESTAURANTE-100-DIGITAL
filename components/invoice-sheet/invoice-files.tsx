@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
 
 import { addNoteAction, uploadInvoiceFileAction } from "@/app/compras/facturas/actions";
@@ -33,6 +33,7 @@ export function InvoiceFileUpload({
 }) {
   const id = useId();
   const router = useRouter();
+  const pathname = usePathname();
   const [state, setState] = useState<ActionState>({});
   const [pending, start] = useTransition();
 
@@ -51,7 +52,9 @@ export function InvoiceFileUpload({
         form.set("file", body);
         const result = await uploadInvoiceFileAction({}, form);
         setState(result);
-        if (result.status !== "bad") router.refresh();
+        // Bien: vuelve a la ficha con el aviso en la barra (este botón puede desaparecer: la nota ya tiene su foto).
+        if (result.status !== "bad" && result.notice)
+          router.replace(`${pathname}?aviso=${result.notice}`, { scroll: false });
       } catch {
         setState({
           status: "bad",

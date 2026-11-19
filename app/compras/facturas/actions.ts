@@ -262,10 +262,13 @@ async function checkFile(entry: FormDataEntryValue | null): Promise<File | strin
   return entry;
 }
 
+// Lo que vuelve de subir un archivo: además del mensaje, qué aviso mostrar en la barra de la ficha.
+export type UploadState = ActionState & { notice?: "archivo" | "nota-observada" | "nota-conforme" };
+
 export async function uploadInvoiceFileAction(
   _prev: ActionState,
   formData: FormData,
-): Promise<ActionState> {
+): Promise<UploadState> {
   const table = z.enum(["invoices", "credit_debit_notes"]).safeParse(formData.get("sourceTable"));
   const sourceId = uuid.safeParse(formData.get("sourceId"));
   const invoiceId = uuid.safeParse(formData.get("invoiceId"));
@@ -298,13 +301,16 @@ export async function uploadInvoiceFileAction(
   const state = toActionState(data, error);
   if (state.status !== "ok") return state;
   revalidate(invoiceId.data);
+  // El aviso va en la barra de la ficha (?aviso=): el botón de subir desaparece cuando la nota ya tiene su foto, y con
+  // él se iría un mensaje que viviera a su lado.
   const status = z.object({ status: z.string() }).safeParse(data);
   if (status.success && STATUS_MESSAGES[status.data.status]) {
     const after = STATUS_MESSAGES[status.data.status];
     return {
       status: after?.status,
       message: `Foto guardada. Se volvió a controlar: ${after?.message?.toLowerCase()}`,
+      notice: status.data.status === "released" ? "nota-conforme" : "nota-observada",
     };
   }
-  return { status: "ok", message: "Archivo guardado." };
+  return { status: "ok", message: "Archivo guardado.", notice: "archivo" };
 }
