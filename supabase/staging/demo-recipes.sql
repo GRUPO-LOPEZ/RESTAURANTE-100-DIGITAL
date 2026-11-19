@@ -184,7 +184,9 @@ declare
   v_ctrl     constant uuid := '00000000-0000-4000-8000-000000000407';  -- Camila, Controller (grupo)
   v_chef     constant uuid := '00000000-0000-4000-8000-000000000405';  -- Carla, Chef de Demo Pastas
   v_director constant uuid := '00000000-0000-4000-8000-000000000403';  -- Marta, Directora de Demo Pastas
+  v_admin    constant uuid := '00000000-0000-4000-8000-000000000401';  -- Sofía, Superadministradora (grupo)
   v_reason   constant text := current_setting('pru.reason');
+  v_entity   uuid;
   v_missing  text;
   v_id       uuid;
   v_request  uuid;
@@ -197,7 +199,8 @@ begin
   select string_agg(x.who, ', ') into v_missing
     from (values (v_buyer, 'purchasing', null::uuid, 'Compras'), (v_ctrl, 'controller', null, 'Controller'),
                  (v_chef, 'executive_chef', v_pastas, 'Chef de Demo Pastas'),
-                 (v_director, 'brand_director', v_pastas, 'Directora de Demo Pastas')) as x (id, role, brand, who)
+                 (v_director, 'brand_director', v_pastas, 'Directora de Demo Pastas'),
+                 (v_admin, 'superadmin', null, 'Superadministradora')) as x (id, role, brand, who)
    where not exists (select 1 from core.user_role_assignments a join core.roles ro on ro.id = a.role_id
                       where a.user_id = x.id and ro.code = x.role and a.group_id = v_group
                         and a.brand_id is not distinct from x.brand and a.deleted_at is null
@@ -258,6 +261,25 @@ begin
   if exists (select 1 from recipes.recipes r2 join pru_recipes p on lower(p.name) = lower(r2.name)
               where r2.group_id = v_group and r2.deleted_at is null) then
     raise exception 'Ya hay recetas con alguno de estos nombres. No se cargó nada.';
+  end if;
+
+  -- 0. El costo de un local sale con o sin IVA según la condición de su razón social: sin razón social, todas las
+  --    líneas quedan «incompletas» (missing_legal_entity). El seed local la carga; demo-data.sql (staging), no.
+  --    Si a un local de Demo Pastas le falta, la Superadministradora (única con org.manage en el grupo) crea una
+  --    ficticia, responsable inscripta, y se la asigna. Un local que ya tiene la suya no se toca.
+  if exists (select 1 from org.restaurants where id in (v_centro, '00000000-0000-4000-8000-000000000202')
+                                             and legal_entity_id is null) then
+    perform pg_temp.as_user(v_admin);
+    -- CUIT inventado en el rango ficticio del seed (30-500000xx), con dígito verificador válido.
+    select id into v_entity from org.legal_entities
+     where group_id = v_group and tax_id = '30500000143' and deleted_at is null;
+    if v_entity is null then
+      v_entity := org.create_legal_entity(v_group, 'Demo Pastas S.R.L. (ficticia)', '30500000143', 'registered', v_reason);
+    end if;
+    for r in select id from org.restaurants
+              where id in (v_centro, '00000000-0000-4000-8000-000000000202') and legal_entity_id is null loop
+      perform org.set_restaurant_legal_entity(r.id, v_entity, v_reason);
+    end loop;
   end if;
 
   -- 1. Compras: proveedores, materias primas, productos de compra y precios propuestos.
