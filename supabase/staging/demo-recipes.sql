@@ -87,7 +87,7 @@ insert into pru_ingredients values
   (18, 'Huevo de campo',              'MP-HUE', 'unit', 3, 'Huevo de campo, maple de 30',       'box', 30,     1, 'unit',  7800, 0),
   (19, 'Harina 00 italiana',          'MP-HAR', 'g',    3, 'Harina 00 italiana, bolsa de 25 kg', 'bag', 1, 25000, 'g',    32000, 0),
   (20, 'Semolín de trigo candeal',    'MP-HAR', 'g',    3, 'Semolín de trigo candeal, bolsa de 5 kg', 'bag', 1, 5000, 'g', 9500, 0),
-  (21, 'Arroz arborio',               'MP-ALM', 'g',    3, 'Arroz arborio, bolsa de 5 kg',      'bag',  1,  5000, 'g',    24000, 0),
+  (21, 'Arroz arborio',               'MP-HAR', 'g',    3, 'Arroz arborio, bolsa de 5 kg',      'bag',  1,  5000, 'g',    24000, 0),
   (22, 'Aceite de oliva extra virgen', 'MP-ACE', 'ml',  3, 'Aceite de oliva extra virgen, bidón de 5 l', 'jug', 1, 5000, 'ml', 58000, 0),
   (23, 'Tomate pelado en lata',       'MP-CON', 'g',    3, 'Tomate pelado, lata de 2,5 kg',     'can',  1,  2500, 'g',     6900, 0),
   (24, 'Puré de tomate',              'MP-CON', 'g',    3, 'Puré de tomate, caja de 12 × 520 g', 'box', 12,  520, 'g',    16800, 0),
