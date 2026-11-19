@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/database.types";
 import { todayInArgentina } from "@/lib/forms/schemas";
+import { getPriceOrigins, type PriceOrigin } from "@/lib/invoices-data";
 
 // Lecturas de precios (ADR-0029). Todo con la sesión de la persona: la base solo devuelve los precios que
 // puede ver (prices.view en su alcance) y las funciones de costo vuelven a pedir el permiso. Si la persona
@@ -45,6 +46,8 @@ export type PriceRecordRow = {
   document: PriceDocument;
   vatRate: number | null;
   source: PriceSource;
+  // Si salió de una factura conforme: cuál (ADR-0058).
+  origin: PriceOrigin | null;
 };
 
 export async function getIngredientPrices(ingredientId: string): Promise<PriceRecordRow[]> {
@@ -81,6 +84,9 @@ export async function getIngredientPrices(ingredientId: string): Promise<PriceRe
     supabase.schema("org").from("restaurants").select("id, name").in("id", restaurantIds),
   ]);
   if (brands.error || restaurants.error) failed("los precios");
+  const origins = await getPriceOrigins(
+    records.data.filter((r) => r.source === "invoice").map((r) => r.id),
+  );
   const productName = new Map(products.map((p) => [p.id, p.description]));
   const brandName = new Map(brands.data.map((b) => [b.id, b.name]));
   const restaurantName = new Map(restaurants.data.map((r) => [r.id, r.name]));
@@ -102,6 +108,7 @@ export async function getIngredientPrices(ingredientId: string): Promise<PriceRe
     document: r.document_type,
     vatRate: r.vat_rate === null ? null : Number(r.vat_rate),
     source: r.source,
+    origin: origins.get(r.id) ?? null,
   }));
 }
 
@@ -229,6 +236,8 @@ export type ProductPrice = {
   status: string;
   // Un producto que ya no se compra aparece solo si tiene el precio que vale (puede ser el que usa el costo).
   isActive: boolean;
+  // Si el precio salió de una factura conforme: cuál (ADR-0058).
+  origin: PriceOrigin | null;
 };
 
 export async function getProductPrices(
@@ -241,6 +250,9 @@ export async function getProductPrices(
     p_restaurant_id: restaurantId,
   });
   if (error) failed("los precios de los productos");
+  const origins = await getPriceOrigins(
+    data.flatMap((r) => (r.price_record_id ? [r.price_record_id] : [])),
+  );
   return data.map((r) => ({
     productId: r.purchase_product_id,
     priceRecordId: r.price_record_id,
@@ -254,5 +266,6 @@ export async function getProductPrices(
     daysOld: r.days_old,
     status: r.status,
     isActive: r.is_active,
+    origin: r.price_record_id ? (origins.get(r.price_record_id) ?? null) : null,
   }));
 }

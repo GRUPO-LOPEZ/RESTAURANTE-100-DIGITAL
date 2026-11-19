@@ -1,7 +1,7 @@
 # ADR-0058: Facturas con control de 3 vías y costos desde la factura conforme
 
 - **Fecha:** 2026-11-18
-- **Estado:** plan aprobado por Joaco el 2026-11-18. PR 5A: la base.
+- **Estado:** plan aprobado por Joaco el 2026-11-18. PR 5A: la base (#86). PR 5B: las pantallas.
 - **Sigue a:**
   - ADR-0029: cómo entra un precio;
   - ADR-0032: el recálculo en cola;
@@ -122,6 +122,37 @@ Corregido en `20261209160000_invoice_review_fixes_2.sql`, con pruebas en la 380:
   - una factura cargada y olvidada de la misma OC frena a la buena hasta que se cancela (es conservador: nunca paga de más);
   - quien aprieta «Controlar» sobre una lista que cargó otra persona la deja conforme a su nombre. Es lo que se decidió con la opción b.
 
+## PR 5B: las pantallas (2026-11-18)
+
+- **Listado** (`/compras/facturas`, tipo C):
+  - pestañas Todas, Cargadas, Observadas, Conformes (suma las liberadas: el conforme libera en la misma transacción), Pagadas y Canceladas;
+  - filtros de proveedor y fecha; el local sale del selector de arriba;
+  - la columna «Qué no pasó»: dice qué falló en el último control y, en una conforme que no había pasado, «Conforme a mano».
+- **Alta** («Nueva factura», modal corto y página `/compras/facturas/nueva`):
+  - pide el proveedor, las OC recibidas que cubre (ninguna para un flete o un servicio), el comprobante, el número, la fecha y la autorización;
+  - el CUIT del emisor lo pone la acción: es el del proveedor;
+  - una OC con una factura en curso (cargada u observada) no se ofrece: esa se termina o se cancela.
+- **Ficha** (`/compras/facturas/[id]`, tipo B sin scroll):
+  - **4 indicadores:** Total (cierra o no), Contra lo recibido, Contra la lista (lo cobrado de más; si una línea no tiene lista, «Sin lista», nunca «igual») y Vence el;
+  - **tres tarjetas:** los datos y el pie; las líneas como planilla, con el control de cada una en un tooltip; y «Todo junto», con el papel, la OC y su recepción, los controles y las notas;
+  - se guarda en lote, con motivo, y vuelve a «cargada»;
+  - **acciones:** Controlar, Dar por conforme (manda la versión que se miró, `p_version`) y Cancelar. El resultado sale en la barra de abajo;
+  - en el celular es de consulta, pero «Dar por conforme» está (aprobar es supervisar).
+- **Lecturas de la base** (`20261210120000_invoice_screens.sql` y `20261210140000_invoice_screens_fixes.sql`):
+  - `invoice_list`: invoker, con la RLS de quien consulta;
+  - `invoiceable_orders`;
+  - `invoice_access`: qué puede hacer la sesión; anticipa la regla de «otra persona», que sigue decidiendo `approve_invoice`;
+  - `costing.price_origins`: el origen de un precio para quien ve ese precio; el proveedor, solo si ve proveedores.
+- **Textos del control** (`20261210130000_invoice_texts.sql`): la plata y las cantidades como se leen acá («$ 3.403,00»). Las reglas no cambian.
+- **Origen del precio:** «Factura A 0003-00012345 · Proveedor» en la ficha de la materia prima (tabla de productos y precios) y en el impacto de un precio en Costos. Quien ve facturas la abre.
+- **Revisiones:**
+  - `security-auditor`: apto, 0 graves;
+  - `db-reviewer`: 0 graves. Se corrigió el medio: la OC con una factura en curso;
+  - `ui-reviewer`: 1 grave, corregido: «Contra la lista» decía «igual» sin lista. También se corrigieron los medios.
+- **Queda anotado, sin cambio:**
+  - `p_version` sigue opcional en la base; la pantalla lo manda siempre;
+  - el aviso de variación compara con el envase nuevo («lo que habría costado con el precio anterior»).
+
 ## Opciones que se descartaron
 
 - **Crear una solicitud de aprobación por cada precio de factura**, como hoy. Duplicaba el conforme y frenaba la operación, que es justo lo que Soy pidió evitar.
@@ -133,7 +164,4 @@ Corregido en `20261209160000_invoice_review_fixes_2.sql`, con pruebas en la 380:
 - **Una factura conforme cambia costos:** al día siguiente el recálculo mueve las recetas del local. En el seed hay dos facturas conformes en Demo Parrilla Centro, a propósito, para que se vea.
 - **Una factura vieja no pisa un costo más nuevo:** `resolve_prices` toma el último por vigencia.
 - **Riesgo de redondeo en B o C:** se compara a centavos. Si en la práctica aparecen diferencias de un centavo, se revisa con Joaco antes de aflojar la tolerancia.
-- **Lo que queda para el PR 5B:**
-  - las pantallas (listado y ficha sin scroll);
-  - el origen «Factura A 0003-00012345 · Proveedor» en la ficha de la materia prima y en Costos;
-  - las funciones de lectura de la pantalla.
+- **Lo que queda para el Prompt 6:** los pagos y el tablero de compras.

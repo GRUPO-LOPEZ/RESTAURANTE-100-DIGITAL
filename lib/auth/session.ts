@@ -103,6 +103,9 @@ export const getMenus = cache(async () => {
     ordersApprove,
     receive,
     inventory,
+    invoices,
+    invoicesManage,
+    invoicesApprove,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -158,6 +161,10 @@ export const getMenus = cache(async () => {
     // Recepción e inventario (ADR-0056): en algún local (la base controla en cuál).
     check("purchasing.receive"),
     check("inventory.view"),
+    // Facturas (ADR-0058): ver, cargar y dar por conforme, en algún local (la base controla en cuál).
+    check("purchasing.view_invoices"),
+    check("purchasing.manage_invoices"),
+    check("purchasing.approve_invoices"),
   ]);
   return {
     users,
@@ -211,6 +218,9 @@ export const getMenus = cache(async () => {
     ordersApprove,
     receive,
     inventory,
+    invoices,
+    invoicesManage,
+    invoicesApprove,
   };
 });
 

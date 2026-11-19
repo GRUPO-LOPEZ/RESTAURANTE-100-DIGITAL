@@ -365,7 +365,7 @@ select ok(not pg_temp.check_passed(pg_temp.k('a2'), 'price', 'Azúcar de prueba,
 select alike((select explanation from purchasing.invoice_checks
               where invoice_id = pg_temp.k('a2') and check_kind = 'price' and not passed
                 and invoice_line_id is not null limit 1),
-            'La lista dice $ 50000.0000 y la factura $ 50001.0000 (sin IVA).', 'con la explicación en simple');
+            'La lista dice $ 50.000,00 y la factura $ 50.001,00 (sin IVA).', 'con la explicación en simple');
 select ok(exists (select 1 from core.notifications where kind = 'invoice_observed'
                    and link = format('/compras/facturas/%s', pg_temp.k('a2'))),
           'y avisa a Compras');
@@ -427,7 +427,7 @@ select is((select (approved_by, package_price)::text from costing.price_records 
           (select (pg_temp.u(407), 60000.0000::numeric(18,4))::text), 'su precio entra, aprobado por el Controller');
 select ok(exists (select 1 from core.notifications
                    where kind = 'price_variation' and recipient_user_id = pg_temp.u(402)
-                     and link = format('/compras/facturas/%s', pg_temp.k('a3')) and body like 'Antes $ 1.0000%ahora $ 1.2000%'),
+                     and link = format('/compras/facturas/%s', pg_temp.k('a3')) and body like 'Antes $ 50.000,00 el envase; ahora $ 60.000,00 (20 %)%'),
           'caso 28: +20 % > 15 % → el precio entra igual y Dirección recibe el aviso con antes y ahora');
 select ok(not exists (select 1 from workflow.approval_requests r
                        where r.created_at >= (select created_at from purchasing.invoices where id = pg_temp.k('a3'))

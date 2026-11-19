@@ -3780,6 +3780,16 @@ export type Database = {
           version_changed: boolean;
         }[];
       };
+      price_origins: {
+        Args: { p_price_record_ids: string[] };
+        Returns: {
+          can_open: boolean;
+          invoice_id: string;
+          label: string;
+          price_record_id: string;
+          supplier_name: string;
+        }[];
+      };
       price_rows: {
         Args: { p_as_of: string; p_ingredient_id: string; p_restaurant_id: string };
         Returns: {
@@ -6980,6 +6990,7 @@ export type Database = {
         Args: { p_confirm: boolean; p_group_id: string; p_reason: string; p_rows: Json };
         Returns: Json;
       };
+      invoice_access: { Args: { p_id: string }; Returns: Json };
       invoice_is_a: {
         Args: { p_class: Database["purchasing"]["Enums"]["invoice_class"] };
         Returns: boolean;
@@ -6991,6 +7002,45 @@ export type Database = {
           p_point_of_sale: number;
         };
         Returns: string;
+      };
+      invoice_list: {
+        Args: {
+          p_from?: string;
+          p_limit?: number;
+          p_offset?: number;
+          p_restaurant_id?: string;
+          p_status?: string;
+          p_supplier_id?: string;
+          p_to?: string;
+        };
+        Returns: {
+          due_on: string;
+          failed: string[];
+          id: string;
+          invoice_class: Database["purchasing"]["Enums"]["invoice_class"];
+          issued_on: string;
+          number: number;
+          point_of_sale: number;
+          restaurant_id: string;
+          restaurant_name: string;
+          status: Database["purchasing"]["Enums"]["invoice_status"];
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
+          total_amount: number;
+        }[];
+      };
+      invoiceable_orders: {
+        Args: { p_restaurant_id: string; p_supplier_id?: string };
+        Returns: {
+          id: string;
+          lines: number;
+          number: string;
+          received_on: string;
+          status: Database["purchasing"]["Enums"]["po_status"];
+          supplier_id: string;
+          supplier_name: string;
+        }[];
       };
       link_article: {
         Args: { p_id: string; p_purchase_product_id: string; p_reason: string };
@@ -7019,6 +7069,7 @@ export type Database = {
           unmapped_article_id: string;
         }[];
       };
+      money_text: { Args: { p_value: number }; Returns: string };
       net_list_price: {
         Args: {
           p_bonus_per_unit_amount: number;
@@ -7064,6 +7115,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      number_text: { Args: { p_value: number }; Returns: string };
       order_ingredient_search: {
         Args: { p_query: string; p_restaurant_id: string };
         Returns: {

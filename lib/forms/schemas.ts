@@ -2,6 +2,7 @@ import { z } from "zod";
 import { parseAmount } from "@/lib/money";
 import { LINE_UNIT_CODES } from "@/lib/recipe-format";
 import { validCuit } from "@/lib/suppliers";
+import { newInvoiceSchema, noteSchema } from "@/lib/invoices";
 
 // Esquemas de los formularios (ADR-0016): los mismos en el navegador (React Hook Form, antes de
 // enviar) y en las acciones de servidor (que validan igual, porque nunca se confía en la pantalla).
@@ -683,6 +684,10 @@ export const schemas = {
       .optional(),
     reason: reasonField,
   }),
+  // Facturas (ADR-0058): el alta y las notas, con el mismo esquema que valida la acción.
+  invoiceNew: newInvoiceSchema,
+  invoiceNote: noteSchema,
+  invoiceReason: z.object({ reason: reasonField }),
 } as const;
 
 export type FormSchemaName = keyof typeof schemas;

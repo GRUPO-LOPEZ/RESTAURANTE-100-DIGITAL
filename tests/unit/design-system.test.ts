@@ -9,6 +9,7 @@ import {
   isCurrent,
   mobileItems,
   navFits,
+  collapsedFits,
   navGroups,
   navHeight,
   type NavGroup,
@@ -23,6 +24,7 @@ const none: NavMenus = {
   priceLists: false,
   orders: false,
   receive: false,
+  invoices: false,
   inventory: false,
   costs: false,
   reports: false,
@@ -56,6 +58,7 @@ describe("la navegación global", () => {
       "Listas de precios",
       "Órdenes de compra",
       "Recepción",
+      "Facturas",
       "Inventario",
       "Costos",
       "Reportes",
@@ -138,6 +141,14 @@ describe("los grupos plegados (ADR-0057)", () => {
     // El Controller (656 px) ya no entra en 843; el superadmin, menos.
     expect(navFits(menuOf([1, 4, 5, 2, 1]))).toBe(false);
     expect(navFits(navGroups(all, 0))).toBe(false);
+  });
+
+  it("contraída, si los íconos de 36 px no entran, van de 32 (Facturas, 2026-11-18)", () => {
+    // 15 accesos en 5 grupos: 15 × 36 + 4 = 544 px, entran en 634 con margen.
+    expect(collapsedFits(menuOf([1, 4, 5, 2, 3]))).toBe(true);
+    // El superadmin, con 18: 18 × 36 + 5 = 653 px, no entran.
+    expect(navGroups(all, 0).flatMap((g) => g.items)).toHaveLength(18);
+    expect(collapsedFits(navGroups(all, 0))).toBe(false);
   });
 
   it("el grupo actual es el de la pantalla, también en sus pantallas internas", () => {
