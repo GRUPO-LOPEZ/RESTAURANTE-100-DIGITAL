@@ -1,10 +1,42 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-18._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Fusionados la base de facturas (PR #86, ADR-0058) y las pruebas en paralelo en GitHub (PR #87, ADR-0059). Ahora: 5B, las pantallas de facturas (`feat/facturas-pantallas`).**
+_Última actualización: 2026-11-19._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Fusionadas las facturas (base #86 y pantallas #88, ADR-0058) y las pruebas en paralelo en GitHub (PR #87, ADR-0059). Ahora: Prompt 6, pagos y tablero de compras (`feat/pagos-y-tablero-de-compras`, plan aprobado). Abierto: dependencias (#89, en verde).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## En curso: Prompt 5B, pantallas de facturas (rama `feat/facturas-pantallas`)
+## Para retomar (2026-11-19)
+
+- **Prompt 6, pagos y tablero de compras** (rama `feat/pagos-y-tablero-de-compras`, worktree `.claude/worktrees/pagos`, plan en `C:Usersjulym.claudeplansluttering-stirring-reef.md`, aprobado por Joaco el 2026-11-18). **Hecha la base**, con las revisiones de base y de seguridad corregidas:
+  - **Migraciones:**
+    - `20261211110000_payment_kinds`;
+    - `20261211120000_payments`;
+    - `20261211130000_payment_functions`;
+    - `20261211140000_purchasing_reporting`;
+    - `20261211150000_payment_review_fixes`.
+  - **Pruebas:** pgTAP 390 (52) y 391 (16, con el caso 34 de rendimiento); listas de 050, 320 y 382 al día. Base entera en verde: 65 archivos, 3.134 casos.
+  - **Decisiones de Joaco (2026-11-18 y 19), para el ADR-0060:**
+    - un pago es de un local;
+    - el efectivo al recibir, confirmado, queda a cuenta y se aplica solo a las facturas de la OC de su recepción (sin OC, a cuenta);
+    - la nota de crédito que llega después de pagar se acepta y lo de más vuelve a cuenta;
+    - los pagos no piden una segunda persona;
+    - el tablero muestra importes a quien ve pagos (incluido el superadmin);
+    - en el menú contraído, íconos de 28 px si los de 32 no entran.
+  - **Cambio sobre el plan:** el efectivo se engancha con dos triggers (`on_receipt_closed`, `on_invoice_released`) en vez de copiar `close_receipt` y `release_invoice`.
+  - **Anotado, sin cambio:**
+    - los avisos de vencimiento van a quien paga en todo el grupo, como los demás avisos de compras;
+    - un pago de recepción anulado no se vuelve a crear para esa recepción.
+  - **Falta:**
+    - las pantallas: `/compras/pagos` con el panel «Registrar pago» y «Para confirmar», la cuenta corriente en la ficha de proveedor, el saldo en la ficha de factura, `/compras` (tablero) y los accesos del menú, con los 28 px;
+    - Playwright `pagos.spec.ts`, las capturas en `docs/capturas/pagos-y-tablero/` y `ui-reviewer`;
+    - el ADR-0060, la lista de cambios para Soy y la compuerta de la Fase 3 en este archivo;
+    - la suite completa y el PR.
+- **Dependencias (#89):** en verde en GitHub. Falta fusionarlo (reemplaza a #79, #8, #4, #3 y #2, que se cierran).
+- **Para Joaco:**
+  - volver a correr «Crear el superadministrador de prueba» en staging (Actions → Publicar en staging): el rol `superadmin_test` copia los permisos al correrse y no tiene los de compras. Hay que repetirlo con cada módulo que sume permisos;
+  - borrar en GitHub las ramas `feat/facturas-base`, `feat/facturas-pantallas` y `ci/playwright-en-paralelo`;
+  - pedirle a Soy que active la protección de `main` (hoy no tiene ninguna).
+
+## Fusionado: Prompt 5B, pantallas de facturas (PR #88, 2026-11-19)
 
 - **Pantallas:**
   - `/compras/facturas` (listado con pestañas y filtros);
