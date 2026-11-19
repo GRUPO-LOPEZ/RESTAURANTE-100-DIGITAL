@@ -69,8 +69,8 @@ select tables_are('purchasing', array['supplier_terms', 'supplier_payment_terms'
                                       'purchase_orders', 'purchase_order_lines', 'purchase_order_events',
                                       'outbound_messages', 'receipts', 'receipt_lines', 'invoices',
                                       'invoice_orders', 'invoice_lines', 'invoice_taxes', 'invoice_checks',
-                                      'credit_debit_notes'],
-                  'purchasing tiene las tablas del proveedor, de listas de precios, de órdenes de compra, de recepciones y de facturas');
+                                      'credit_debit_notes', 'payments', 'payment_allocations'],
+                  'purchasing tiene las tablas del proveedor, de listas de precios, de órdenes de compra, de recepciones, de facturas y de pagos');
 select ok((select bool_and(c.relrowsecurity) from pg_class c join pg_namespace n on n.oid = c.relnamespace
             where n.nspname = 'purchasing' and c.relkind = 'r'), 'RLS activo en todas las tablas de purchasing');
 select ok((select bool_and(obj_description(c.oid, 'pg_class') is not null)
@@ -80,9 +80,9 @@ select ok((select bool_and(col_description(a.attrelid, a.attnum) is not null)
              from pg_attribute a join pg_class c on c.oid = a.attrelid join pg_namespace n on n.oid = c.relnamespace
             where n.nspname = 'purchasing' and c.relkind = 'r' and a.attnum > 0 and not a.attisdropped),
           'cada columna tiene su comentario');
-select ok((select count(*) = 22 from pg_trigger t join pg_class c on c.oid = t.tgrelid
+select ok((select count(*) = 24 from pg_trigger t join pg_class c on c.oid = t.tgrelid
              join pg_namespace n on n.oid = c.relnamespace
-            where n.nspname = 'purchasing' and t.tgname = 'log_change'), 'las 22 tablas se auditan');
+            where n.nspname = 'purchasing' and t.tgname = 'log_change'), 'las 24 tablas se auditan');
 select ok(not has_table_privilege('authenticated', 'purchasing.supplier_terms', 'insert')
           and not has_table_privilege('authenticated', 'purchasing.supplier_payment_accounts', 'update'),
           'la API no escribe directo');
@@ -100,8 +100,8 @@ select ok((select bool_and(core.valid_cuit(tax_id)) from catalog.suppliers where
 -- ---------------------------------------------------------------------------
 -- Permisos
 -- ---------------------------------------------------------------------------
-select ok((select count(*) = 13 from core.permissions where module = 'purchasing' and deleted_at is null),
-          '13 permisos de compras (3 de proveedores, 2 de listas de precios, 4 de órdenes de compra, recibir y 3 de facturas)');
+select ok((select count(*) = 16 from core.permissions where module = 'purchasing' and deleted_at is null),
+          '16 permisos de compras (3 de proveedores, 2 de listas de precios, 4 de órdenes de compra, recibir, 3 de facturas, 2 de pagos y el tablero)');
 select ok((select is_sensitive from core.permissions where code = 'purchasing.manage_suppliers')
           and (select is_sensitive from core.permissions where code = 'purchasing.view_payment_terms'),
           'administrar y ver el pago son sensibles');
@@ -110,40 +110,42 @@ select is((select array_agg(p.code order by p.code) from core.role_permissions r
             where r.code = 'superadmin' and p.module = 'purchasing' and rp.deleted_at is null),
           array['purchasing.approve_invoices', 'purchasing.approve_orders', 'purchasing.create_orders',
                 'purchasing.manage_invoices', 'purchasing.manage_price_lists',
-                'purchasing.manage_suppliers', 'purchasing.receive', 'purchasing.record_order_news',
-                'purchasing.view_invoices', 'purchasing.view_orders', 'purchasing.view_price_lists', 'purchasing.view_suppliers'],
+                'purchasing.manage_suppliers', 'purchasing.pay', 'purchasing.receive', 'purchasing.record_order_news',
+                'purchasing.view_dashboard', 'purchasing.view_invoices', 'purchasing.view_orders', 'purchasing.view_payments',
+                'purchasing.view_price_lists', 'purchasing.view_suppliers'],
           'el superadmin tiene los de Compras, a quien puede suspender (G2)');
 -- La matriz entera de compras, rol por rol (como la 140 con el catálogo).
 select is((select array_agg(r.code || '=' || p.code order by r.code, p.code)
              from core.role_permissions rp join core.roles r on r.id = rp.role_id
              join core.permissions p on p.id = rp.permission_id
             where p.module = 'purchasing' and rp.deleted_at is null),
-          array['auditor=purchasing.view_invoices', 'auditor=purchasing.view_orders', 'auditor=purchasing.view_price_lists',
-                'auditor=purchasing.view_suppliers', 'brand_director=purchasing.create_orders',
-                'brand_director=purchasing.receive', 'brand_director=purchasing.record_order_news', 'brand_director=purchasing.view_invoices', 'brand_director=purchasing.view_orders',
-                'brand_director=purchasing.view_price_lists', 'brand_director=purchasing.view_suppliers',
-                'controller=purchasing.approve_invoices', 'controller=purchasing.view_invoices',
-                'controller=purchasing.view_orders', 'controller=purchasing.view_payment_terms',
-                'controller=purchasing.view_price_lists', 'controller=purchasing.view_suppliers',
-                'cook=purchasing.create_orders', 'cook=purchasing.receive', 'cook=purchasing.view_orders',
-                'cook=purchasing.view_suppliers', 'executive_chef=purchasing.create_orders',
-                'executive_chef=purchasing.view_orders', 'executive_chef=purchasing.view_suppliers',
-                'general_management=purchasing.manage_suppliers', 'general_management=purchasing.view_invoices', 'general_management=purchasing.view_orders',
-                'general_management=purchasing.view_payment_terms', 'general_management=purchasing.view_price_lists',
-                'general_management=purchasing.view_suppliers', 'head_chef=purchasing.create_orders',
-                'head_chef=purchasing.receive', 'head_chef=purchasing.view_orders', 'head_chef=purchasing.view_suppliers',
-                'purchasing=purchasing.approve_invoices', 'purchasing=purchasing.approve_orders', 'purchasing=purchasing.create_orders',
-                'purchasing=purchasing.manage_invoices', 'purchasing=purchasing.manage_price_lists', 'purchasing=purchasing.manage_suppliers',
-                'purchasing=purchasing.receive', 'purchasing=purchasing.record_order_news', 'purchasing=purchasing.view_invoices', 'purchasing=purchasing.view_orders',
-                'purchasing=purchasing.view_price_lists', 'purchasing=purchasing.view_suppliers',
-                'restaurant_manager=purchasing.create_orders', 'restaurant_manager=purchasing.receive',
-                'restaurant_manager=purchasing.record_order_news',
-                'restaurant_manager=purchasing.view_invoices', 'restaurant_manager=purchasing.view_orders', 'restaurant_manager=purchasing.view_price_lists',
+          array['auditor=purchasing.view_dashboard', 'auditor=purchasing.view_invoices', 'auditor=purchasing.view_orders',
+                'auditor=purchasing.view_payments', 'auditor=purchasing.view_price_lists', 'auditor=purchasing.view_suppliers',
+                'brand_director=purchasing.create_orders', 'brand_director=purchasing.receive', 'brand_director=purchasing.record_order_news',
+                'brand_director=purchasing.view_dashboard', 'brand_director=purchasing.view_invoices', 'brand_director=purchasing.view_orders',
+                'brand_director=purchasing.view_payments', 'brand_director=purchasing.view_price_lists', 'brand_director=purchasing.view_suppliers',
+                'controller=purchasing.approve_invoices', 'controller=purchasing.view_dashboard', 'controller=purchasing.view_invoices',
+                'controller=purchasing.view_orders', 'controller=purchasing.view_payment_terms', 'controller=purchasing.view_payments',
+                'controller=purchasing.view_price_lists', 'controller=purchasing.view_suppliers', 'cook=purchasing.create_orders',
+                'cook=purchasing.receive', 'cook=purchasing.view_orders', 'cook=purchasing.view_suppliers',
+                'executive_chef=purchasing.create_orders', 'executive_chef=purchasing.view_dashboard', 'executive_chef=purchasing.view_orders',
+                'executive_chef=purchasing.view_suppliers', 'general_management=purchasing.manage_suppliers', 'general_management=purchasing.view_dashboard',
+                'general_management=purchasing.view_invoices', 'general_management=purchasing.view_orders', 'general_management=purchasing.view_payment_terms',
+                'general_management=purchasing.view_payments', 'general_management=purchasing.view_price_lists', 'general_management=purchasing.view_suppliers',
+                'head_chef=purchasing.create_orders', 'head_chef=purchasing.receive', 'head_chef=purchasing.view_orders',
+                'head_chef=purchasing.view_suppliers', 'purchasing=purchasing.approve_invoices', 'purchasing=purchasing.approve_orders',
+                'purchasing=purchasing.create_orders', 'purchasing=purchasing.manage_invoices', 'purchasing=purchasing.manage_price_lists',
+                'purchasing=purchasing.manage_suppliers', 'purchasing=purchasing.pay', 'purchasing=purchasing.receive',
+                'purchasing=purchasing.record_order_news', 'purchasing=purchasing.view_dashboard', 'purchasing=purchasing.view_invoices',
+                'purchasing=purchasing.view_orders', 'purchasing=purchasing.view_payments', 'purchasing=purchasing.view_price_lists',
+                'purchasing=purchasing.view_suppliers', 'restaurant_manager=purchasing.create_orders', 'restaurant_manager=purchasing.receive',
+                'restaurant_manager=purchasing.record_order_news', 'restaurant_manager=purchasing.view_dashboard', 'restaurant_manager=purchasing.view_invoices',
+                'restaurant_manager=purchasing.view_orders', 'restaurant_manager=purchasing.view_payments', 'restaurant_manager=purchasing.view_price_lists',
                 'restaurant_manager=purchasing.view_suppliers', 'superadmin=purchasing.approve_invoices', 'superadmin=purchasing.approve_orders',
                 'superadmin=purchasing.create_orders', 'superadmin=purchasing.manage_invoices', 'superadmin=purchasing.manage_price_lists',
-                'superadmin=purchasing.manage_suppliers', 'superadmin=purchasing.receive',
-                'superadmin=purchasing.record_order_news',
-                'superadmin=purchasing.view_invoices', 'superadmin=purchasing.view_orders', 'superadmin=purchasing.view_price_lists',
+                'superadmin=purchasing.manage_suppliers', 'superadmin=purchasing.pay', 'superadmin=purchasing.receive',
+                'superadmin=purchasing.record_order_news', 'superadmin=purchasing.view_dashboard', 'superadmin=purchasing.view_invoices',
+                'superadmin=purchasing.view_orders', 'superadmin=purchasing.view_payments', 'superadmin=purchasing.view_price_lists',
                 'superadmin=purchasing.view_suppliers'],
           'la matriz de compras, rol por rol');
 

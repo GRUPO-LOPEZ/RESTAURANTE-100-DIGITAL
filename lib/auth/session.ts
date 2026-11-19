@@ -106,6 +106,9 @@ export const getMenus = cache(async () => {
     invoices,
     invoicesManage,
     invoicesApprove,
+    payments,
+    pay,
+    purchasingBoard,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -165,6 +168,10 @@ export const getMenus = cache(async () => {
     check("purchasing.view_invoices"),
     check("purchasing.manage_invoices"),
     check("purchasing.approve_invoices"),
+    // Pagos y tablero de compras (ADR-0060): ver pagos, pagar y ver el tablero, en algún local.
+    check("purchasing.view_payments"),
+    check("purchasing.pay"),
+    check("purchasing.view_dashboard"),
   ]);
   return {
     users,
@@ -221,6 +228,9 @@ export const getMenus = cache(async () => {
     invoices,
     invoicesManage,
     invoicesApprove,
+    payments,
+    pay,
+    purchasingBoard,
   };
 });
 

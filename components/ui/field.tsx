@@ -25,6 +25,7 @@ function Field({
   label,
   hint,
   error,
+  required,
   children,
   className,
 }: {
@@ -32,6 +33,8 @@ function Field({
   label: string;
   hint?: string;
   error?: string;
+  // Obligatorio: el asterisco junto a la etiqueta (la validación es del formulario).
+  required?: boolean;
   children: React.ReactElement<{
     id?: string;
     "aria-describedby"?: string;
@@ -52,6 +55,7 @@ function Field({
     <div data-slot="field" className={cn("flex flex-col gap-2", className)}>
       <label htmlFor={id} className="text-sm font-medium text-ink">
         {label}
+        {required ? <span aria-hidden="true"> *</span> : null}
       </label>
       {control}
       {hint ? (

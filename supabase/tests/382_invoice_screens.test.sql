@@ -61,7 +61,7 @@ select is(pg_temp.q(pg_temp.u(408), 'select max(total) from purchasing.invoice_l
 select is(pg_temp.list_count(408, 'p_limit => 50'), 9, 'y las trae en una página de 50');
 select is(pg_temp.list_count(408, '''loaded'''), 3, 'pestaña cargadas: 3');
 select is(pg_temp.list_count(408, '''observed'''), 3, 'pestaña observadas: 3');
-select is(pg_temp.list_count(408, '''released'''), 3, 'pestaña conformes y liberadas: 3');
+select is(pg_temp.list_count(408, '''released'''), 2, 'pestaña conformes y liberadas: 2 (la A de Lácteos ya está pagada, Prompt 6)');
 select is(pg_temp.list_count(408, format('p_restaurant_id => %L', pg_temp.u(202))), 2, 'filtra por local');
 select is(pg_temp.list_count(408, format('p_from => %L, p_to => %L', recipes.today() + 1, recipes.today() + 2)), 0,
           'filtra por fecha');

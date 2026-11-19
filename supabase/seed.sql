@@ -1157,6 +1157,47 @@ update core.notifications set read_at = now()
  where kind in ('price_variation', 'invoice_observed')
     or (kind = 'unmapped_article' and body like 'Llegaron en la %');
 
+-- Pagos (Fase 3, Prompt 6, ADR-0060): Compras los registra con las mismas funciones que la app. Todo inventado.
+-- - Un pago parcial con comprobante (la B de la Verdulería, que queda vencida con saldo).
+-- - Un pago que cancela dos facturas: la A de Lácteos entera y parte de su factura-remito.
+-- - El efectivo que se pagó al recibir la factura-remito de Lácteos queda «para confirmar» (lo creó la recepción).
+-- - La factura-remito de Lácteos vence en 3 días (para la agenda: una vencida y una por vencer).
+do $$
+declare
+  v_par      uuid := '00000000-0000-4000-8000-000000000203';
+  v_verduras uuid := '00000000-0000-4000-8000-000000000901';
+  v_lacteos  uuid := '00000000-0000-4000-8000-000000000903';
+  v_b        uuid := (select id from purchasing.invoices where number = 1234 and supplier_id = v_verduras);
+  v_remito   uuid := (select id from purchasing.invoices where number = 4567 and supplier_id = v_lacteos);
+  v_a        uuid := (select id from purchasing.invoices where number = 4600 and supplier_id = v_lacteos);
+  v_account  uuid := (select id from purchasing.supplier_payment_accounts
+                       where supplier_id = v_lacteos and method = 'transfer');
+  v_payment  uuid;
+  v_path     text;
+begin
+  -- La factura-remito vence en 3 días (en el seed, su condición de pago es en el día). Solo para tener una por vencer.
+  alter table purchasing.invoices disable trigger guard_invoice;
+  update purchasing.invoices set due_on = recipes.today() + 3, due_on_source = 'printed' where id = v_remito;
+  alter table purchasing.invoices enable trigger guard_invoice;
+
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000408');
+  v_payment := (purchasing.register_payment(v_par, v_verduras, recipes.today() - 1, 'cash', null, 2000, null,
+                  jsonb_build_array(jsonb_build_object('invoice_id', v_b, 'amount', 2000)),
+                  'Pago parcial en efectivo') ->> 'payment_id')::uuid;
+  v_path := format('00000000-0000-4000-8000-000000000001/payments/%s/%s.jpg', v_payment, gen_random_uuid());
+  insert into storage.objects (bucket_id, name, owner_id, metadata)
+  values ('purchasing-documents', v_path, '00000000-0000-4000-8000-000000000408', '{"mimetype": "image/jpeg", "size": 0}');
+  perform purchasing.add_payment_attachment(v_payment, v_path, 1::smallint);
+
+  perform purchasing.register_payment(v_par, v_lacteos, recipes.today(), 'transfer', v_account,
+            purchasing.invoice_balance(v_a) + 5000, 'TRF-000123',
+            jsonb_build_array(jsonb_build_object('invoice_id', v_a, 'amount', purchasing.invoice_balance(v_a)),
+                              jsonb_build_object('invoice_id', v_remito, 'amount', 5000)),
+            'Transferencia de la semana');
+  perform set_config('request.jwt.claims', '', true);
+end
+$$;
+
 -- Los costos de las recetas: en la base los calcula la cola cada minuto.
 select costing.process_recalc_queue(10000);
 

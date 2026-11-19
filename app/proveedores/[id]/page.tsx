@@ -22,9 +22,12 @@ import { FormTextarea } from "@/components/ui/form";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Metric } from "@/components/ui/metric";
 import { Notice } from "@/components/ui/notice";
+import { SupplierBalanceMetric } from "@/components/supplier-account";
 import { Tile } from "@/components/ui/tile";
 import { getMenus, requireMenu } from "@/lib/auth/session";
-import { UUID, first, formatDate } from "@/lib/data";
+import { UUID, first, formatDate, getActiveRestaurantId } from "@/lib/data";
+import { getSupplierAccount } from "@/lib/payments-data";
+import { getOrders } from "@/lib/purchase-orders-data";
 import { getCurrentPriceList } from "@/lib/price-lists-data";
 import { VAT_LABELS, formatCuit } from "@/lib/suppliers";
 import { getGroupRestaurants, getPurchaseRubros, getSupplierSheet } from "@/lib/suppliers-data";
@@ -248,10 +251,25 @@ async function Supplier({
 }) {
   const [s, query, menus] = await Promise.all([load(params), searchParams, getMenus()]);
   if (!s) notFound();
-  const [rubros, restaurants] = await Promise.all([
+  const session = await requireMenu("suppliers");
+  const local = (await getActiveRestaurantId(session.user_id)) ?? undefined;
+  const [rubros, restaurants, account, openOrders] = await Promise.all([
     menus.catalog ? getPurchaseRubros() : Promise.resolve([]),
     getGroupRestaurants(),
+    menus.payments ? getSupplierAccount(s.id, local, 20) : Promise.resolve(null),
+    menus.orders
+      ? getOrders({
+          status: "open",
+          supplierId: s.id,
+          restaurantId: local,
+          mine: false,
+          page: 0,
+          size: 1,
+        })
+      : Promise.resolve(null),
   ]);
+  const placeName = restaurants.find((r) => r.id === local)?.name ?? null;
+  const supplierName = s.tradeName || s.name;
   const editable = s.canManage && s.stamp !== null;
   const saved = NOTICES[first(query.aviso) ?? ""] ?? null;
 
@@ -283,32 +301,52 @@ async function Supplier({
             canView={menus.priceLists}
             canManage={menus.priceListsManage}
           />
-          <Metric
-            compact
-            label="Saldo de cuenta corriente"
-            value={null}
-            missingReason="Sin facturas ni pagos."
-            emptyLabel="Sin datos"
-            status="none"
-            statusLabel="Sin datos"
+          <SupplierBalanceMetric
+            account={account}
+            supplierName={supplierName}
+            placeName={placeName}
+            canSee={menus.payments}
           />
-          <Metric
-            compact
-            label="Órdenes de compra abiertas"
-            value={null}
-            missingReason="Llegan con las órdenes de compra."
-            emptyLabel="Sin datos"
-            status="none"
-            statusLabel="Sin datos"
-          />
+          {openOrders ? (
+            <Metric
+              compact
+              label="Órdenes de compra abiertas"
+              value={openOrders.total.toLocaleString("es-AR")}
+              period={placeName ?? "todos mis locales"}
+              emptyLabel="Sin datos"
+              status={openOrders.total > 0 ? "info" : "ok"}
+              statusLabel={openOrders.total > 0 ? "Por recibir" : "Ninguna"}
+              action={
+                openOrders.total > 0 ? (
+                  <Link
+                    href={`/compras/ordenes?proveedor=${s.id}`}
+                    className="inline-flex min-h-touch items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-8"
+                  >
+                    Ver cuáles
+                  </Link>
+                ) : undefined
+              }
+            />
+          ) : (
+            <Metric
+              compact
+              label="Órdenes de compra abiertas"
+              value={null}
+              missingReason="Las ven quienes ven las órdenes de compra."
+              emptyLabel="Sin datos"
+              status="none"
+              statusLabel="Sin datos"
+            />
+          )}
           <Metric
             compact
             label="Última compra"
-            value={null}
-            missingReason="Sin compras registradas."
+            value={account?.last_invoice_on ? formatDate(account.last_invoice_on) : null}
+            period={account?.last_invoice_on ? "fecha de la última factura conforme" : undefined}
+            missingReason={menus.payments ? "Sin facturas conformes." : "La ven quienes ven pagos."}
             emptyLabel="Sin datos"
-            status="none"
-            statusLabel="Sin datos"
+            status={account?.last_invoice_on ? "ok" : "none"}
+            statusLabel={account?.last_invoice_on ? "Con compras" : "Sin datos"}
           />
         </div>
 

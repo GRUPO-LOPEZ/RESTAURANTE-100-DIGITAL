@@ -9,7 +9,7 @@ import { signOut } from "@/app/ingresar/actions";
 import { NavIconGlyph } from "@/components/nav-icon";
 import {
   SIDEBAR_COOKIE,
-  collapsedFits,
+  collapsedIconSize,
   currentGroup,
   isCurrent,
   navFits,
@@ -32,8 +32,9 @@ export function Sidebar({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(collapsedInitial);
   const fits = navFits(groups);
-  // Contraída, si los íconos de 36 px no entran, van de 32 (decisión de Joaco, 2026-11-18; mínimo WCAG: 24).
-  const compact = collapsed && !collapsedFits(groups);
+  // Contraída, si los íconos de 36 px no entran, van de 32 y después de 28 (decisiones de Joaco del 2026-11-18;
+  // mínimo WCAG: 24).
+  const iconSize = collapsed ? collapsedIconSize(groups) : 36;
   const current = currentGroup(groups, pathname);
   // Lo que la persona abrió o cerró a mano en esta pantalla. Cada pantalla arma su barra (AppShell va en cada página):
   // en la siguiente vuelve a lo básico, con el grupo de esa pantalla abierto.
@@ -47,7 +48,7 @@ export function Sidebar({
   const item = (current: boolean) =>
     cn(
       "flex items-center gap-3 rounded-sm px-3 text-sm",
-      compact ? "min-h-8" : "min-h-control-sm",
+      iconSize === 28 ? "min-h-7" : iconSize === 32 ? "min-h-8" : "min-h-control-sm",
       current
         ? "bg-nav-active font-medium text-nav-active-ink"
         : "text-nav-ink hover:bg-nav-ink/10",
@@ -83,7 +84,7 @@ export function Sidebar({
         </Link>
       </div>
       <nav aria-label="Menú principal" className="flex min-h-0 flex-1 flex-col gap-1 px-3 pb-3">
-        {/* Contraída, sin espacio entre íconos (36 px cada uno, o 32 si no entran) y con una línea entre grupos: los 18
+        {/* Contraída, sin espacio entre íconos (36 px cada uno, o 32 o 28 si no entran) y con una línea entre grupos: los 20
             accesos del superadmin entran en 843 de alto (ADR-0057). p-1: el contorno del foco (2 px, a 2 px) no queda
             recortado por el scroll. */}
         <div
