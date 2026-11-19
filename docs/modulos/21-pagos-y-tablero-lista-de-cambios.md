@@ -59,8 +59,8 @@ Sexta y última entrega del módulo de compras (Fase 3). Cierra el circuito **pe
 
 ## Para probar en staging (antes de cargar proveedores reales)
 
-Con los datos de prueba:
+Con los datos de prueba: Joaco los carga con la opción «Cargar compras, facturas y pagos de prueba» de Publicar en staging. Lo que se carga, el recorrido y los importes exactos están en la guía `docs/guias/prueba-fase-3-soy.md`.
 
-1. Cargar una factura, dejarla conforme y pagarla en dos partes. Ver que pase a «Pagada» y que el saldo del proveedor baje.
-2. Recibir mercadería pagando en efectivo, confirmar ese efectivo en «Para confirmar» y ver que se aplique al quedar conforme su factura.
+1. Pagar en dos partes una factura conforme (la del Frigorífico que vence en 5 días). Ver que pase a «Pagada» y que el saldo del proveedor baje.
+2. Confirmar en «Para confirmar» el efectivo que se pagó al recibir la verdura, y dar por conforme su factura: el efectivo se le aplica solo.
 3. Mirar el Tablero de compras como Compras (con importes) y como chef (sin importes).
