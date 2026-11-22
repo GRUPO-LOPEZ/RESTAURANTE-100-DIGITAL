@@ -2,10 +2,10 @@
 
 Soy está recorriendo el sistema en staging y junta las correcciones en tandas. **Se mandan todas juntas** y se aplican todas. Cada tanda trae su boceto validado y su prompt. Hasta que lleguen todas, no se arranca un módulo nuevo.
 
-| Tanda | Qué toca                                                                                      | Boceto                                | Estado                        |
-| ----- | --------------------------------------------------------------------------------------------- | ------------------------------------- | ----------------------------- |
-| 1     | Panel de control (estructura del grupo, marcas, locales, razones sociales, áreas) y Usuarios | `2026-11-22-boceto-panel-y-usuarios/` | Validada por Soy (2026-11-22) |
-| 2     | Base de conocimiento: recetas, fichas técnicas, materias primas, catálogo y rubros            | `2026-11-22-boceto-base-de-conocimiento/` | Validada por Soy (2026-11-22) |
+| Tanda | Qué toca                                                                                     | Boceto                                    | Estado                        |
+| ----- | -------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------- |
+| 1     | Panel de control (estructura del grupo, marcas, locales, razones sociales, áreas) y Usuarios | `2026-11-22-boceto-panel-y-usuarios/`     | Validada por Soy (2026-11-22) |
+| 2     | Base de conocimiento: recetas, fichas técnicas, materias primas, catálogo y rubros           | `2026-11-22-boceto-base-de-conocimiento/` | Validada por Soy (2026-11-22) |
 
 ---
 
