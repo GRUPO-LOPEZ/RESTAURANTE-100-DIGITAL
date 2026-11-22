@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha de persona</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;min-height:36px}
+.seg{display:flex;gap:4px}
+.seg button{height:32px;padding:0 10px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.lnk{background:none;border:0;padding:0;font:inherit;font-size:13px;color:#3D5E9F;cursor:pointer}
+h2{margin:0;font-size:16px;font-weight:600}
+input,select{height:34px;border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;font:inherit;font-size:14px;box-sizing:border-box;background:#FFFFFF;color:#1F2937}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>COMPRAS</h4><a href="#">Tablero de compras</a><a href="#">Facturas</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#" class="on">Usuarios</a><a href="#">Roles y permisos</a><a href="#">Historial</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Usuarios › <span style="color: #1F2937; font-weight: 500;">Carla Gómez</span></span>
+    </div>
+
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 0; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="#" style="font-size: 14px; text-decoration: none;">← Usuarios</a>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Carla Gómez</h1>
+          <span style="font-size: 13px; color: #6B7280;">carla@ejemplo.test · Chef ejecutiva · Ragú Bodegón</span>
+          <span class="chip" style="background: #DCFCE7; color: #166534;">Activa</span>
+        </div>
+        <div style="display: flex; gap: 8px;"><button class="btn">Suspender</button><button class="btn">Desactivar</button></div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;">
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Último ingreso</span>
+          <span style="font-size: 26px; font-weight: 600;">Hoy 09:12</span>
+          <span><span class="chip" style="background: #DCFCE7; color: #166534;">Con doble verificación</span></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Roles</span>
+          <span style="font-size: 26px; font-weight: 600;">2</span>
+          <span><span class="chip" style="background: #DBEAFE; color: #1E40AF;">En 1 marca y 1 local</span></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Cambios en 30 días</span>
+          <span style="font-size: 26px; font-weight: 600;">46</span>
+          <span style="display: flex; justify-content: space-between;"><span class="chip" style="background: #DBEAFE; color: #1E40AF;">Recetas y precios</span><button class="lnk">Ver historial</button></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Accesos rechazados en 7 días</span>
+          <span style="font-size: 26px; font-weight: 600;">0</span>
+          <span><span class="chip" style="background: #DCFCE7; color: #166534;">Sin intentos</span></span>
+        </div>
+      </div>
+
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin-bottom: 4px;">Datos</h2>
+          <label class="row"><span class="lbl">Nombre</span><input value="Carla Gómez" style="width: 200px;"></label>
+          <label class="row"><span class="lbl">Puesto</span><input value="Chef ejecutiva" style="width: 200px;"></label>
+          <label class="row"><span class="lbl">Área</span><select style="width: 200px;"><option>Cocina caliente</option></select></label>
+          <div class="row"><span class="lbl">Mail</span><span>carla@ejemplo.test</span></div>
+          <div class="row"><span class="lbl">La invitó</span><span>Pablo Ruiz · 02/09/26</span></div>
+          <div class="row"><span class="lbl">Primer ingreso</span><span>03/09/26</span></div>
+          <h2 style="margin: 12px 0 4px;">Cuenta</h2>
+          <div class="row"><span class="lbl">Estado</span><span class="seg"><button class="on">Activa</button><button>Suspendida</button><button>Desactivada</button></span></div>
+          <div class="row"><span class="lbl">Doble verificación</span><span class="chip" style="background: #DCFCE7; color: #166534;">Activada</span></div>
+          <div class="row"><span class="lbl">Sesiones abiertas</span><span style="display: flex; gap: 8px; align-items: center;">2 <button class="lnk">Cerrar todas</button></span></div>
+        </section>
+
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin-bottom: 4px;">Roles y dónde los usa</h2>
+          <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span><strong style="font-weight: 500;">Chef ejecutiva</strong> <span class="lbl">· Ragú Bodegón (toda la marca)</span></span><button class="lnk">Quitar</button></div>
+          <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span><strong style="font-weight: 500;">Jefa de cocina</strong> <span class="lbl">· Ragú Leloir</span></span><button class="lnk">Quitar</button></div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding: 12px; background: #F7F8FA; border-radius: 8px;">
+            <span style="font-size: 14px; font-weight: 500;">Dar otro rol</span>
+            <div style="display: flex; gap: 8px;"><select aria-label="Rol" style="flex: 1;"><option>Elegí el rol</option></select><select aria-label="Dónde" style="flex: 1;"><option>Dónde</option></select></div>
+            <button class="btn" style="align-self: flex-start;">Agregar a los cambios</button>
+          </div>
+          <span class="lbl" style="margin-top: 8px;">Qué puede hacer cada rol se ve en Roles y permisos. Dar un rol de dirección pasa por aprobación.</span>
+        </section>
+
+        <section class="card" style="min-height: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin-bottom: 4px;">Lo último que hizo</h2>
+          <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span>Publicó la versión 3 de Tagliatelle carbonara</span><span class="lbl">hoy</span></div>
+          <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span>Cambió la merma de la Cebolla</span><span class="lbl">ayer</span></div>
+          <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span>Creó la receta Salsa pomodoro</span><span class="lbl">19/11</span></div>
+          <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span>Aprobó el plan de producción</span><span class="lbl">18/11</span></div>
+          <div class="row"><span>Cambió los alérgenos de Ñoquis</span><span class="lbl">17/11</span></div>
+          <button class="lnk" style="align-self: flex-start; margin-top: 6px;">Ver los 46 cambios</button>
+        </section>
+      </div>
+    </div>
+
+    <div style="flex: 0 0 64px; margin-top: 14px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0 32px; box-sizing: border-box;">
+      <span class="chip" style="background: #FFEDD5; color: #9A3412; font-size: 13px;">Sin cambios</span>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">Motivo <input placeholder="Por qué cambia (obligatorio)" style="width: 300px; height: 36px;"></label>
+      <button class="btn">Descartar</button>
+      <button class="btnp">Guardar cambios</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
