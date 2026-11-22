@@ -40,7 +40,7 @@ $$;
 insert into org.groups (id, name) values (pg_temp.u(50001), 'Grupo de reportes');
 insert into org.brands (id, group_id, name, code) values (pg_temp.u(50002), pg_temp.u(50001), 'Marca de reportes', 'REPORTES');
 insert into org.legal_entities (id, group_id, name, tax_id, vat_condition)
-values (pg_temp.u(50003), pg_temp.u(50001), 'Reportes S.A. (ficticia)', '30999999993', 'registered');
+values (pg_temp.u(50003), pg_temp.u(50001), 'Reportes S.A. (ficticia)', '30777777773', 'registered');
 insert into org.restaurants (id, group_id, brand_id, name, legal_entity_id)
 values (pg_temp.u(50004), pg_temp.u(50001), pg_temp.u(50002), 'Local de reportes', pg_temp.u(50003));
 insert into catalog.ingredient_categories (id, group_id, name) values (pg_temp.u(50005), pg_temp.u(50001), 'Secos');

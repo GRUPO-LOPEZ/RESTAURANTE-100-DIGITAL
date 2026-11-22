@@ -1,6 +1,6 @@
 # Diccionario de datos — catalog, recipes, imports, costing
 
-> Generado desde los `comment on` de la base local el 2026-11-10 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
+> Generado desde los `comment on` de la base local el 2026-11-22 con `npm run db:dictionary`. No editar a mano: regenerar después de cada migración.
 
 ## `catalog.allergens`
 
@@ -21,6 +21,23 @@ Lista configurable de alérgenos (Código Alimentario Argentino). No se usa como
 | `updated_by`      | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).          |
 | `deleted_at`      | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.   |
 | `deleted_by`      | `uuid`                     | sí   | Quién lo borró (lo pone la base).                          |
+
+## `catalog.code_series`
+
+Contadores de los códigos automáticos (ADR-0041): el último número usado por grupo y prefijo (PLA-CAF-, MPR-CAR-, PLA-PAS-0001-V). Nunca baja: un número de un registro borrado no se reutiliza. Solo la usan las funciones de alta.
+
+| Columna       | Tipo                       | Nulo | Qué guarda                                                                                     |
+| ------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------- |
+| `id`          | `uuid`                     | no   | Identificador del contador.                                                                    |
+| `group_id`    | `uuid`                     | no   | Grupo dueño de la numeración.                                                                  |
+| `prefix`      | `text`                     | no   | Todo lo que va antes del número: «PLA-CAF-», «MPR-CAR-» o, en las variantes, «PLA-PAS-0001-V». |
+| `last_number` | `integer`                  | no   | Último número entregado con ese prefijo.                                                       |
+| `created_at`  | `timestamp with time zone` | no   | Cuándo se entregó el primer número del prefijo (lo pone la base).                              |
+| `created_by`  | `uuid`                     | sí   | Quién hizo el alta que abrió el contador (lo pone la base).                                    |
+| `updated_at`  | `timestamp with time zone` | no   | Cuándo se entregó el último número (lo pone la base).                                          |
+| `updated_by`  | `uuid`                     | sí   | Quién hizo el alta que tomó el último número (lo pone la base).                                |
+| `deleted_at`  | `timestamp with time zone` | sí   | Baja lógica. Un contador no se da de baja: los números nunca se reutilizan.                    |
+| `deleted_by`  | `uuid`                     | sí   | Quién lo dio de baja (lo pone la base).                                                        |
 
 ## `catalog.ingredient_aliases`
 
@@ -63,19 +80,22 @@ Estado de cada alérgeno en cada ingrediente. Sin fila = sin dato: el plato que 
 
 Categorías y subcategorías de materias primas (dos niveles), por grupo.
 
-| Columna            | Tipo                       | Nulo | Qué guarda                                                                                                                            |
-| ------------------ | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`               | `uuid`                     | no   | Identificador.                                                                                                                        |
-| `group_id`         | `uuid`                     | no   | Grupo al que pertenece.                                                                                                               |
-| `parent_id`        | `uuid`                     | sí   | Categoría madre, si es una subcategoría. Solo dos niveles.                                                                            |
-| `name`             | `text`                     | no   | Nombre. Único dentro de su categoría madre entre las vigentes, sin importar mayúsculas.                                               |
-| `stale_price_days` | `smallint`                 | sí   | Días sin actualizar después de los cuales un precio se marca como desactualizado. Vacío = el plazo general (decisión 7, etapa 2.1 C). |
-| `created_at`       | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                     |
-| `created_by`       | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                      |
-| `updated_at`       | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                    |
-| `updated_by`       | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                     |
-| `deleted_at`       | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                                              |
-| `deleted_by`       | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                     |
+| Columna            | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                 |
+| ------------------ | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`               | `uuid`                     | no   | Identificador.                                                                                                                                                                             |
+| `group_id`         | `uuid`                     | no   | Grupo al que pertenece.                                                                                                                                                                    |
+| `parent_id`        | `uuid`                     | sí   | Categoría madre, si es una subcategoría. Solo dos niveles.                                                                                                                                 |
+| `name`             | `text`                     | no   | Nombre. Único dentro de su categoría madre entre las vigentes, sin importar mayúsculas.                                                                                                    |
+| `stale_price_days` | `smallint`                 | sí   | Días sin actualizar después de los cuales un precio se marca como desactualizado. Vacío = el plazo general (decisión 7, etapa 2.1 C).                                                      |
+| `created_at`       | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                          |
+| `created_by`       | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                                                                           |
+| `updated_at`       | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                                                         |
+| `updated_by`       | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                                                                          |
+| `deleted_at`       | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                                                                                                   |
+| `deleted_by`       | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                                                          |
+| `code`             | `text`                     | sí   | Código del rubro (MP-XXX), solo en el primer nivel. Se genera solo si no se indica y no cambia.                                                                                            |
+| `is_active`        | `boolean`                  | no   | Si el rubro está activo. Dado de baja (false) no admite materias primas nuevas; se puede reactivar.                                                                                        |
+| `used_in_recipes`  | `boolean`                  | no   | Si las materias primas del rubro se pueden usar en recetas (Limpieza o Descartables, no). Se define en el rubro de primer nivel; las subcategorías lo heredan y su propio valor no se usa. |
 
 ## `catalog.ingredient_unit_conversions`
 
@@ -156,72 +176,85 @@ Ensayos de rendimiento: lo que se midió en una cocina. Solo inserción. Nunca c
 
 Ingredientes gastronómicos (la mozzarella, no la horma de una marca): se cargan una sola vez para todo el grupo. Nunca se borran: se desactivan.
 
-| Columna            | Tipo                       | Nulo | Qué guarda                                                                                          |
-| ------------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------------------- |
-| `id`               | `uuid`                     | no   | Identificador.                                                                                      |
-| `group_id`         | `uuid`                     | no   | Grupo al que pertenece.                                                                             |
-| `code`             | `text`                     | no   | Código único dentro del grupo (en mayúsculas). No cambia nunca: sirve para importar sin duplicar.   |
-| `name`             | `text`                     | no   | Nombre gastronómico, sin marca. Único dentro del grupo entre los vigentes, sin importar mayúsculas. |
-| `category_id`      | `uuid`                     | no   | Categoría o subcategoría.                                                                           |
-| `recipe_unit_id`   | `uuid`                     | no   | Unidad en que se usa en recetas: siempre una unidad base (g, ml o unidad).                          |
-| `purchase_unit_id` | `uuid`                     | sí   | Unidad en que se compra normalmente (informativa).                                                  |
-| `storage_unit_id`  | `uuid`                     | sí   | Unidad en que se almacena (informativa).                                                            |
-| `costing_unit_id`  | `uuid`                     | sí   | Unidad en que se muestra su costo (informativa).                                                    |
-| `is_active`        | `boolean`                  | no   | Si se puede usar en recetas nuevas. Desactivar no borra nada.                                       |
-| `notes`            | `text`                     | sí   | Observaciones.                                                                                      |
-| `created_at`       | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                   |
-| `created_by`       | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                    |
-| `updated_at`       | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                  |
-| `updated_by`       | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                   |
-| `deleted_at`       | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                            |
-| `deleted_by`       | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                   |
+| Columna            | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                          |
+| ------------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | `uuid`                     | no   | Identificador.                                                                                                                                                                                      |
+| `group_id`         | `uuid`                     | no   | Grupo al que pertenece.                                                                                                                                                                             |
+| `code`             | `text`                     | no   | Código único dentro del grupo (en mayúsculas). No cambia nunca: sirve para importar sin duplicar.                                                                                                   |
+| `name`             | `text`                     | no   | Nombre gastronómico, sin marca. Único dentro del grupo entre los vigentes, sin importar mayúsculas.                                                                                                 |
+| `category_id`      | `uuid`                     | no   | Categoría o subcategoría.                                                                                                                                                                           |
+| `recipe_unit_id`   | `uuid`                     | no   | Unidad en que se usa en recetas: siempre una unidad base (g, ml o unidad).                                                                                                                          |
+| `purchase_unit_id` | `uuid`                     | sí   | Unidad en que se compra normalmente (informativa).                                                                                                                                                  |
+| `storage_unit_id`  | `uuid`                     | sí   | Unidad en que se almacena (informativa).                                                                                                                                                            |
+| `costing_unit_id`  | `uuid`                     | sí   | Unidad en que se muestra su costo (informativa).                                                                                                                                                    |
+| `is_active`        | `boolean`                  | no   | Si se puede usar en recetas nuevas. Desactivar no borra nada.                                                                                                                                       |
+| `notes`            | `text`                     | sí   | Observaciones.                                                                                                                                                                                      |
+| `created_at`       | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                                   |
+| `created_by`       | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                                                                                    |
+| `updated_at`       | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                                                                  |
+| `updated_by`       | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                                                                                   |
+| `deleted_at`       | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                                                                                                            |
+| `deleted_by`       | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                                                                   |
+| `requires_thawing` | `boolean`                  | no   | Se compra congelada: el costo de sus líneas limpias o cocidas suma la merma de descongelado (estándar aprobado del proceso DESCONGELADO). Sin ese estándar, la línea queda RENDIMIENTO NO DEFINIDO. |
 
 ## `catalog.purchase_products`
 
 Productos de compra: cómo se compra un ingrediente ("Mozzarella marca X, horma de 4 kg"). Varios productos pueden apuntar al mismo ingrediente. El precio va aparte (etapa 2.1 C).
 
-| Columna             | Tipo                       | Nulo | Qué guarda                                                                                                                                                             |
-| ------------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                     | no   | Identificador.                                                                                                                                                         |
-| `group_id`          | `uuid`                     | no   | Grupo al que pertenece. El mismo que el del ingrediente.                                                                                                               |
-| `code`              | `text`                     | no   | Código único dentro del grupo (en mayúsculas).                                                                                                                         |
-| `ingredient_id`     | `uuid`                     | no   | Ingrediente al que corresponde. No cambia: un producto de otro ingrediente es otro producto.                                                                           |
-| `supplier_id`       | `uuid`                     | sí   | Proveedor habitual (opcional: el precio dice a quién se compró).                                                                                                       |
-| `description`       | `text`                     | no   | Descripción como la vende el proveedor.                                                                                                                                |
-| `brand_name`        | `text`                     | sí   | Marca comercial, si corresponde.                                                                                                                                       |
-| `package_unit_id`   | `uuid`                     | no   | Cómo viene: horma, caja, bolsa, botella, kg…                                                                                                                           |
-| `units_per_package` | `integer`                  | no   | Cuántas unidades trae el envase (caja de 12 botellas = 12).                                                                                                            |
-| `content_per_unit`  | `numeric(18,6)`            | no   | Contenido de cada unidad (botella de 750 ml = 750). Obligatorio: nunca se supone.                                                                                      |
-| `content_unit_id`   | `uuid`                     | no   | Unidad del contenido (masa, volumen o conteo; nunca un envase). Si no es de la dimensión de uso del ingrediente, el ingrediente tiene que tener la conversión cargada. |
-| `is_active`         | `boolean`                  | no   | Si se sigue comprando. Desactivar no borra nada.                                                                                                                       |
-| `notes`             | `text`                     | sí   | Observaciones.                                                                                                                                                         |
-| `created_at`        | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                      |
-| `created_by`        | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                                                       |
-| `updated_at`        | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                                     |
-| `updated_by`        | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                                                      |
-| `deleted_at`        | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                                                                               |
-| `deleted_by`        | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                                      |
+| Columna                     | Tipo                       | Nulo | Qué guarda                                                                                                                                                                            |
+| --------------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`                     | no   | Identificador.                                                                                                                                                                        |
+| `group_id`                  | `uuid`                     | no   | Grupo al que pertenece. El mismo que el del ingrediente.                                                                                                                              |
+| `code`                      | `text`                     | no   | Código único dentro del grupo (en mayúsculas).                                                                                                                                        |
+| `ingredient_id`             | `uuid`                     | no   | Ingrediente al que corresponde. No cambia: un producto de otro ingrediente es otro producto.                                                                                          |
+| `supplier_id`               | `uuid`                     | sí   | Proveedor habitual (opcional: el precio dice a quién se compró).                                                                                                                      |
+| `description`               | `text`                     | no   | Descripción como la vende el proveedor.                                                                                                                                               |
+| `brand_name`                | `text`                     | sí   | Marca comercial, si corresponde.                                                                                                                                                      |
+| `package_unit_id`           | `uuid`                     | no   | Cómo viene: horma, caja, bolsa, botella, kg…                                                                                                                                          |
+| `units_per_package`         | `integer`                  | no   | Cuántas unidades trae el envase (caja de 12 botellas = 12).                                                                                                                           |
+| `content_per_unit`          | `numeric(18,6)`            | no   | Contenido de cada unidad (botella de 750 ml = 750). Obligatorio: nunca se supone.                                                                                                     |
+| `content_unit_id`           | `uuid`                     | no   | Unidad del contenido (masa, volumen o conteo; nunca un envase). Si no es de la dimensión de uso del ingrediente, el ingrediente tiene que tener la conversión cargada.                |
+| `is_active`                 | `boolean`                  | no   | Si se sigue comprando. Desactivar no borra nada.                                                                                                                                      |
+| `notes`                     | `text`                     | sí   | Observaciones.                                                                                                                                                                        |
+| `created_at`                | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                     |
+| `created_by`                | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                                                                      |
+| `updated_at`                | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                                                    |
+| `updated_by`                | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                                                                     |
+| `deleted_at`                | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                                                                                              |
+| `deleted_by`                | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                                                     |
+| `supplier_sku`              | `text`                     | sí   | Código del artículo en el proveedor (sin espacios, en mayúsculas). Único por proveedor entre los vigentes. Es lo primero que se mira para reconocer un renglón de lista o de factura. |
+| `billed_by_weight`          | `boolean`                  | no   | Si el proveedor lo factura por peso real (se pide por unidad y se cobra por kilo, como la carne o el queso en horma).                                                                 |
+| `estimated_weight_per_unit` | `numeric(18,6)`            | sí   | Peso estimado de cada unidad, en la unidad de contenido del producto. Solo si se factura por peso; sirve para estimar la orden de compra.                                             |
 
 ## `catalog.suppliers`
 
 Proveedores del grupo. Nunca se borran: se desactivan.
 
-| Columna       | Tipo                       | Nulo | Qué guarda                                                                               |
-| ------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------- |
-| `id`          | `uuid`                     | no   | Identificador.                                                                           |
-| `group_id`    | `uuid`                     | no   | Grupo al que pertenece.                                                                  |
-| `code`        | `text`                     | no   | Código único dentro del grupo (en mayúsculas).                                           |
-| `name`        | `text`                     | no   | Nombre. Único dentro del grupo entre los vigentes, sin importar mayúsculas.              |
-| `tax_id`      | `text`                     | sí   | CUIT, si se conoce.                                                                      |
-| `is_internal` | `boolean`                  | no   | Si es una unidad del propio grupo que provee a otras (por ejemplo, Pariggi; decisión 6). |
-| `is_active`   | `boolean`                  | no   | Si se le sigue comprando. Desactivar no borra nada.                                      |
-| `notes`       | `text`                     | sí   | Observaciones.                                                                           |
-| `created_at`  | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                        |
-| `created_by`  | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                         |
-| `updated_at`  | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                       |
-| `updated_by`  | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                        |
-| `deleted_at`  | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                 |
-| `deleted_by`  | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                        |
+| Columna         | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                                                         |
+| --------------- | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | `uuid`                     | no   | Identificador.                                                                                                                                                                                                                     |
+| `group_id`      | `uuid`                     | no   | Grupo al que pertenece.                                                                                                                                                                                                            |
+| `code`          | `text`                     | no   | Código único dentro del grupo (en mayúsculas).                                                                                                                                                                                     |
+| `name`          | `text`                     | no   | Razón social (como figura en el CUIT). Única dentro del grupo entre los vigentes, sin importar mayúsculas.                                                                                                                         |
+| `tax_id`        | `text`                     | sí   | CUIT: 11 números sin guiones y con dígito verificador válido (trigger guard_supplier_tax_id). Opcional (un puesto del mercado no tiene). Uno cargado antes de la Fase 3 con el verificador mal queda hasta que alguien lo corrige. |
+| `is_internal`   | `boolean`                  | no   | Si es una unidad del propio grupo que provee a otras (por ejemplo, Pariggi; decisión 6).                                                                                                                                           |
+| `is_active`     | `boolean`                  | no   | Si se le sigue comprando. Desactivar no borra nada.                                                                                                                                                                                |
+| `notes`         | `text`                     | sí   | Observaciones.                                                                                                                                                                                                                     |
+| `created_at`    | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                                                                  |
+| `created_by`    | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                                                                                                                                   |
+| `updated_at`    | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                                                                                                 |
+| `updated_by`    | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                                                                                                                                                  |
+| `deleted_at`    | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                                                                                                                                                           |
+| `deleted_by`    | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                                                                                                  |
+| `trade_name`    | `text`                     | sí   | Nombre de fantasía, como lo conoce el local.                                                                                                                                                                                       |
+| `vat_condition` | `org.vat_condition`        | sí   | Condición frente al IVA del proveedor: responsable inscripto, monotributo o exento.                                                                                                                                                |
+| `address`       | `text`                     | sí   | Domicilio.                                                                                                                                                                                                                         |
+| `city`          | `text`                     | sí   | Localidad.                                                                                                                                                                                                                         |
+| `phone`         | `text`                     | sí   | Teléfono.                                                                                                                                                                                                                          |
+| `whatsapp`      | `text`                     | sí   | WhatsApp de contacto (el de envío de pedidos va en purchasing.supplier_terms).                                                                                                                                                     |
+| `email`         | `text`                     | sí   | Correo de contacto.                                                                                                                                                                                                                |
+| `sales_contact` | `text`                     | sí   | Contacto de ventas (nombre y, si hace falta, teléfono).                                                                                                                                                                            |
+| `admin_contact` | `text`                     | sí   | Contacto de administración (cobranzas).                                                                                                                                                                                            |
 
 ## `catalog.unit_conversions`
 
@@ -244,19 +277,21 @@ Conversiones universales dentro de una dimensión, siempre hacia su unidad base 
 
 Unidades de medida (referencia global). Todo cálculo se hace en las unidades base: g, ml y unidad (sección 8).
 
-| Columna      | Tipo                       | Nulo | Qué guarda                                                                         |
-| ------------ | -------------------------- | ---- | ---------------------------------------------------------------------------------- |
-| `id`         | `uuid`                     | no   | Identificador.                                                                     |
-| `code`       | `text`                     | no   | Código de la unidad (g, kg, ml, l, unit, dozen, box…). Único entre las vigentes.   |
-| `name`       | `text`                     | no   | Nombre que se muestra, en español (g, kg, l, docena, caja…).                       |
-| `dimension`  | `catalog.dimension`        | no   | Dimensión: masa, volumen, conteo o envase. Las de envase no tienen contenido fijo. |
-| `is_base`    | `boolean`                  | no   | Si es la unidad base de su dimensión (g, ml o unidad).                             |
-| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                  |
-| `created_by` | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                   |
-| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                 |
-| `updated_by` | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                  |
-| `deleted_at` | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                           |
-| `deleted_by` | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                  |
+| Columna        | Tipo                       | Nulo | Qué guarda                                                                                         |
+| -------------- | -------------------------- | ---- | -------------------------------------------------------------------------------------------------- |
+| `id`           | `uuid`                     | no   | Identificador.                                                                                     |
+| `code`         | `text`                     | no   | Código de la unidad (g, kg, ml, l, unit, dozen, box…). Único entre las vigentes.                   |
+| `name`         | `text`                     | no   | Nombre corto de siempre (g, kg, unidad, docena…). Las unidades nuevas lo copian de la abreviatura. |
+| `dimension`    | `catalog.dimension`        | no   | Dimensión: masa, volumen, conteo o envase. Las de envase no tienen contenido fijo.                 |
+| `is_base`      | `boolean`                  | no   | Si es la unidad base de su dimensión (g, ml o unidad).                                             |
+| `created_at`   | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                  |
+| `created_by`   | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                   |
+| `updated_at`   | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                 |
+| `updated_by`   | `uuid`                     | sí   | Quién lo cambió por última vez (lo pone la base).                                                  |
+| `deleted_at`   | `timestamp with time zone` | sí   | Cuándo se borró (borrado lógico). Vacío si está vigente.                                           |
+| `deleted_by`   | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                  |
+| `long_name`    | `text`                     | no   | Nombre completo, en español («Kilogramo»). Se muestra con la abreviatura: «Kilogramo (kg)».        |
+| `abbreviation` | `text`                     | no   | Abreviatura que se muestra junto a las cantidades («kg», «cda»).                                   |
 
 ## `catalog.yield_processes`
 
@@ -361,15 +396,15 @@ Precios de compra aprobados, para siempre: un precio nuevo es un registro nuevo 
 | `package_price`       | `numeric(18,4)`            | no   | Precio del envase completo tal como se cotizó (antes del descuento).                                                                                                                                                    |
 | `currency`            | `text`                     | no   | Moneda. Solo ARS: nunca se convierte sin una cotización cargada.                                                                                                                                                        |
 | `document_type`       | `costing.price_document`   | no   | Factura con IVA discriminado, o "precio ingresado" sin factura.                                                                                                                                                         |
-| `vat_rate`            | `numeric(5,2)`             | sí   | Alícuota de IVA en %: 0, 10,5, 21 o 27. Solo con factura.                                                                                                                                                               |
+| `vat_rate`            | `numeric(5,2)`             | sí   | Alícuota de IVA: 0; 2,5; 5; 10,5; 21 o 27 %. Solo con factura.                                                                                                                                                          |
 | `price_includes_vat`  | `boolean`                  | no   | Si el precio cargado ya incluye el IVA. Sin factura no se usa.                                                                                                                                                          |
 | `discount_amount`     | `numeric(18,4)`            | no   | Descuento por envase, en pesos.                                                                                                                                                                                         |
 | `net_package_price`   | `numeric(18,4)`            | no   | Precio del envase sin IVA, con el descuento (lo calcula la base). Sin factura, igual al bruto.                                                                                                                          |
 | `gross_package_price` | `numeric(18,4)`            | no   | Precio del envase con IVA, con el descuento (lo calcula la base).                                                                                                                                                       |
 | `base_quantity`       | `numeric(18,6)`            | no   | Contenido del envase en la unidad de uso de la materia prima (g, ml o unidad) al registrar el precio. El costo por unidad sale de acá: cambiar el contenido del producto o una conversión no mueve un precio aprobado.  |
 | `source`              | `costing.price_source`     | no   | De dónde viene: manual, valor de prueba, importación o factura.                                                                                                                                                         |
-| `approval_request_id` | `uuid`                     | sí   | La solicitud que lo aprobó (la de Dirección, si hizo falta). Vacía solo en los valores de prueba.                                                                                                                       |
-| `approved_by`         | `uuid`                     | sí   | Quién dio la última aprobación.                                                                                                                                                                                         |
+| `approval_request_id` | `uuid`                     | sí   | La solicitud que lo aprobó (la de Dirección, si hizo falta). Vacía en los valores de prueba y en los precios de factura (los aprueba quien da la factura por conforme).                                                 |
+| `approved_by`         | `uuid`                     | sí   | Quién dio la última aprobación: quien aprobó la solicitud o quien dio la factura por conforme.                                                                                                                          |
 | `approved_at`         | `timestamp with time zone` | sí   | Cuándo se aprobó.                                                                                                                                                                                                       |
 | `notes`               | `text`                     | sí   | Observaciones.                                                                                                                                                                                                          |
 | `created_at`          | `timestamp with time zone` | no   | Cuándo se registró (lo pone la base).                                                                                                                                                                                   |
@@ -378,25 +413,27 @@ Precios de compra aprobados, para siempre: un precio nuevo es un registro nuevo 
 | `updated_by`          | `uuid`                     | sí   | Igual a la creación: un precio no se cambia.                                                                                                                                                                            |
 | `deleted_at`          | `timestamp with time zone` | sí   | Siempre vacía: un precio no se borra.                                                                                                                                                                                   |
 | `deleted_by`          | `uuid`                     | sí   | Siempre vacía: un precio no se borra.                                                                                                                                                                                   |
+| `invoice_line_id`     | `uuid`                     | sí   | La línea de la factura conforme de la que sale este precio (origen «invoice»). Vacía en los precios aprobados a mano y en los valores de prueba.                                                                        |
 
 ## `costing.price_settings`
 
 Configuración de precios de cada grupo. Sin fila, valen los valores por defecto (15 % y 30 días). La cambia solo Dirección General (prices.configure).
 
-| Columna                  | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                                                  |
-| ------------------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                     | `uuid`                     | no   | Identificador.                                                                                                                                                                                                              |
-| `group_id`               | `uuid`                     | no   | Grupo al que se aplica. Una fila por grupo.                                                                                                                                                                                 |
-| `approval_variation_pct` | `numeric(5,2)`             | no   | Si un precio sube o baja más que este porcentaje contra el costo que se usa hoy para esa materia prima en ese lugar (por unidad de uso, con o sin IVA), después del Controller aprueba también Dirección General.           |
-| `stale_days`             | `integer`                  | no   | Días desde la vigencia para marcar un precio como desactualizado (si su categoría no dice otro plazo).                                                                                                                      |
-| `created_at`             | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                                                           |
-| `created_by`             | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                                                                                                            |
-| `updated_at`             | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                                                                                                                                             |
-| `updated_by`             | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                                                                                           |
-| `deleted_at`             | `timestamp with time zone` | sí   | Baja lógica. Nunca se borra.                                                                                                                                                                                                |
-| `deleted_by`             | `uuid`                     | sí   | Quién la dio de baja (lo pone la base).                                                                                                                                                                                     |
-| `lookback_days`          | `integer`                  | no   | Días hacia atrás contra los que también se compara un precio nuevo (subas en escalones). Vale la variación más grande entre la de hoy y la de hace estos días.                                                              |
-| `yield_alert_pct`        | `numeric(5,2)`             | no   | Si un ensayo de rendimiento se desvía del estándar aprobado más que este porcentaje (en limpieza o en cocción), se avisa a quien tiene yields.alerts en ese local. Se carga a mano (por ejemplo, con la inflación del mes). |
+| Columna                        | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                                                  |
+| ------------------------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                           | `uuid`                     | no   | Identificador.                                                                                                                                                                                                              |
+| `group_id`                     | `uuid`                     | no   | Grupo al que se aplica. Una fila por grupo.                                                                                                                                                                                 |
+| `approval_variation_pct`       | `numeric(5,2)`             | no   | Si un precio sube o baja más que este porcentaje contra el costo que se usa hoy para esa materia prima en ese lugar (por unidad de uso, con o sin IVA), después del Controller aprueba también Dirección General.           |
+| `stale_days`                   | `integer`                  | no   | Días desde la vigencia para marcar un precio como desactualizado (si su categoría no dice otro plazo).                                                                                                                      |
+| `created_at`                   | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                                                           |
+| `created_by`                   | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                                                                                                            |
+| `updated_at`                   | `timestamp with time zone` | no   | Cuándo cambió por última vez (lo pone la base).                                                                                                                                                                             |
+| `updated_by`                   | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                                                                                           |
+| `deleted_at`                   | `timestamp with time zone` | sí   | Baja lógica. Nunca se borra.                                                                                                                                                                                                |
+| `deleted_by`                   | `uuid`                     | sí   | Quién la dio de baja (lo pone la base).                                                                                                                                                                                     |
+| `lookback_days`                | `integer`                  | no   | Días hacia atrás contra los que también se compara un precio nuevo (subas en escalones). Vale la variación más grande entre la de hoy y la de hace estos días.                                                              |
+| `yield_alert_pct`              | `numeric(5,2)`             | no   | Si un ensayo de rendimiento se desvía del estándar aprobado más que este porcentaje (en limpieza o en cocción), se avisa a quien tiene yields.alerts en ese local. Se carga a mano (por ejemplo, con la inflación del mes). |
+| `invoice_weight_tolerance_pct` | `numeric(5,2)`             | no   | Diferencia que se acepta entre los kilos facturados y los recibidos en lo que va por peso, en %. Por defecto, 0,5 %.                                                                                                        |
 
 ## `costing.recipe_cost_current`
 
@@ -634,18 +671,21 @@ Qué receta usa cada local y desde cuándo, sin copiarla. Una receta de local qu
 
 Categorías y subcategorías de recetas (dos niveles), por grupo.
 
-| Columna      | Tipo                       | Nulo | Qué guarda                                                                              |
-| ------------ | -------------------------- | ---- | --------------------------------------------------------------------------------------- |
-| `id`         | `uuid`                     | no   | Identificador de la categoría.                                                          |
-| `group_id`   | `uuid`                     | no   | Grupo al que pertenece.                                                                 |
-| `parent_id`  | `uuid`                     | sí   | Categoría madre, si es una subcategoría. Solo dos niveles.                              |
-| `name`       | `text`                     | no   | Nombre. Único dentro de su categoría madre entre las vigentes, sin importar mayúsculas. |
-| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                       |
-| `created_by` | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                        |
-| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                      |
-| `updated_by` | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                       |
-| `deleted_at` | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                  |
-| `deleted_by` | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                       |
+| Columna      | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                  |
+| ------------ | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador de la categoría.                                                                                                                                                              |
+| `group_id`   | `uuid`                     | no   | Grupo al que pertenece.                                                                                                                                                                     |
+| `parent_id`  | `uuid`                     | sí   | Categoría madre, si es una subcategoría. Solo dos niveles.                                                                                                                                  |
+| `name`       | `text`                     | no   | Nombre. Único dentro de su categoría madre entre las vigentes, sin importar mayúsculas.                                                                                                     |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                           |
+| `created_by` | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                                                                            |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                                                          |
+| `updated_by` | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                                                           |
+| `deleted_at` | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                                                                                                                      |
+| `deleted_by` | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                                                                                           |
+| `code`       | `text`                     | sí   | Código del rubro (SR-XXX o PL-XXX), solo en el primer nivel. Se genera solo si no se indica y no cambia.                                                                                    |
+| `kind`       | `recipes.category_class`   | sí   | Clase: subrecipe (preparaciones y componentes unitarios) o menu (platos). Las subcategorías heredan la de su rubro. Obligatoria en lo vigente (lo borrado antes de los rubros no la tiene). |
+| `is_active`  | `boolean`                  | no   | Si el rubro está activo. Dado de baja (false) no admite recetas nuevas; se puede reactivar.                                                                                                 |
 
 ## `recipes.recipe_components`
 
@@ -748,34 +788,35 @@ Procedimiento de una versión: pasos con sus tiempos. Solo cambian mientras la v
 
 Cada versión de la fórmula de una receta. Nace en borrador; desde aprobada no cambia. Una sola publicada (vigente) por receta.
 
-| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                                           |
-| --------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`                  | `uuid`                     | no   | Identificador de la versión.                                                                                                         |
-| `group_id`            | `uuid`                     | no   | Grupo de la receta.                                                                                                                  |
-| `brand_id`            | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.                                                          |
-| `restaurant_id`       | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                                                                            |
-| `recipe_id`           | `uuid`                     | no   | Receta a la que pertenece.                                                                                                           |
-| `version_number`      | `integer`                  | no   | Número de versión (1, 2, 3…).                                                                                                        |
-| `status`              | `core.version_status`      | no   | Estado: borrador, en revisión, aprobada, publicada (vigente) o archivada. Desde aprobada no cambia.                                  |
-| `previous_version_id` | `uuid`                     | sí   | Versión de la que salió esta, de la misma receta (para ver las diferencias).                                                         |
-| `yield_quantity`      | `numeric(18,6)`            | sí   | Cuánto rinde la receta, en yield_unit_id.                                                                                            |
-| `yield_unit_id`       | `uuid`                     | sí   | Unidad del rendimiento (kg, l, unidad…).                                                                                             |
-| `portions`            | `integer`                  | sí   | Porciones que salen, si es un plato o se porciona.                                                                                   |
-| `portion_grams`       | `numeric(18,6)`            | sí   | Peso de una porción, en gramos.                                                                                                      |
-| `description`         | `text`                     | sí   | Descripción gastronómica.                                                                                                            |
-| `storage_notes`       | `text`                     | sí   | Conservación (método, temperatura, vida útil), solo desde procedimientos validados y con su referencia. El sistema nunca la propone. |
-| `presentation_notes`  | `text`                     | sí   | Presentación: montaje, vajilla, guarnición, terminación.                                                                             |
-| `change_summary`      | `text`                     | sí   | Qué cambió respecto de la versión anterior y por qué.                                                                                |
-| `review_requested_by` | `uuid`                     | sí   | Quién pidió la revisión. Nunca es quien la aprueba.                                                                                  |
-| `approval_request_id` | `uuid`                     | sí   | Solicitud de aprobación (recipes.publish_version) de esta versión.                                                                   |
-| `approved_by`         | `uuid`                     | sí   | Quién la aprobó y publicó.                                                                                                           |
-| `published_at`        | `timestamp with time zone` | sí   | Cuándo quedó vigente.                                                                                                                |
-| `created_at`          | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                    |
-| `created_by`          | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                     |
-| `updated_at`          | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                   |
-| `updated_by`          | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                    |
-| `deleted_at`          | `timestamp with time zone` | sí   | Borrado lógico. Una versión no se borra (trigger): siempre vacío.                                                                    |
-| `deleted_by`          | `uuid`                     | sí   | Quién la borró. Siempre vacío.                                                                                                       |
+| Columna               | Tipo                       | Nulo | Qué guarda                                                                                                                                                                                                                                                                                             |
+| --------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                  | `uuid`                     | no   | Identificador de la versión.                                                                                                                                                                                                                                                                           |
+| `group_id`            | `uuid`                     | no   | Grupo de la receta.                                                                                                                                                                                                                                                                                    |
+| `brand_id`            | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.                                                                                                                                                                                                                            |
+| `restaurant_id`       | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                                                                                                                                                                                                                                              |
+| `recipe_id`           | `uuid`                     | no   | Receta a la que pertenece.                                                                                                                                                                                                                                                                             |
+| `version_number`      | `integer`                  | no   | Número de versión (1, 2, 3…).                                                                                                                                                                                                                                                                          |
+| `status`              | `core.version_status`      | no   | Estado: borrador, en revisión, aprobada, publicada (vigente) o archivada. Desde aprobada no cambia.                                                                                                                                                                                                    |
+| `previous_version_id` | `uuid`                     | sí   | Versión de la que salió esta, de la misma receta (para ver las diferencias).                                                                                                                                                                                                                           |
+| `yield_quantity`      | `numeric(18,6)`            | sí   | Cuánto rinde la receta, en yield_unit_id.                                                                                                                                                                                                                                                              |
+| `yield_unit_id`       | `uuid`                     | sí   | Unidad del rendimiento (kg, l, unidad…).                                                                                                                                                                                                                                                               |
+| `portions`            | `integer`                  | sí   | Porciones que salen, si es un plato o se porciona.                                                                                                                                                                                                                                                     |
+| `portion_grams`       | `numeric(18,6)`            | sí   | Peso de una porción, en gramos.                                                                                                                                                                                                                                                                        |
+| `description`         | `text`                     | sí   | Descripción gastronómica.                                                                                                                                                                                                                                                                              |
+| `storage_notes`       | `text`                     | sí   | Conservación (método, temperatura, vida útil), solo desde procedimientos validados y con su referencia. El sistema nunca la propone.                                                                                                                                                                   |
+| `presentation_notes`  | `text`                     | sí   | Presentación: montaje, vajilla, guarnición, terminación.                                                                                                                                                                                                                                               |
+| `change_summary`      | `text`                     | sí   | Qué cambió respecto de la versión anterior y por qué.                                                                                                                                                                                                                                                  |
+| `review_requested_by` | `uuid`                     | sí   | Quién pidió la revisión. Nunca es quien la aprueba.                                                                                                                                                                                                                                                    |
+| `approval_request_id` | `uuid`                     | sí   | Solicitud de aprobación (recipes.publish_version) de esta versión.                                                                                                                                                                                                                                     |
+| `approved_by`         | `uuid`                     | sí   | Quién la aprobó y publicó.                                                                                                                                                                                                                                                                             |
+| `published_at`        | `timestamp with time zone` | sí   | Cuándo quedó vigente.                                                                                                                                                                                                                                                                                  |
+| `created_at`          | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                                                                                                                                                                                                      |
+| `created_by`          | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                                                                                                                                                                                                       |
+| `updated_at`          | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                                                                                                                                                                                                     |
+| `updated_by`          | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                                                                                                                                                                                                      |
+| `deleted_at`          | `timestamp with time zone` | sí   | Borrado lógico. Una versión no se borra (trigger): siempre vacío.                                                                                                                                                                                                                                      |
+| `deleted_by`          | `uuid`                     | sí   | Quién la borró. Siempre vacío.                                                                                                                                                                                                                                                                         |
+| `target_yield_ratio`  | `numeric(9,6)`             | sí   | Rendimiento objetivo de una preparación: peso neto (el rendimiento, en g) ÷ peso bruto (la suma de las líneas, en g). Lo calcula la base al pedir la revisión y queda congelado con la versión aprobada; lo lee el control de lotes. Vacío en los platos o si alguna línea no se puede pasar a gramos. |
 
 ## `recipes.recipes`
 
@@ -805,6 +846,21 @@ Recetas: la identidad (código, nombre, alcance, tipo). La fórmula vive en reci
 | `deleted_by`           | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                               |
 | `variant_of_recipe_id` | `uuid`                     | sí   | Receta maestra de la que sale, si es una variante local. Las diferencias contra la maestra se muestran siempre. |
 
+## `recipes.top_categories` (vista)
+
+Rubros (categorías del primer nivel) de compra, de sub-recetas y de menú, juntos. Con los permisos de quien consulta.
+
+| Columna          | Tipo                       | Nulo | Qué guarda                                                       |
+| ---------------- | -------------------------- | ---- | ---------------------------------------------------------------- |
+| `category_class` | `recipes.category_class`   | sí   | Clase: purchase (compra), subrecipe (sub-recetas) o menu (menú). |
+| `id`             | `uuid`                     | sí   | Identificador de la categoría del primer nivel.                  |
+| `group_id`       | `uuid`                     | sí   | Grupo al que pertenece.                                          |
+| `code`           | `text`                     | sí   | Código del rubro (MP-, SR- o PL- y tres letras o números).       |
+| `name`           | `text`                     | sí   | Nombre del rubro.                                                |
+| `is_active`      | `boolean`                  | sí   | Si está activo (dado de baja = false; se puede reactivar).       |
+| `created_at`     | `timestamp with time zone` | sí   | Cuándo se creó.                                                  |
+| `updated_at`     | `timestamp with time zone` | sí   | Cuándo se cambió por última vez.                                 |
+
 ## Tipos
 
 | Tipo                             | Valores                                                                                                                     | Qué significa                                                                                                                                                                                                             |
@@ -817,13 +873,14 @@ Recetas: la identidad (código, nombre, alcance, tipo). La fórmula vive en reci
 | `costing.cost_reliability`       | `verified`, `estimated`, `stale`, `incomplete`                                                                              | Confiabilidad de un costo; gana la peor línea: verified (completo y verificado), estimated (con estimaciones: algún precio heredado), stale (desactualizado: algún precio vencido) e incomplete (falta un dato).          |
 | `costing.cost_snapshot_reason`   | `publish`, `price_change`, `yield_change`, `assignment`, `legal_entity_change`, `restaurant_reopened`, `daily`, `month_end` | Por qué se sacó una foto de costo: se publicó una versión, se aprobó un precio o un rendimiento, se asignó la receta a un local, cambió la razón social, se reabrió el local, la actualización diaria o el cierre de mes. |
 | `costing.price_document`         | `invoice`, `no_invoice`                                                                                                     | Comprobante del precio: factura con IVA discriminado, o "precio ingresado" sin factura (el precio es el final y no da crédito fiscal).                                                                                    |
-| `costing.price_source`           | `manual`, `test_value`, `excel_import`, `invoice`                                                                           | De dónde viene un precio: carga manual, valor de prueba (simbólico, mientras no lleguen las facturas), importación de Excel o factura (reservado para la Fase 5).                                                         |
+| `costing.price_source`           | `manual`, `test_value`, `excel_import`, `invoice`                                                                           | De dónde viene un precio: manual (propuesto y aprobado a mano), test_value (valor de prueba), excel_import (importación) o invoice (línea de una factura conforme, Fase 3).                                               |
 | `costing.scenario_override_kind` | `price`, `yield`, `quantity`                                                                                                | Qué cambia un escenario: el precio de una materia prima (también si se simula otro proveedor), su rendimiento, o el gramaje de una línea.                                                                                 |
 | `costing.scenario_status`        | `active`, `archived`                                                                                                        | Estado de un escenario: activo o archivado. Nada se borra.                                                                                                                                                                |
 | `imports.issue_severity`         | `error`, `warning`                                                                                                          | Un error frena la fila; un aviso no (por ejemplo, una receta sin componentes).                                                                                                                                            |
 | `imports.job_status`             | `uploaded`, `staged`, `validated`, `ingredients_confirmed`, `confirmed`, `cancelled`                                        | Estado de una importación: subida, filas cargadas, validada, materias primas confirmadas (por Compras), confirmada (recetas creadas) o cancelada.                                                                         |
 | `imports.row_action`             | `create`, `reuse`, `skip`, `error`                                                                                          | Qué pasa con una fila al confirmar: se crea, se reutiliza lo que ya existe, se omite (ya existe y no se pisa) o tiene un error.                                                                                           |
 | `imports.row_kind`               | `ingredient`, `preparation`, `dish`, `line`                                                                                 | Qué es una fila del Excel: materia prima, preparación (pre-elaborado), plato o línea de una receta.                                                                                                                       |
+| `recipes.category_class`         | `purchase`, `subrecipe`, `menu`                                                                                             | Clase de rubro: purchase (MP, rubros de compra), subrecipe (SR, sub-recetas) o menu (PL, rubros de menú).                                                                                                                 |
 | `recipes.media_kind`             | `final_product`, `plating`, `raw_material`, `step`, `critical_point`, `correct_example`, `incorrect_example`                | Tipo de foto: producto final, emplatado, materia prima, paso, punto crítico, ejemplo correcto o ejemplo incorrecto.                                                                                                       |
 | `recipes.quantity_basis`         | `purchase`, `clean`, `cooked`, `finished`                                                                                   | Qué representa la cantidad de una línea: peso de compra (purchase), limpio (clean) o cocido (cooked) de una materia prima, o cantidad terminada (finished) de una subreceta.                                              |
 | `recipes.recipe_scope`           | `group`, `brand`, `restaurant`                                                                                              | Alcance de una receta: maestra del grupo, de marca o de local. Una variante es una receta de local con su maestra (variant_of_recipe_id). La cocina central no se usa: Pariggi es un proveedor externo (ADR-0025).        |

@@ -1,8 +1,41 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-19._ **En curso: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Fusionadas las facturas (base #86 y pantallas #88, ADR-0058) y las pruebas en paralelo en GitHub (PR #87, ADR-0059). Terminado el Prompt 6, pagos, cuenta corriente y tablero de compras (`feat/pagos-y-tablero-de-compras`, ADR-0060): PR abierto, el último de la Fase 3. Abierto: dependencias (#89, en verde).**
+_Última actualización: 2026-11-22._ **En curso: correcciones del Módulo 1 (Tanda 1, Panel de control; rama `feat/panel-y-usuarios-en-una-pantalla`, ADR-0061). Antes: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Fusionadas las facturas (base #86 y pantallas #88, ADR-0058) y las pruebas en paralelo en GitHub (PR #87, ADR-0059). Terminado el Prompt 6, pagos, cuenta corriente y tablero de compras (`feat/pagos-y-tablero-de-compras`, ADR-0060): PR abierto, el último de la Fase 3. Abierto: dependencias (#89, en verde).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
+
+## Para retomar (2026-11-22): correcciones del Módulo 1, Tanda 1 (Panel de control y Usuarios)
+
+- **Pedido:** Soy mandó las correcciones del Módulo 1 en tandas (`docs/prompts/2026-11-22-correcciones-modulo-1.md`, bocetos en `docs/prompts/2026-11-22-boceto-*`). Los prompts se fusionaron en el PR #97. **Hasta terminar todas las tandas no se arranca un módulo nuevo.**
+- **Plan de la Tanda 1, aprobado por Joaco el 2026-11-22:**
+  - 3 PR al principio; después Joaco eligió juntar la base y las pantallas del Panel en uno;
+  - Usuarios va aparte.
+- **PR del Panel** (rama `feat/panel-y-usuarios-en-una-pantalla`, ADR-0061, lista para Soy en `docs/modulos/22-panel-de-control-lista-de-cambios.md`):
+  - **Base:** migraciones `20261212120000` a `20261212160000`.
+    - Códigos `NN-PALABRA` y `PALABRA-NNN`; nombre corto y zona.
+    - «En apertura» con la columna `opening`; 7 obligatorios para abrir (la razón social es opcional).
+    - Provincias, ubicación de Georef, razón social con los datos de ARCA, actividades, historial por local y constancia en PDF.
+    - Guardado en lote de las dos fichas; cerrar y reabrir.
+  - **Pantallas:**
+    - `/configuracion` (tipo A, con mapa de Leaflet y OpenStreetMap);
+    - ficha del local y alta en un modal;
+    - ficha de razón social;
+    - la ficha de marca es un panel lateral;
+    - las direcciones viejas redirigen.
+  - **Pruebas:**
+    - pgTAP nuevas: 400, 401 y 402. Se ajustaron 030, 050, 210, 220, 239, 242 y 380: CUIT del seed válidos, firmas nuevas y conteos.
+    - Vitest: `org-codes` y `org-sheet`.
+    - Playwright: `panel-estructura.spec.ts` rehecho, con Georef de mentira (`tests/e2e/georef-stub.mjs`, segundo `webServer` en el 3190) y sin scroll en los 4 tamaños, con Superadministrador y con Dirección General.
+  - **Revisiones:**
+    - `db-reviewer`: 2 graves (el código se cambiaba pasando por vacío; dos marcas con la misma palabra) y 6 medios, corregidos.
+    - `security-auditor`: 1 grave (HTML en el mapa) y 1 medio (datos de ARCA visibles para cualquiera con precios), corregidos.
+    - `ui-reviewer`: sin graves; los 7 medios corregidos.
+  - **Tecnología nueva:** `leaflet` 1.9.4, justificada en el ADR.
+- **Decisiones de Joaco (2026-11-22):** los datos de ARCA de `org.legal_entities` no se restringen (los ve quien ve precios, como el nombre y el CUIT); la razón social es opcional para abrir un local.
+- **Trampas de hoy:**
+  - Docker Desktop se cayó en medio de las pruebas; al abrirlo, Edge Functions vuelve a quedar apagado (`docker start supabase_edge_runtime_grupo-lf`).
+  - El build tarda unos 7 minutos y el `webServer` de Playwright espera 4: correr `npm run build` y `next start -p 3100` a mano (con `GEOREF_URL=http://127.0.0.1:3190` y el stub levantado) antes de Playwright.
+- **Sigue:** el PR de Usuarios (ficha de persona en una pantalla, invitar en modal, tablero y lista sin scroll; ADR-0062). Después, la Tanda 2 (Base de conocimiento) en 4 PR.
 
 ## Para retomar (2026-11-19)
 

@@ -558,6 +558,8 @@ export async function getAreas(): Promise<{ id: string; label: string }[]> {
       .from("areas")
       .select("id, name, restaurant_id")
       .is("deleted_at", null)
+      // Las áreas quitadas desde la ficha del local quedan inactivas: no se ofrecen (ADR-0061).
+      .eq("is_active", true)
       .order("name"),
     supabase.schema("org").from("restaurants").select("id, name").is("deleted_at", null),
   ]);

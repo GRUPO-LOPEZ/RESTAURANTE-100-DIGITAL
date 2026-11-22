@@ -1,7 +1,7 @@
 -- Facturas con control de 3 vías y costos desde la factura conforme (Fase 3, Prompt 5, ADR-0058).
 -- Casos 19 a 30 del plan (docs/fases/fase-3-plan.md, §6), con la cuenta hecha.
 -- Personas del seed: Dirección 402, Gerente 404 (Pastas Centro), Controller 407, Compras 408, Cocinera 409, Auditor 410.
--- Locales: Parrilla Centro 203 y Pastas Norte 202 (razón social RI 30000000001). Proveedores: Lácteos 903 (lista 1303
+-- Locales: Parrilla Centro 203 y Pastas Norte 202 (razón social RI 30000000007). Proveedores: Lácteos 903 (lista 1303
 -- aceptada, vigente desde hace 3 días) y Almacén 904 (sin lista aceptada).
 -- Se arma un producto propio para que la cuenta sea exacta: «Azúcar de prueba, bolsa de 50 kg» (materia prima 827,
 -- unidad de uso g) con $ 50.000 neto en la lista, y un corte por kilo (materia prima 811, en g) a $ 8.000 el kg.
@@ -161,7 +161,7 @@ returns boolean language sql security definer as $$
                       order by entry_number desc limit 1)
    order by c.entry_number desc limit 1
 $$;
-create function pg_temp.header(p_class text, p_number int, p_receiver text default '30000000001') returns jsonb
+create function pg_temp.header(p_class text, p_number int, p_receiver text default '30000000007') returns jsonb
 language sql as $$
   select jsonb_build_object('invoice_class', p_class, 'point_of_sale', 3, 'number', p_number,
                             'authorization_kind', 'cae', 'authorization_code', '71000000000001',

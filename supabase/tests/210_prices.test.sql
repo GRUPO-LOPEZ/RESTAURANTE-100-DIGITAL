@@ -87,15 +87,15 @@ select ok((select count(*) = 2 from core.role_permissions rp join core.roles r o
 -- ---------------------------------------------------------------------------
 -- Razones sociales
 -- ---------------------------------------------------------------------------
-select is(pg_temp.msg(pg_temp.u(403), format($$select org.create_legal_entity(%L, 'Otra S.A.', '30-11111111-1', 'registered', 'Prueba')$$, pg_temp.u(1))),
+select is(pg_temp.msg(pg_temp.u(403), format($$select org.create_legal_entity(%L, 'Otra S.A.', '30-11111111-8', 'registered', 'Prueba')$$, pg_temp.u(1))),
   'No tenés permiso para crear razones sociales en este grupo.', 'la Directora de una marca no crea razones sociales del grupo');
 create temporary table le (id uuid);
 grant select, insert on le to authenticated;
-insert into le select pg_temp.q(pg_temp.u(401), format($$select org.create_legal_entity(%L, 'Otra S.A. (ficticia)', '30-11111111-1', 'registered', 'Prueba')$$,
+insert into le select pg_temp.q(pg_temp.u(401), format($$select org.create_legal_entity(%L, 'Otra S.A. (ficticia)', '30-11111111-8', 'registered', 'Prueba')$$,
                                                       pg_temp.u(1)))::uuid;
-select is((select tax_id from org.legal_entities where id = (select id from le)), '30111111111',
+select is((select tax_id from org.legal_entities where id = (select id from le)), '30111111118',
   'el superadministrador crea una razón social; el CUIT se guarda sin guiones');
-select is(pg_temp.msg(pg_temp.u(401), format($$select org.create_legal_entity(%L, 'Repetida', '30111111111', 'registered', 'Prueba')$$, pg_temp.u(1))),
+select is(pg_temp.msg(pg_temp.u(401), format($$select org.create_legal_entity(%L, 'Repetida', '30111111118', 'registered', 'Prueba')$$, pg_temp.u(1))),
   'Ya hay una razón social con ese CUIT en el grupo.', 'el CUIT no se repite en el grupo');
 select is(pg_temp.msg(pg_temp.u(401), format($$select org.create_legal_entity(%L, 'Mal', '123', 'registered', 'Prueba')$$, pg_temp.u(1))),
   'Revisá el nombre y el CUIT (11 números).', 'un CUIT con menos de 11 números se rechaza');
