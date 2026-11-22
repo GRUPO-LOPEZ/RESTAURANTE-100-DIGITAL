@@ -10,7 +10,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Plan de la Tanda 1, aprobado por Joaco el 2026-11-22:**
   - 3 PR al principio; después Joaco eligió juntar la base y las pantallas del Panel en uno;
   - Usuarios va aparte.
-- **PR del Panel** (rama `feat/panel-y-usuarios-en-una-pantalla`, ADR-0061, lista para Soy en `docs/modulos/22-panel-de-control-lista-de-cambios.md`):
+- **PR del Panel: PR #98, fusionado el 2026-11-22 con GitHub Actions en verde** (rama `feat/panel-y-usuarios-en-una-pantalla`, ADR-0061, lista para Soy en `docs/modulos/22-panel-de-control-lista-de-cambios.md`):
   - **Base:** migraciones `20261212120000` a `20261212160000`.
     - Códigos `NN-PALABRA` y `PALABRA-NNN`; nombre corto y zona.
     - «En apertura» con la columna `opening`; 7 obligatorios para abrir (la razón social es opcional).
@@ -35,7 +35,15 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Trampas de hoy:**
   - Docker Desktop se cayó en medio de las pruebas; al abrirlo, Edge Functions vuelve a quedar apagado (`docker start supabase_edge_runtime_grupo-lf`).
   - El build tarda unos 7 minutos y el `webServer` de Playwright espera 4: correr `npm run build` y `next start -p 3100` a mano (con `GEOREF_URL=http://127.0.0.1:3190` y el stub levantado) antes de Playwright.
-- **Sigue:** el PR de Usuarios (ficha de persona en una pantalla, invitar en modal, tablero y lista sin scroll; ADR-0062). Después, la Tanda 2 (Base de conocimiento) en 4 PR.
+- **Corrida completa local antes del PR:**
+  - lint, tipos y Vitest (554) en verde; pgTAP (3261) en verde;
+  - Playwright: 312 pasan y 4 fallaron, todas resueltas en el PR: `inicio.spec` (2), adaptada al Panel nuevo; `calidad.spec` (1), que elegía otro local mientras el `?local=` se aplicaba; `fase1.spec` (1), intermitente, pasa sola.
+- **Sigue (sesión del 2026-11-22 cerrada acá):**
+  1. **El PR de Usuarios**, que cierra la Tanda 1: ficha de persona en una pantalla, invitar en un modal, y el tablero y la lista sin scroll. Ya está en el plan aprobado (rama `feat/usuarios-en-una-pantalla`, ADR-0062).
+     - Base: `core.close_user_sessions`, `core.save_user_sheet` (roles sensibles a aprobación) y los cambios de 30 días en `core.user_detail`.
+     - Pruebas que se ajustan: `admin.spec`, `fase1.spec`, `respuestas.spec` y `cuenta.spec`.
+  2. **La Tanda 2** (Base de conocimiento): 4 PR, cada uno con su plan (`docs/prompts/2026-11-22-correcciones-modulo-1.md`).
+- **Pendiente para Joaco:** borrar en GitHub la rama `feat/panel-y-usuarios-en-una-pantalla` (ya fusionada).
 
 ## Para retomar (2026-11-19)
 
