@@ -122,6 +122,26 @@ Las fichas (materia prima, receta y proveedor), los listados en una pantalla (Co
 - Si con eso no alcanza (lo importante queda escondido), se avisa y se decide qué sale (ADR-0046: «Dónde se usa» pasó al indicador «Recetas que la usan»).
 - **No se diseña para menos de 843 de alto** hasta tener la medición de la computadora de un local (ADR-0051). Si da menos, la más chica pasa a ser el mínimo.
 
+## Criterios de Soy para todas las pantallas (2026-11-22)
+
+Salen de la revisión del Módulo 1 y de Compras. **Valen para todo módulo nuevo y para corregir los que ya existen.** Si una pantalla no los cumple, se corrige antes de darla por terminada.
+
+1. **Una pantalla por tarea, sin scroll de página** en 1440 × 900, 1600 × 900, 1715 × 843 y 1920 × 1080. Lo que crece (listas, renglones) se desplaza dentro de su tarjeta.
+2. **Sin subpantallas ni pasos intermedios.** No hay pantallas de «elegí el local» o «elegí el proveedor» antes de trabajar: el local sale del selector de arriba (si está en «Todos mis locales», la pantalla lo pide en la misma línea, con botones) y lo demás se elige en la misma pantalla. En la computadora no hay asistentes de varios pasos; en el celular de cocina, sí (un paso por vez).
+3. **Las altas, en un modal corto:** 3 a 5 datos, sin scroll, que crea el borrador y abre la ficha. **Nunca se carga dos veces el mismo dato** (lo que se pidió en el modal no se vuelve a pedir en la ficha).
+4. **Paneles laterales y modales sin scroll.** Si un formulario no entra, se acomoda en dos columnas, lo opcional va en «Más datos» (cerrado), o pasa a ser la ficha.
+5. **Encabezado en una línea:** «← Volver», nombre, lo que lo define, estado con palabra y las acciones a la derecha **en fila**, nunca apiladas.
+6. **Fichas:** 4 indicadores arriba, tarjetas en columnas que se editan donde se ven y barra fija abajo con contador, motivo, Descartar y Guardar cambios (ADR-0046).
+7. **Listados:** a la izquierda, un panel fijo de 250 px con la agrupación (rubros, proveedores, estados), con ícono, nombre y cantidad, que no se desplaza; a la derecha, la tabla con su propio scroll, la búsqueda y las etiquetas de filtro.
+8. **Planillas de carga** (ingredientes, renglones de lista de precios, de OC o de factura): números y unidades en celdas angostas, el texto con el resto del ancho; 8 renglones que crecen solos al llenar el último, y «+ Agregar».
+9. **Opciones:** hasta 5, botones visibles; más de 5, desplegable. Todo lo que se repite (sectores, partidas, equipos, medidas, rubros) sale de una **lista del catálogo**, no de texto libre, con «+ Agregar» para quien puede editarla.
+10. **Códigos y nombres automáticos y correlativos** (01-RAGU, RAGU-001, PCE-0004). Un código no cambia nunca.
+11. **Lo que el sistema ya sabe se completa solo:** el local de arriba, la fecha de hoy, la alícuota y el proveedor del producto, el CUIT del proveedor. Se puede cambiar, pero no se pide.
+12. **Todo en español, también los controles del navegador:** nada de «Choose File» ni fechas mm/dd/aaaa. Subir archivos con un botón propio («Subir foto o PDF») y fechas dd/mm/aaaa.
+13. **Los nombres importantes no se cortan con «…»** (proveedor, comprobante, materia prima). Si no entran, la columna se acomoda o el texto pasa a dos renglones.
+14. **Lo que se imprime o se comparte lleva la versión** y quién la aprobó.
+15. **Mismo lugar, mismo nombre:** «+ Nuevo …» arriba a la derecha, «Guardar cambios» abajo a la derecha, «Ver los N» al pie de cada lista cortada.
+
 ## Accesibilidad (WCAG 2.2 AA)
 
 - Contraste mínimo de 4,5:1 en texto. Lo verifica `tests/unit/palette-contrast.test.ts` y axe en Playwright.
