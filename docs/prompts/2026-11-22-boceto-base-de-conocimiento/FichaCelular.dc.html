@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha 2 en el celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.chip{font-size:13px;font-weight:500;padding:3px 9px;border-radius:6px;white-space:nowrap}
+.tab{flex:1;height:44px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:15px;color:#1F2937;cursor:pointer}
+.tab.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:600}
+.it{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;padding:6px 0;border-bottom:1px solid #E5E7EB;box-sizing:border-box}
+.it>span:first-child{font-size:17px;flex:1;min-width:0}
+.q{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}
+.q small{font-size:14px;font-weight:400;color:#4B5563}
+button:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; color: #1F2937; display: flex; flex-direction: column; overflow: hidden;">
+  <div style="padding: 12px 16px; border-bottom: 1px solid #E5E7EB; display: flex; flex-direction: column; gap: 8px;">
+    <a href="#" style="font-size: 15px; color: #3D5E9F; text-decoration: none; min-height: 44px; display: flex; align-items: center;">← Recetas</a>
+    <div style="font-size: 22px; font-weight: 600;">Tagliatelle carbonara</div>
+    <div style="font-size: 13px; color: #4B5563;">Versión 2 · 1 receta = 4 porciones</div>
+    <div style="display: flex; gap: 6px;" role="group" aria-label="Fichas técnicas"><button class="tab">1</button><button class="tab on" aria-pressed="true">2 Servicio</button><button class="tab">3</button><button class="tab">4</button></div>
+  </div>
+  <div style="flex: 1 1 auto; overflow: hidden; padding: 4px 16px;">
+    <div class="it"><span>Masa al huevo</span><span class="q">4 nidos<small>480 g</small></span></div>
+    <div class="it"><span>Panceta ahumada</span><span class="q">160 g</span></div>
+    <div class="it"><span>Yema de huevo</span><span class="q">6 yemas</span></div>
+    <div class="it"><span>Queso parmesano rallado</span><span class="q">1 taza<small>80 g</small></span></div>
+    <div class="it"><span>Aceite de oliva</span><span class="q">2 cucharadas<small>30 ml</small></span></div>
+    <div class="it"><span>Pimienta negra</span><span class="q">1 cdta<small>2 g</small></span></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px; padding-top: 12px;"><span class="chip" style="background: #FEF3C7; color: #92400E;">Gluten</span><span class="chip" style="background: #FEF3C7; color: #92400E;">Huevo</span><span class="chip" style="background: #FEF3C7; color: #92400E;">Lácteos</span></div>
+  </div>
+  <div style="padding: 12px 16px; border-top: 1px solid #E5E7EB;"><button style="width: 100%; height: 48px; border: 1px solid #4A6FB8; border-radius: 8px; background: #FFFFFF; color: #2F4F8F; font: inherit; font-size: 16px; font-weight: 500;">Hacer varias recetas</button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

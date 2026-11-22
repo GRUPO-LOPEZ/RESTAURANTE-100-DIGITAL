@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha de materia prima</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;min-height:34px}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{min-height:40px;padding:4px 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer;text-align:left}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btn{height:40px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:40px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.lnk{background:none;border:0;padding:0;font:inherit;font-size:13px;color:#3D5E9F;cursor:pointer}
+h2{margin:0;font-size:16px;font-weight:600}
+input{height:40px;border:1px solid #E5E7EB;border-radius:8px;padding:0 12px;font:inherit;font-size:14px;box-sizing:border-box}
+.tg{width:44px;height:26px;border-radius:13px;border:1px solid #166534;background:#DCFCE7;position:relative;cursor:pointer}
+.tg span{position:absolute;left:21px;top:3px;width:18px;height:18px;border-radius:9px;background:#166534}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden; position: relative;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#" class="on">Materias primas</a><a href="#">Rubros</a><a href="#">Proveedores</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Materias primas › <span style="color: #1F2937; font-weight: 500;">Cebolla</span></span>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 24px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="MateriasPrimas.dc.html" style="font-size: 14px; text-decoration: none;">← Materias primas</a>
+        <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Cebolla</h1>
+        <span style="font-size: 13px; color: #6B7280;">MP-VER-0003 · Verduras y frutas · se usa en kg</span>
+        <span class="chip" style="background: #DCFCE7; color: #166534;">Activa</span>
+      </div>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 14px; padding-right: 440px;">
+        <section class="card" style="padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+          <h2>Foto del producto</h2>
+          <div role="img" aria-label="Foto de la cebolla" style="height: 200px; border-radius: 8px; background: #F1F2F4; display: flex; align-items: center; justify-content: center; color: #4B5563; font-size: 14px;">Foto</div>
+          <div style="display: flex; gap: 8px;"><button class="btn" style="flex: 1;">Cambiar foto</button><button class="btn" aria-label="Sacar una foto con el celular">Cámara</button></div>
+          <span class="lbl">Una foto por materia prima. Sale también en la ficha de recepción.</span>
+        </section>
+        <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><h2>Precios de compra</h2><button class="btnp" style="height: 36px;">Proponer precio</button></div>
+          <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span>Bolsa 20 kg · Verdulería Muestra</span><span>$ 25.000 · $ 1.250 / kg</span></div>
+          <div class="row"><span>Bolsa 10 kg · Distribuidora Ejemplo</span><span>$ 13.200 · $ 1.320 / kg</span></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <div style="position: absolute; inset: 0; background: rgba(31,41,55,0.35);" aria-hidden="true"></div>
+  <aside role="dialog" aria-label="Proponer precio" style="position: absolute; top: 0; right: 0; bottom: 0; width: 440px; background: #FFFFFF; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 16px; border-left: 1px solid #E5E7EB;">
+    <div style="display: flex; justify-content: space-between; align-items: center;"><h2 style="font-size: 20px;">Proponer precio · Cebolla</h2><button class="lnk" style="font-size: 14px;">Cerrar</button></div>
+    <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Qué producto</span>
+      <div class="seg"><button class="on" aria-pressed="true">Bolsa 20 kg · Verdulería</button><button aria-pressed="false">Bolsa 10 kg · Distribuidora</button></div></div>
+    <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Precio de la bolsa</span><input value="$ 26.000" style="height: 48px; font-size: 22px; font-weight: 600;"></label>
+    <div class="row"><span style="font-size: 14px;">El precio incluye IVA</span><button class="tg" aria-pressed="true" aria-label="El precio incluye IVA"><span></span></button></div>
+    <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Para quién vale</span>
+      <div class="seg"><button aria-pressed="false">Todo el grupo</button><button class="on" aria-pressed="true">Demo Pastas Centro</button></div></div>
+    <div class="row"><span style="font-size: 14px;">Desde</span><span>hoy, 22/11/26 <button class="lnk">Cambiar</button></span></div>
+    <div style="padding: 12px 14px; border-radius: 8px; background: #FEF3C7; color: #92400E; font-size: 14px;">Queda <strong style="font-weight: 600;">$ 1.176 por kg sin IVA</strong>: sube 4 % contra el anterior. Lo aprueba Controller.</div>
+    <button class="lnk" style="align-self: flex-start; font-size: 14px;">▸ Más datos (opcional): descuento, comprobante, alícuota, observaciones</button>
+    <span style="flex: 1;"></span>
+    <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Motivo</span><input placeholder="Por ejemplo: lista nueva de la verdulería"></label>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;"><button class="btn">Cancelar</button><button class="btnp">Proponer precio</button></div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

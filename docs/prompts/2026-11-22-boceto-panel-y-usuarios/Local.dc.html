@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha de local</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.code{font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px;background:#F1F2F4;color:#4B5563;font-variant-numeric:tabular-nums}
+.lbl{font-size:13px;color:#6B7280}
+.req{color:#991B1B}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;min-height:36px}
+.seg{display:flex;gap:4px}
+.seg button{height:32px;padding:0 10px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.lnk{background:none;border:0;padding:0;font:inherit;font-size:13px;color:#3D5E9F;cursor:pointer}
+.area{display:flex;align-items:center;gap:6px;height:32px;padding:0 6px 0 12px;border:1px solid #E5E7EB;border-radius:8px;font-size:14px;background:#FFFFFF}
+.area button{width:28px;height:28px;border:0;background:none;color:#6B7280;cursor:pointer;font:inherit;font-size:14px;border-radius:6px}
+h2{margin:0;font-size:16px;font-weight:600}
+input{height:34px;border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;font:inherit;font-size:14px;box-sizing:border-box}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#" class="on">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>COMPRAS</h4><a href="#">Tablero de compras</a><a href="#">Facturas</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Usuarios</a><a href="#">Roles y permisos</a><a href="#">Historial</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Panel de control › <span style="color: #1F2937; font-weight: 500;">Ragú Leloir</span></span>
+    </div>
+
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 0; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="Main.dc.html" style="font-size: 14px; text-decoration: none;">← Panel de control</a>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Ragú Leloir</h1>
+          <span style="font-size: 13px; color: #6B7280;">RAGU-001 · Ragú Bodegón · Restaurante</span>
+          <span class="chip" style="background: #DCFCE7; color: #166534;">Abierto</span>
+        </div>
+        <button class="btn">Cerrar el local</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;">
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Personas que trabajan acá</span>
+          <span style="font-size: 26px; font-weight: 600;">12</span>
+          <span style="display: flex; justify-content: space-between;"><span class="chip" style="background: #DBEAFE; color: #1E40AF;">2 invitaciones sin aceptar</span><button class="lnk">Ver quiénes</button></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Recetas asignadas</span>
+          <span style="font-size: 26px; font-weight: 600;">38</span>
+          <span style="display: flex; justify-content: space-between;"><span class="chip" style="background: #DCFCE7; color: #166534;">Con costo al día</span><button class="lnk">Ver cuáles</button></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Razón social</span>
+          <span style="font-size: 18px; font-weight: 600; line-height: 1.6;">Gastronomía Ejemplo S.R.L.</span>
+          <span style="display: flex; justify-content: space-between;"><span class="chip" style="background: #DCFCE7; color: #166534;">Constancia al día</span><a href="RazonSocial.dc.html" style="font-size: 13px;">Abrir ficha</a></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Datos obligatorios</span>
+          <span style="font-size: 26px; font-weight: 600;">8 <span style="font-size: 13px; font-weight: 400; color: #6B7280;">de 8</span></span>
+          <span><span class="chip" style="background: #DCFCE7; color: #166534;">Completos</span></span>
+        </div>
+      </div>
+
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <h2>El local</h2>
+          <div class="row"><span class="lbl">Marca</span><span style="font-weight: 500;">Ragú Bodegón</span></div>
+          <label class="row"><span class="lbl">Zona o ubicación <span class="req">*</span></span><input value="Leloir" style="width: 180px;"></label>
+          <div class="row"><span class="lbl">Nombre</span><span style="font-weight: 500;">Ragú Leloir <span class="lbl">(automático)</span></span></div>
+          <div class="row"><span class="lbl">Código</span><span class="code">RAGU-001</span></div>
+          <div class="row"><span class="lbl">Tipo</span><span class="seg"><button class="on">Restaurante</button><button>Cocina central</button><button>Producción</button></span></div>
+          <div class="row"><span class="lbl">Estado</span><span class="seg"><button>En apertura</button><button class="on">Abierto</button><button>Cerrado</button></span></div>
+          <label class="row"><span class="lbl">Fecha de apertura <span class="req">*</span></span><input value="15/03/2019" style="width: 140px;"></label>
+          <span class="lbl" style="margin-top: 4px;">El código no cambia nunca: lo usan las órdenes de compra y el historial. Si el local se muda, cambia la zona y el nombre.</span>
+        </section>
+
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <h2>Ubicación y contacto</h2>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px;"><span class="lbl">Dirección <span class="req">*</span></span><input value="Av. Ejemplo 1234" style="width: 100%;"></label>
+          <span style="font-size: 13px; color: #166534; display: flex; align-items: center; gap: 6px;"><span class="chip" style="background: #DCFCE7; color: #166534;">Encontrada</span> Av. Ejemplo 1234, Parque Leloir, Ituzaingó, Buenos Aires</span>
+          <label class="row"><span class="lbl">Localidad <span class="req">*</span></span><input value="Parque Leloir" style="width: 180px;"></label>
+          <div class="row"><span class="lbl">Provincia · CP</span><span>Buenos Aires · B1713</span></div>
+          <label class="row"><span class="lbl">Teléfono <span class="req">*</span></span><input value="11 5555-0200" style="width: 180px;"></label>
+          <div style="flex: 1 1 0; min-height: 90px; border-radius: 8px; overflow: hidden; background: #EEF2EA;">
+            <svg width="100%" height="100%" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Ubicación del local en el mapa">
+              <rect width="300" height="120" fill="#EEF2EA"/>
+              <path d="M0 80 C80 70 160 95 300 60" stroke="#FFFFFF" stroke-width="8" fill="none"/>
+              <path d="M120 0 L150 120" stroke="#FFFFFF" stroke-width="6" fill="none"/>
+              <circle cx="140" cy="76" r="8" fill="#4A6FB8"/>
+            </svg>
+          </div>
+        </section>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; min-height: 0;">
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2>Razón social</h2><button class="lnk">Cambiar</button></div>
+            <div class="row"><span class="lbl">Factura a nombre de</span><span style="font-weight: 500;">Gastronomía Ejemplo S.R.L.</span></div>
+            <div class="row"><span class="lbl">CUIT</span><span style="font-variant-numeric: tabular-nums;">30-71234567-1</span></div>
+            <div class="row"><span class="lbl">IVA</span><span class="chip" style="background: #DCFCE7; color: #166534;">Responsable inscripto</span></div>
+            <div class="row"><span class="lbl">Desde</span><span>01/01/2024</span></div>
+          </section>
+          <section class="card" style="flex: 1 1 0; min-height: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2>Áreas</h2><span class="lbl">5 activas</span></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              <span class="area">Cocina caliente<button aria-label="Quitar Cocina caliente">✕</button></span>
+              <span class="area">Cocina fría<button aria-label="Quitar Cocina fría">✕</button></span>
+              <span class="area">Pastelería<button aria-label="Quitar Pastelería">✕</button></span>
+              <span class="area">Salón<button aria-label="Quitar Salón">✕</button></span>
+              <span class="area" style="border-style: dashed; border-color: #4A6FB8;">Barra<button aria-label="Quitar Barra">✕</button></span>
+            </div>
+            <label style="display: flex; gap: 8px; align-items: center;"><input placeholder="Nueva área" style="flex: 1;"><button class="btn" style="height: 34px;">Agregar</button></label>
+            <span class="lbl">Para cambiar el nombre, clic sobre el área. Quitar no borra: la deja inactiva con su historia.</span>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex: 0 0 64px; margin-top: 14px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0 32px; box-sizing: border-box;">
+      <span class="chip" style="background: #FFEDD5; color: #9A3412; font-size: 13px;">1 cambio sin guardar</span>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">Motivo <input placeholder="Por qué cambia (obligatorio)" style="width: 300px; height: 36px;"></label>
+      <button class="btn">Descartar</button>
+      <button class="btnp">Guardar cambios</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

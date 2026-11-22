@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hacer varias recetas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.seg{display:flex;gap:4px}
+.seg button{height:36px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+h2{margin:0;font-size:16px;font-weight:600}
+.t{width:100%;border-collapse:separate;border-spacing:0}
+.t th{font-size:13px;font-weight:500;color:#4B5563;text-align:left;padding:8px 14px;background:#F7F8FA;border-bottom:1px solid #E5E7EB}
+.t td{padding:0 14px;height:44px;border-bottom:1px solid #E5E7EB;font-size:15px;font-variant-numeric:tabular-nums}
+.r{text-align:right}
+.big{font-size:18px;font-weight:600}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#" class="on">Recetas</a><a href="#">Materias primas</a><a href="#">Rubros</a><a href="#">Proveedores</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Recetas › Tagliatelle carbonara › <span style="color: #1F2937; font-weight: 500;">Hacer varias</span></span>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 24px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="Main.dc.html" style="font-size: 14px; text-decoration: none;">← Receta</a>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Tagliatelle carbonara</h1>
+          <span class="lbl">Versión 2 · rinde 4 porciones de 320 g</span>
+        </div>
+        <button class="btn">Imprimir</button>
+      </div>
+
+      <section class="card" style="padding: 14px 16px; display: flex; align-items: center; gap: 16px;">
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 500;">Quiero hacer <input value="12" style="width: 90px; height: 44px; border: 1px solid #4A6FB8; border-radius: 8px; font: inherit; font-size: 22px; font-weight: 600; text-align: center;"></label>
+        <div class="seg"><button class="on" aria-pressed="true">recetas</button><button aria-pressed="false">porciones</button><button aria-pressed="false">kg de producto</button></div>
+        <span style="flex: 1;"></span>
+        <span style="font-size: 16px;">= <strong style="font-weight: 600;">48 porciones</strong> · 15,4 kg</span>
+      </section>
+
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px;">
+        <section class="card" style="min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
+          <table class="t">
+            <thead><tr><th>Ingrediente</th><th class="r">Para 1 receta</th><th class="r">Para 12 recetas</th><th>Medida práctica</th></tr></thead>
+            <tbody>
+              <tr><td>Masa al huevo</td><td class="r">480 g</td><td class="r big">5,76 kg</td><td>48 nidos de 120 g</td></tr>
+              <tr><td>Panceta ahumada</td><td class="r">160 g</td><td class="r big">1,92 kg</td><td class="lbl">—</td></tr>
+              <tr><td>Yema de huevo</td><td class="r">6 unidades</td><td class="r big">72 unidades</td><td>6 docenas de yemas</td></tr>
+              <tr><td>Queso parmesano rallado</td><td class="r">80 g</td><td class="r big">960 g</td><td>12 tazas</td></tr>
+              <tr><td>Aceite de oliva</td><td class="r">30 ml</td><td class="r big">360 ml</td><td>24 cucharadas</td></tr>
+              <tr style="background: #F0F7FF;"><td>Crema de leche</td><td class="r">100 ml</td><td class="r big">1,2 l</td><td>1 cartón de 1 l + 200 ml</td></tr>
+              <tr><td>Sal fina</td><td class="r">2 cdta</td><td class="r big">24 cdta</td><td>≈ 120 g · 8 cucharadas</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; background: #DBEAFE; border-color: #DBEAFE;">
+            <h2 style="color: #1E40AF;">Cada ingrediente sigue en su unidad</h2>
+            <span style="font-size: 14px; color: #1E40AF;">Los ml pasan a litros y los g a kilos cuando llegan a 1.000. Lo que va en litros nunca se pasa a peso, así que no hace falta la densidad.</span>
+            <span style="font-size: 14px; color: #1E40AF;">Las cucharadas y tazas se multiplican y, si quedan muchas, muestran al lado cuánto es en ml o g.</span>
+          </section>
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+            <h2>Equipos</h2>
+            <div style="display: flex; justify-content: space-between; font-size: 14px; min-height: 32px; align-items: center;"><span>Pastera 6 canastos</span><span class="chip" style="background: #FEF3C7; color: #92400E;">2 tandas</span></div>
+            <div style="display: flex; justify-content: space-between; font-size: 14px; min-height: 32px; align-items: center;"><span>Anafe 4</span><span class="chip" style="background: #DCFCE7; color: #166534;">1 tanda</span></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

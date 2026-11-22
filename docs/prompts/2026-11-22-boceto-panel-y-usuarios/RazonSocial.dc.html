@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha de razón social</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.req{color:#991B1B}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;min-height:34px}
+.seg{display:flex;gap:4px}
+.seg button{height:30px;padding:0 9px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.tg{width:44px;height:26px;border-radius:13px;border:1px solid #6B7280;background:#F1F2F4;position:relative;cursor:pointer}
+.tg span{position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#6B7280}
+.tg.on{background:#DCFCE7;border-color:#166534}
+.tg.on span{left:21px;background:#166534}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.lnk{background:none;border:0;padding:0;font:inherit;font-size:13px;color:#3D5E9F;cursor:pointer}
+h2{margin:0;font-size:16px;font-weight:600}
+input{height:32px;border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;font:inherit;font-size:14px;box-sizing:border-box}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#" class="on">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>COMPRAS</h4><a href="#">Tablero de compras</a><a href="#">Facturas</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Usuarios</a><a href="#">Roles y permisos</a><a href="#">Historial</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Panel de control › <span style="color: #1F2937; font-weight: 500;">Gastronomía Ejemplo S.R.L.</span></span>
+    </div>
+
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 0; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="Main.dc.html" style="font-size: 14px; text-decoration: none;">← Panel de control</a>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Gastronomía Ejemplo S.R.L.</h1>
+          <span style="font-size: 13px; color: #6B7280;">CUIT 30-71234567-1 · Responsable inscripto · 3 locales</span>
+          <span class="chip" style="background: #DCFCE7; color: #166534;">Activa</span>
+        </div>
+        <button class="btn">Subir constancia de ARCA</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;">
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Constancia de inscripción</span>
+          <span style="font-size: 26px; font-weight: 600;">01/11/26</span>
+          <span style="display: flex; justify-content: space-between;"><span class="chip" style="background: #DCFCE7; color: #166534;">Al día</span><button class="lnk">Ver PDF</button></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Locales que facturan a su nombre</span>
+          <span style="font-size: 26px; font-weight: 600;">3</span>
+          <span style="display: flex; justify-content: space-between;"><span class="chip" style="background: #DBEAFE; color: #1E40AF;">2 marcas</span><button class="lnk">Ver cuáles</button></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Compras del mes a su nombre</span>
+          <span style="font-size: 26px; font-weight: 600;">$ 6.240.000</span>
+          <span style="display: flex; justify-content: space-between;"><span class="chip" style="background: #DBEAFE; color: #1E40AF;">27 facturas</span><button class="lnk">Ver facturas</button></span>
+        </div>
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="lbl" style="font-weight: 500;">Datos obligatorios</span>
+          <span style="font-size: 26px; font-weight: 600;">14 <span style="font-size: 13px; font-weight: 400; color: #6B7280;">de 14</span></span>
+          <span><span class="chip" style="background: #DCFCE7; color: #166534;">Completos</span></span>
+        </div>
+      </div>
+
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin-bottom: 4px;">Identidad</h2>
+          <label class="row"><span class="lbl">Razón social <span class="req">*</span></span><input value="Gastronomía Ejemplo S.R.L." style="width: 220px;"></label>
+          <label class="row"><span class="lbl">CUIT <span class="req">*</span></span><span style="display: flex; gap: 6px; align-items: center;"><input value="30-71234567-1" style="width: 140px;"><span class="chip" style="background: #DCFCE7; color: #166534;">Válido</span></span></label>
+          <div class="row"><span class="lbl">Forma jurídica <span class="req">*</span></span><span class="seg"><button class="on">S.R.L.</button><button>S.A.</button><button>S.A.S.</button><button>Persona</button></span></div>
+          <label class="row"><span class="lbl">Inicio de actividades <span class="req">*</span></span><input value="10/05/2018" style="width: 120px;"></label>
+          <label class="row"><span class="lbl">Nombre de fantasía</span><input value="Ragú" style="width: 160px;"></label>
+          <h2 style="margin: 10px 0 4px;">Domicilio fiscal</h2>
+          <label class="row"><span class="lbl">Calle y número <span class="req">*</span></span><input value="Av. Ejemplo 1234" style="width: 200px;"></label>
+          <label class="row"><span class="lbl">Localidad y CP <span class="req">*</span></span><input value="Parque Leloir · B1713" style="width: 200px;"></label>
+          <div class="row"><span class="lbl">Provincia <span class="req">*</span></span><span>Buenos Aires</span></div>
+          <label class="row"><span class="lbl">Domicilio fiscal electrónico</span><input value="fiscal@ejemplo.com.ar" style="width: 200px;"></label>
+        </section>
+
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin-bottom: 4px;">Impuestos</h2>
+          <div class="row"><span class="lbl">IVA <span class="req">*</span></span><span class="seg"><button class="on">Resp. inscripto</button><button>Monotributo</button><button>Exento</button></span></div>
+          <div class="row"><span class="lbl">Ganancias <span class="req">*</span></span><span class="seg"><button class="on">Inscripta</button><button>Exenta</button><button>No alcanzada</button></span></div>
+          <div class="row"><span class="lbl">Ingresos Brutos <span class="req">*</span></span><span class="seg"><button class="on">Conv. Multilateral</button><button>Local</button><button>Exento</button></span></div>
+          <label class="row"><span class="lbl">N.º de Ingresos Brutos</span><input value="901-123456-7" style="width: 140px;"></label>
+          <div class="row"><span class="lbl">Jurisdicción sede</span><span class="seg"><button>CABA</button><button class="on">Buenos Aires</button></span></div>
+          <div class="row"><span class="lbl">Empleadora</span><button class="tg on" aria-pressed="true" aria-label="Empleadora"><span></span></button></div>
+          <div class="row"><span class="lbl">Agente de retención</span><button class="tg" aria-pressed="false" aria-label="Agente de retención"><span></span></button></div>
+          <div class="row"><span class="lbl">Agente de percepción</span><button class="tg" aria-pressed="false" aria-label="Agente de percepción"><span></span></button></div>
+          <span class="lbl" style="margin-top: 6px;">Si es agente de retención, los pagos a proveedores tienen que calcularla (quedó preparado en Pagos).</span>
+        </section>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; min-height: 0;">
+          <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2>Actividades en ARCA</h2><button class="lnk">+ Agregar</button></div>
+            <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span><strong style="font-weight: 500;">561011</strong> Restaurantes y cantinas sin espectáculo</span><span class="chip" style="background: #DBEAFE; color: #1E40AF;">Principal</span></div>
+            <div class="row"><span><strong style="font-weight: 500;">561020</strong> Elaboración de comidas para llevar</span><span class="chip" style="background: #F1F2F4; color: #4B5563;">Secundaria</span></div>
+          </section>
+          <section class="card" style="flex: 1 1 0; min-height: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2>Locales que usan esta razón social</h2></div>
+            <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span>RAGU-001 · Ragú Leloir</span><span class="lbl">desde 01/01/2024</span></div>
+            <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span>RAGU-002 · Ragú Belgrano</span><span class="lbl">desde 01/06/2025</span></div>
+            <div class="row"><span>PADELLA-001 · Padella Palermo</span><span class="lbl">desde 01/01/2024</span></div>
+            <span class="lbl" style="margin-top: 6px;">Si un local cambia de razón social, se guarda desde qué fecha: las facturas viejas siguen con la anterior.</span>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex: 0 0 64px; margin-top: 14px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0 32px; box-sizing: border-box;">
+      <span class="lbl" style="flex: 1;">Datos inventados para el boceto.</span>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">Motivo <input placeholder="Por qué cambia (obligatorio)" style="width: 300px; height: 36px;"></label>
+      <button class="btn">Descartar</button>
+      <button class="btnp">Guardar cambios</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
