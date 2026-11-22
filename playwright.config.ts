@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3100;
+const GEOREF_PORT = 3190;
 const isCI = Boolean(process.env.CI);
 
 // La app de prueba usa los valores públicos de desarrollo local de .env.example (nunca claves
@@ -43,12 +44,23 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    // En CI el build ya se hizo en un paso anterior.
-    command: isCI ? `npm run start -- -p ${PORT}` : `npm run build && npm run start -- -p ${PORT}`,
-    url: `http://127.0.0.1:${PORT}/ingresar`,
-    reuseExistingServer: !isCI,
-    timeout: 240_000,
-    env: publicEnv(),
-  },
+  webServer: [
+    // Georef de mentira (ADR-0061): la búsqueda de direcciones no depende de la API del gobierno.
+    {
+      command: `node tests/e2e/georef-stub.mjs ${GEOREF_PORT}`,
+      url: `http://127.0.0.1:${GEOREF_PORT}/health`,
+      reuseExistingServer: !isCI,
+      timeout: 30_000,
+    },
+    {
+      // En CI el build ya se hizo en un paso anterior.
+      command: isCI
+        ? `npm run start -- -p ${PORT}`
+        : `npm run build && npm run start -- -p ${PORT}`,
+      url: `http://127.0.0.1:${PORT}/ingresar`,
+      reuseExistingServer: !isCI,
+      timeout: 240_000,
+      env: { ...publicEnv(), GEOREF_URL: `http://127.0.0.1:${GEOREF_PORT}` },
+    },
+  ],
 });

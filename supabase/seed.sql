@@ -682,12 +682,49 @@ values ('00000000-0000-4000-8000-000000000413', '00000000-0000-4000-8000-0000000
 -- Ids fijos: razones sociales ...0015NN.
 -- ---------------------------------------------------------------------------
 insert into org.legal_entities (id, group_id, name, tax_id, vat_condition) values
-  ('00000000-0000-4000-8000-000000001501', '00000000-0000-4000-8000-000000000001', 'Demo Gastronomía S.R.L. (ficticia)', '30000000001', 'registered'),
-  ('00000000-0000-4000-8000-000000001502', '00000000-0000-4000-8000-000000000001', 'Demo Café de Lucía (ficticia)', '20000000002', 'monotax');
+  ('00000000-0000-4000-8000-000000001501', '00000000-0000-4000-8000-000000000001', 'Demo Gastronomía S.R.L. (ficticia)', '30000000007', 'registered'),
+  ('00000000-0000-4000-8000-000000001502', '00000000-0000-4000-8000-000000000001', 'Demo Café de Lucía (ficticia)', '20000000001', 'monotax');
 update org.restaurants set legal_entity_id = '00000000-0000-4000-8000-000000001501'
  where id in ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000203');
 update org.restaurants set legal_entity_id = '00000000-0000-4000-8000-000000001502'
  where id = '00000000-0000-4000-8000-000000000204';
+
+-- Ubicación y contacto de los locales (Tanda 1, ADR-0061). Todo inventado: direcciones, teléfonos y coordenadas.
+-- Con la zona, el nombre lo arma la base (nombre corto de la marca + zona) y queda igual que antes. Demo Café Centro
+-- queda sin teléfono, para probar «Datos que faltan».
+update org.restaurants r
+   set zone = v.zone, address = v.address, locality = v.locality, province = v.province, postal_code = v.cp,
+       phone = v.phone, opened_on = v.opened::date, latitude = v.lat, longitude = v.lng,
+       geo_status = case when v.lat is null then null else 'found'::org.geo_status end,
+       geo_label = case when v.lat is null then null else v.address || ', ' || v.locality end
+  from (values
+    ('00000000-0000-4000-8000-000000000201'::uuid, 'Centro', 'Calle Ficticia 100', 'San Nicolás', '02', 'C1000',
+     '011 4000-0001', '2019-03-15', -34.603700::numeric, -58.381600::numeric),
+    ('00000000-0000-4000-8000-000000000202', 'Norte', 'Avenida Inventada 2000', 'Núñez', '02', 'C1429',
+     '011 4000-0002', '2021-06-01', -34.545000, -58.460000),
+    ('00000000-0000-4000-8000-000000000203', 'Centro', 'Pasaje Ejemplo 300', 'Monserrat', '02', 'C1084',
+     '011 4000-0003', '2020-09-10', -34.611000, -58.378000),
+    ('00000000-0000-4000-8000-000000000204', 'Centro', 'Calle de Prueba 45', 'Balvanera', '02', 'C1030',
+     null, '2022-02-01', null, null)
+  ) as v (id, zone, address, locality, province, cp, phone, opened, lat, lng)
+ where r.id = v.id;
+
+-- Datos de la constancia de ARCA de las razones sociales ficticias. La segunda queda incompleta a propósito.
+update org.legal_entities
+   set legal_form = 'srl', activity_start = '2018-05-02', trade_name = 'Demo Pastas',
+       fiscal_street = 'Calle Ficticia 100', fiscal_locality = 'San Nicolás', fiscal_postal_code = 'C1000',
+       fiscal_province = '02', electronic_domicile = 'fiscal@ejemplo.test', income_tax = 'registered',
+       gross_income_regime = 'multilateral', gross_income_number = '901-000001-7', gross_income_province = '02',
+       is_employer = true
+ where id = '00000000-0000-4000-8000-000000001501';
+update org.legal_entities
+   set legal_form = 'person', activity_start = '2021-11-01', income_tax = 'not_subject', gross_income_regime = 'local'
+ where id = '00000000-0000-4000-8000-000000001502';
+insert into org.legal_entity_activities (group_id, legal_entity_id, code, description, is_primary) values
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001501', '561011',
+   'Servicios de restaurantes y cantinas sin espectáculo', true),
+  ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001501', '561020',
+   'Servicios de preparación de comidas para llevar', false);
 
 -- Precios de grupo, con factura y 21 % de IVA incluido, de los productos de las materias primas 1 a 50. Las 25, 28 y
 -- 29 no tienen precio: sus recetas salen incompletas, y las pruebas proponen ahí un primer precio o cambian su unidad.
@@ -983,7 +1020,7 @@ declare
   v_lacteos   uuid := '00000000-0000-4000-8000-000000000903';
   v_almacen   uuid := '00000000-0000-4000-8000-000000000904';
   v_interna   uuid := '00000000-0000-4000-8000-000000000906';
-  v_receiver  text := '30000000001';
+  v_receiver  text := '30000000007';
   v_order     uuid;
   v_invoice   uuid;
   v_lines     jsonb;

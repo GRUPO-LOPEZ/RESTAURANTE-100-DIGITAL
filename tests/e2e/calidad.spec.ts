@@ -2,7 +2,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, chooseLocal } from "./helpers";
+import { login, logout, chooseLocal, localSettled } from "./helpers";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -127,6 +127,8 @@ test("el selector de arriba cambia el local de un indicador abierto", async ({ p
   await login(page, "controller@ejemplo.test", { mfa: true });
   await page.goto(`/calidad/recipe_photo?local=${PASTAS_CENTRO}`);
   await expect(page.getByText(/^Demo Pastas Centro: \d+ para revisar/)).toBeVisible();
+  // El ?local= se aplica primero; mientras se aplica, el selector ignora otro cambio (no se elige encima).
+  await localSettled(page);
   try {
     await chooseLocal(page, { label: "Demo Pastas Norte · PASTAS" });
     await expect(page).not.toHaveURL(/local=/, { timeout: 20_000 });

@@ -2,7 +2,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, notice, chooseLocal } from "./helpers";
+import { login, chooseLocal } from "./helpers";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -244,24 +244,31 @@ test("un local sin recetas dice «Sin datos» en sus indicadores", async ({ page
   test.setTimeout(150_000);
   const n = `${testInfo.project.name === "celular" ? "C" : "D"}${Date.now() % 1_000_000}`;
   await login(page, "superadmin@ejemplo.test", { mfa: true });
-  await page.goto("/configuracion/marcas");
-  await page.locator("summary", { hasText: "Nueva marca" }).click();
-  await page.locator("#marca-nombre").fill(`Marca sin recetas ${n}`);
-  await page.locator("#marca-codigo").fill(`i-${n}`);
-  await page.locator("#marca-motivo").fill("Alta de prueba automática");
+  // La marca y el local se cargan en la computadora (en el celular el Panel es de consulta; ADR-0061).
+  const size = page.viewportSize();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/configuracion");
+  await page.getByLabel("Nueva marca").fill(`Marca sin recetas ${n}`);
+  await page.getByLabel("Nombre corto").fill(`Sr${n}`);
+  await page.getByLabel("Motivo").fill("Alta de prueba automática");
   await page.getByRole("button", { name: "Crear marca" }).click();
-  await expect(page.getByRole("heading", { name: `Marca sin recetas ${n}` })).toBeVisible();
-  await page.locator("summary", { hasText: "Nuevo local" }).click();
-  await page.locator("#local-nuevo-nombre").fill(`Local sin recetas ${n}`);
+  await expect(page.getByText(new RegExp(`^[0-9]{2}-SR${n}$`))).toBeVisible();
+  await page.getByRole("link", { name: "Nuevo local" }).click();
+  await page
+    .getByRole("group", { name: /^Marca/ })
+    .getByText(`Marca sin recetas ${n}`, { exact: true })
+    .click();
+  await page.getByLabel("Zona o ubicación").fill("Centro");
   await page.locator("#local-nuevo-motivo").fill("Alta de prueba automática");
-  await page.getByRole("button", { name: "Crear local" }).click();
-  await expect(page.getByRole("heading", { name: `Local sin recetas ${n}` })).toBeVisible();
+  await page.getByRole("button", { name: "Crear y completar la ficha" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: `Sr${n} Centro` })).toBeVisible();
   const id = /\/configuracion\/locales\/([0-9a-f-]{36})/.exec(page.url())?.[1];
   expect(id).toBeTruthy();
+  if (size) await page.setViewportSize(size);
   const back = page.url();
 
   await page.goto(`/?local=${id}`);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(`Local sin recetas ${n}`);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(`Sr${n} Centro`);
   const kpis = page.locator('[data-slot="kpi"]');
   await expect(kpis.first()).toBeVisible();
   // Cada indicador sigue la regla: sin recetas, «Sin datos» y la raya, nunca «Al día» ni un %. En una corrida completa
@@ -275,24 +282,22 @@ test("un local sin recetas dice «Sin datos» en sus indicadores", async ({ page
   await axe(page);
 
   // Cerrar el local y la marca: quedan en la historia, pero ya no operan (otras pruebas cuentan los locales abiertos).
-  await page.goto(back);
-  await page.locator("summary", { hasText: "Editar los datos del local" }).click();
-  await page.locator("#local-editar-estado").selectOption("inactive");
-  await page.locator("#local-editar-motivo").fill("Cierre al terminar la prueba automática");
-  await page.getByRole("button", { name: "Guardar local" }).click();
-  // El estado del local (el aviso de guardado puede irse antes de que se lo mire).
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(back.split("?")[0] ?? back);
+  await page.getByRole("button", { name: "Cerrar el local" }).click();
+  await page.locator("#local-motivo-abrir").fill("Cierre al terminar la prueba automática");
+  await page.getByRole("dialog").getByRole("button", { name: "Cerrar el local" }).click();
   await expect(page.getByText("Cerrado", { exact: true }).first()).toBeVisible();
-  await page.getByRole("link", { name: `Volver a Marca sin recetas ${n}` }).click();
-  await page.locator("summary", { hasText: "Editar la marca" }).click();
-  await page.locator("#marca-editar-estado").selectOption("inactive");
+  await page.goto("/configuracion");
+  await page.getByRole("button", { name: `Editar la marca Marca sin recetas ${n}` }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("group", { name: /^Estado/ })
+    .getByText("Inactiva", { exact: true })
+    .click();
   await page.locator("#marca-editar-motivo").fill("Cierre al terminar la prueba automática");
   await page.getByRole("button", { name: "Guardar marca" }).click();
-  await expect(
-    notice(page)
-      .filter({ hasText: "Marca guardada." })
-      .or(page.getByText("Inactiva", { exact: true }))
-      .first(),
-  ).toBeVisible();
+  await expect(page.getByText("Marca guardada.")).toBeVisible();
 });
 
 test("el Jefe de Cocina ve lo técnico, sin costos", async ({ page }, testInfo) => {

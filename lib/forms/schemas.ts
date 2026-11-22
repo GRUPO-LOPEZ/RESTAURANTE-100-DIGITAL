@@ -628,6 +628,45 @@ export const schemas = {
     reason: reasonField,
   }),
   area: z.object({ name: orgName, reason: reasonField }),
+  // Panel de control en una pantalla (ADR-0061): la marca nueva lleva nombre, nombre corto y, si se quiere corregir,
+  // la palabra del código (el número lo pone la base).
+  brandNew: z.object({
+    name: orgName,
+    short_name: z
+      .string({ message: "Escribí el nombre corto." })
+      .trim()
+      .min(1, "Escribí el nombre corto.")
+      .max(40, "Hasta 40 caracteres."),
+    code_word: z
+      .string()
+      .trim()
+      .regex(/^$|^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]{2,16}$/, "De 2 a 16 letras o números.")
+      .optional(),
+    reason: reasonField,
+  }),
+  brandUpdate: z.object({
+    name: orgName,
+    short_name: z
+      .string({ message: "Escribí el nombre corto." })
+      .trim()
+      .min(1, "Escribí el nombre corto.")
+      .max(40, "Hasta 40 caracteres."),
+    status: z.enum(["active", "inactive"], { message: "Elegí el estado." }).optional(),
+    reason: reasonField,
+  }),
+  // Alta corta de un local: marca, zona y tipo. El nombre y el código los arma la base.
+  placeNew: z.object({
+    brand_id: choice("Elegí la marca."),
+    zone: z
+      .string({ message: "Escribí la zona o ubicación." })
+      .trim()
+      .min(1, "Escribí la zona o ubicación.")
+      .max(80, "Hasta 80 caracteres."),
+    site_type: z.enum(["restaurant", "central_kitchen", "production_unit"], {
+      message: "Elegí el tipo.",
+    }),
+    reason: reasonField,
+  }),
   // Precios (ADR-0029): los mismos controles que hace costing.propose_price.
   priceProposal: z
     .object({
@@ -1071,6 +1110,135 @@ export const supplierSheetSchema = z.object({
     .refine((c) => Object.keys(c).length > 0, { message: "No hay cambios para guardar." }),
 });
 export type SupplierSheetInput = z.infer<typeof supplierSheetSchema>;
+
+// Ficha del local en una pantalla (ADR-0061): lo que cambió, con los mismos formatos que exige la base.
+const isoDateOrEmpty = z
+  .string()
+  .trim()
+  .regex(/^$|^\d{4}-\d{2}-\d{2}$/, "Elegí la fecha.")
+  .refine((v) => {
+    if (v === "") return true;
+    const d = new Date(`${v}T12:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+  }, "Esa fecha no existe.");
+const postalCode = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^$|^[A-Z]?[0-9]{4}([A-Z]{3})?$/, "El código postal tiene 4 cifras o el CPA (B1713ABC).");
+const provinceCode = z.string().regex(/^$|^[0-9]{2}$/, "Elegí la provincia.");
+const coordinate = z
+  .string()
+  .regex(/^$|^-?[0-9]{1,3}(\.[0-9]{1,6})?$/, "La ubicación no es válida.");
+
+export const placeSheetSchema = z.object({
+  placeId: z.string().uuid(),
+  expectedStamp: z.string().min(1, "Recargá la página."),
+  reason: reasonField,
+  changes: z
+    .object({
+      restaurant: z
+        .object({
+          zone: z
+            .string()
+            .trim()
+            .min(1, "La zona no puede quedar vacía.")
+            .max(80, "Hasta 80 caracteres."),
+          opened_on: isoDateOrEmpty,
+          address: shortText(200),
+          locality: shortText(120),
+          province: provinceCode,
+          postal_code: postalCode,
+          phone: phoneField,
+          latitude: coordinate,
+          longitude: coordinate,
+          geo_status: z.enum(["found", "not_found", ""]),
+          geo_label: shortText(300),
+          site_type: z.enum(["restaurant", "central_kitchen", "production_unit"]),
+          state: z.enum(["opening", "open"]),
+        })
+        .partial()
+        .optional(),
+      legal_entity: z
+        .object({
+          legal_entity_id: z.string().uuid("Elegí la razón social."),
+          valid_from: isoDateOrEmpty.optional(),
+        })
+        .optional(),
+      areas: z
+        .array(
+          z.union([
+            z.object({
+              id: z.string().uuid(),
+              name: z.string().trim().min(1, "El área necesita un nombre.").max(120).optional(),
+              remove: z.boolean().optional(),
+            }),
+            z.object({ name: z.string().trim().min(1, "El área necesita un nombre.").max(120) }),
+          ]),
+        )
+        .max(30, "Hasta 30 áreas.")
+        .optional(),
+    })
+    .refine((c) => Object.keys(c).length > 0, "No hay cambios para guardar."),
+});
+
+// Ficha de la razón social (ADR-0061): los datos de la constancia de ARCA y sus actividades.
+export const legalEntitySheetSchema = z.object({
+  legalEntityId: z.string().uuid(),
+  expectedStamp: z.string().min(1, "Recargá la página."),
+  reason: reasonField,
+  changes: z
+    .object({
+      entity: z
+        .object({
+          name: z.string().trim().min(1, "La razón social no puede quedar vacía.").max(200),
+          tax_id: cuitField.refine((v) => v !== "", "El CUIT no puede quedar vacío."),
+          vat_condition: z.enum(["registered", "monotax", "exempt"]),
+          legal_form: z.enum(["srl", "sa", "sas", "person", ""]),
+          activity_start: isoDateOrEmpty,
+          trade_name: shortText(200),
+          fiscal_street: shortText(200),
+          fiscal_locality: shortText(120),
+          fiscal_postal_code: postalCode,
+          fiscal_province: provinceCode,
+          electronic_domicile: emailField,
+          income_tax: z.enum(["registered", "exempt", "not_subject", ""]),
+          gross_income_regime: z.enum(["multilateral", "local", "exempt", ""]),
+          gross_income_number: z
+            .string()
+            .trim()
+            .regex(/^$|^[0-9][0-9./-]{3,19}$/, "Números, puntos, barras o guiones."),
+          gross_income_province: provinceCode,
+          is_employer: z.boolean(),
+          is_withholding_agent: z.boolean(),
+          is_perception_agent: z.boolean(),
+        })
+        .partial()
+        .optional(),
+      activities: z
+        .array(
+          z.object({
+            id: z.string().uuid().optional(),
+            code: z
+              .string()
+              .trim()
+              .regex(/^[0-9]{6}$/, "El código de la actividad tiene 6 cifras.")
+              .optional(),
+            description: z
+              .string()
+              .trim()
+              .min(1, "Escribí la descripción de la actividad.")
+              .max(200)
+              .optional(),
+            is_primary: z.boolean().optional(),
+            remove: z.boolean().optional(),
+          }),
+        )
+        .max(30, "Hasta 30 actividades.")
+        .optional(),
+    })
+    .refine((c) => Object.keys(c).length > 0, "No hay cambios para guardar."),
+});
 
 // Los errores de un esquema, uno por campo (el primero), para mostrarlos debajo de cada campo.
 export function fieldErrors(error: z.ZodError): Record<string, string> {

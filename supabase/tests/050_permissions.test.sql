@@ -77,8 +77,11 @@ select is(
         'imports.cancel_job', 'imports.confirm_ingredients', 'imports.confirm_recipes', 'imports.create_job',
         'imports.file_brand_id', 'imports.file_group_id', 'imports.job_summary', 'imports.stage_rows', 'imports.validate_job',
         'imports.visible_job_ids', 'inventory.movement_list',
-        'org.create_area',
-        'org.create_brand', 'org.create_legal_entity', 'org.create_restaurant', 'org.request_transfer', 'org.set_deleted',
+        'org.add_legal_entity_document', 'org.brand_code', 'org.brand_word', 'org.can_read_document', 'org.can_see_legal_entity', 'org.can_upload_document', 'org.close_restaurant',
+        'org.code_word', 'org.create_area', 'org.create_brand', 'org.create_legal_entity', 'org.create_restaurant', 'org.document_status',
+        'org.legal_entity_sheet_state', 'org.peek_brand_code', 'org.peek_restaurant', 'org.reopen_restaurant',
+        'org.request_transfer', 'org.restaurant_code', 'org.restaurant_name', 'org.restaurant_sheet_state',
+        'org.save_legal_entity_sheet', 'org.save_restaurant_sheet', 'org.set_deleted',
         'org.set_restaurant_legal_entity', 'org.update_area',
         'org.update_brand', 'org.update_group', 'org.update_legal_entity', 'org.update_restaurant',
         'purchasing.accept_price_list', 'purchasing.add_credit_debit_note', 'purchasing.add_invoice_attachment', 'purchasing.add_payment_attachment',
@@ -122,7 +125,8 @@ select is(
         'core.notifications', 'core.permission_modules', 'core.permissions', 'core.role_permissions', 'core.roles', 'core.user_memberships',
         'core.user_role_assignments', 'costing.cost_scenarios', 'costing.price_records', 'costing.price_settings', 'costing.recipe_cost_current', 'costing.recipe_cost_snapshots', 'imports.import_errors', 'imports.import_jobs', 'imports.import_prices',
         'imports.import_staging_rows', 'inventory.stock_movements', 'org.areas', 'org.brands',
-        'org.groups', 'org.legal_entities', 'org.restaurants', 'org.time_zones',
+        'org.groups', 'org.legal_entities', 'org.legal_entity_activities', 'org.legal_entity_documents', 'org.provinces',
+        'org.restaurant_legal_entities', 'org.restaurants', 'org.time_zones',
         'purchasing.article_aliases', 'purchasing.attachments', 'purchasing.credit_debit_notes',
         'purchasing.invoice_checks', 'purchasing.invoice_lines', 'purchasing.invoice_orders',
         'purchasing.invoice_taxes', 'purchasing.invoices', 'purchasing.outbound_messages', 'purchasing.payment_allocations', 'purchasing.payments',
@@ -229,7 +233,7 @@ select is(pg_temp.call(pg_temp.u(404), 'org.create_area(''00000000-0000-4000-800
   'ERROR 42501', '4. el gerente no crea áreas en otro local');
 select is(pg_temp.q(pg_temp.u(404), 'insert into org.areas (group_id, restaurant_id, name) values (''00000000-0000-4000-8000-000000000001'', ''00000000-0000-4000-8000-000000000201'', ''Directo'') returning ''ok'''),
   'ERROR 42501', '4. nadie escribe directo en las tablas, ni en su propio local');
-select is(pg_temp.call(pg_temp.u(404), 'org.update_restaurant(''00000000-0000-4000-8000-000000000201'', ''{"name": "Demo Pastas Centro Renovado"}'', ''Cambio de cartel'')'),
+select is(pg_temp.call(pg_temp.u(404), 'org.update_restaurant(''00000000-0000-4000-8000-000000000201'', ''{"zone": "Centro Renovado"}'', ''Cambio de cartel'')'),
   'ok', 'el gerente sí edita su propio local');
 select is((select name from org.restaurants where id = pg_temp.u(201)), 'Demo Pastas Centro Renovado', 'el cambio del gerente quedó guardado');
 select ok(
@@ -245,9 +249,9 @@ select is(pg_temp.call(pg_temp.u(404), 'org.set_deleted(''restaurants'', ''00000
   'ERROR 42501', 'el gerente no puede borrar su local');
 select is(pg_temp.call(pg_temp.u(409), 'org.update_area(''00000000-0000-4000-8000-000000000311'', ''{"name": "Cocina 2"}'', ''Prueba'')'),
   'ERROR 42501', 'el cocinero no edita la estructura');
-select is(pg_temp.q(pg_temp.u(403), 'select (org.create_restaurant(''00000000-0000-4000-8000-000000000101'', ''Demo Pastas Sur'', ''{"code": "DP-SUR"}'', ''Apertura'') is not null)::text'),
+select is(pg_temp.q(pg_temp.u(403), 'select (org.create_restaurant(''00000000-0000-4000-8000-000000000101'', ''Sur'', ''restaurant'', ''Apertura'') is not null)::text'),
   'true', 'el director de marca crea un local en su marca');
-select is(pg_temp.q(pg_temp.u(403), 'select org.create_restaurant(''00000000-0000-4000-8000-000000000102'', ''Intruso'', null, ''Prueba'')::text'),
+select is(pg_temp.q(pg_temp.u(403), 'select org.create_restaurant(''00000000-0000-4000-8000-000000000102'', ''Intruso'', ''restaurant'', ''Prueba'')::text'),
   'ERROR 42501', 'el director de marca no crea locales en otra marca');
 select is(pg_temp.call(pg_temp.u(404), 'org.update_restaurant(''00000000-0000-4000-8000-000000000201'', ''{"brand_id": "00000000-0000-4000-8000-000000000102"}'', ''Prueba'')'),
   'ERROR 22023', 'mover un local de marca no es una edición: se rechaza el campo');
@@ -311,8 +315,8 @@ select throws_ok(format($$update org.restaurants set tax_id = '20-12345678-9' wh
   '23514', null, 'P10. el CUIT tiene que ser de 11 dígitos sin guiones');
 select throws_ok(format($$update org.restaurants set time_zone = 'Marte/Base' where id = %L$$, pg_temp.u(204)),
   '23503', null, 'P10. la zona horaria tiene que existir (tabla de referencia)');
-select is(pg_temp.q(pg_temp.u(403), 'select code from org.restaurants where name = ''Demo Pastas Sur'''), 'DP-SUR',
-  'P10. el código del local queda en mayúsculas');
+select is(pg_temp.q(pg_temp.u(403), 'select code from org.restaurants where name = ''Demo Pastas Sur'''), 'PASTAS-003',
+  'P10. el código del local lo arma la base, en mayúsculas (ADR-0061)');
 select ok((select time_zone = 'America/Argentina/Buenos_Aires' from org.restaurants where name = 'Demo Pastas Sur'),
   'P10. sin zona horaria, el local queda en Buenos Aires');
 select throws_ok(
@@ -343,7 +347,7 @@ select is(pg_temp.q(pg_temp.u(403), 'select core.has_permission_for_scope(''org.
 -- ---------------------------------------------------------------------------
 -- Escrituras que sí se pueden (con el permiso en el nivel correcto)
 -- ---------------------------------------------------------------------------
-select is(pg_temp.q(pg_temp.u(401), 'select (org.create_brand(''00000000-0000-4000-8000-000000000001'', ''Demo Sushi'', ''SUSHI'', ''Marca nueva'') is not null)::text'),
+select is(pg_temp.q(pg_temp.u(401), 'select (org.create_brand(''00000000-0000-4000-8000-000000000001'', ''Demo Sushi'', ''Sushi'', null, ''Marca nueva'') is not null)::text'),
   'true', 'el superadmin crea una marca');
 select is(pg_temp.call(pg_temp.u(401), 'org.update_brand(''00000000-0000-4000-8000-000000000103'', ''{"status": "inactive"}'', ''Cierre de la marca'')'),
   'ok', 'el superadmin cierra una marca (estado, nivel grupo)');

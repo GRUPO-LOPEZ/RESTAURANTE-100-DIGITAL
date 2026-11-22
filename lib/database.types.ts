@@ -4891,6 +4891,7 @@ export type Database = {
           deleted_by: string | null;
           group_id: string;
           id: string;
+          is_active: boolean;
           name: string;
           restaurant_id: string;
           updated_at: string;
@@ -4904,6 +4905,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id: string;
           id?: string;
+          is_active?: boolean;
           name: string;
           restaurant_id: string;
           updated_at?: string;
@@ -4916,6 +4918,7 @@ export type Database = {
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
+          is_active?: boolean;
           name?: string;
           restaurant_id?: string;
           updated_at?: string;
@@ -4948,6 +4951,8 @@ export type Database = {
           group_id: string;
           id: string;
           name: string;
+          number: number;
+          short_name: string;
           status: Database["org"]["Enums"]["unit_status"];
           updated_at: string;
           updated_by: string | null;
@@ -4962,6 +4967,8 @@ export type Database = {
           group_id: string;
           id?: string;
           name: string;
+          number: number;
+          short_name: string;
           status?: Database["org"]["Enums"]["unit_status"];
           updated_at?: string;
           updated_by?: string | null;
@@ -4975,6 +4982,8 @@ export type Database = {
           group_id?: string;
           id?: string;
           name?: string;
+          number?: number;
+          short_name?: string;
           status?: Database["org"]["Enums"]["unit_status"];
           updated_at?: string;
           updated_by?: string | null;
@@ -5034,17 +5043,237 @@ export type Database = {
       };
       legal_entities: {
         Row: {
+          activity_start: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          electronic_domicile: string | null;
+          fiscal_locality: string | null;
+          fiscal_postal_code: string | null;
+          fiscal_province: string | null;
+          fiscal_street: string | null;
+          gross_income_number: string | null;
+          gross_income_province: string | null;
+          gross_income_regime: Database["org"]["Enums"]["gross_income_regime"] | null;
+          group_id: string;
+          id: string;
+          income_tax: Database["org"]["Enums"]["income_tax_status"] | null;
+          is_employer: boolean;
+          is_perception_agent: boolean;
+          is_withholding_agent: boolean;
+          legal_form: Database["org"]["Enums"]["legal_form"] | null;
+          name: string;
+          tax_id: string;
+          trade_name: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          vat_condition: Database["org"]["Enums"]["vat_condition"];
+          legal_entity_missing: string[] | null;
+        };
+        ComputedFields: "legal_entity_missing";
+        Insert: {
+          activity_start?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          electronic_domicile?: string | null;
+          fiscal_locality?: string | null;
+          fiscal_postal_code?: string | null;
+          fiscal_province?: string | null;
+          fiscal_street?: string | null;
+          gross_income_number?: string | null;
+          gross_income_province?: string | null;
+          gross_income_regime?: Database["org"]["Enums"]["gross_income_regime"] | null;
+          group_id: string;
+          id?: string;
+          income_tax?: Database["org"]["Enums"]["income_tax_status"] | null;
+          is_employer?: boolean;
+          is_perception_agent?: boolean;
+          is_withholding_agent?: boolean;
+          legal_form?: Database["org"]["Enums"]["legal_form"] | null;
+          name: string;
+          tax_id: string;
+          trade_name?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_condition: Database["org"]["Enums"]["vat_condition"];
+        };
+        Update: {
+          activity_start?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          electronic_domicile?: string | null;
+          fiscal_locality?: string | null;
+          fiscal_postal_code?: string | null;
+          fiscal_province?: string | null;
+          fiscal_street?: string | null;
+          gross_income_number?: string | null;
+          gross_income_province?: string | null;
+          gross_income_regime?: Database["org"]["Enums"]["gross_income_regime"] | null;
+          group_id?: string;
+          id?: string;
+          income_tax?: Database["org"]["Enums"]["income_tax_status"] | null;
+          is_employer?: boolean;
+          is_perception_agent?: boolean;
+          is_withholding_agent?: boolean;
+          legal_form?: Database["org"]["Enums"]["legal_form"] | null;
+          name?: string;
+          tax_id?: string;
+          trade_name?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          vat_condition?: Database["org"]["Enums"]["vat_condition"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "legal_entities_fiscal_province_fkey";
+            columns: ["fiscal_province"];
+            isOneToOne: false;
+            referencedRelation: "provinces";
+            referencedColumns: ["code"];
+          },
+          {
+            foreignKeyName: "legal_entities_gross_income_province_fkey";
+            columns: ["gross_income_province"];
+            isOneToOne: false;
+            referencedRelation: "provinces";
+            referencedColumns: ["code"];
+          },
+          {
+            foreignKeyName: "legal_entities_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      legal_entity_activities: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          description: string;
+          group_id: string;
+          id: string;
+          is_primary: boolean;
+          legal_entity_id: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description: string;
+          group_id: string;
+          id?: string;
+          is_primary?: boolean;
+          legal_entity_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          description?: string;
+          group_id?: string;
+          id?: string;
+          is_primary?: boolean;
+          legal_entity_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "legal_entity_activities_entity_fkey";
+            columns: ["legal_entity_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "legal_entities";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      legal_entity_documents: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          group_id: string;
+          id: string;
+          issued_on: string;
+          legal_entity_id: string;
+          storage_path: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          group_id: string;
+          id?: string;
+          issued_on: string;
+          legal_entity_id: string;
+          storage_path: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          group_id?: string;
+          id?: string;
+          issued_on?: string;
+          legal_entity_id?: string;
+          storage_path?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "legal_entity_documents_entity_fkey";
+            columns: ["legal_entity_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "legal_entities";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      provinces: {
+        Row: {
+          code: string;
+          name: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          name: string;
+        };
+        Update: {
+          code?: string;
+          name?: string;
+        };
+        Relationships: [];
+      };
+      restaurant_legal_entities: {
+        Row: {
           created_at: string;
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
           group_id: string;
           id: string;
-          name: string;
-          tax_id: string;
+          legal_entity_id: string;
+          restaurant_id: string;
           updated_at: string;
           updated_by: string | null;
-          vat_condition: Database["org"]["Enums"]["vat_condition"];
+          valid_from: string;
         };
         ComputedFields: never;
         Insert: {
@@ -5054,11 +5283,11 @@ export type Database = {
           deleted_by?: string | null;
           group_id: string;
           id?: string;
-          name: string;
-          tax_id: string;
+          legal_entity_id: string;
+          restaurant_id: string;
           updated_at?: string;
           updated_by?: string | null;
-          vat_condition: Database["org"]["Enums"]["vat_condition"];
+          valid_from: string;
         };
         Update: {
           created_at?: string;
@@ -5067,19 +5296,26 @@ export type Database = {
           deleted_by?: string | null;
           group_id?: string;
           id?: string;
-          name?: string;
-          tax_id?: string;
+          legal_entity_id?: string;
+          restaurant_id?: string;
           updated_at?: string;
           updated_by?: string | null;
-          vat_condition?: Database["org"]["Enums"]["vat_condition"];
+          valid_from?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "legal_entities_group_id_fkey";
-            columns: ["group_id"];
+            foreignKeyName: "restaurant_legal_entities_entity_fkey";
+            columns: ["legal_entity_id", "group_id"];
             isOneToOne: false;
-            referencedRelation: "groups";
-            referencedColumns: ["id"];
+            referencedRelation: "legal_entities";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "restaurant_legal_entities_restaurant_fkey";
+            columns: ["restaurant_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "restaurants";
+            referencedColumns: ["id", "group_id"];
           },
         ];
       };
@@ -5092,23 +5328,33 @@ export type Database = {
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          geo_label: string | null;
+          geo_status: Database["org"]["Enums"]["geo_status"] | null;
           group_id: string;
           id: string;
+          latitude: number | null;
           legal_entity_id: string | null;
           legal_name: string | null;
           locality: string | null;
+          longitude: number | null;
           name: string;
+          number: number;
           opened_on: string | null;
+          opening: boolean;
           phone: string | null;
+          postal_code: string | null;
           predecessor_id: string | null;
+          province: string | null;
           site_type: Database["org"]["Enums"]["site_type"];
           status: Database["org"]["Enums"]["unit_status"];
           tax_id: string | null;
           time_zone: string;
           updated_at: string;
           updated_by: string | null;
+          zone: string | null;
+          restaurant_missing: string[] | null;
         };
-        ComputedFields: never;
+        ComputedFields: "restaurant_missing";
         Insert: {
           address?: string | null;
           brand_id: string;
@@ -5117,21 +5363,30 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          geo_label?: string | null;
+          geo_status?: Database["org"]["Enums"]["geo_status"] | null;
           group_id: string;
           id?: string;
+          latitude?: number | null;
           legal_entity_id?: string | null;
           legal_name?: string | null;
           locality?: string | null;
+          longitude?: number | null;
           name: string;
+          number: number;
           opened_on?: string | null;
+          opening?: boolean;
           phone?: string | null;
+          postal_code?: string | null;
           predecessor_id?: string | null;
+          province?: string | null;
           site_type?: Database["org"]["Enums"]["site_type"];
           status?: Database["org"]["Enums"]["unit_status"];
           tax_id?: string | null;
           time_zone?: string;
           updated_at?: string;
           updated_by?: string | null;
+          zone?: string | null;
         };
         Update: {
           address?: string | null;
@@ -5141,21 +5396,30 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          geo_label?: string | null;
+          geo_status?: Database["org"]["Enums"]["geo_status"] | null;
           group_id?: string;
           id?: string;
+          latitude?: number | null;
           legal_entity_id?: string | null;
           legal_name?: string | null;
           locality?: string | null;
+          longitude?: number | null;
           name?: string;
+          number?: number;
           opened_on?: string | null;
+          opening?: boolean;
           phone?: string | null;
+          postal_code?: string | null;
           predecessor_id?: string | null;
+          province?: string | null;
           site_type?: Database["org"]["Enums"]["site_type"];
           status?: Database["org"]["Enums"]["unit_status"];
           tax_id?: string | null;
           time_zone?: string;
           updated_at?: string;
           updated_by?: string | null;
+          zone?: string | null;
         };
         Relationships: [
           {
@@ -5187,6 +5451,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "restaurants_province_fkey";
+            columns: ["province"];
+            isOneToOne: false;
+            referencedRelation: "provinces";
+            referencedColumns: ["code"];
+          },
+          {
             foreignKeyName: "restaurants_time_zone_fkey";
             columns: ["time_zone"];
             isOneToOne: false;
@@ -5213,14 +5484,31 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      add_legal_entity_document: {
+        Args: { p_issued_on: string; p_legal_entity_id: string; p_storage_path: string };
+        Returns: string;
+      };
       apply_transfer: { Args: { p_request_id: string }; Returns: undefined };
+      brand_code: { Args: { p_number: number; p_word: string }; Returns: string };
+      brand_word: { Args: { p_brand_code: string }; Returns: string };
+      can_read_document: { Args: { p_name: string; p_owner: string }; Returns: boolean };
+      can_see_legal_entity: { Args: { p_legal_entity_id: string }; Returns: boolean };
+      can_upload_document: { Args: { p_name: string }; Returns: boolean };
       check_keys: { Args: { p_allowed: string[]; p_changes: Json }; Returns: undefined };
+      close_restaurant: { Args: { p_id: string; p_reason: string }; Returns: undefined };
+      code_word: { Args: { p_text: string }; Returns: string };
       create_area: {
         Args: { p_name: string; p_reason: string; p_restaurant_id: string };
         Returns: string;
       };
       create_brand: {
-        Args: { p_code: string; p_group_id: string; p_name: string; p_reason: string };
+        Args: {
+          p_code_word: string;
+          p_group_id: string;
+          p_name: string;
+          p_reason: string;
+          p_short_name: string;
+        };
         Returns: string;
       };
       create_legal_entity: {
@@ -5234,9 +5522,36 @@ export type Database = {
         Returns: string;
       };
       create_restaurant: {
-        Args: { p_brand_id: string; p_details: Json; p_name: string; p_reason: string };
+        Args: {
+          p_brand_id: string;
+          p_reason: string;
+          p_site_type: Database["org"]["Enums"]["site_type"];
+          p_zone: string;
+        };
         Returns: string;
       };
+      document_parts: {
+        Args: { p_name: string };
+        Returns: {
+          group_id: string;
+          legal_entity_id: string;
+        }[];
+      };
+      document_status: { Args: { p_issued_on: string }; Returns: string };
+      legal_entity_missing: {
+        Args: {
+          p_e: Omit<
+            Database["org"]["Tables"]["legal_entities"]["Row"],
+            Database["org"]["Tables"]["legal_entities"]["ComputedFields"]
+          >;
+        };
+        Returns: string[];
+      };
+      legal_entity_sheet_stamp_internal: { Args: { p_id: string }; Returns: string };
+      legal_entity_sheet_state: { Args: { p_id: string }; Returns: Json };
+      peek_brand_code: { Args: { p_group_id: string; p_word: string }; Returns: string };
+      peek_restaurant: { Args: { p_brand_id: string; p_zone: string }; Returns: Json };
+      reopen_restaurant: { Args: { p_id: string; p_reason: string }; Returns: undefined };
       request_transfer: {
         Args: {
           p_new_name: string;
@@ -5247,6 +5562,27 @@ export type Database = {
         Returns: Json;
       };
       require: { Args: { p_action: string; p_allowed: boolean }; Returns: undefined };
+      restaurant_code: { Args: { p_brand_code: string; p_number: number }; Returns: string };
+      restaurant_missing: {
+        Args: {
+          p_r: Omit<
+            Database["org"]["Tables"]["restaurants"]["Row"],
+            Database["org"]["Tables"]["restaurants"]["ComputedFields"]
+          >;
+        };
+        Returns: string[];
+      };
+      restaurant_name: { Args: { p_short_name: string; p_zone: string }; Returns: string };
+      restaurant_sheet_stamp_internal: { Args: { p_id: string }; Returns: string };
+      restaurant_sheet_state: { Args: { p_id: string }; Returns: Json };
+      save_legal_entity_sheet: {
+        Args: { p_changes: Json; p_expected_stamp: string; p_id: string; p_reason: string };
+        Returns: Json;
+      };
+      save_restaurant_sheet: {
+        Args: { p_changes: Json; p_expected_stamp: string; p_id: string; p_reason: string };
+        Returns: Json;
+      };
       set_deleted: {
         Args: { p_deleted: boolean; p_id: string; p_reason: string; p_table: string };
         Returns: undefined;
@@ -5255,6 +5591,7 @@ export type Database = {
         Args: { p_legal_entity_id: string; p_reason: string; p_restaurant_id: string };
         Returns: undefined;
       };
+      text_or: { Args: { p_key: string; p_obj: Json; p_old: string }; Returns: string };
       update_area: {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
@@ -5277,6 +5614,10 @@ export type Database = {
       };
     };
     Enums: {
+      geo_status: "found" | "not_found";
+      gross_income_regime: "multilateral" | "local" | "exempt";
+      income_tax_status: "registered" | "exempt" | "not_subject";
+      legal_form: "srl" | "sa" | "sas" | "person";
       site_type: "restaurant" | "central_kitchen" | "production_unit";
       unit_status: "active" | "inactive";
       vat_condition: "registered" | "monotax" | "exempt";
@@ -7261,6 +7602,7 @@ export type Database = {
         }[];
       };
       money_text: { Args: { p_value: number }; Returns: string };
+      movement_rank: { Args: { p_kind: string }; Returns: number };
       net_list_price: {
         Args: {
           p_bonus_per_unit_amount: number;
@@ -9345,6 +9687,10 @@ export const Constants = {
   },
   org: {
     Enums: {
+      geo_status: ["found", "not_found"],
+      gross_income_regime: ["multilateral", "local", "exempt"],
+      income_tax_status: ["registered", "exempt", "not_subject"],
+      legal_form: ["srl", "sa", "sas", "person"],
       site_type: ["restaurant", "central_kitchen", "production_unit"],
       unit_status: ["active", "inactive"],
       vat_condition: ["registered", "monotax", "exempt"],
