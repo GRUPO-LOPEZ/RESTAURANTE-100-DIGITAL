@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Fichas técnicas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.seg{display:flex;gap:4px}
+.seg button{height:40px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:600}
+.btn{height:40px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+h2{margin:0 0 6px;font-size:16px;font-weight:600}
+.li{display:flex;justify-content:space-between;gap:10px;font-size:15px;min-height:34px;align-items:center;border-bottom:1px solid #E5E7EB;font-variant-numeric:tabular-nums}
+button:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden; display: flex; flex-direction: column; padding: 20px 32px; box-sizing: border-box; gap: 14px;">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="Main.dc.html" style="font-size: 14px; text-decoration: none;">← Receta</a>
+      <div class="seg" role="group" aria-label="Fichas técnicas">
+        <button class="on" aria-pressed="true">1 · Completa</button>
+        <button aria-pressed="false">2 · Servicio</button>
+        <button aria-pressed="false">3 · Foto</button>
+        <button aria-pressed="false">4 · Procedimiento</button>
+      </div>
+    </div>
+    <button class="btn">Imprimir esta ficha</button>
+  </div>
+
+  <div class="card" style="flex: 1 1 0; min-height: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1F2937; padding-bottom: 10px;">
+      <div>
+        <div class="lbl">Ficha técnica 1 · Completa, para capacitar</div>
+        <div style="font-size: 28px; font-weight: 600;">Tagliatelle carbonara</div>
+      </div>
+      <div style="text-align: right; font-size: 14px;">
+        <div style="font-weight: 600;">Versión 2 · REC-PAS-012</div>
+        <div class="lbl">publicada el 20/11/26 · aprobó Carla Gómez</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: stretch;">
+      <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+        <div class="li"><span class="lbl">Rinde</span><span>4 porciones de 320 g</span></div>
+        <div class="li"><span class="lbl">Sector · Partida</span><span>Cocina caliente · Pastas</span></div>
+        <div class="li"><span class="lbl">Tiempo</span><span>18 minutos</span></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;"><span class="lbl" style="margin-right: 4px;">Alérgenos</span><span class="chip" style="background: #FEF3C7; color: #92400E;">Contiene gluten</span><span class="chip" style="background: #FEF3C7; color: #92400E;">Huevo</span><span class="chip" style="background: #FEF3C7; color: #92400E;">Lácteos</span></div>
+      </div>
+      <div role="img" aria-label="Foto del plato" style="height: 200px; border-radius: 10px; background: #F1F2F4; display: flex; align-items: center; justify-content: center; color: #4B5563; font-size: 14px;">Foto del plato</div>
+    </div>
+
+    <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 24px;">
+      <div>
+        <h2>Ingredientes</h2>
+        <div class="li"><span>Masa al huevo</span><span><strong>480 g</strong> · 4 nidos</span></div>
+        <div class="li"><span>Panceta ahumada</span><span><strong>160 g</strong></span></div>
+        <div class="li"><span>Yema de huevo</span><span><strong>6</strong> yemas</span></div>
+        <div class="li"><span>Queso parmesano rallado</span><span><strong>80 g</strong> · 1 taza</span></div>
+        <div class="li"><span>Aceite de oliva</span><span><strong>30 ml</strong> · 2 cucharadas</span></div>
+        <div class="li"><span>Pimienta negra</span><span><strong>2 g</strong> · 1 cdta</span></div>
+      </div>
+      <div>
+        <h2>Paso a paso</h2>
+        <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.45;">
+          <li>Dorar la panceta sin aceite hasta que suelte la grasa. <span class="lbl">Anafe 4 · 6 min</span></li>
+          <li>Batir las yemas con el queso y la pimienta. <span class="lbl">Bowl</span></li>
+          <li>Hervir la pasta 3 minutos en agua con sal. <span class="lbl">Pastera · 3 min</span></li>
+          <li>Pasar la pasta a la sartén con la panceta, fuera del fuego.</li>
+          <li>Ligar con las yemas y un poco del agua de cocción, sin que cuaje.</li>
+          <li>Emplatar en plato hondo y terminar con queso y pimienta.</li>
+        </ol>
+        <div style="margin-top: 12px; padding: 10px 12px; background: #FEF3C7; color: #92400E; border-radius: 8px; font-size: 14px;"><strong style="font-weight: 600;">Punto crítico:</strong> si la sartén está muy caliente, la yema se corta.</div>
+      </div>
+    </div>
+  </div>
+  <div class="lbl">Ficha 2: ingredientes y medidas prácticas para el servicio · Ficha 3: la foto grande · Ficha 4: solo el procedimiento. En el celular se ven en una columna, con letra grande.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

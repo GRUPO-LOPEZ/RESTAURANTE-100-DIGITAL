@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha de receta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;min-height:34px}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btns{height:32px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.lnk{background:none;border:0;padding:0;font:inherit;font-size:13px;color:#3D5E9F;cursor:pointer}
+h2{margin:0;font-size:16px;font-weight:600}
+.g{width:100%;border-collapse:separate;border-spacing:0}
+.g th{font-size:12px;font-weight:500;color:#4B5563;text-align:left;padding:6px 8px;background:#F7F8FA;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.g td{padding:3px 6px;border-bottom:1px solid #E5E7EB;font-size:14px;height:34px;box-sizing:border-box;font-variant-numeric:tabular-nums}
+.c{height:28px;border:1px solid #E5E7EB;border-radius:6px;padding:0 8px;font:inherit;font-size:14px;box-sizing:border-box;background:#FFFFFF;color:#1F2937;width:100%}
+.r{text-align:right}
+.sel{height:32px;border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;font:inherit;font-size:14px;background:#FFFFFF;color:#1F2937}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#" class="on">Recetas</a><a href="#">Materias primas</a><a href="#">Rubros</a><a href="#">Proveedores</a>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a><a href="#">Aprobaciones</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Recetas › <span style="color: #1F2937; font-weight: 500;">Tagliatelle carbonara</span></span>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 14px 32px 0; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="#" style="font-size: 14px; text-decoration: none;">← Recetas</a>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Tagliatelle carbonara</h1>
+          <span style="font-size: 13px; color: #6B7280;">REC-PAS-012 · Plato · Pastas</span>
+          <span class="chip" style="background: #FFEDD5; color: #9A3412;">Versión 3 · Borrador</span>
+          <span class="lbl">vigente: versión 2 del 20/11/26</span>
+        </div>
+        <div style="display: flex; gap: 8px;"><a href="FichaTecnica.dc.html" class="btn" style="display: flex; align-items: center; text-decoration: none;">Fichas técnicas</a><a href="Escalar.dc.html" class="btn" style="display: flex; align-items: center; text-decoration: none;">Hacer varias</a></div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+        <div class="card" style="padding: 10px 14px;"><span class="lbl" style="font-weight: 500;">Costo por porción</span><div style="font-size: 24px; font-weight: 600;">$ 3.240</div><span class="chip" style="background: #DCFCE7; color: #166534;">Completo</span></div>
+        <div class="card" style="padding: 10px 14px;"><span class="lbl" style="font-weight: 500;">Rinde</span><div style="font-size: 24px; font-weight: 600;">4 <span style="font-size: 13px; font-weight: 400; color: #6B7280;">porciones de 320 g</span></div><span class="chip" style="background: #DBEAFE; color: #1E40AF;">1,28 kg en total</span></div>
+        <div class="card" style="padding: 10px 14px;"><span class="lbl" style="font-weight: 500;">Alérgenos</span><div style="font-size: 24px; font-weight: 600;">3</div><span class="chip" style="background: #FEF3C7; color: #92400E;">Gluten, huevo, lácteos</span></div>
+        <div class="card" style="padding: 10px 14px;"><span class="lbl" style="font-weight: 500;">Sector y partida</span><div style="font-size: 18px; font-weight: 600; line-height: 1.6;">Cocina caliente · Pastas</div><span class="chip" style="background: #DCFCE7; color: #166534;">De la lista del grupo</span></div>
+      </div>
+
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 12px;">
+        <section class="card" style="min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;"><h2>Ingredientes</h2><span class="lbl">8 renglones; al llenar el último aparece otro</span></div>
+          <table class="g">
+            <thead><tr><th style="width: 34%;">Ingrediente o preparación</th><th class="r" style="width: 76px;">Cant.</th><th style="width: 70px;">Unidad</th><th colspan="2">Medida práctica (para el cocinero)</th><th class="r" style="width: 90px;">Costo</th></tr></thead>
+            <tbody>
+              <tr><td>Masa al huevo <span class="lbl">(prep.)</span></td><td><input class="c r" value="480"></td><td><select class="c"><option>g</option></select></td><td style="width: 70px;"><input class="c r" value="4"></td><td><select class="c"><option>nidos de 120 g</option></select></td><td class="r">$ 1.180</td></tr>
+              <tr><td>Panceta ahumada</td><td><input class="c r" value="160"></td><td><select class="c"><option>g</option></select></td><td><input class="c r" value="—" aria-label="Sin medida práctica"></td><td><select class="c"><option>Sin medida práctica</option></select></td><td class="r">$ 2.620</td></tr>
+              <tr><td>Yema de huevo</td><td><input class="c r" value="6"></td><td><select class="c"><option>unidad</option></select></td><td><input class="c r" value="6"></td><td><select class="c"><option>yemas</option></select></td><td class="r">$ 1.440</td></tr>
+              <tr><td>Queso parmesano rallado</td><td><input class="c r" value="80"></td><td><select class="c"><option>g</option></select></td><td><input class="c r" value="1"></td><td><select class="c"><option>taza (80 g)</option></select></td><td class="r">$ 3.200</td></tr>
+              <tr><td>Aceite de oliva</td><td><input class="c r" value="30"></td><td><select class="c"><option>ml</option></select></td><td><input class="c r" value="2"></td><td><select class="c"><option>cucharadas</option></select></td><td class="r">$ 420</td></tr>
+              <tr><td><input class="c" placeholder="Buscá un ingrediente"></td><td><input class="c r"></td><td><select class="c"><option></option></select></td><td><input class="c r"></td><td><select class="c"><option></option></select></td><td></td></tr>
+              <tr><td><input class="c" placeholder=""></td><td><input class="c r"></td><td><select class="c"><option></option></select></td><td><input class="c r"></td><td><select class="c"><option></option></select></td><td></td></tr>
+              <tr><td><input class="c" placeholder=""></td><td><input class="c r"></td><td><select class="c"><option></option></select></td><td><input class="c r"></td><td><select class="c"><option></option></select></td><td></td></tr>
+            </tbody>
+          </table>
+          <div style="padding: 10px 14px; display: flex; gap: 8px; align-items: center;">
+            <button class="btns">+ Agregar ingrediente</button>
+            <button class="btns" style="border-color: #4A6FB8; color: #2F4F8F;">+ Nueva materia prima</button>
+            <span class="lbl">crea la materia prima en un modal corto, sin salir de la receta</span>
+          </div>
+        </section>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+          <section class="card" style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px;">
+            <h2 style="margin-bottom: 4px;">Datos generales</h2>
+            <div class="row"><span class="lbl">Sector</span><span style="display: flex; gap: 6px; align-items: center;"><select class="sel" style="width: 170px;"><option>Cocina caliente</option></select><button class="lnk">+ Agregar</button></span></div>
+            <div class="row"><span class="lbl">Partida</span><span style="display: flex; gap: 6px; align-items: center;"><select class="sel" style="width: 170px;"><option>Pastas</option></select><button class="lnk">+ Agregar</button></span></div>
+            <div class="row"><span class="lbl">Categoría</span><select class="sel" style="width: 220px;"><option>Platos · Pastas</option></select></div>
+            <div class="row"><span class="lbl">Porciones</span><span><input class="c r" value="4" style="width: 60px;"> de <input class="c r" value="320" style="width: 70px;"> g</span></div>
+          </section>
+          <section class="card" style="flex: 1 1 0; min-height: 0; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2>Procedimiento</h2><button class="lnk">Ver los 6 pasos</button></div>
+            <div style="display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid #E5E7EB; font-size: 14px;"><strong style="font-weight: 600;">1</strong><span style="flex: 1;">Dorar la panceta sin aceite hasta que suelte la grasa.</span><select class="sel" aria-label="Equipo del paso 1" style="height: 28px; font-size: 13px;"><option>Anafe 4</option></select></div>
+            <div style="display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid #E5E7EB; font-size: 14px;"><strong style="font-weight: 600;">2</strong><span style="flex: 1;">Hervir la pasta 3 minutos en agua con sal.</span><select class="sel" aria-label="Equipo del paso 2" style="height: 28px; font-size: 13px;"><option>Pastera 6 canastos</option></select></div>
+            <div style="display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; font-size: 14px;"><strong style="font-weight: 600;">3</strong><span style="flex: 1;">Ligar fuera del fuego con las yemas y el queso.</span><select class="sel" aria-label="Equipo del paso 3" style="height: 28px; font-size: 13px;"><option>Sin equipo</option></select></div>
+            <span class="lbl">El equipo sale de la lista de Configuración del catálogo, con su capacidad.</span>
+          </section>
+        </div>
+      </div>
+    </div>
+    <div style="flex: 0 0 60px; margin-top: 12px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0 32px; box-sizing: border-box;">
+      <span class="chip" style="background: #FFEDD5; color: #9A3412; font-size: 13px;">2 cambios sin guardar</span>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">Motivo <input class="c" placeholder="Por qué cambia (obligatorio)" style="width: 280px; height: 36px;"></label>
+      <button class="btn">Descartar</button>
+      <button class="btnp">Guardar cambios</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

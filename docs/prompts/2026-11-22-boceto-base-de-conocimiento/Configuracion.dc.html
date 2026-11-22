@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Configuración del catálogo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.rb{display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border:0;border-radius:8px;background:none;font:inherit;font-size:14px;color:#1F2937;cursor:pointer;width:100%;text-align:left}
+.rb.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.rb .n{margin-left:auto;font-size:13px;color:#4B5563}
+.rb .new{font-size:11px;font-weight:600;padding:1px 6px;border-radius:5px;background:#DBEAFE;color:#1E40AF}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.t{width:100%;border-collapse:separate;border-spacing:0}
+.t th{font-size:13px;font-weight:500;color:#4B5563;text-align:left;padding:8px 12px;background:#F7F8FA;border-bottom:1px solid #E5E7EB}
+.t td{padding:0 12px;height:44px;border-bottom:1px solid #E5E7EB;font-size:14px;font-variant-numeric:tabular-nums}
+.c{height:32px;border:1px solid #E5E7EB;border-radius:6px;padding:0 8px;font:inherit;font-size:14px;box-sizing:border-box;background:#FFFFFF;color:#1F2937}
+.tg{width:40px;height:24px;border-radius:12px;border:1px solid #166534;background:#DCFCE7;position:relative;cursor:pointer}
+.tg span{position:absolute;left:19px;top:3px;width:16px;height:16px;border-radius:8px;background:#166534}
+.tg.off{border-color:#6B7280;background:#F1F2F4}.tg.off span{left:3px;background:#6B7280}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a><a href="#" class="on">Panel de control</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Rubros</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Panel de control › <span style="color: #1F2937; font-weight: 500;">Configuración del catálogo</span></span>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 0; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; align-items: baseline; gap: 12px;"><h1 style="margin: 0; font-size: 20px; font-weight: 600;">Configuración del catálogo</h1><span class="lbl">las listas que usan las recetas y las materias primas</span></div>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 14px;">
+        <section class="card" aria-label="Listas" style="padding: 8px; display: flex; flex-direction: column; gap: 2px;">
+          <span class="lbl" style="padding: 4px 10px 6px; font-weight: 500;">Listas</span>
+          <button class="rb">Categorías de materias primas<span class="n">14</span></button>
+          <button class="rb">Categorías de recetas<span class="n">11</span></button>
+          <button class="rb">Sectores <span class="new">nueva</span><span class="n">6</span></button>
+          <button class="rb">Partidas <span class="new">nueva</span><span class="n">9</span></button>
+          <button class="rb">Equipos <span class="new">nueva</span><span class="n">12</span></button>
+          <button class="rb on" aria-pressed="true">Medidas prácticas <span class="new">nueva</span><span class="n">8</span></button>
+          <button class="rb">Unidades de medida<span class="n">17</span></button>
+          <button class="rb">Procesos de rendimiento<span class="n">7</span></button>
+          <span style="flex: 1;"></span>
+          <span class="lbl" style="padding: 8px 10px;">Todas las listas se editan igual: en la tabla, con un motivo al guardar. Dar de baja no borra.</span>
+        </section>
+        <section class="card" style="min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div><h2 style="margin: 0; font-size: 16px; font-weight: 600;">Medidas prácticas</h2><span class="lbl">Lo que usa el cocinero en vez de pesar: cucharón, taza, cuchara. Con lo que contiene, el sistema calcula cuántas van.</span></div>
+            <button class="btn">+ Agregar</button>
+          </div>
+          <table class="t">
+            <thead><tr><th>Nombre</th><th>Contiene</th><th>Se usa con</th><th>Recetas que la usan</th><th>Activa</th></tr></thead>
+            <tbody>
+              <tr><td><input class="c" value="Cucharón de servicio" style="width: 220px;"></td><td><input class="c" value="120" style="width: 70px; text-align: right;"> <select class="c"><option>ml</option></select></td><td>Salsas, sopas, cremas</td><td>23</td><td><button class="tg" aria-pressed="true" aria-label="Activa"><span></span></button></td></tr>
+              <tr><td><input class="c" value="Taza" style="width: 220px;"></td><td><input class="c" value="240" style="width: 70px; text-align: right;"> <select class="c"><option>ml</option></select></td><td>Líquidos, harinas, quesos</td><td>31</td><td><button class="tg" aria-pressed="true" aria-label="Activa"><span></span></button></td></tr>
+              <tr><td><input class="c" value="Cucharada" style="width: 220px;"></td><td><input class="c" value="15" style="width: 70px; text-align: right;"> <select class="c"><option>ml</option></select></td><td>Aceites, especias</td><td>48</td><td><button class="tg" aria-pressed="true" aria-label="Activa"><span></span></button></td></tr>
+              <tr><td><input class="c" value="Cucharadita" style="width: 220px;"></td><td><input class="c" value="5" style="width: 70px; text-align: right;"> <select class="c"><option>ml</option></select></td><td>Sal, especias</td><td>52</td><td><button class="tg" aria-pressed="true" aria-label="Activa"><span></span></button></td></tr>
+              <tr><td><input class="c" value="Nido de pasta" style="width: 220px;"></td><td><input class="c" value="120" style="width: 70px; text-align: right;"> <select class="c"><option>g</option></select></td><td>Pastas frescas</td><td>9</td><td><button class="tg" aria-pressed="true" aria-label="Activa"><span></span></button></td></tr>
+              <tr><td><input class="c" value="Puñado" style="width: 220px;"></td><td><input class="c" value="30" style="width: 70px; text-align: right;"> <select class="c"><option>g</option></select></td><td>Hierbas, verdes</td><td>6</td><td><button class="tg" aria-pressed="true" aria-label="Activa"><span></span></button></td></tr>
+              <tr><td><input class="c" value="Pinza de servicio" style="width: 220px;"></td><td><input class="c" value="60" style="width: 70px; text-align: right;"> <select class="c"><option>g</option></select></td><td>Guarniciones</td><td>4</td><td><button class="tg" aria-pressed="true" aria-label="Activa"><span></span></button></td></tr>
+              <tr style="background: #F7F8FA;"><td><input class="c" value="Vaso medidor 1 l" style="width: 220px;"></td><td><input class="c" value="1000" style="width: 70px; text-align: right;"> <select class="c"><option>ml</option></select></td><td>Caldos</td><td>0</td><td><button class="tg off" aria-pressed="false" aria-label="Activa"><span></span></button></td></tr>
+            </tbody>
+          </table>
+          <div style="padding: 12px 16px;" class="lbl">Sectores y partidas: listas genéricas del grupo (Cocina caliente, Cocina fría, Pastelería · Pastas, Salsas, Parrilla). Equipos: nombre y capacidad (Pastera 6 canastos, Horno combi 10 bandejas GN 1/1).</div>
+        </section>
+      </div>
+    </div>
+    <div style="flex: 0 0 60px; margin-top: 14px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0 32px; box-sizing: border-box;">
+      <span class="chip" style="background: #FFEDD5; color: #9A3412; font-size: 13px;">1 cambio sin guardar</span>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">Motivo <input class="c" placeholder="Por qué cambia (obligatorio)" style="width: 280px; height: 36px;"></label>
+      <button class="btn">Descartar</button>
+      <button class="btnp">Guardar cambios</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

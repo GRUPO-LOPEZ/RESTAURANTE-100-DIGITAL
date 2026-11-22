@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Rubros</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.seg{display:flex;gap:4px}
+.seg button{flex:1;height:34px;padding:0 6px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.rb{display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border:0;border-radius:8px;background:none;font:inherit;font-size:14px;color:#1F2937;cursor:pointer;width:100%;text-align:left}
+.rb.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.rb .n{margin-left:auto;font-size:13px;color:#4B5563}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;min-height:38px;border-bottom:1px solid #E5E7EB}
+.tg{width:44px;height:26px;border-radius:13px;border:1px solid #166534;background:#DCFCE7;position:relative;cursor:pointer}
+.tg span{position:absolute;left:21px;top:3px;width:18px;height:18px;border-radius:9px;background:#166534}
+h2{margin:0;font-size:16px;font-weight:600}
+textarea{border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;font:inherit;font-size:14px;box-sizing:border-box;width:100%;resize:none;color:#1F2937}
+button:focus-visible,a:focus-visible,textarea:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#" class="on">Rubros</a><a href="#">Proveedores</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › <span style="color: #1F2937; font-weight: 500;">Rubros</span></span>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 24px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: baseline; gap: 12px;"><h1 style="margin: 0; font-size: 20px; font-weight: 600;">Rubros</h1><span class="lbl">cómo se agrupan las materias primas y las recetas</span></div>
+        <button class="btnp">+ Nuevo rubro</button>
+      </div>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 14px;">
+        <section class="card" aria-label="Rubros" style="padding: 8px; display: flex; flex-direction: column; gap: 4px;">
+          <div class="seg" role="group" aria-label="Clase"><button class="on" aria-pressed="true">De compra</button><button>Preparación</button><button>Carta</button></div>
+          <span class="lbl" style="padding: 8px 10px 4px; font-weight: 500;">De compra · 9 rubros</span>
+          <button class="rb on" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 18c4-10 12-12 16-12-1 8-6 14-16 12z"/></svg>Verduras y frutas<span class="n">41</span></button>
+          <button class="rb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 14c0-5 4-9 9-9 2 0 4 2 4 4 0 5-4 9-9 9-2 0-4-2-4-4z"/></svg>Carnes<span class="n">28</span></button>
+          <button class="rb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3h8l1 5v13H7V8z"/></svg>Lácteos y huevos<span class="n">22</span></button>
+          <button class="rb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18M8 7l4 3 4-3M8 12l4 3 4-3"/></svg>Harinas y cereales<span class="n">19</span></button>
+          <button class="rb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M8 7V4h8v3"/></svg>Almacén<span class="n">54</span></button>
+          <button class="rb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3c3 5 6 8 6 12a6 6 0 0 1-12 0c0-4 3-7 6-12z"/></svg>Aceites y salsas<span class="n">17</span></button>
+          <button class="rb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 3h6v4l2 3v11H7V10l2-3z"/></svg>Bebidas de reventa<span class="n">33</span></button>
+          <button class="rb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 21h10l-1-12H8zM10 9V5h4v4"/></svg>Limpieza<span class="n">18</span></button>
+          <button class="rb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8h12l-1 13H7zM9 8V4h6v4"/></svg>Descartables<span class="n">21</span></button>
+        </section>
+        <section class="card" style="padding: 18px 22px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;"><h2 style="font-size: 20px;">Verduras y frutas</h2><span class="lbl">MP-VER · de compra</span><span class="chip" style="background: #DCFCE7; color: #166534;">Activo</span></div>
+            <div style="display: flex; gap: 8px;"><a href="MateriasPrimas.dc.html" class="btn" style="display: flex; align-items: center; text-decoration: none;">Ver sus 41 materias primas</a><button class="btn">Dar de baja</button></div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+            <div style="padding: 12px 14px; border: 1px solid #E5E7EB; border-radius: 10px;"><span class="lbl">Materias primas</span><div style="font-size: 24px; font-weight: 600;">41</div></div>
+            <div style="padding: 12px 14px; border: 1px solid #E5E7EB; border-radius: 10px;"><span class="lbl">Con precio al día</span><div style="font-size: 24px; font-weight: 600;">37 <span style="font-size: 13px; font-weight: 400; color: #6B7280;">de 41</span></div></div>
+            <div style="padding: 12px 14px; border: 1px solid #E5E7EB; border-radius: 10px;"><span class="lbl">Recetas que las usan</span><div style="font-size: 24px; font-weight: 600;">86</div></div>
+          </div>
+          <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Descripción</span><textarea rows="3">Verduras, hortalizas, frutas y hierbas frescas. Se compran por kg o por atado y se controlan al recibir: frescura, temperatura y estado.</textarea></label>
+          <div class="row"><span>Va a recetas</span><button class="tg" aria-pressed="true" aria-label="Va a recetas"><span></span></button></div>
+          <div class="row"><span>Subrubros</span><span style="display: flex; gap: 6px;"><span class="chip" style="background: #F1F2F4; color: #4B5563;">Hortalizas</span><span class="chip" style="background: #F1F2F4; color: #4B5563;">Frutas</span><span class="chip" style="background: #F1F2F4; color: #4B5563;">Hierbas</span></span></div>
+          <div class="row" style="border-bottom: 0;"><span>Precios que maneja</span><span class="lbl">por kg o por atado · IVA 10,5 %</span></div>
+          <span style="flex: 1;"></span>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; align-items: center;"><span class="lbl">Motivo al guardar, como en todas las fichas</span><button class="btn">Descartar</button><button class="btnp">Guardar cambios</button></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
