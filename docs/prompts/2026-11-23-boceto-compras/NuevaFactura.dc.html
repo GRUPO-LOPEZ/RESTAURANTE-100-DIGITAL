@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Nueva factura</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-size:13px;color:#6B7280}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{height:36px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btn{height:40px;padding:0 16px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:40px;padding:0 18px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+input{height:40px;border:1px solid #E5E7EB;border-radius:8px;padding:0 12px;font:inherit;font-size:14px;box-sizing:border-box;width:100%}
+button:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 640px; height: 560px; background: #6B7280; display: flex; align-items: center; justify-content: center; font-family: Inter, system-ui, sans-serif; color: #1F2937;">
+  <div role="dialog" aria-label="Nueva factura" style="width: 580px; background: #FFFFFF; border-radius: 10px; padding: 22px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;"><h1 style="margin: 0; font-size: 20px; font-weight: 600;">Nueva factura</h1><span class="lbl">Demo Pastas Centro</span></div>
+    <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Proveedor</span><input value="Distribuidora Ejemplo"></label>
+    <span style="font-size: 13px; color: #166534; margin-top: -8px;">Tiene la orden PCE-0011 recibida el 20/11: las líneas salen de ahí.</span>
+    <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Comprobante</span>
+      <div class="seg"><button class="on" aria-pressed="true">Factura A</button><button>Factura B</button><button>Factura-remito</button><button>Remito</button><button>Otro ▾</button></div></div>
+    <div style="display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px;">
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Punto de venta</span><input value="0004"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Número</span><input value="00012345"></label>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;"><button class="btn">Subir foto o PDF</button><button class="btn">Sacar foto</button><span class="lbl">la foto del papel, opcional ahora</span></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+      <span class="lbl">Fecha, CAE y totales, en la ficha.</span>
+      <div style="display: flex; gap: 8px;"><button class="btn">Cancelar</button><button class="btnp">Crear y abrir la factura</button></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":640,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

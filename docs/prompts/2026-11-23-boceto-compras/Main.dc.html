@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Nueva orden de compra</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.rb{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 10px;border:0;border-radius:8px;background:none;font:inherit;font-size:14px;color:#1F2937;cursor:pointer;width:100%;text-align:left}
+.rb.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.rb small{font-size:12px;color:#4B5563;font-weight:400}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:40px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.t{width:100%;border-collapse:separate;border-spacing:0}
+.t th{position:sticky;top:0;font-size:13px;font-weight:500;color:#4B5563;text-align:left;padding:8px 12px;background:#F7F8FA;border-bottom:1px solid #E5E7EB}
+.t td{padding:0 12px;height:44px;border-bottom:1px solid #E5E7EB;font-size:14px;font-variant-numeric:tabular-nums}
+.r{text-align:right}
+.st{display:inline-flex;align-items:center;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden}
+.st button{width:32px;height:32px;border:0;background:#F7F8FA;font:inherit;font-size:16px;cursor:pointer;color:#1F2937}
+.st input{width:46px;height:32px;border:0;text-align:center;font:inherit;font-size:15px;font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;min-height:34px}
+input,textarea{font:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>COMPRAS</h4><a href="#">Tablero de compras</a><a href="#">Listas de precios</a><a href="#" class="on">Órdenes de compra</a><a href="#">Recepción</a><a href="#">Facturas</a><a href="#">Pagos</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Órdenes de compra › <span style="color: #1F2937; font-weight: 500;">Nueva</span></span>
+      <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #6B7280;">Local</span><span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Demo Pastas Centro ▾</span><span class="chip" style="background: #DCFCE7; color: #166534;">Aplicado</span></div>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 24px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="#" style="font-size: 14px; text-decoration: none;">← Órdenes de compra</a>
+        <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Nueva orden de compra</h1>
+        <span class="lbl">para Demo Pastas Centro · el número sale al enviarla (PCE-0012)</span>
+      </div>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 250px minmax(0, 1fr) 320px; gap: 14px;">
+        <section class="card" aria-label="Proveedores" style="padding: 8px; display: flex; flex-direction: column; gap: 2px;">
+          <span class="lbl" style="padding: 4px 10px 6px; font-weight: 500;">Proveedor</span>
+          <button class="rb on" aria-pressed="true">Distribuidora Ejemplo<small>Pide lun, mié y vie · hoy sí</small></button>
+          <button class="rb">Carnes Modelo<small>Pide mar y jue · próximo: martes</small></button>
+          <button class="rb">Verdulería Muestra<small>Pide todos los días</small></button>
+          <button class="rb">Lácteos Prueba<small>Pide lun y jue · próximo: jueves</small></button>
+          <button class="rb">Bebidas Prueba<small>Pide viernes</small></button>
+          <span style="flex: 1;"></span>
+          <input placeholder="Buscar proveedor" aria-label="Buscar proveedor" style="height: 36px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 0 10px; font-size: 14px; margin: 4px;">
+        </section>
+        <section class="card" style="min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="padding: 10px 12px; display: flex; gap: 10px; align-items: center;">
+            <input placeholder="Buscar artículo de Distribuidora Ejemplo" style="flex: 1; height: 36px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 0 12px; font-size: 14px;">
+            <span class="lbl">ordenados por lo que más pedimos</span>
+          </div>
+          <div style="flex: 1 1 0; min-height: 0; overflow: auto;">
+            <table class="t">
+              <thead><tr><th>Artículo</th><th>Envase</th><th class="r">Precio de lista</th><th>Cantidad</th><th class="r">Subtotal</th></tr></thead>
+              <tbody>
+                <tr style="background: #F0F7FF;"><td style="font-weight: 500;">Queso cremoso</td><td>horma 4 kg</td><td class="r">$ 39.400</td><td><span class="st"><button aria-label="Menos">−</button><input value="2" aria-label="Cantidad de queso cremoso"><button aria-label="Más">+</button></span></td><td class="r">$ 78.800</td></tr>
+                <tr style="background: #F0F7FF;"><td style="font-weight: 500;">Harina 000</td><td>bolsa 25 kg</td><td class="r">$ 21.400</td><td><span class="st"><button aria-label="Menos">−</button><input value="4" aria-label="Cantidad de harina"><button aria-label="Más">+</button></span></td><td class="r">$ 85.600</td></tr>
+                <tr><td>Crema de leche</td><td>caja 12 l</td><td class="r">$ 38.900</td><td><span class="st"><button aria-label="Menos">−</button><input value="0" aria-label="Cantidad de crema"><button aria-label="Más">+</button></span></td><td class="r lbl">—</td></tr>
+                <tr><td>Aceite girasol</td><td>bidón 5 l</td><td class="r">$ 12.300</td><td><span class="st"><button aria-label="Menos">−</button><input value="0" aria-label="Cantidad de aceite"><button aria-label="Más">+</button></span></td><td class="r lbl">—</td></tr>
+                <tr><td>Manteca</td><td>caja 10 kg</td><td class="r">$ 54.000</td><td><span class="st"><button aria-label="Menos">−</button><input value="0" aria-label="Cantidad de manteca"><button aria-label="Más">+</button></span></td><td class="r lbl">—</td></tr>
+                <tr><td>Lavandina</td><td>bidón 5 l</td><td class="r">$ 4.100</td><td><span class="st"><button aria-label="Menos">−</button><input value="0" aria-label="Cantidad de lavandina"><button aria-label="Más">+</button></span></td><td class="r lbl">—</td></tr>
+                <tr><td>Azúcar</td><td>bolsa 10 kg</td><td class="r">$ 11.800</td><td><span class="st"><button aria-label="Menos">−</button><input value="0" aria-label="Cantidad de azúcar"><button aria-label="Más">+</button></span></td><td class="r lbl">—</td></tr>
+                <tr><td>Arroz carnaroli</td><td>bolsa 5 kg</td><td class="r">$ 16.500</td><td><span class="st"><button aria-label="Menos">−</button><input value="0" aria-label="Cantidad de arroz"><button aria-label="Más">+</button></span></td><td class="r lbl">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin: 0 0 6px; font-size: 16px; font-weight: 600;">La orden</h2>
+          <div class="row"><span>Queso cremoso</span><span>2 hormas</span></div>
+          <div class="row" style="border-bottom: 1px solid #E5E7EB;"><span>Harina 000</span><span>4 bolsas</span></div>
+          <div class="row" style="font-weight: 600;"><span>Total estimado</span><span>$ 164.400</span></div>
+          <div class="row"><span class="lbl">Pedido mínimo</span><span class="chip" style="background: #DCFCE7; color: #166534;">Supera $ 80.000</span></div>
+          <div class="row"><span class="lbl">Llega</span><span>martes 24/11 <button style="border: 0; background: none; color: #3D5E9F; font: inherit; font-size: 13px; cursor: pointer;">Cambiar</button></span></div>
+          <div class="row"><span class="lbl">Se manda por</span><span>WhatsApp</span></div>
+          <label style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;"><span class="lbl">Nota para el proveedor</span><textarea rows="3" style="border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 10px; font-size: 14px; resize: none;" placeholder="Opcional"></textarea></label>
+          <span style="flex: 1;"></span>
+          <span class="lbl">Supera el monto de aprobación: la aprueba Compras antes de salir.</span>
+          <div style="display: flex; gap: 8px; margin-top: 8px;"><button class="btn" style="flex: 1; height: 40px;">Guardar borrador</button><button class="btnp" style="flex: 1;">Enviar orden</button></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Facturas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.rb{display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border:0;border-radius:8px;background:none;font:inherit;font-size:14px;color:#1F2937;cursor:pointer;width:100%;text-align:left}
+.rb.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.rb .n{margin-left:auto;font-size:13px;color:#4B5563}
+.seg{display:flex;gap:4px}
+.seg button{height:34px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.t{width:100%;border-collapse:separate;border-spacing:0}
+.t th{position:sticky;top:0;font-size:13px;font-weight:500;color:#4B5563;text-align:left;padding:8px 12px;background:#F7F8FA;border-bottom:1px solid #E5E7EB}
+.t td{padding:0 12px;height:44px;border-bottom:1px solid #E5E7EB;font-size:14px;font-variant-numeric:tabular-nums}
+.r{text-align:right}
+input{height:36px;border:1px solid #E5E7EB;border-radius:8px;padding:0 12px;font:inherit;font-size:14px;box-sizing:border-box}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>COMPRAS</h4><a href="#">Tablero de compras</a><a href="#">Listas de precios</a><a href="#">Órdenes de compra</a><a href="#">Recepción</a><a href="#" class="on">Facturas</a><a href="#">Pagos</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › <span style="color: #1F2937; font-weight: 500;">Facturas</span></span>
+      <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #6B7280;">Local</span><span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Demo Pastas Centro ▾</span><span class="chip" style="background: #DCFCE7; color: #166534;">Aplicado</span></div>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 24px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: baseline; gap: 12px;"><h1 style="margin: 0; font-size: 20px; font-weight: 600;">¿Qué facturas hay para revisar y pagar?</h1><span class="lbl">27 facturas de noviembre</span></div>
+        <button class="btnp">+ Nueva factura</button>
+      </div>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 14px;">
+        <section class="card" aria-label="Proveedores" style="padding: 8px; display: flex; flex-direction: column; gap: 2px;">
+          <span class="lbl" style="padding: 4px 10px 6px; font-weight: 500;">Proveedores</span>
+          <button class="rb on" aria-pressed="true">Todos<span class="n">27</span></button>
+          <button class="rb">Distribuidora Ejemplo<span class="n">8</span></button>
+          <button class="rb">Carnes Modelo<span class="n">6</span></button>
+          <button class="rb">Verdulería Muestra<span class="n">7</span></button>
+          <button class="rb">Lácteos Prueba<span class="n">4</span></button>
+          <button class="rb">Bebidas Prueba<span class="n">2</span></button>
+          <span style="flex: 1;"></span>
+          <input placeholder="Buscar proveedor" aria-label="Buscar proveedor" style="margin: 4px;">
+        </section>
+        <section class="card" style="min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="padding: 10px 12px; display: flex; gap: 10px; align-items: center;">
+            <div class="seg" role="group" aria-label="Estado"><button class="on" aria-pressed="true">Todas 27</button><button>Observadas 4</button><button>Para dar conforme 3</button><button>Conformes 18</button><button>Pagadas 2</button></div>
+            <span style="flex: 1;"></span>
+            <input placeholder="Número o importe" style="width: 200px;">
+          </div>
+          <div style="flex: 1 1 0; min-height: 0; overflow: auto;">
+            <table class="t">
+              <thead><tr><th>Comprobante</th><th>Proveedor</th><th>Fecha</th><th class="r">Total</th><th>Vence</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td><a href="#">Factura A 0004-00012345</a></td><td>Distribuidora Ejemplo</td><td>18/11/26</td><td class="r">$ 389.738</td><td>27/11/26</td><td><span class="chip" style="background: #FEF3C7; color: #92400E;">Observada: cantidad</span></td></tr>
+                <tr><td><a href="#">Factura A 0002-00010602</a></td><td>Carnes Modelo</td><td>17/11/26</td><td class="r">$ 134.129</td><td>02/12/26</td><td><span class="chip" style="background: #FEF3C7; color: #92400E;">Observada: precio</span></td></tr>
+                <tr><td><a href="#">Factura B 0004-00003340</a></td><td>Verdulería Muestra</td><td>17/11/26</td><td class="r">$ 23.700</td><td>17/11/26</td><td><span class="chip" style="background: #EDE9FE; color: #5B21B6;">Para dar conforme</span></td></tr>
+                <tr><td><a href="#">Factura B 0004-00003311</a></td><td>Verdulería Muestra</td><td>10/11/26</td><td class="r">$ 29.400</td><td>10/11/26</td><td><span class="chip" style="background: #FEE2E2; color: #991B1B;">Vencida</span></td></tr>
+                <tr><td><a href="#">Factura A 0002-00010590</a></td><td>Carnes Modelo</td><td>08/11/26</td><td class="r">$ 55.443</td><td>23/11/26</td><td><span class="chip" style="background: #DCFCE7; color: #166534;">Conforme</span></td></tr>
+                <tr><td><a href="#">Factura A 0007-00001204</a></td><td>Bebidas Prueba</td><td>06/11/26</td><td class="r">$ 188.500</td><td>21/11/26</td><td><span class="chip" style="background: #FEE2E2; color: #991B1B;">Vencida</span></td></tr>
+                <tr><td><a href="#">Factura-remito A 0003-00004567</a></td><td>Lácteos Prueba</td><td>05/11/26</td><td class="r">$ 24.598</td><td>22/11/26</td><td><span class="chip" style="background: #FEF3C7; color: #92400E;">Vence hoy</span></td></tr>
+                <tr><td><a href="#">Factura A 0002-00010501</a></td><td>Carnes Modelo</td><td>01/11/26</td><td class="r">$ 36.099</td><td>16/11/26</td><td><span class="chip" style="background: #F1F2F4; color: #4B5563;">Pagada</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding: 10px 14px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between;" class="lbl"><span>Filas 1 a 15 de 27</span><span>Filas por página: 15</span></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
