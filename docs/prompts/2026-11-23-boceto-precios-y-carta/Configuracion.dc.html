@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Configuración de Precios y Carta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.mu{color:#6B7280;font-size:12px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #E5E7EB}
+.tabs a{padding:8px 14px;font-size:14px;color:#4B5563;text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:#2F4F8F;border-bottom-color:#4A6FB8;font-weight:500}
+.tile{padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+.tile h2{margin:0;font-size:15px;font-weight:600}
+.t{width:100%;border-collapse:separate;border-spacing:0}
+.t th{font-size:12px;font-weight:500;color:#4B5563;text-align:left;padding:6px 8px;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.t td{padding:0 8px;height:40px;border-bottom:1px solid #E5E7EB;font-size:14px;font-variant-numeric:tabular-nums}
+.r{text-align:right}
+.ci{width:84px;height:32px;border:1px dashed #D97706;background:#FFFBEB;border-radius:8px;padding:0 8px;font:inherit;font-size:13px;text-align:right;box-sizing:border-box;color:#92400E}
+.ci::placeholder{color:#92400E}
+.tg{width:44px;height:32px;border-radius:8px;border:0;font:inherit;font-size:14px;cursor:pointer}
+.tg.y{background:#DCFCE7;color:#166534}
+.tg.n{background:#FEE2E2;color:#991B1B}
+.seg{display:flex;gap:4px}
+.seg button{height:34px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.btns{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+input.m{height:36px;border:1px solid #E5E7EB;border-radius:8px;padding:0 12px;font:inherit;font-size:14px;box-sizing:border-box}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>COMPRAS · 2 avisos ▸</h4>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#" class="on">Precios y Carta</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Panel de control</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Precios y Carta › <span style="color: #1F2937; font-weight: 500;">Configuración</span></span>
+      <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #6B7280;">Local</span><span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Todos mis locales ▾</span></div>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 12px 32px 0; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: baseline; gap: 12px;"><h1 style="margin: 0; font-size: 20px; font-weight: 600;">¿Con qué reglas se mide cada plato?</h1><span class="lbl">Políticas del grupo · un rubro o un plato pueden tener la suya</span></div>
+        <span class="chip" style="background: #FEF3C7; color: #92400E; font-size: 13px;">Las casillas amarillas las completa Soy</span>
+      </div>
+      <nav class="tabs" aria-label="Precios y Carta"><a href="Inicio.dc.html">Inicio</a><a href="Main.dc.html">Platos</a><a href="#">Cartas</a><a href="Matriz.dc.html">Matriz</a><a href="#">Alarmas 6</a><a href="#">Simulador</a><a href="#">Decisiones 3</a><a href="#" class="on" aria-current="page">Configuración</a></nav>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 12px;">
+        <section class="card tile" style="grid-row: span 2;">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><h2>Políticas por rubro de menú</h2><span class="mu">food cost sobre precio neto · contribución en pesos</span></div>
+          <table class="t">
+            <thead><tr><th>Rubro</th><th class="r">Food cost objetivo</th><th class="r">Food cost máximo</th><th class="r">Contribución mínima</th><th class="r">Deriva máxima</th></tr></thead>
+            <tbody>
+              <tr><td>Entradas</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Entradas"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Entradas"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Entradas"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Entradas"></td></tr>
+              <tr><td>Ensaladas</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Ensaladas"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Ensaladas"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Ensaladas"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Ensaladas"></td></tr>
+              <tr><td>Sopas</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Sopas"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Sopas"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Sopas"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Sopas"></td></tr>
+              <tr><td>Pastas</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Pastas"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Pastas"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Pastas"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Pastas"></td></tr>
+              <tr><td>Risottos y arroces</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Risottos"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Risottos"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Risottos"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Risottos"></td></tr>
+              <tr><td>Principales de carne</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Principales de carne"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Principales de carne"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Principales de carne"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Principales de carne"></td></tr>
+              <tr><td>Principales de pescado</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Principales de pescado"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Principales de pescado"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Principales de pescado"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Principales de pescado"></td></tr>
+              <tr><td>Principales vegetarianos</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Principales vegetarianos"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Principales vegetarianos"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Principales vegetarianos"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Principales vegetarianos"></td></tr>
+              <tr><td>Postres</td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost objetivo de Postres"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Food cost máximo de Postres"></td><td class="r"><input class="ci" placeholder="$ ____" aria-label="Contribución mínima de Postres"></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Deriva máxima de Postres"></td></tr>
+            </tbody>
+          </table>
+          <div style="display: flex; align-items: center; gap: 12px; padding-top: 4px;">
+            <span class="lbl">Redondeo del precio</span>
+            <div class="seg" role="group" aria-label="Redondeo"><button>A $ 100 («00»)</button><button>A $ 50 («50»)</button></div>
+            <span class="lbl">Gracia de un plato nuevo</span><span style="font-size: 14px;">35 días</span>
+          </div>
+          <span class="mu">Si dos reglas chocan (por ejemplo, una contribución mínima imposible con el food cost máximo), el sistema lo avisa en la fila.</span>
+        </section>
+        <section class="card tile">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><h2>Platos emblema de cada marca</h2><button class="btns" style="height: 32px; font-size: 13px;">+ Agregar</button></div>
+          <span class="mu">Nunca se sugiere su baja, aunque caigan en Perro.</span>
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #E5E7EB;"><span style="width: 150px; font-size: 14px;">Ragú Bodegón</span><input class="ci" style="flex: 1; text-align: left;" placeholder="platos emblema" aria-label="Platos emblema de Ragú Bodegón"></div>
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #E5E7EB;"><span style="width: 150px; font-size: 14px;">Trattoria Padella</span><input class="ci" style="flex: 1; text-align: left;" placeholder="platos emblema" aria-label="Platos emblema de Trattoria Padella"></div>
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 40px; border-bottom: 1px solid #E5E7EB;"><span style="width: 150px; font-size: 14px;">Casa Nonnos</span><input class="ci" style="flex: 1; text-align: left;" placeholder="platos emblema" aria-label="Platos emblema de Casa Nonnos"></div>
+        </section>
+        <section class="card tile">
+          <h2>Canales y costos de venta por local</h2>
+          <table class="t">
+            <thead><tr><th>Canal</th><th>Lo usa</th><th class="r">Comisión</th><th class="r">Packaging</th></tr></thead>
+            <tbody>
+              <tr><td>Salón</td><td><button class="tg y" aria-pressed="true" aria-label="Salón: lo usa">✓</button></td><td class="r">—</td><td class="r">—</td></tr>
+              <tr><td>Take away</td><td><button class="tg y" aria-pressed="true" aria-label="Take away: lo usa">✓</button></td><td class="r">—</td><td class="r"><input class="ci" placeholder="$ ___" aria-label="Packaging de take away"></td></tr>
+              <tr><td>PedidosYa</td><td><button class="tg y" aria-pressed="true" aria-label="PedidosYa: lo usa">✓</button></td><td class="r"><input class="ci" placeholder="__ %" aria-label="Comisión de PedidosYa"></td><td class="r"><input class="ci" placeholder="$ ___" aria-label="Packaging de PedidosYa"></td></tr>
+              <tr><td>Rappi</td><td><button class="tg n" aria-pressed="false" aria-label="Rappi: no lo usa">✕</button></td><td class="r">—</td><td class="r">—</td></tr>
+            </tbody>
+          </table>
+          <div style="display: flex; gap: 12px; align-items: center;"><span class="lbl">IIBB</span><input class="ci" placeholder="__ %" aria-label="IIBB del local"><span class="lbl">Medio de pago</span><input class="ci" placeholder="__ %" aria-label="Comisión promedio de medios de pago"></div>
+        </section>
+      </div>
+      <div style="height: 64px; flex: 0 0 64px; margin: 0 -32px; padding: 0 32px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; gap: 12px; box-sizing: border-box;">
+        <span class="chip" style="background: #F1F2F4; color: #4B5563; font-size: 13px;">Sin cambios</span>
+        <span style="flex: 1;"></span>
+        <label class="lbl" for="mot">Motivo</label><input id="mot" class="m" placeholder="Por qué cambia la regla" style="width: 300px;">
+        <button class="btns">Descartar</button>
+        <button class="btnp">Guardar cambios</button>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

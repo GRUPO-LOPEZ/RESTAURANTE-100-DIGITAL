@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Matriz de ingeniería de menú</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.mu{color:#6B7280;font-size:12px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #E5E7EB}
+.tabs a{padding:8px 14px;font-size:14px;color:#4B5563;text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:#2F4F8F;border-bottom-color:#4A6FB8;font-weight:500}
+.rb{display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border:0;border-radius:8px;background:none;font:inherit;font-size:14px;color:#1F2937;cursor:pointer;width:100%;text-align:left}
+.rb.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.rb .n{margin-left:auto;font-size:12px;color:#4B5563}
+.seg{display:flex;gap:4px}
+.seg button{height:34px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.tile{padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-height:0;overflow:hidden}
+.tile h2{margin:0;font-size:15px;font-weight:600}
+.b{position:absolute;border-radius:50%;background:#93B4E8;border:2px solid #3D5E9F;box-sizing:border-box}
+.bl{position:absolute;font-size:12px;font-weight:500;color:#1F2937;white-space:nowrap}
+.q{position:absolute;font-size:12px;font-weight:600;letter-spacing:.04em;color:#4B5563}
+.row{display:flex;align-items:center;gap:8px;min-height:36px;border-bottom:1px solid #E5E7EB;font-size:13px}
+button:focus-visible,a:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>COMPRAS · 2 avisos ▸</h4>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#" class="on">Precios y Carta</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Panel de control</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Precios y Carta › <span style="color: #1F2937; font-weight: 500;">Matriz</span></span>
+      <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #6B7280;">Local</span><span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Demo Pastas Centro ▾</span><span class="chip" style="background: #DCFCE7; color: #166534;">Aplicado</span></div>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 12px 32px 20px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: baseline; gap: 12px;"><h1 style="margin: 0; font-size: 20px; font-weight: 600;">¿Qué platos de Pastas convienen y cuáles no?</h1><span class="lbl">Noviembre 2026 · salón · 2.262 platos vendidos</span></div>
+        <div style="display: flex; gap: 10px;">
+          <div class="seg" role="group" aria-label="Canal"><button class="on" aria-pressed="true">Salón</button><button>Delivery</button></div>
+          <div class="seg" role="group" aria-label="Período"><button>Octubre</button><button class="on" aria-pressed="true">Noviembre</button></div>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Precios y Carta"><a href="Inicio.dc.html">Inicio</a><a href="Main.dc.html">Platos</a><a href="#">Cartas</a><a href="#" class="on" aria-current="page">Matriz</a><a href="#">Alarmas 6</a><a href="#">Simulador</a><a href="#">Decisiones 3</a><a href="Configuracion.dc.html">Configuración</a></nav>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 250px minmax(0, 1fr) 330px; gap: 12px;">
+        <section class="card" aria-label="Rubros de menú" style="padding: 8px; display: flex; flex-direction: column; gap: 2px;">
+          <span class="lbl" style="padding: 4px 10px 6px; font-weight: 500;">Rubros de menú</span>
+          <button class="rb">Entradas<span class="n">6</span></button>
+          <button class="rb">Ensaladas<span class="n">4</span></button>
+          <button class="rb on" aria-pressed="true">Pastas<span class="n">8</span></button>
+          <button class="rb">Risottos y arroces<span class="n">3 · pocos datos</span></button>
+          <button class="rb">Principales de carne<span class="n">7</span></button>
+          <button class="rb">Postres<span class="n">5 · sin mapear</span></button>
+          <span style="flex: 1;"></span>
+          <span class="mu" style="padding: 6px 10px;">Un rubro con productos sin mapear o con pocas ventas no arma matriz: lo dice al lado.</span>
+        </section>
+        <section class="card tile" style="gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><h2>Popularidad y contribución</h2><span class="mu">el tamaño es la contribución total del mes</span></div>
+          <div style="position: relative; flex: 1 1 0; min-height: 0; margin: 4px 8px 22px 46px;">
+            <div style="position: absolute; left: 0; top: 0; width: 600px; height: 460px; border-left: 1px solid #9CA3AF; border-bottom: 1px solid #9CA3AF;">
+              <div style="position: absolute; left: 240px; top: 0; bottom: 0; border-left: 1px dashed #4A6FB8;"></div>
+              <div style="position: absolute; top: 159px; left: 0; right: 0; border-top: 1px dashed #4A6FB8;"></div>
+              <span class="q" style="left: 252px; top: 8px;">ESTRELLAS</span>
+              <span class="q" style="left: 12px; top: 8px;">ENIGMAS</span>
+              <span class="q" style="left: 252px; top: 432px;">CABALLOS DE BATALLA</span>
+              <span class="q" style="left: 12px; top: 432px;">PERROS</span>
+              <div class="b" style="left: 409px; top: 144px; width: 56px; height: 56px;"></div><span class="bl" style="left: 470px; top: 160px;">Tagliatelle <span class="chip" style="background: #FEF3C7; color: #92400E;">bajó</span></span>
+              <div class="b" style="left: 359px; top: 73px; width: 50px; height: 50px;"></div><span class="bl" style="left: 412px; top: 74px;">Sorrentinos</span>
+              <div class="b" style="left: 280px; top: 85px; width: 44px; height: 44px;"></div><span class="bl" style="left: 268px; top: 130px;">Lasaña</span>
+              <div class="b" style="left: 326px; top: 167px; width: 44px; height: 44px;"></div><span class="bl" style="left: 318px; top: 214px;">Ravioles</span>
+              <div class="b" style="left: 553px; top: 272px; width: 56px; height: 56px;"></div><span class="bl" style="left: 530px; top: 332px;">Ñoquis</span>
+              <div class="b" style="left: 132px; top: 122px; width: 28px; height: 28px;"></div><span class="bl" style="left: 108px; top: 152px;">Fettuccine</span>
+            </div>
+            <span class="mu" style="position: absolute; left: 0; top: 470px; width: 600px; text-align: center;">Participación en Pastas → · corte 10,0 %</span>
+            <span class="mu" style="position: absolute; left: -44px; top: 150px; width: 40px; text-align: right;">$ 7.620</span>
+            <span class="mu" style="position: absolute; left: -44px; top: 0; width: 40px; text-align: right;">$ 9.000</span>
+            <span class="mu" style="position: absolute; left: -44px; top: 446px; width: 40px; text-align: right;">$ 5.000</span>
+          </div>
+        </section>
+        <div style="min-height: 0; display: flex; flex-direction: column; gap: 12px;">
+          <section class="card tile">
+            <h2>Cómo se calculó</h2>
+            <span style="font-size: 13px;">Kasavana y Smith, contribución neta del salón.</span>
+            <span style="font-size: 13px;">Popular: participación de 10,0 % o más (1 ÷ 7 platos × 70 %).</span>
+            <span style="font-size: 13px;">Contribución alta: $ 7.620 o más (promedio ponderado por lo vendido).</span>
+            <span class="mu">Fuera de la matriz: Pappardelle (en prueba, día 12 de 35) y Canelones (costo incompleto).</span>
+          </section>
+          <section class="card tile" style="flex: 1 1 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;"><h2>Qué hacer</h2><a href="#" style="font-size: 13px;">Ver los 6</a></div>
+            <div class="row"><span class="chip" style="background: #FEF3C7; color: #92400E;">Caballo</span>Tagliatelle: subir precio o reingeniería, no las dos</div>
+            <div class="row"><span class="chip" style="background: #FEF3C7; color: #92400E;">Caballo</span>Ñoquis: subir 5 % (food cost 30 %)</div>
+            <div class="row"><span class="chip" style="background: #DBEAFE; color: #1E40AF;">Enigma</span>Fettuccine: mejor lugar en la carta y sugerirlo</div>
+            <div class="row"><span class="chip" style="background: #DCFCE7; color: #166534;">Estrella</span>Sorrentinos y Lasaña: cuidar porción</div>
+            <span class="mu">Ningún Perro en Pastas este mes. Un emblema en Perro queda «Perro estratégico» y no se sugiere su baja.</span>
+          </section>
+          <section class="card tile">
+            <h2>Otras lecturas</h2>
+            <div class="row" style="min-height: 30px;">Pavesic<span style="margin-left: auto;">Tagliatelle: contribución baja y food cost alto</span></div>
+            <div class="row" style="min-height: 30px;">Omnes<span style="margin-left: auto;">amplitud 1,4 (máx. 3) · Al día</span></div>
+            <div class="row" style="min-height: 30px;">Complejidad<span style="margin-left: auto;">8 platos (entre 5 y 9) · osobuco exclusivo</span></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

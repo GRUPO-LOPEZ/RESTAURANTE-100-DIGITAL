@@ -22,6 +22,15 @@ Nueve prompts, en orden, **un PR cada uno**. El documento de Soy está completo 
 5. **Carta para imprimir:** PDF con la versión de la carta y quién la aprobó (criterio 14). **Soy pide sumar en todo el proceso el nombre de fantasía y la descripción del plato**, que son los que se usan para armar el menú: el nombre de fantasía es el que figura en TapTapChef y en la carta; el nombre de la receta es el técnico de cocina y no se muestra al cliente.
 6. **Planilla de políticas en el boceto:** Soy completa food cost máximo, contribución mínima y deriva máxima por rubro de menú, y marca los platos emblema de cada marca. Con eso se cargan las políticas iniciales sin inventar valores.
 
+Al leer la API de TapTapChef, Soy aprobó cuatro más (están en la sección de TapTapChef):
+
+7. **CM por cubierto desde la etapa 4.2**, con los `comensales` de cada ticket (punto 7).
+8. **Control de cada turno** contra el informe de cierre de TapTapChef (punto 8).
+9. **Aviso si cambia el nombre en TapTapChef** y deja de coincidir con el nombre de fantasía de la carta (punto 10).
+10. **Comisión real por medio de pago** calculada con `cobros`, después de la 4.2 (punto 11).
+
+El boceto aprobado está en `docs/prompts/2026-11-23-boceto-precios-y-carta/`.
+
 ## Lo que ya existe y se reutiliza (no se duplica nada)
 
 - **Plato (producto comercial)** = una receta de tipo `dish` (`recipes.recipe_type`) **más** un registro nuevo de carta que le agrega lo comercial: nombre de fantasía, descripción, estado comercial, etiquetas. La receta sigue siendo del Recetario. **No se crea `pc_platos` con nombre, alérgenos y sin TACC propios:** los alérgenos y el sin TACC salen de la receta publicada (criterio 11: lo que el sistema ya sabe no se vuelve a pedir).
@@ -109,7 +118,7 @@ Leído en `docs/fases/fase-4-taptapchef-api.md`. Lo que cambia el diseño:
   - Prompt 7: cartas versionadas y carta para imprimir.
   - Prompt 8: simulador, decisiones y objetivos con revisión a 30 días.
 
-Cada prompt deja algo usable y tiene su compuerta: Soy prueba en staging con datos de prueba antes de cargar datos reales. Las pantallas siguen el boceto aprobado en `docs/prompts/2026-11-23-boceto-precios-y-carta/` (lo valida Soy antes del Prompt 2).
+Cada prompt deja algo usable y tiene su compuerta: Soy prueba en staging con datos de prueba antes de cargar datos reales. Las pantallas siguen el boceto aprobado en `docs/prompts/2026-11-23-boceto-precios-y-carta/` (aprobado por Soy el 2026-11-23).
 
 **En todos los prompts:** los 15 criterios de Soy de `design.md` (sin scroll de página en 1440 × 900, 1600 × 900, 1715 × 843 y 1920 × 1080; listados con panel izquierdo de 250 px; altas en modal corto; encabezado en una línea; todo en español; nombres sin «…»); probar con un rol que edita y con uno que solo lee; capturas en `docs/capturas/precios-y-carta/`; revisión de `db-reviewer`, `security-auditor` y `ui-reviewer`; lista de cambios para Soy en `docs/modulos/`; `docs/estado.md` al día.
 

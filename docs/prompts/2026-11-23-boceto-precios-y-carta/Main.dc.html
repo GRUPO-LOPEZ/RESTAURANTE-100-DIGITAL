@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Platos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #E5E7EB}
+.tabs a{padding:8px 14px;font-size:14px;color:#4B5563;text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:#2F4F8F;border-bottom-color:#4A6FB8;font-weight:500}
+.rb{display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border:0;border-radius:8px;background:none;font:inherit;font-size:14px;color:#1F2937;cursor:pointer;width:100%;text-align:left}
+.rb.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.rb .n{margin-left:auto;font-size:13px;color:#4B5563}
+.seg{display:flex;gap:4px}
+.seg button{height:34px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.btns{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.t{width:100%;border-collapse:separate;border-spacing:0}
+.t th{position:sticky;top:0;font-size:13px;font-weight:500;color:#4B5563;text-align:left;padding:8px 10px;background:#F7F8FA;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.t td{padding:0 10px;height:44px;border-bottom:1px solid #E5E7EB;font-size:14px;font-variant-numeric:tabular-nums}
+.r{text-align:right}
+.mu{color:#6B7280;font-size:12px}
+.pin{width:96px;height:32px;border:1px solid #E5E7EB;border-radius:8px;padding:0 8px;font:inherit;font-size:14px;text-align:right;box-sizing:border-box;font-variant-numeric:tabular-nums}
+.pin.ed{border:1px dashed #4A6FB8;background:#EAF0FB}
+.kpi{padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+input{height:36px;border:1px solid #E5E7EB;border-radius:8px;padding:0 12px;font:inherit;font-size:14px;box-sizing:border-box}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>COMPRAS · 2 avisos ▸</h4>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#" class="on">Precios y Carta</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Panel de control</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Precios y Carta › <span style="color: #1F2937; font-weight: 500;">Platos</span></span>
+      <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #6B7280;">Local</span><span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Demo Pastas Centro ▾</span><span class="chip" style="background: #DCFCE7; color: #166534;">Aplicado</span></div>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 12px 32px 0; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: baseline; gap: 12px;"><h1 style="margin: 0; font-size: 20px; font-weight: 600;">¿Qué platos ganan poco y a cuánto hay que venderlos?</h1><span class="lbl">33 platos en la carta de salón · costos de hoy 06:00</span></div>
+        <button class="btnp">+ Nuevo plato</button>
+      </div>
+      <nav class="tabs" aria-label="Precios y Carta"><a href="Inicio.dc.html">Inicio</a><a href="#" class="on" aria-current="page">Platos</a><a href="#">Cartas</a><a href="Matriz.dc.html">Matriz</a><a href="#">Alarmas 6</a><a href="#">Simulador</a><a href="#">Decisiones 3</a><a href="Configuracion.dc.html">Configuración</a></nav>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+        <div class="card kpi"><span class="lbl">Food cost teórico de Pastas</span><div style="display: flex; align-items: baseline; gap: 8px;"><b>32,6 %</b><span class="chip" style="background: #FEF3C7; color: #92400E;">Atención</span></div><span class="mu">Máximo del rubro 32 %</span></div>
+        <div class="card kpi"><span class="lbl">Fuera de política</span><div style="display: flex; align-items: baseline; gap: 8px;"><b>2 de 8</b><span class="chip" style="background: #FEE2E2; color: #991B1B;">Crítico</span></div><a href="#" style="font-size: 13px;">Ver cuáles</a></div>
+        <div class="card kpi"><span class="lbl">Perdieron margen por costo</span><div style="display: flex; align-items: baseline; gap: 8px;"><b>2</b><span class="chip" style="background: #FEE2E2; color: #991B1B;">Crítico</span></div><span class="mu">Deriva máxima 8 % · harina +18 % el 21/11</span></div>
+        <div class="card kpi"><span class="lbl">Sin precio o sin costo</span><div style="display: flex; align-items: baseline; gap: 8px;"><b>2</b><span class="chip" style="background: #F1F2F4; color: #4B5563;">Sin datos</span></div><a href="#" style="font-size: 13px;">Ver cuáles</a></div>
+      </div>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 12px;">
+        <section class="card" aria-label="Rubros de menú" style="padding: 8px; display: flex; flex-direction: column; gap: 2px;">
+          <span class="lbl" style="padding: 4px 10px 6px; font-weight: 500;">Rubros de menú</span>
+          <button class="rb">Todos<span class="n">33</span></button>
+          <button class="rb">Entradas<span class="n">6</span></button>
+          <button class="rb">Ensaladas<span class="n">4</span></button>
+          <button class="rb on" aria-pressed="true">Pastas<span class="n">8</span></button>
+          <button class="rb">Risottos y arroces<span class="n">3</span></button>
+          <button class="rb">Principales de carne<span class="n">7</span></button>
+          <button class="rb">Postres<span class="n">5</span></button>
+          <span style="flex: 1;"></span>
+          <button class="rb" style="background: #FEF3C7; color: #92400E;">Sin mapear en TapTapChef<span class="n" style="color: #92400E;">3</span></button>
+          <input placeholder="Buscar plato" aria-label="Buscar plato" style="margin: 4px;">
+        </section>
+        <section class="card" style="min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="padding: 10px 12px; display: flex; gap: 10px; align-items: center;">
+            <div class="seg" role="group" aria-label="Canal"><button class="on" aria-pressed="true">Salón</button><button>Take away</button><button>PedidosYa</button><button>Rappi</button></div>
+            <div class="seg" role="group" aria-label="Estado"><button class="on" aria-pressed="true">Todos 8</button><button>Fuera de política 2</button><button>Sin datos 2</button></div>
+            <span style="flex: 1;"></span>
+            <span class="mu">Montos sin IVA salvo «Precio de carta»</span>
+          </div>
+          <div style="flex: 1 1 0; min-height: 0; overflow: auto; position: relative;">
+            <table class="t">
+              <thead><tr><th>Plato (nombre de fantasía)</th><th class="r">Precio de carta</th><th class="r">Sugerido</th><th class="r">Costo</th><th class="r">Contribución</th><th class="r">Food cost</th><th class="r">Deriva</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td><a href="FichaPlato.dc.html">Tagliatelle a la bolognesa</a> <span class="chip" style="background: #DBEAFE; color: #1E40AF;">Emblema</span></td><td class="r"><input class="pin ed" value="18.900" aria-label="Precio de carta de Tagliatelle a la bolognesa"> <div class="mu">antes $ 15.900</div></td><td class="r">$ 20.100</td><td class="r">$ 4.980</td><td class="r">$ 9.858<div class="mu">antes $ 7.503</div></td><td class="r">31,9 %<div class="mu">antes 37,9 %</div></td><td class="r">+14,0 %</td><td><span class="chip" style="background: #EDE9FE; color: #5B21B6;">Cambio sin enviar</span></td></tr>
+                <tr><td>Lasaña de carne</td><td class="r"><input class="pin ed" value="18.500" aria-label="Precio de carta de Lasaña de carne"> <div class="mu">antes $ 16.800</div></td><td class="r">$ 20.700</td><td class="r">$ 5.120</td><td class="r">$ 9.405<div class="mu">antes $ 8.070</div></td><td class="r">33,5 %<div class="mu">antes 36,9 %</div></td><td class="r">+9,0 %</td><td><span class="chip" style="background: #EDE9FE; color: #5B21B6;">Cambio sin enviar</span></td></tr>
+                <tr><td>Ñoquis de papa con fileto</td><td class="r"><input class="pin" value="11.900" aria-label="Precio de carta de Ñoquis de papa con fileto"></td><td class="r">—</td><td class="r">$ 2.950</td><td class="r">$ 6.393</td><td class="r">30,0 %</td><td class="r">+3,1 %</td><td><span class="chip" style="background: #FEF3C7; color: #92400E;">Costo desactualizado</span></td></tr>
+                <tr><td>Ravioles de ricota y espinaca</td><td class="r"><input class="pin" value="13.900" aria-label="Precio de carta de Ravioles de ricota y espinaca"></td><td class="r">—</td><td class="r">$ 3.560</td><td class="r">$ 7.354</td><td class="r">31,0 %</td><td class="r">+1,8 %</td><td><span class="chip" style="background: #DCFCE7; color: #166534;">Al día</span></td></tr>
+                <tr><td>Sorrentinos de calabaza</td><td class="r"><input class="pin" value="14.500" aria-label="Precio de carta de Sorrentinos de calabaza"></td><td class="r">—</td><td class="r">$ 3.240</td><td class="r">$ 8.144</td><td class="r">27,0 %</td><td class="r">+2,0 %</td><td><span class="chip" style="background: #DCFCE7; color: #166534;">Al día</span></td></tr>
+                <tr><td>Fettuccine Alfredo</td><td class="r"><input class="pin" value="13.500" aria-label="Precio de carta de Fettuccine Alfredo"></td><td class="r">—</td><td class="r">$ 2.780</td><td class="r">$ 7.819</td><td class="r">24,9 %</td><td class="r">0,0 %</td><td><span class="chip" style="background: #DCFCE7; color: #166534;">Al día</span></td></tr>
+                <tr><td>Pappardelle al ragú de osobuco <span class="chip" style="background: #FFEDD5; color: #9A3412;">En prueba</span></td><td class="r"><input class="pin" placeholder="Sin precio" aria-label="Precio de carta de Pappardelle al ragú de osobuco"></td><td class="r">$ 21.800</td><td class="r">$ 5.400</td><td class="r">—<div class="mu">sin precio</div></td><td class="r">—</td><td class="r">—</td><td><span class="chip" style="background: #FEE2E2; color: #991B1B;">Sin precio</span></td></tr>
+                <tr><td>Canelones de verdura</td><td class="r"><input class="pin" value="12.900" aria-label="Precio de carta de Canelones de verdura"></td><td class="r">—</td><td class="r">—<div class="mu">falta rendimiento</div></td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td><span class="chip" style="background: #F1F2F4; color: #4B5563;">Costo incompleto</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <div style="height: 64px; flex: 0 0 64px; margin: 0 -32px; padding: 0 32px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; gap: 12px; box-sizing: border-box;">
+        <span class="chip" style="background: #EDE9FE; color: #5B21B6; font-size: 13px;">2 precios cambiados</span>
+        <span class="lbl">Contribución del rubro: +$ 1,9 M por mes con las ventas de octubre</span>
+        <span style="flex: 1;"></span>
+        <label class="lbl" for="motivo">Motivo</label><input id="motivo" value="Suba de harina y carne de noviembre" style="width: 320px;">
+        <button class="btns">Descartar</button>
+        <button class="btnp">Enviar a aprobación</button>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

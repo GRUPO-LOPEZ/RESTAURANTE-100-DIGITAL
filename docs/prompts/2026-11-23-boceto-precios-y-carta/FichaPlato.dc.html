@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha del plato</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.mu{color:#6B7280;font-size:12px}
+.kpi{padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.tile{padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+.tile h2{margin:0;font-size:15px;font-weight:600}
+.t{width:100%;border-collapse:separate;border-spacing:0}
+.t th{font-size:12px;font-weight:500;color:#4B5563;text-align:left;padding:6px 8px;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.t td{padding:0 8px;height:36px;border-bottom:1px solid #E5E7EB;font-size:14px;font-variant-numeric:tabular-nums}
+.r{text-align:right}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.btns{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.sm{height:32px;padding:0 10px;font-size:13px}
+input,textarea{border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;font:inherit;font-size:14px;box-sizing:border-box;width:100%}
+input{height:36px}
+textarea{padding:8px 10px;height:64px;resize:none}
+input.ed,textarea.ed{border:1px dashed #4A6FB8;background:#EAF0FB}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>VISIÓN GENERAL</h4><a href="#">Inicio</a>
+    <h4>BASE DE CONOCIMIENTO</h4><a href="#">Recetas</a><a href="#">Materias primas</a><a href="#">Proveedores</a>
+    <h4>COMPRAS · 2 avisos ▸</h4>
+    <h4>GESTIÓN Y ANÁLISIS</h4><a href="#">Costos</a><a href="#" class="on">Precios y Carta</a><a href="#">Reportes</a>
+    <h4>CONTROL</h4><a href="#">Calidad</a>
+    <h4>ADMINISTRACIÓN</h4><a href="#">Panel de control</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Precios y Carta › Platos › <span style="color: #1F2937; font-weight: 500;">Tagliatelle a la bolognesa</span></span>
+      <div style="display: flex; align-items: center; gap: 8px;"><span style="color: #6B7280;">Local</span><span style="height: 36px; padding: 0 12px; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center;">Demo Pastas Centro ▾</span><span class="chip" style="background: #DCFCE7; color: #166534;">Aplicado</span></div>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 12px 32px 0; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="Main.dc.html" style="font-size: 14px;">← Volver</a>
+        <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Tagliatelle a la bolognesa</h1>
+        <span class="lbl">PL-PAS-0003 · Pastas · receta «Tagliatelle bolognesa» versión 4 · porción 380 g</span>
+        <span class="chip" style="background: #DCFCE7; color: #166534;">Activo</span>
+        <span class="chip" style="background: #FEE2E2; color: #991B1B;">Fuera de política</span>
+        <span style="flex: 1;"></span>
+        <button class="btns">Ver la receta</button>
+        <button class="btns">Simular</button>
+        <button class="btns">Dar de baja</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+        <div class="card kpi"><span class="lbl">Precio neto (salón)</span><b>$ 13.140</b><span class="mu">Carta $ 15.900 con IVA 21 % · precio de la marca</span></div>
+        <div class="card kpi"><span class="lbl">Costo por porción</span><div style="display: flex; align-items: baseline; gap: 8px;"><b>$ 4.980</b><span class="chip" style="background: #FEE2E2; color: #991B1B;">+14,0 %</span></div><span class="mu">Al fijar el precio $ 4.370 (15/10) · verificado</span></div>
+        <div class="card kpi"><span class="lbl">Contribución neta (salón)</span><div style="display: flex; align-items: baseline; gap: 8px;"><b>$ 7.503</b><span class="chip" style="background: #FEF3C7; color: #92400E;">Atención</span></div><span class="mu">Mínima del rubro $ 8.000</span></div>
+        <div class="card kpi"><span class="lbl">Food cost</span><div style="display: flex; align-items: baseline; gap: 8px;"><b>37,9 %</b><span class="chip" style="background: #FEE2E2; color: #991B1B;">Crítico</span></div><span class="mu">Máximo del rubro 32 % · objetivo 30 %</span></div>
+      </div>
+      <div style="flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 12px;">
+        <section class="card tile" style="grid-row: span 1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><h2>Precio por canal</h2><span class="mu">sin IVA</span></div>
+          <table class="t">
+            <thead><tr><th>Canal</th><th class="r">Carta</th><th class="r">Neto</th><th class="r">Variables</th><th class="r">MC1</th><th class="r">MC2</th></tr></thead>
+            <tbody>
+              <tr><td>Salón</td><td class="r">$ 15.900</td><td class="r">$ 13.140</td><td class="r">$ 657</td><td class="r">$ 8.160</td><td class="r">$ 7.503</td></tr>
+              <tr><td>Take away</td><td class="r">$ 15.900</td><td class="r">$ 13.140</td><td class="r">$ 1.007</td><td class="r">$ 8.160</td><td class="r">$ 7.153</td></tr>
+              <tr><td>PedidosYa</td><td class="r">$ 19.900</td><td class="r">$ 16.446</td><td class="r">$ 5.777</td><td class="r">$ 11.466</td><td class="r">$ 5.689 <span class="chip" style="background: #FEF3C7; color: #92400E;">Bajo</span></td></tr>
+            </tbody>
+          </table>
+          <span class="mu">Variables = IIBB 3 % + medio de pago 2 % + comisión del canal + packaging. MC2 decide; el food cost controla.</span>
+        </section>
+        <section class="card tile">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><h2>En la carta</h2><span class="chip" style="background: #DBEAFE; color: #1E40AF;">Se edita acá</span></div>
+          <label class="lbl" for="fan">Nombre de fantasía</label>
+          <input id="fan" value="Tagliatelle a la bolognesa">
+          <label class="lbl" for="des">Descripción</label>
+          <textarea id="des" class="ed">Pasta al huevo cortada a mano, con bolognesa de cocción lenta y parmesano.</textarea>
+          <span class="mu">En TapTapChef: «TAGLIATELLE BOLOGNESA» · mapeado</span>
+        </section>
+        <section class="card tile">
+          <h2>Lo que viene de la receta</h2>
+          <span class="lbl">Alérgenos</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;"><span class="chip" style="background: #FEF3C7; color: #92400E;">Gluten</span><span class="chip" style="background: #FEF3C7; color: #92400E;">Huevo</span><span class="chip" style="background: #FEF3C7; color: #92400E;">Lácteos</span><span class="chip" style="background: #F1F2F4; color: #4B5563;">No es sin TACC</span></div>
+          <span class="lbl">Estación de cocina</span><span style="font-size: 14px;">Pastas (de la receta)</span>
+          <span class="lbl">Foto</span><span style="font-size: 14px;">La principal de la receta</span>
+          <span class="mu">No se cargan acá: se cambian en la receta.</span>
+        </section>
+        <section class="card tile">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><h2>Historia del precio</h2><a href="#" style="font-size: 13px;">Ver los 6</a></div>
+          <table class="t">
+            <thead><tr><th>Desde</th><th class="r">Carta</th><th class="r">Costo al fijar</th><th>Aprobó</th></tr></thead>
+            <tbody>
+              <tr><td>—</td><td class="r">$ 18.900</td><td class="r">$ 4.980</td><td><span class="chip" style="background: #EDE9FE; color: #5B21B6;">En revisión</span></td></tr>
+              <tr><td>15/10/2026</td><td class="r">$ 15.900</td><td class="r">$ 4.370</td><td>Dirección General</td></tr>
+              <tr><td>01/09/2026</td><td class="r">$ 13.900</td><td class="r">$ 3.950</td><td>Dirección General</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section class="card tile">
+          <h2>Cómo se vende</h2>
+          <div style="display: flex; align-items: center; gap: 8px;"><span class="chip" style="background: #FEF3C7; color: #92400E; font-size: 13px;">Caballo de batalla</span><span class="mu">desde octubre · antes Estrella</span></div>
+          <span style="font-size: 14px;">412 vendidos en 30 días · 18,2 % de Pastas</span>
+          <span style="font-size: 14px;">Precio real promedio $ 15.410 <span class="mu">(−3,1 % por descuentos)</span></span>
+          <span class="mu">Acción del cuadrante: subir el precio de a poco (3 a 8 %) o cambiar receta o porción, nunca las dos a la vez.</span>
+          <span class="mu">En la etapa 4.1, sin ventas todavía, esta tarjeta dice «Sin ventas todavía».</span>
+        </section>
+        <section class="card tile">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><h2>Etiquetas</h2><button class="btns sm">+ Agregar</button></div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;"><span class="chip" style="background: #DBEAFE; color: #1E40AF;">Emblema ✕</span><span class="chip" style="background: #DBEAFE; color: #1E40AF;">Tractor ✕</span></div>
+          <span class="mu">Emblema: la marca lo eligió como plato de la casa (Soy, 01/09). Si cae en Perro queda «Perro estratégico» y nunca se sugiere la baja.</span>
+          <span class="lbl">Precio por local</span>
+          <span style="font-size: 14px;">Usa el de la marca · <a href="#">Poner un precio para este local</a></span>
+        </section>
+      </div>
+      <div style="height: 64px; flex: 0 0 64px; margin: 0 -32px; padding: 0 32px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; gap: 12px; box-sizing: border-box;">
+        <span class="chip" style="background: #EDE9FE; color: #5B21B6; font-size: 13px;">1 cambio</span>
+        <span class="lbl">Descripción de la carta</span>
+        <span style="flex: 1;"></span>
+        <label class="lbl" for="mot">Motivo</label><input id="mot" value="Descripción para la carta de verano" style="width: 300px;">
+        <button class="btns">Descartar</button>
+        <button class="btnp">Guardar cambios</button>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
