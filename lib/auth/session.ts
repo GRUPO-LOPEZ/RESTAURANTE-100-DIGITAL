@@ -185,8 +185,9 @@ export const getMenus = cache(async () => {
     yieldsRecord,
     yieldsApprove,
     // Configuración del catálogo: categorías (catalog.manage), procesos (yields.approve) o
-    // categorías de recetas (recipes.draft para todo el grupo).
-    catalogSettings: catalogManage || yieldsApprove || recipesSettings,
+    // categorías de recetas (recipes.draft para todo el grupo), o las listas de la cocina (catalog.manage o
+    // recipes.manage_categories, ADR-0063).
+    catalogSettings: catalogManage || yieldsApprove || recipesSettings || rubrosRecipes,
     recipes,
     recipesDraft,
     recipesSettings,

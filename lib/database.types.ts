@@ -996,6 +996,200 @@ export type Database = {
           },
         ];
       };
+      kitchen_equipment: {
+        Row: {
+          capacity: number | null;
+          capacity_label: string | null;
+          capacity_unit_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          capacity?: number | null;
+          capacity_label?: string | null;
+          capacity_unit_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          capacity?: number | null;
+          capacity_label?: string | null;
+          capacity_unit_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "kitchen_equipment_capacity_unit_id_fkey";
+            columns: ["capacity_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      kitchen_sectors: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      kitchen_stations: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      practical_measures: {
+        Row: {
+          content: number;
+          content_unit_id: string;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          updated_at: string;
+          updated_by: string | null;
+          usage_note: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          content: number;
+          content_unit_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          usage_note?: string | null;
+        };
+        Update: {
+          content?: number;
+          content_unit_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          usage_note?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "practical_measures_content_unit_id_fkey";
+            columns: ["content_unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       purchase_products: {
         Row: {
           billed_by_weight: boolean;
@@ -1351,6 +1545,15 @@ export type Database = {
         Returns: undefined;
       };
       archive_yield_process: { Args: { p_id: string; p_reason: string }; Returns: undefined };
+      can_manage_list: {
+        Args: { p_group_id: string; p_list: Database["catalog"]["Enums"]["settings_list"] };
+        Returns: boolean;
+      };
+      can_see_lists: { Args: { p_group_id: string }; Returns: boolean };
+      cannot_archive_item: {
+        Args: { p_id: string; p_list: Database["catalog"]["Enums"]["settings_list"] };
+        Returns: string;
+      };
       category_first_word: { Args: { p_name: string }; Returns: string };
       category_group: { Args: { p_category_id: string }; Returns: string };
       category_match_name: { Args: { p_name: string }; Returns: string };
@@ -1486,6 +1689,28 @@ export type Database = {
         }[];
       };
       ingredient_used_in_recipes: { Args: { p_ingredient_id: string }; Returns: boolean };
+      install_default_lists: { Args: { p_group_id: string }; Returns: undefined };
+      item_is_live: {
+        Args: { p_id: string; p_list: Database["catalog"]["Enums"]["settings_list"] };
+        Returns: boolean;
+      };
+      list_item_id: {
+        Args: {
+          p_group_id: string;
+          p_list: Database["catalog"]["Enums"]["settings_list"];
+          p_name: string;
+        };
+        Returns: string;
+      };
+      list_item_name: {
+        Args: {
+          p_group_id: string;
+          p_id: string;
+          p_list: Database["catalog"]["Enums"]["settings_list"];
+        };
+        Returns: string;
+      };
+      list_key: { Args: { p_name: string }; Returns: string };
       missing_conversion: {
         Args: { p_content_unit_id: string; p_ingredient_id: string };
         Returns: string;
@@ -1558,6 +1783,14 @@ export type Database = {
         Returns: undefined;
       };
       require_name: { Args: { p_name: string }; Returns: undefined };
+      restore_item: {
+        Args: {
+          p_group_id: string;
+          p_id: string;
+          p_list: Database["catalog"]["Enums"]["settings_list"];
+        };
+        Returns: undefined;
+      };
       save_ingredient_sheet: {
         Args: {
           p_aliases: string[];
@@ -1568,6 +1801,16 @@ export type Database = {
           p_id: string;
           p_reason: string;
           p_requires_thawing: boolean;
+        };
+        Returns: Json;
+      };
+      save_settings_list: {
+        Args: {
+          p_expected_stamp: string;
+          p_group_id: string;
+          p_items: Json;
+          p_list: Database["catalog"]["Enums"]["settings_list"];
+          p_reason: string;
         };
         Returns: Json;
       };
@@ -1621,6 +1864,15 @@ export type Database = {
         };
         Returns: undefined;
       };
+      settings_list: {
+        Args: { p_group_id: string; p_list: Database["catalog"]["Enums"]["settings_list"] };
+        Returns: Json;
+      };
+      settings_list_stamp: {
+        Args: { p_group_id: string; p_list: Database["catalog"]["Enums"]["settings_list"] };
+        Returns: string;
+      };
+      settings_lists: { Args: { p_group_id: string }; Returns: Json };
       standard_yield: {
         Args: {
           p_cut?: string;
@@ -1708,6 +1960,15 @@ export type Database = {
         | "estimated"
         | "verified";
       dimension: "mass" | "volume" | "count" | "package";
+      settings_list:
+        | "ingredient_categories"
+        | "recipe_categories"
+        | "sectors"
+        | "stations"
+        | "equipment"
+        | "measures"
+        | "units"
+        | "processes";
       yield_status: "draft" | "approved" | "superseded";
     };
     CompositeTypes: {
@@ -8502,6 +8763,7 @@ export type Database = {
           equipment: string | null;
           equipment_capacity: number | null;
           equipment_capacity_unit_id: string | null;
+          equipment_id: string | null;
           group_id: string;
           id: string;
           instructions: string;
@@ -8510,6 +8772,7 @@ export type Database = {
           recipe_version_id: string;
           restaurant_id: string | null;
           sector: string | null;
+          sector_id: string | null;
           step_number: number;
           updated_at: string;
           updated_by: string | null;
@@ -8527,6 +8790,7 @@ export type Database = {
           equipment?: string | null;
           equipment_capacity?: number | null;
           equipment_capacity_unit_id?: string | null;
+          equipment_id?: string | null;
           group_id: string;
           id?: string;
           instructions: string;
@@ -8535,6 +8799,7 @@ export type Database = {
           recipe_version_id: string;
           restaurant_id?: string | null;
           sector?: string | null;
+          sector_id?: string | null;
           step_number: number;
           updated_at?: string;
           updated_by?: string | null;
@@ -8551,6 +8816,7 @@ export type Database = {
           equipment?: string | null;
           equipment_capacity?: number | null;
           equipment_capacity_unit_id?: string | null;
+          equipment_id?: string | null;
           group_id?: string;
           id?: string;
           instructions?: string;
@@ -8559,6 +8825,7 @@ export type Database = {
           recipe_version_id?: string;
           restaurant_id?: string | null;
           sector?: string | null;
+          sector_id?: string | null;
           step_number?: number;
           updated_at?: string;
           updated_by?: string | null;
@@ -8697,8 +8964,10 @@ export type Database = {
           restaurant_id: string | null;
           scope_type: Database["recipes"]["Enums"]["recipe_scope"];
           sector: string | null;
+          sector_id: string | null;
           short_name: string | null;
           station: string | null;
+          station_id: string | null;
           technical_owner_id: string | null;
           updated_at: string;
           updated_by: string | null;
@@ -8721,8 +8990,10 @@ export type Database = {
           restaurant_id?: string | null;
           scope_type: Database["recipes"]["Enums"]["recipe_scope"];
           sector?: string | null;
+          sector_id?: string | null;
           short_name?: string | null;
           station?: string | null;
+          station_id?: string | null;
           technical_owner_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
@@ -8744,8 +9015,10 @@ export type Database = {
           restaurant_id?: string | null;
           scope_type?: Database["recipes"]["Enums"]["recipe_scope"];
           sector?: string | null;
+          sector_id?: string | null;
           short_name?: string | null;
           station?: string | null;
+          station_id?: string | null;
           technical_owner_id?: string | null;
           updated_at?: string;
           updated_by?: string | null;
@@ -8926,6 +9199,19 @@ export type Database = {
       freeze_base_quantities: { Args: { p_version_id: string }; Returns: undefined };
       install_default_categories: { Args: { p_group_id: string }; Returns: number };
       kitchen_card: { Args: { p_recipe_id: string }; Returns: Json };
+      link_list_pair: {
+        Args: {
+          p_group_id: string;
+          p_id: string;
+          p_insert: boolean;
+          p_list: Database["catalog"]["Enums"]["settings_list"];
+          p_old_id: string;
+          p_old_text: string;
+          p_text: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      link_lists_from_text: { Args: { p_group_id: string }; Returns: undefined };
       lock_sub_graph: { Args: { p_group_id: string }; Returns: undefined };
       map_legacy_categories: {
         Args: { p_equivalences?: Json; p_group_id: string };
@@ -9638,6 +9924,16 @@ export const Constants = {
         "verified",
       ],
       dimension: ["mass", "volume", "count", "package"],
+      settings_list: [
+        "ingredient_categories",
+        "recipe_categories",
+        "sectors",
+        "stations",
+        "equipment",
+        "measures",
+        "units",
+        "processes",
+      ],
       yield_status: ["draft", "approved", "superseded"],
     },
   },

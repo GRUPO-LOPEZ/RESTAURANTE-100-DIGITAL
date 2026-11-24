@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import type { SettingsCategory } from "@/lib/catalog";
 import { isRubroClass, type Rubro } from "@/lib/rubros";
 import type {
   MediaKind,
@@ -130,38 +129,6 @@ export async function getRecipeCategories(): Promise<RecipeCategory[]> {
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label, "es"));
-}
-
-// Para la configuración: categorías de recetas de un grupo, con cuántas recetas tiene cada una
-// (mismo formato que las de materias primas).
-export async function getRecipeSettingsCategories(groupId: string): Promise<SettingsCategory[]> {
-  const supabase = await createClient();
-  const [categories, usage] = await Promise.all([
-    supabase
-      .schema("recipes")
-      .from("recipe_categories")
-      .select("id, parent_id, name")
-      .eq("group_id", groupId)
-      .order("name"),
-    // Se cuenta en la base: la API devuelve hasta 1.000 filas.
-    supabase.schema("recipes").rpc("category_usage"),
-  ]);
-  if (categories.error) failed("las categorías de recetas");
-  if (usage.error) failed("las recetas");
-  const used = new Map(usage.data.map((u) => [u.category_id, u.recipes]));
-  const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "es");
-  return categories.data
-    .filter((c) => !c.parent_id)
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      uses: used.get(c.id) ?? 0,
-      children: categories.data
-        .filter((s) => s.parent_id === c.id)
-        .map((s) => ({ id: s.id, name: s.name, uses: used.get(s.id) ?? 0 }))
-        .sort(byName),
-    }))
-    .sort(byName);
 }
 
 // Rubros (ADR-0038): los del grupo con sus conteos, en una sola consulta agrupada de la base

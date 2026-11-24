@@ -474,6 +474,7 @@ insert into recipes.recipe_categories (id, group_id, name, kind, code) values
    'SR-COC'),
   ('00000000-0000-4000-8000-000000001068', '00000000-0000-4000-8000-000000000001', 'Ensaladas', 'menu', 'PL-ENS');
 select recipes.install_default_categories('00000000-0000-4000-8000-000000000001');
+select catalog.install_default_lists('00000000-0000-4000-8000-000000000001');
 
 create temporary table seed_recipes (n int, code text, name text, kind text, brand int, restaurant int, category int,
                                      yield_qty numeric, yield_unit text, portions int, portion_grams numeric,

@@ -1,52 +1,42 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
-import {
-  archiveCategoryAction,
-  archiveProcessAction,
-  createCategoryAction,
-  createProcessAction,
-  archiveUnitAction,
-  createUnitAction,
-  renameCategoryAction,
-  renameProcessAction,
-} from "@/app/materias-primas/actions";
-import {
-  archiveRecipeCategoryAction,
-  createRecipeCategoryAction,
-  renameRecipeCategoryAction,
-} from "@/app/recetas/actions";
-import { ActionForm } from "@/components/action-form";
 import { AppShell, Loading } from "@/components/app-shell";
-import { Disclosure } from "@/components/disclosure";
-import { FlashNotice } from "@/components/flash-notice";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
-import { InfoTip } from "@/components/ui/info-tip";
-import { SegmentedField } from "@/components/ui/segmented-field";
-import { EmptyState } from "@/components/ui/kpi";
-import {
-  getSettingsCategories,
-  getSettingsGroups,
-  getSettingsProcesses,
-  getSettingsUnits,
-  type SettingsCategory,
-  type SettingsUnit,
-  type SettingsProcess,
-} from "@/lib/catalog";
-import { getRecipeSettingsCategories } from "@/lib/recipes";
-import { getMenus, requireMenu } from "@/lib/auth/session";
 import { BackLink } from "@/components/back-link";
+import { ListPicker } from "@/components/settings-list/list-picker";
+import {
+  SettingsListBar,
+  SettingsListCard,
+  SettingsListProvider,
+} from "@/components/settings-list/list-editor";
+import { EmptyState } from "@/components/ui/states";
+import { requireMenu } from "@/lib/auth/session";
+import { getUnits } from "@/lib/catalog";
+import { first } from "@/lib/data";
+import { getSettingsGroup, getSettingsList, getSettingsLists } from "@/lib/settings-data";
+import { LIST_INFO, listFromSlug } from "@/lib/settings-lists";
+import { cn } from "@/lib/utils";
 
-// Configuración del catálogo (ADR-0022): las listas que se eligen al cargar materias primas. Las
-// define el grupo; nada viene fijo. La base controla quién puede y que no se dé de baja algo en uso.
+// Configuración del catálogo en una pantalla (Tanda 2 de Soy, ADR-0063): a la izquierda, las 8 listas que usan las
+// materias primas y las recetas; a la derecha, la elegida, que se edita en la tabla y se guarda junta, con motivo. Quién
+// edita cada lista lo dice la base; las demás se ven en lectura.
 export default function ConfiguracionCatalogoPage({
   searchParams,
 }: PageProps<"/materias-primas/configuracion">) {
   return (
     <AppShell
       title="Configuración del catálogo"
-      description="Las listas que se eligen al cargar materias primas: categorías y procesos de rendimiento."
+      fill
+      back={
+        <BackLink href="/materias-primas" label="Volver a materias primas">
+          Materias primas
+        </BackLink>
+      }
+      meta={
+        <span className="text-sm text-ink-muted">
+          Las listas que usan las recetas y las materias primas
+        </span>
+      }
     >
       <Suspense fallback={<Loading />}>
         <Settings searchParams={searchParams} />
@@ -55,508 +45,90 @@ export default function ConfiguracionCatalogoPage({
   );
 }
 
-function Reason({ id, label }: { id: string; label: string }) {
-  return (
-    <FormTextarea
-      id={id}
-      name="reason"
-      label={label}
-      hint="Queda en el historial."
-      required
-      maxLength={500}
-    />
-  );
-}
-
-function count(n: number, one: string, many: string) {
-  return n === 0 ? `Sin ${many}` : `${n} ${n === 1 ? one : many}`;
-}
-
-// El aviso después de una baja (la dirección trae "?baja=…"). Solo estos dos valores.
-function archivedMessage(baja: string | string[] | undefined) {
-  switch (baja) {
-    case "categoria":
-      return "Categoría dada de baja. Queda en el historial.";
-    case "proceso":
-      return "Proceso dado de baja. Queda en el historial.";
-    case "categoria-receta":
-      return "Categoría de recetas dada de baja. Queda en el historial.";
-    default:
-      return null;
-  }
-}
-
 async function Settings({
   searchParams,
 }: {
   searchParams: PageProps<"/materias-primas/configuracion">["searchParams"];
 }) {
   await requireMenu("catalogSettings");
-  const archived = archivedMessage((await searchParams).baja);
-  const menus = await getMenus();
-  const [categoryGroups, processGroups, recipeGroups] = await Promise.all([
-    menus.catalogManage ? getSettingsGroups("catalog.manage") : [],
-    menus.yieldsApprove ? getSettingsGroups("yields.approve") : [],
-    menus.recipesSettings ? getSettingsGroups("recipes.draft") : [],
-  ]);
-  // Hoy hay un solo grupo. Si se suman otros, cada sección va a tener que elegir el grupo.
-  const categoryGroup = categoryGroups[0];
-  const processGroup = processGroups[0];
-  const recipeGroup = recipeGroups[0];
-  const [categories, processes, recipeCategories, units] = await Promise.all([
-    categoryGroup ? getSettingsCategories(categoryGroup) : [],
-    processGroup ? getSettingsProcesses(processGroup) : [],
-    recipeGroup ? getRecipeSettingsCategories(recipeGroup) : [],
-    categoryGroup ? getSettingsUnits() : [],
+  const query = await searchParams;
+  const groupId = await getSettingsGroup();
+  if (!groupId)
+    return (
+      <EmptyState title="No tenés listas para configurar.">
+        Las categorías de materias primas y las unidades las configura Compras; los procesos y las
+        categorías de recetas, un Chef de todo el grupo.
+      </EmptyState>
+    );
+  const lists = await getSettingsLists(groupId);
+  // Al entrar, la primera que la sesión edita. Los avisos de baja de antes (?baja=) llevan a su lista.
+  const old: Record<string, string> = {
+    categoria: "categorias",
+    proceso: "procesos",
+    "categoria-receta": "categorias-de-recetas",
+  };
+  const asked = first(query.lista) ?? old[first(query.baja) ?? ""];
+  const list =
+    listFromSlug(asked) ?? lists.find((l) => l.can_edit)?.list ?? "ingredient_categories";
+  const [data, units] = await Promise.all([
+    getSettingsList(groupId, list),
+    list === "equipment" ? getUnits() : [],
   ]);
   return (
     <>
-      <BackLink href="/materias-primas">Volver a materias primas</BackLink>
-      {archived ? <FlashNotice>{archived}</FlashNotice> : null}
-      {categoryGroup ? (
-        <Categories kind={INGREDIENT_CATEGORIES} groupId={categoryGroup} categories={categories} />
-      ) : null}
-      {recipeGroup ? (
-        <Categories kind={RECIPE_CATEGORIES} groupId={recipeGroup} categories={recipeCategories} />
-      ) : null}
-      {processGroup ? <Processes groupId={processGroup} processes={processes} /> : null}
-      {categoryGroup ? <Units groupId={categoryGroup} units={units} /> : null}
-      {!categoryGroup && !processGroup && !recipeGroup ? (
-        <EmptyState title="No tenés listas para configurar.">
-          Las categorías de materias primas las configura Compras; los procesos y las categorías de
-          recetas, un Chef de todo el grupo.
-        </EmptyState>
-      ) : null}
-    </>
-  );
-}
-
-// Las dos listas de categorías (materias primas y recetas) se manejan igual; cambian los textos y
-// las acciones. Cada una la administra quien tiene el permiso de su tema para todo el grupo.
-type CategoryKind = {
-  key: "mp" | "rec";
-  title: string;
-  description: string;
-  empty: string;
-  usedOne: string;
-  usedMany: string;
-  create: typeof createCategoryAction;
-  rename: typeof renameCategoryAction;
-  archive: typeof archiveCategoryAction;
-};
-
-const INGREDIENT_CATEGORIES: CategoryKind = {
-  key: "mp",
-  title: "Categorías",
-  description:
-    "Cada materia prima va en un rubro de compra, y si querés, en una subcategoría (por ejemplo, Lácteos › Quesos).",
-  empty: "Todavía no hay rubros de compra.",
-  usedOne: "materia prima",
-  usedMany: "materias primas",
-  create: createCategoryAction,
-  rename: renameCategoryAction,
-  archive: archiveCategoryAction,
-};
-
-const RECIPE_CATEGORIES: CategoryKind = {
-  key: "rec",
-  title: "Categorías de recetas",
-  description: "Para ordenar el recetario dentro de cada rubro: por ejemplo, Pastas › Rellenas.",
-  empty: "Todavía no hay rubros de sub-recetas ni de menú.",
-  usedOne: "receta",
-  usedMany: "recetas",
-  create: createRecipeCategoryAction,
-  rename: renameRecipeCategoryAction,
-  archive: archiveRecipeCategoryAction,
-};
-
-function Categories({
-  kind,
-  groupId,
-  categories,
-}: {
-  kind: CategoryKind;
-  groupId: string;
-  categories: SettingsCategory[];
-}) {
-  const prefix = `cfg-${kind.key}-cat`;
-  return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>{kind.title}</CardTitle>
-      <CardDescription>
-        {kind.description} Los rubros (el primer nivel) se crean, se renombran y se dan de baja en{" "}
-        <Link href="/rubros" className="text-primary underline underline-offset-4">
-          Rubros
-        </Link>
-        .
-      </CardDescription>
-      {categories.length === 0 ? (
-        <p className="text-base text-ink">{kind.empty}</p>
-      ) : (
-        <ul className="flex flex-col gap-2" aria-label={kind.title}>
-          {categories.map((c) => (
-            <li key={c.id} className="flex flex-col gap-2 rounded-sm border border-line p-3">
-              <CategoryItem
-                kind={kind}
-                id={c.id}
-                name={c.name}
-                uses={c.uses}
-                total={c.children.reduce((sum, s) => sum + s.uses, c.uses)}
-                subcategories={c.children.length}
-                rubro
-              />
-              {c.children.length > 0 ? (
-                <ul
-                  className="flex flex-col gap-2 border-l border-line pl-3"
-                  aria-label={`Subcategorías de ${c.name}`}
-                >
-                  {c.children.map((s) => (
-                    <li key={s.id} className="flex flex-col gap-2">
-                      <CategoryItem
-                        kind={kind}
-                        id={s.id}
-                        name={s.name}
-                        uses={s.uses}
-                        total={s.uses}
-                        subcategories={0}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
-      <Disclosure summary="Nueva subcategoría">
-        <ActionForm
-          action={kind.create}
-          schema="subcategory"
-          submitLabel="Crear subcategoría"
-          pendingLabel="Creando…"
+      <ListPicker
+        value={LIST_INFO[list].slug}
+        options={lists.map((l) => ({
+          slug: LIST_INFO[l.list].slug,
+          label: `${LIST_INFO[l.list].label} (${l.active})`,
+        }))}
+      />
+      <div className="flex min-h-0 flex-col gap-4 desk:grid desk:flex-[1_1_0px] desk:grid-cols-[270px_minmax(0,1fr)] desk:grid-rows-[minmax(0,1fr)]">
+        {/* Fuera de la lista elegida: al cambiar de lista, el foco sigue en el enlace. */}
+        <nav
+          aria-label="Listas"
+          className="relative hidden flex-col gap-1 overflow-y-auto rounded-md border border-line bg-surface p-3 desk:flex desk:min-h-0"
         >
-          <input type="hidden" name="groupId" value={groupId} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormInput id={`${prefix}-nombre`} label="Nombre" name="name" required maxLength={80} />
-            <FormSelect
-              id={`${prefix}-madre`}
-              label="Va dentro de"
-              hint="El rubro al que pertenece."
-              name="parent_id"
-              required
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Elegí el rubro
-              </option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </FormSelect>
-          </div>
-          <Reason id={`${prefix}-motivo`} label="Motivo" />
-        </ActionForm>
-      </Disclosure>
-    </Card>
-  );
-}
-
-const ARCHIVE_NOTE =
-  "Deja de aparecer en las listas y no se puede volver a activar desde acá: si hace falta, se crea de nuevo. La historia se conserva.";
-
-// uses: lo que tiene esta categoría (materias primas o recetas); total: con lo de sus subcategorías.
-function CategoryItem({
-  kind,
-  id,
-  name,
-  uses,
-  total,
-  subcategories,
-  rubro = false,
-}: {
-  kind: CategoryKind;
-  id: string;
-  name: string;
-  uses: number;
-  total: number;
-  subcategories: number;
-  // Un rubro (primer nivel) se da de baja en Rubros, donde se puede reactivar (ADR-0038).
-  rubro?: boolean;
-}) {
-  const prefix = `cfg-${kind.key}-cat`;
-  const inUse = uses > 0 || subcategories > 0;
-  return (
-    <>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-medium text-ink">{name}</span>
-        <span className="text-sm text-ink-muted tabular-nums">
-          {count(total, kind.usedOne, kind.usedMany)}
-          {subcategories > 0 ? " con sus subcategorías" : ""}
-        </span>
-      </div>
-      <Disclosure summary={`Cambiar el nombre de «${name}»`}>
-        <ActionForm action={kind.rename} schema="rename" submitLabel="Cambiar nombre">
-          <input type="hidden" name="categoryId" value={id} />
-          <FormInput
-            id={`${prefix}-renombrar-${id}`}
-            label="Nombre nuevo"
-            name="name"
-            required
-            maxLength={80}
-            defaultValue={name}
-          />
-          <Reason id={`${prefix}-renombrar-motivo-${id}`} label="Motivo del cambio de nombre" />
-        </ActionForm>
-      </Disclosure>
-      {rubro ? (
-        <p className="text-sm text-ink-muted">
-          Es un rubro: se da de baja en{" "}
-          <Link href="/rubros" className="text-primary underline underline-offset-4">
-            Rubros
-          </Link>
-          .
-        </p>
-      ) : inUse ? (
-        <p className="text-sm text-ink-muted">
-          No se puede dar de baja: tiene{" "}
-          {[uses > 0 ? kind.usedMany : null, subcategories > 0 ? "subcategorías" : null]
-            .filter(Boolean)
-            .join(" y ")}
-          .
-        </p>
-      ) : (
-        <Disclosure summary={`Dar de baja «${name}»`}>
-          <p className="text-base text-ink">{ARCHIVE_NOTE}</p>
-          <ActionForm
-            action={kind.archive}
-            schema="reason"
-            submitLabel="Dar de baja"
-            variant="destructive"
-          >
-            <input type="hidden" name="categoryId" value={id} />
-            <Reason id={`${prefix}-baja-motivo-${id}`} label="Motivo de la baja" />
-          </ActionForm>
-        </Disclosure>
-      )}
-    </>
-  );
-}
-
-function Processes({ groupId, processes }: { groupId: string; processes: SettingsProcess[] }) {
-  return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>Procesos de rendimiento</CardTitle>
-      <CardDescription>
-        Lo que cambia el peso de una materia prima: pelado, desgrasado, hervido… Se usan en los
-        ensayos y en el rendimiento estándar.
-      </CardDescription>
-      {processes.length === 0 ? (
-        <p className="text-base text-ink">
-          Todavía no hay procesos. Creá el primero, por ejemplo «Pelado» o «Hervido».
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-2" aria-label="Procesos de rendimiento">
-          {processes.map((p) => (
-            <li key={p.id} className="flex flex-col gap-2 rounded-sm border border-line p-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-medium text-ink">
-                  {p.name} <span className="text-sm font-normal text-ink-muted">{p.code}</span>
+          <p className="px-2 pb-1 text-sm text-ink-muted">Listas</p>
+          {lists.map((l) => {
+            const current = l.list === list;
+            return (
+              <Link
+                key={l.list}
+                href={`/materias-primas/configuracion?lista=${LIST_INFO[l.list].slug}`}
+                aria-current={current ? "page" : undefined}
+                className={cn(
+                  "flex min-h-control items-center justify-between gap-2 rounded-sm px-2 py-1 text-sm text-ink focus-visible:outline-2 focus-visible:outline-primary",
+                  current ? "bg-nav-active font-medium text-nav-active-ink" : "hover:bg-line/50",
+                )}
+              >
+                {LIST_INFO[l.list].label}
+                <span className="text-sm tabular-nums">
+                  {l.active}
+                  <span className="sr-only"> sin contar las bajas</span>
                 </span>
-                <span className="text-sm text-ink-muted tabular-nums">
-                  {count(p.standards, "estándar vigente", "estándares vigentes")}
-                </span>
-              </div>
-              <Disclosure summary={`Cambiar el nombre de «${p.name}»`}>
-                <ActionForm
-                  action={renameProcessAction}
-                  schema="rename"
-                  submitLabel="Cambiar nombre"
-                >
-                  <input type="hidden" name="processId" value={p.id} />
-                  <FormInput
-                    id={`cfg-proc-renombrar-${p.id}`}
-                    label="Nombre nuevo"
-                    hint="El código no cambia."
-                    name="name"
-                    required
-                    maxLength={80}
-                    defaultValue={p.name}
-                  />
-                  <Reason
-                    id={`cfg-proc-renombrar-motivo-${p.id}`}
-                    label="Motivo del cambio de nombre"
-                  />
-                </ActionForm>
-              </Disclosure>
-              {p.standards > 0 ? (
-                <p className="text-sm text-ink-muted">
-                  No se puede dar de baja: tiene estándares vigentes.
-                </p>
-              ) : (
-                <Disclosure summary={`Dar de baja «${p.name}»`}>
-                  <p className="text-base text-ink">{ARCHIVE_NOTE}</p>
-                  <ActionForm
-                    action={archiveProcessAction}
-                    schema="reason"
-                    submitLabel="Dar de baja"
-                    variant="destructive"
-                  >
-                    <input type="hidden" name="processId" value={p.id} />
-                    <Reason id={`cfg-proc-baja-motivo-${p.id}`} label="Motivo de la baja" />
-                  </ActionForm>
-                </Disclosure>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <Disclosure summary="Nuevo proceso">
-        <ActionForm
-          action={createProcessAction}
-          schema="yieldProcess"
-          submitLabel="Crear proceso"
-          pendingLabel="Creando…"
+              </Link>
+            );
+          })}
+          <p className="mt-auto px-2 pt-3 text-xs text-ink-muted">
+            Todas se editan igual: en la tabla, con un motivo al guardar. Dar de baja no borra.
+          </p>
+        </nav>
+        <SettingsListProvider
+          key={list}
+          groupId={groupId}
+          list={list}
+          stamp={data.stamp}
+          canEdit={data.canEdit}
+          initial={data.items}
+          units={units
+            .filter((u) => u.dimension !== "package")
+            .map((u) => ({ code: u.code, label: u.label, short: u.name }))}
         >
-          <input type="hidden" name="groupId" value={groupId} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormInput
-              id="cfg-proc-codigo"
-              label="Código"
-              hint="No cambia nunca. Por ejemplo, PELADO."
-              name="code"
-              required
-              maxLength={30}
-              autoCapitalize="characters"
-            />
-            <FormInput id="cfg-proc-nombre" label="Nombre" name="name" required maxLength={80} />
-          </div>
-          <Reason id="cfg-proc-motivo" label="Motivo" />
-        </ActionForm>
-      </Disclosure>
-    </Card>
-  );
-}
-
-// Unidades de medida (ADR-0040): las que se eligen en recetas y compras, con su equivalencia en la base. Valen para todo
-// el sistema; las crea quien administra el catálogo, con motivo. No se borran (las usan recetas y productos).
-const DIMENSION_LABELS: Record<string, string> = {
-  mass: "Peso",
-  volume: "Volumen",
-  count: "Unidades",
-  package: "Envases",
-};
-
-function Units({ groupId, units }: { groupId: string; units: SettingsUnit[] }) {
-  return (
-    <Card className="flex flex-col gap-4">
-      <div className="flex items-center gap-1">
-        <CardTitle>Unidades de medida</CardTitle>
-        <InfoTip label="unidades de medida">
-          Las que se eligen al comprar. Las de peso, volumen y unidades de esta lista también se
-          usan en las recetas; una unidad nueva llega a las recetas en la próxima actualización del
-          sistema. Las cuentas se hacen siempre en gramos, mililitros o unidades.
-        </InfoTip>
+          <SettingsListCard />
+          <SettingsListBar />
+        </SettingsListProvider>
       </div>
-      <div className="grid gap-4 desk:grid-cols-4">
-        {Object.entries(DIMENSION_LABELS).map(([dimension, label]) => (
-          <div key={dimension} className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium text-ink">{label}</h3>
-            {units.every((u) => u.dimension !== dimension) ? (
-              <p className="text-sm text-ink-muted">Sin unidades de este tipo.</p>
-            ) : null}
-            <ul className="flex flex-col gap-1" aria-label={`Unidades de ${label.toLowerCase()}`}>
-              {units
-                .filter((u) => u.dimension === dimension)
-                .map((u) => (
-                  <li
-                    key={u.id}
-                    className="flex flex-col gap-1 rounded-sm border border-line px-3 py-2"
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <span className="text-base text-ink">{u.label}</span>
-                      <span className="text-sm text-ink-muted tabular-nums">
-                        {u.isBase
-                          ? "Base"
-                          : u.equivalence
-                            ? `= ${u.equivalence}`
-                            : "Sin equivalencia fija"}
-                      </span>
-                    </div>
-                    {/* Una unidad que nada usó se puede dar de baja (para corregir un error de carga). */}
-                    {!u.canArchive ? null : (
-                      <Disclosure summary={`Dar de baja «${u.label}»`}>
-                        <ActionForm
-                          action={archiveUnitAction}
-                          schema="reason"
-                          submitLabel="Dar de baja"
-                          variant="destructive"
-                        >
-                          <input type="hidden" name="groupId" value={groupId} />
-                          <input type="hidden" name="unitId" value={u.id} />
-                          <Reason id={`cfg-unidad-baja-${u.id}`} label="Motivo de la baja" />
-                        </ActionForm>
-                      </Disclosure>
-                    )}
-                  </li>
-                ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-      <Disclosure summary="Nueva unidad">
-        <ActionForm
-          action={createUnitAction}
-          schema="unit"
-          submitLabel="Crear unidad"
-          pendingLabel="Creando…"
-        >
-          <input type="hidden" name="groupId" value={groupId} />
-          <SegmentedField
-            id="cfg-unidad-tipo"
-            name="dimension"
-            label="Tipo"
-            options={Object.entries(DIMENSION_LABELS).map(([value, label]) => ({ value, label }))}
-            hint="Un envase va sin equivalencia: su contenido se carga en cada producto."
-          />
-          <div className="grid gap-4 sm:grid-cols-2 desk:grid-cols-4">
-            <FormInput
-              id="cfg-unidad-nombre"
-              label="Nombre"
-              hint="Por ejemplo, Cucharón."
-              name="long_name"
-              required
-              maxLength={40}
-            />
-            <FormInput
-              id="cfg-unidad-abrev"
-              label="Abreviatura"
-              hint="Por ejemplo, cuch."
-              name="abbreviation"
-              required
-              maxLength={12}
-            />
-            <FormInput
-              id="cfg-unidad-codigo"
-              label="Código"
-              hint="No cambia nunca. Minúsculas, por ejemplo cucharon."
-              name="code"
-              required
-              maxLength={20}
-              autoCapitalize="none"
-            />
-            <FormInput
-              id="cfg-unidad-factor"
-              label="Equivale a (g, ml o unidades)"
-              hint="Un cucharón de 60 ml: 60."
-              name="factor"
-              inputMode="decimal"
-            />
-          </div>
-          <Reason id="cfg-unidad-motivo" label="Motivo" />
-        </ActionForm>
-      </Disclosure>
-    </Card>
+    </>
   );
 }

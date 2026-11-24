@@ -197,6 +197,80 @@ Ingredientes gastronómicos (la mozzarella, no la horma de una marca): se cargan
 | `deleted_by`       | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                                                                                                   |
 | `requires_thawing` | `boolean`                  | no   | Se compra congelada: el costo de sus líneas limpias o cocidas suma la merma de descongelado (estándar aprobado del proceso DESCONGELADO). Sin ese estándar, la línea queda RENDIMIENTO NO DEFINIDO. |
 
+## `catalog.kitchen_equipment`
+
+Equipos de la cocina del grupo (pastera, horno combi), con su capacidad. Se eligen en los pasos de la receta.
+
+| Columna            | Tipo                       | Nulo | Qué guarda                                                                                                                               |
+| ------------------ | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | `uuid`                     | no   | Identificador. No cambia nunca.                                                                                                          |
+| `group_id`         | `uuid`                     | no   | Grupo al que pertenece.                                                                                                                  |
+| `name`             | `text`                     | no   | Nombre. Único en el grupo, sin distinguir mayúsculas, tildes ni espacios de más.                                                         |
+| `capacity`         | `numeric(18,6)`            | sí   | Cuánto entra en el equipo. Vacío = sin cargar.                                                                                           |
+| `capacity_unit_id` | `uuid`                     | sí   | Unidad del sistema de la capacidad (kg, l, porción): con ella se calculan las tandas. Vacía si la capacidad va en palabras.              |
+| `capacity_label`   | `text`                     | sí   | La capacidad en palabras, cuando no es una unidad del sistema (canastos, bandejas GN 1/1): se muestra y no entra en la cuenta de tandas. |
+| `is_active`        | `boolean`                  | no   | Si se ofrece para elegir. Inactivo no se borra: lo que ya lo usa no cambia, y se puede reactivar.                                        |
+| `created_at`       | `timestamp with time zone` | no   | Cuándo se creó.                                                                                                                          |
+| `created_by`       | `uuid`                     | sí   | Quién lo creó.                                                                                                                           |
+| `updated_at`       | `timestamp with time zone` | no   | Cuándo cambió por última vez.                                                                                                            |
+| `updated_by`       | `uuid`                     | sí   | Quién lo cambió por última vez.                                                                                                          |
+| `deleted_at`       | `timestamp with time zone` | sí   | Baja lógica: cuándo.                                                                                                                     |
+| `deleted_by`       | `uuid`                     | sí   | Baja lógica: quién.                                                                                                                      |
+
+## `catalog.kitchen_sectors`
+
+Sectores de la cocina del grupo (cocina caliente, cocina fría, pastelería). Se eligen en la receta.
+
+| Columna      | Tipo                       | Nulo | Qué guarda                                                                                        |
+| ------------ | -------------------------- | ---- | ------------------------------------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador. No cambia nunca.                                                                   |
+| `group_id`   | `uuid`                     | no   | Grupo al que pertenece.                                                                           |
+| `name`       | `text`                     | no   | Nombre. Único en el grupo, sin distinguir mayúsculas, tildes ni espacios de más.                  |
+| `is_active`  | `boolean`                  | no   | Si se ofrece para elegir. Inactivo no se borra: lo que ya lo usa no cambia, y se puede reactivar. |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó.                                                                                   |
+| `created_by` | `uuid`                     | sí   | Quién lo creó.                                                                                    |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo cambió por última vez.                                                                     |
+| `updated_by` | `uuid`                     | sí   | Quién lo cambió por última vez.                                                                   |
+| `deleted_at` | `timestamp with time zone` | sí   | Baja lógica: cuándo.                                                                              |
+| `deleted_by` | `uuid`                     | sí   | Baja lógica: quién.                                                                               |
+
+## `catalog.kitchen_stations`
+
+Partidas de la cocina del grupo (pastas, salsas, parrilla). Se eligen en la receta.
+
+| Columna      | Tipo                       | Nulo | Qué guarda                                                                                        |
+| ------------ | -------------------------- | ---- | ------------------------------------------------------------------------------------------------- |
+| `id`         | `uuid`                     | no   | Identificador. No cambia nunca.                                                                   |
+| `group_id`   | `uuid`                     | no   | Grupo al que pertenece.                                                                           |
+| `name`       | `text`                     | no   | Nombre. Único en el grupo, sin distinguir mayúsculas, tildes ni espacios de más.                  |
+| `is_active`  | `boolean`                  | no   | Si se ofrece para elegir. Inactivo no se borra: lo que ya lo usa no cambia, y se puede reactivar. |
+| `created_at` | `timestamp with time zone` | no   | Cuándo se creó.                                                                                   |
+| `created_by` | `uuid`                     | sí   | Quién lo creó.                                                                                    |
+| `updated_at` | `timestamp with time zone` | no   | Cuándo cambió por última vez.                                                                     |
+| `updated_by` | `uuid`                     | sí   | Quién lo cambió por última vez.                                                                   |
+| `deleted_at` | `timestamp with time zone` | sí   | Baja lógica: cuándo.                                                                              |
+| `deleted_by` | `uuid`                     | sí   | Baja lógica: quién.                                                                               |
+
+## `catalog.practical_measures`
+
+Medidas prácticas del grupo: lo que usa el cocinero en vez de pesar (cucharón, taza, nido), con lo que contiene cada una.
+
+| Columna           | Tipo                       | Nulo | Qué guarda                                                                                        |
+| ----------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------- |
+| `id`              | `uuid`                     | no   | Identificador. No cambia nunca.                                                                   |
+| `group_id`        | `uuid`                     | no   | Grupo al que pertenece.                                                                           |
+| `name`            | `text`                     | no   | Nombre. Único en el grupo, sin distinguir mayúsculas, tildes ni espacios de más.                  |
+| `content`         | `numeric(18,6)`            | no   | Cuánto contiene, en su unidad base.                                                               |
+| `content_unit_id` | `uuid`                     | no   | Unidad base de lo que contiene: ml, g o unidad.                                                   |
+| `usage_note`      | `text`                     | sí   | Con qué se usa (salsas, sopas, cremas). Opcional.                                                 |
+| `is_active`       | `boolean`                  | no   | Si se ofrece para elegir. Inactivo no se borra: lo que ya lo usa no cambia, y se puede reactivar. |
+| `created_at`      | `timestamp with time zone` | no   | Cuándo se creó.                                                                                   |
+| `created_by`      | `uuid`                     | sí   | Quién lo creó.                                                                                    |
+| `updated_at`      | `timestamp with time zone` | no   | Cuándo cambió por última vez.                                                                     |
+| `updated_by`      | `uuid`                     | sí   | Quién lo cambió por última vez.                                                                   |
+| `deleted_at`      | `timestamp with time zone` | sí   | Baja lógica: cuándo.                                                                              |
+| `deleted_by`      | `uuid`                     | sí   | Baja lógica: quién.                                                                               |
+
 ## `catalog.purchase_products`
 
 Productos de compra: cómo se compra un ingrediente ("Mozzarella marca X, horma de 4 kg"). Varios productos pueden apuntar al mismo ingrediente. El precio va aparte (etapa 2.1 C).
@@ -772,8 +846,8 @@ Procedimiento de una versión: pasos con sus tiempos. Solo cambian mientras la v
 | `active_minutes`             | `integer`                  | no   | Minutos con una persona trabajando.                                                                                |
 | `passive_minutes`            | `integer`                  | no   | Minutos de espera (cocción, reposo, fermentación) sin una persona encima.                                          |
 | `workers`                    | `smallint`                 | sí   | Cuántas personas hacen falta.                                                                                      |
-| `sector`                     | `text`                     | sí   | Sector de la cocina.                                                                                               |
-| `equipment`                  | `text`                     | sí   | Equipo que se usa.                                                                                                 |
+| `sector`                     | `text`                     | sí   | Sector de la cocina, en palabras. Queda congelado con la versión aunque la lista cambie.                           |
+| `equipment`                  | `text`                     | sí   | Equipo que se usa, en palabras. Queda congelado con la versión aunque la lista cambie.                             |
 | `control_point`              | `text`                     | sí   | Punto de control o criterio de calidad del paso.                                                                   |
 | `created_at`                 | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                  |
 | `created_by`                 | `uuid`                     | sí   | Quién lo creó (lo pone la base).                                                                                   |
@@ -783,6 +857,8 @@ Procedimiento de una versión: pasos con sus tiempos. Solo cambian mientras la v
 | `deleted_by`                 | `uuid`                     | sí   | Quién lo borró (lo pone la base).                                                                                  |
 | `equipment_capacity`         | `numeric(18,6)`            | sí   | Cuánto entra en el equipo de este paso. Si el lote lo supera, hacen falta más tandas.                              |
 | `equipment_capacity_unit_id` | `uuid`                     | sí   | Unidad de la capacidad: la del rendimiento al cargarla. Va guardada porque el rendimiento puede cambiar de unidad. |
+| `sector_id`                  | `uuid`                     | sí   | Sector de la lista del grupo. Vacío si el texto no está en la lista, o en las versiones anteriores a las listas.   |
+| `equipment_id`               | `uuid`                     | sí   | Equipo de la lista del grupo. Vacío si el texto no está en la lista, o en las versiones anteriores a las listas.   |
 
 ## `recipes.recipe_versions`
 
@@ -834,8 +910,8 @@ Recetas: la identidad (código, nombre, alcance, tipo). La fórmula vive en reci
 | `short_name`           | `text`                     | sí   | Nombre corto para la cocina y las comandas.                                                                     |
 | `recipe_type`          | `recipes.recipe_type`      | no   | Tipo: preparación, plato terminado o componente unitario.                                                       |
 | `category_id`          | `uuid`                     | sí   | Categoría o subcategoría de la receta.                                                                          |
-| `sector`               | `text`                     | sí   | Sector de la cocina donde se prepara (por ejemplo, caliente o pastelería).                                      |
-| `station`              | `text`                     | sí   | Partida o estación (por ejemplo, plancha o pastas).                                                             |
+| `sector`               | `text`                     | sí   | Sector de la cocina donde se prepara, en palabras. Si está en la lista (sector_id), sigue su nombre.            |
+| `station`              | `text`                     | sí   | Partida o estación, en palabras. Si está en la lista (station_id), sigue su nombre.                             |
 | `technical_owner_id`   | `uuid`                     | sí   | Responsable técnico de la receta.                                                                               |
 | `is_active`            | `boolean`                  | no   | Si la receta se usa. Una receta archivada conserva toda su historia.                                            |
 | `created_at`           | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                               |
@@ -845,6 +921,8 @@ Recetas: la identidad (código, nombre, alcance, tipo). La fórmula vive en reci
 | `deleted_at`           | `timestamp with time zone` | sí   | Borrado lógico. Vacío si está vigente.                                                                          |
 | `deleted_by`           | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                               |
 | `variant_of_recipe_id` | `uuid`                     | sí   | Receta maestra de la que sale, si es una variante local. Las diferencias contra la maestra se muestran siempre. |
+| `sector_id`            | `uuid`                     | sí   | Sector de la lista del grupo. Vacío si el texto no está en la lista.                                            |
+| `station_id`           | `uuid`                     | sí   | Partida de la lista del grupo. Vacía si el texto no está en la lista.                                           |
 
 ## `recipes.top_categories` (vista)
 
@@ -869,6 +947,7 @@ Rubros (categorías del primer nivel) de compra, de sub-recetas y de menú, junt
 | `catalog.conversion_kind`        | `density`, `unit_weight`                                                                                                    | Conversión propia de un ingrediente: density (gramos por mililitro) o unit_weight (gramos por unidad: 1 huevo, 1 atado).                                                                                                  |
 | `catalog.data_source`            | `manual`, `excel_import`, `measured`, `supplier`, `calculated`, `estimated`, `verified`                                     | Fuente de un dato (sección 6): manual, importado de Excel, medido en ensayo, informado por proveedor, calculado por el sistema, estimado o verificado por un responsable.                                                 |
 | `catalog.dimension`              | `mass`, `volume`, `count`, `package`                                                                                        | Dimensión de una unidad: mass (masa, base g), volume (volumen, base ml), count (conteo, base unidad) o package (envase sin contenido fijo: caja, bolsa, horma).                                                           |
+| `catalog.settings_list`          | `ingredient_categories`, `recipe_categories`, `sectors`, `stations`, `equipment`, `measures`, `units`, `processes`          | Las listas de Configuración del catálogo: categorías de materias primas y de recetas, sectores, partidas, equipos, medidas prácticas, unidades de medida y procesos de rendimiento.                                       |
 | `catalog.yield_status`           | `draft`, `approved`, `superseded`                                                                                           | Estado de un perfil de rendimiento: draft (propuesto, esperando aprobación), approved (el estándar vigente) o superseded (reemplazado por otro aprobado).                                                                 |
 | `costing.cost_reliability`       | `verified`, `estimated`, `stale`, `incomplete`                                                                              | Confiabilidad de un costo; gana la peor línea: verified (completo y verificado), estimated (con estimaciones: algún precio heredado), stale (desactualizado: algún precio vencido) e incomplete (falta un dato).          |
 | `costing.cost_snapshot_reason`   | `publish`, `price_change`, `yield_change`, `assignment`, `legal_entity_change`, `restaurant_reopened`, `daily`, `month_end` | Por qué se sacó una foto de costo: se publicó una versión, se aprobó un precio o un rendimiento, se asignó la receta a un local, cambió la razón social, se reabrió el local, la actualización diaria o el cierre de mes. |
