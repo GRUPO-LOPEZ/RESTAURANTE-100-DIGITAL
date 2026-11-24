@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isContentUnit, type Measure } from "@/lib/measures";
 import { isRubroClass, type Rubro } from "@/lib/rubros";
 import type {
   MediaKind,
@@ -303,6 +304,13 @@ export type RecipeLine = {
   yieldProfileId: string | null;
   noScale: boolean;
   notes: string | null;
+  // Medida práctica (ADR-0064): cuántas van, congeladas con la versión.
+  measureId: string | null;
+  measureCount: number | null;
+  measureName: string | null;
+  measureContent: number | null;
+  measureUnit: string | null;
+  measureManual: boolean;
 };
 
 export type RecipeStep = {
@@ -312,6 +320,8 @@ export type RecipeStep = {
   activeMinutes: number;
   passiveMinutes: number;
   equipment: string | null;
+  // El elemento de la lista; nulo si el texto no está en la lista.
+  equipmentId: string | null;
   equipmentCapacity: number | null;
   equipmentCapacityUnit: string | null;
   controlPoint: string | null;
@@ -350,6 +360,8 @@ export type RecipeDetail = {
   categoryId: string | null;
   sector: string | null;
   station: string | null;
+  sectorId: string | null;
+  stationId: string | null;
   isActive: boolean;
   versions: RecipeVersion[];
   current: RecipeVersion | null;
@@ -394,7 +406,7 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
     .schema("recipes")
     .from("recipes")
     .select(
-      "id, group_id, brand_id, restaurant_id, scope_type, code, name, short_name, recipe_type, category_id, sector, station, is_active, variant_of_recipe_id",
+      "id, group_id, brand_id, restaurant_id, scope_type, code, name, short_name, recipe_type, category_id, sector, station, sector_id, station_id, is_active, variant_of_recipe_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -506,6 +518,8 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
     categoryId: r.category_id,
     sector: r.sector,
     station: r.station,
+    sectorId: r.sector_id,
+    stationId: r.station_id,
     isActive: r.is_active,
     versions: list,
     current,
@@ -534,7 +548,7 @@ export async function getVersionContent(
       .schema("recipes")
       .from("recipe_components")
       .select(
-        "ingredient_id, sub_recipe_id, quantity, unit_id, quantity_basis, yield_profile_id, no_scale, notes, line_order",
+        "ingredient_id, sub_recipe_id, quantity, unit_id, quantity_basis, yield_profile_id, no_scale, notes, line_order, practical_measure_id, measure_count, measure_name, measure_content, measure_unit_id, measure_manual",
       )
       .eq("recipe_version_id", versionId)
       .order("line_order"),
@@ -542,7 +556,7 @@ export async function getVersionContent(
       .schema("recipes")
       .from("recipe_steps")
       .select(
-        "id, step_number, kind, instructions, active_minutes, passive_minutes, equipment, equipment_capacity, equipment_capacity_unit_id, control_point",
+        "id, step_number, kind, instructions, active_minutes, passive_minutes, equipment, equipment_id, equipment_capacity, equipment_capacity_unit_id, control_point",
       )
       .eq("recipe_version_id", versionId)
       .order("step_number"),
@@ -599,6 +613,12 @@ export async function getVersionContent(
       yieldProfileId: l.yield_profile_id,
       noScale: l.no_scale,
       notes: l.notes,
+      measureId: l.practical_measure_id,
+      measureCount: l.measure_count === null ? null : Number(l.measure_count),
+      measureName: l.measure_name,
+      measureContent: l.measure_content === null ? null : Number(l.measure_content),
+      measureUnit: unit.get(l.measure_unit_id ?? "") ?? null,
+      measureManual: l.measure_manual,
     })),
     steps: steps.data.map((s) => ({
       number: s.step_number,
@@ -607,6 +627,7 @@ export async function getVersionContent(
       activeMinutes: s.active_minutes,
       passiveMinutes: s.passive_minutes,
       equipment: s.equipment,
+      equipmentId: s.equipment_id,
       equipmentCapacity: s.equipment_capacity === null ? null : Number(s.equipment_capacity),
       equipmentCapacityUnit: unit.get(s.equipment_capacity_unit_id ?? "") ?? null,
       controlPoint: s.control_point,
@@ -694,6 +715,121 @@ export async function getVersionDiff(versionId: string): Promise<DiffRow[]> {
     oldQuantity: d.old_quantity,
     newQuantity: d.new_quantity,
   }));
+}
+
+// Las medidas prácticas que cambiaron contra la versión anterior, por ingrediente («antes 4 × Nido»), para quien revisa.
+export async function getMeasureMarks(versionId: string): Promise<Record<string, string>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("recipes")
+    .rpc("version_measure_diff", { p_version_id: versionId });
+  if (error) failed("las diferencias");
+  return Object.fromEntries(
+    data.map((d) => [
+      d.ingredient,
+      d.old_measures === "sin medida" ? "medida nueva" : `medida: antes ${d.old_measures}`,
+    ]),
+  );
+}
+
+// Las listas de la cocina que elige la ficha de receta (ADR-0063 y ADR-0064), también los inactivos: los que ya usa la
+// receta se siguen viendo. Y el peso por unidad de las materias primas de la ficha, para la medida práctica.
+export type KitchenItem = { id: string; name: string; isActive: boolean };
+export type KitchenEquipment = KitchenItem & {
+  capacity: number | null;
+  capacityUnit: string | null;
+  capacityLabel: string | null;
+};
+export type KitchenLists = {
+  sectors: KitchenItem[];
+  stations: KitchenItem[];
+  equipment: KitchenEquipment[];
+  measures: Measure[];
+};
+
+export async function getKitchenLists(groupId: string): Promise<KitchenLists> {
+  const catalog = (await createClient()).schema("catalog");
+  const [sectors, stations, equipment, measures, units] = await Promise.all([
+    catalog
+      .from("kitchen_sectors")
+      .select("id, name, is_active")
+      .eq("group_id", groupId)
+      .order("name"),
+    catalog
+      .from("kitchen_stations")
+      .select("id, name, is_active")
+      .eq("group_id", groupId)
+      .order("name"),
+    catalog
+      .from("kitchen_equipment")
+      .select("id, name, is_active, capacity, capacity_unit_id, capacity_label")
+      .eq("group_id", groupId)
+      .order("name"),
+    catalog
+      .from("practical_measures")
+      .select("id, name, is_active, content, content_unit_id")
+      .eq("group_id", groupId)
+      .order("name"),
+    catalog.from("units").select("id, code"),
+  ]);
+  if (sectors.error || stations.error || equipment.error || measures.error || units.error)
+    failed("las listas de la cocina");
+  const code = new Map(units.data.map((u) => [u.id, u.code]));
+  const item = (r: { id: string; name: string; is_active: boolean }): KitchenItem => ({
+    id: r.id,
+    name: r.name,
+    isActive: r.is_active,
+  });
+  return {
+    sectors: sectors.data.map(item),
+    stations: stations.data.map(item),
+    equipment: equipment.data.map((e) => ({
+      ...item(e),
+      capacity: e.capacity === null ? null : Number(e.capacity),
+      capacityUnit: code.get(e.capacity_unit_id ?? "") ?? null,
+      capacityLabel: e.capacity_label,
+    })),
+    measures: measures.data.flatMap((m) => {
+      const unit = code.get(m.content_unit_id) ?? "";
+      return isContentUnit(unit)
+        ? [{ ...item(m), content: Number(m.content), unit } satisfies Measure]
+        : [];
+    }),
+  };
+}
+
+// Los rubros de materias primas que van a recetas (y sus subcategorías), para crear una desde la ficha.
+export async function getRecipeIngredientCategories(
+  groupId: string,
+): Promise<{ id: string; label: string }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .from("ingredient_categories")
+    .select("id, parent_id, name, is_active, used_in_recipes")
+    .eq("group_id", groupId);
+  if (error) failed("los rubros");
+  const byId = new Map(data.map((c) => [c.id, c]));
+  return data
+    .flatMap((c) => {
+      const top = c.parent_id ? byId.get(c.parent_id) : c;
+      if (!top || !top.is_active || !c.is_active || !top.used_in_recipes) return [];
+      return [{ id: c.id, label: c.parent_id ? `${top.name} › ${c.name}` : c.name }];
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, "es"));
+}
+
+export async function getUnitWeights(ingredientIds: string[]): Promise<Record<string, number>> {
+  if (ingredientIds.length === 0) return {};
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .from("ingredient_unit_conversions")
+    .select("ingredient_id, factor")
+    .eq("kind", "unit_weight")
+    .in("ingredient_id", ingredientIds);
+  if (error) failed("los pesos por unidad");
+  return Object.fromEntries(data.map((c) => [c.ingredient_id, Number(c.factor)]));
 }
 
 // Una variante contra la vigente de su maestra (vacío si la sesión no ve la maestra).
@@ -884,6 +1020,8 @@ export type KitchenCard = {
     unit: string;
     basis: QuantityBasis;
     notes: string | null;
+    measure_count: number | null;
+    measure_name: string | null;
   }[];
   steps: {
     number: number;

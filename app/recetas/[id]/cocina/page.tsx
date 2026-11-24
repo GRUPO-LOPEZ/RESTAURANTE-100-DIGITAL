@@ -18,6 +18,7 @@ import {
   getPublishedPhotos,
 } from "@/lib/recipes";
 import { getMenus, requireMenu } from "@/lib/auth/session";
+import { measureText } from "@/lib/measures";
 
 // Vista de cocina (secciones 13 y 17): la versión vigente, con letra grande (20 px) para leerla de
 // lejos en una tablet o un celular. Sin ningún valor económico: la base no los manda (caso 24).
@@ -192,8 +193,14 @@ async function Kitchen({ params }: { params: PageProps<"/recetas/[id]/cocina">["
                 ) : null}
                 {c.notes ? <span className="block text-base text-ink-muted">{c.notes}</span> : null}
               </span>
-              <span className="font-semibold text-ink tabular-nums">
-                {formatQuantity(c.quantity)} {c.unit}
+              <span className="flex flex-col items-end text-ink tabular-nums">
+                <span className="font-semibold">
+                  {formatQuantity(c.quantity)} {c.unit}
+                </span>
+                {/* Cuántas medidas prácticas son (ADR-0064). */}
+                {measureText(c.measure_count, c.measure_name) ? (
+                  <span className="text-base">{measureText(c.measure_count, c.measure_name)}</span>
+                ) : null}
               </span>
             </li>
           ))}

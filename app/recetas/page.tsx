@@ -26,6 +26,7 @@ import {
   RECIPE_SORT_KEYS,
   SCOPE_LABELS,
   VARIANT_FILTER_LABEL,
+  versionChip,
   countRecipesByTypes,
   getRecipeCategories,
   getRecipes,
@@ -108,7 +109,7 @@ function StatusBadges({ row }: { row: RecipeRow }) {
     <span className="flex flex-wrap gap-1">
       {row.isVariant ? <Badge status="info">Variante</Badge> : null}
       {row.current ? (
-        <Badge status="ok">Vigente v{row.current}</Badge>
+        <Badge status="ok">{versionChip(row.current, "published")}</Badge>
       ) : (
         <Badge status="none">Sin vigente</Badge>
       )}

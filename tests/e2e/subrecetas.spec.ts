@@ -77,7 +77,7 @@ test("la Chef agrega una preparación desde el buscador y la ficha la enlaza", a
     ).toBeVisible();
     // Rinde en kilos: se sugiere gramos, y solo unidades de peso, como su rendimiento: no se puede elegir una
     // que la base rechace.
-    const unit = page.getByLabel("Medida, fila 1", { exact: true });
+    const unit = page.getByLabel("Unidad, fila 1", { exact: true });
     await expect(unit).toHaveValue("g");
     // La planilla muestra la abreviatura (ADR-0047).
     await expect(unit.locator("option")).toHaveText([

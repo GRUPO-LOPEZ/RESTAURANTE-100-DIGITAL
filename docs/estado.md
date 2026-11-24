@@ -1,10 +1,19 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-24._ **Correcciones del Módulo 1: Tanda 1 cerrada (Panel, PR #98; Usuarios, PR #100). En curso la Tanda 2 (Base de conocimiento): PR A, Configuración del catálogo (`feat/catalogo-listas`, ADR-0063).**
+_Última actualización: 2026-11-24._ **Correcciones del Módulo 1: Tanda 1 cerrada; Tanda 2, PR A fusionado (PR #101, en staging). En curso: PR B, ficha de receta (`feat/receta-planilla`, ADR-0064).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## Para retomar (2026-11-24): Tanda 2, PR A (Configuración del catálogo)
+## Para retomar (2026-11-24): Tanda 2, PR B (ficha de receta)
+
+- **Rama `feat/receta-planilla`, ADR-0064, lista para Soy en `docs/modulos/25-ficha-de-receta-lista-de-cambios.md`, capturas en `docs/capturas/receta-planilla/`.** Plan aprobado por Joaco el 2026-11-24.
+- **Base:** migraciones `20261215110000` a `20261215140000`: aviso `ingredient_created`, permiso `catalog.create_ingredients`, medida práctica por línea, y sector, partida y equipo por id.
+- **Decisiones de Joaco (2026-11-24):** el permiso nuevo es de Compras, Superadministrador y Chef Ejecutivo (la Directora de Marca lo tiene por la regla G2); la versión publicada queda congelada; la suite completa de Playwright de este PR la corre GitHub Actions (la máquina local no tenía memoria).
+- **Después de publicar en staging:** volver a correr `test-superadmin.sql` para que el superadmin de prueba vea el permiso nuevo (lo lanza Joaco).
+- **Sigue:** PR C (`feat/fichas-tecnicas`): hacer varias recetas y las 4 fichas técnicas, con su plan.
+- **Trampa:** después de fusionar el #101, la corrida de `main` falló porque el runner no pudo levantar un contenedor de Supabase («failed to set up container networking»). Se relanzó solo ese job y la publicación en staging salió.
+
+## Tanda 2, PR A (Configuración del catálogo): fusionado el 2026-11-24 (PR #101)
 
 - **Rama `feat/catalogo-listas`, ADR-0063, lista para Soy en `docs/modulos/24-catalogo-listas-lista-de-cambios.md`, capturas en `docs/capturas/catalogo-listas/`.** Plan aprobado por Joaco el 2026-11-24.
 - **Base:** migraciones `20261214120000` (4 listas de la cocina), `20261214130000` (el texto de las recetas pasa a las listas, sin tocar lo que no es borrador) y `20261214140000` (leer y guardar las 8 listas).

@@ -230,7 +230,7 @@ export async function fillSheetRow(
     .first()
     .click();
   await page.getByLabel(`Cantidad, fila ${row}`, { exact: true }).fill(quantity);
-  if (unit) await page.getByLabel(`Medida, fila ${row}`, { exact: true }).selectOption(unit);
+  if (unit) await page.getByLabel(`Unidad, fila ${row}`, { exact: true }).selectOption(unit);
 }
 
 // Guarda la ficha con la barra de abajo (un solo motivo para todo) y espera el aviso.

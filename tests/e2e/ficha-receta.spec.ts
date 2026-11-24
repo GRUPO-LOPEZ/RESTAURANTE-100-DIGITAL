@@ -1,6 +1,6 @@
 // Ficha de receta (ADR-0042) en una pantalla (ADR-0047, Prompt 2 de las fichas sin scroll): en la computadora se carga
-// un plato de punta a punta en la planilla (autocompletado por código y por nombre, la fila 11 que aparece sola, costos
-// de la base, escala) y una preparación con su peso neto; la página no tiene scroll y la planilla tiene el suyo; quien
+// un plato de punta a punta en la planilla (autocompletado por código y por nombre, la fila 9 que aparece sola, costos
+// de la base, escala, medida práctica, sector, partida y equipo de las listas; ADR-0064) y una preparación con su peso neto; la página no tiene scroll y la planilla tiene el suyo; quien
 // revisa la ve en solo lectura y decide en la barra de abajo; en el celular es de consulta. Con axe; capturas en 1440,
 // 1600, 1920 y celular.
 import AxeBuilder from "@axe-core/playwright";
@@ -87,10 +87,11 @@ test.describe("en la computadora", () => {
     await choosePlace(page);
     await newRecipe(page, "Plato", "Pastas", name);
 
-    // Una sola pantalla, sin índice; la planilla arranca con 10 filas.
+    // Una sola pantalla, sin índice; la planilla arranca con 8 filas (pedido de Soy, ADR-0064).
     await expect(page.getByRole("navigation", { name: "Secciones de la receta" })).toHaveCount(0);
     await openSection(page, "Ingredientes y costos");
-    await expect(page.getByLabel(/^Ingrediente, fila \d+$/)).toHaveCount(10);
+    await expect(page.getByLabel(/^Ingrediente, fila \d+$/)).toHaveCount(8);
+    await expect(page.getByText(/^Versión 1 · Borrador$/)).toBeVisible();
 
     // Por código: se escribe el código y se elige la sugerencia.
     await page.getByLabel("Código, fila 1", { exact: true }).fill("DEMO-ING-027");
@@ -129,12 +130,16 @@ test.describe("en la computadora", () => {
     await expect(row1).toContainText("200 g");
     await expect(page).toHaveURL(/hacer=2(%2C|,)10/);
 
-    // La fila 11 aparece sola al completar la última; quitarla vuelve a 10.
-    await fillSheetRow(page, 10, "Sal fina", /Sal fina/, "2");
-    await expect(page.getByLabel(/^Ingrediente, fila \d+$/)).toHaveCount(11);
-    await page.getByRole("button", { name: "Más opciones de la fila 10" }).click();
+    // La fila 9 aparece sola al completar la octava; quitarla vuelve a 8. «Agregar ingrediente» va al primer renglón vacío.
+    await fillSheetRow(page, 8, "Sal fina", /Sal fina/, "2");
+    await expect(page.getByLabel(/^Ingrediente, fila \d+$/)).toHaveCount(9);
+    await page.getByRole("button", { name: "Más opciones de la fila 8" }).click();
     await page.getByRole("button", { name: "Quitar la fila" }).click();
-    await expect(page.getByLabel(/^Ingrediente, fila \d+$/)).toHaveCount(10);
+    await expect(page.getByLabel(/^Ingrediente, fila \d+$/)).toHaveCount(8);
+    await page.getByRole("button", { name: "Agregar ingrediente" }).click();
+    await expect(page.getByLabel("Ingrediente, fila 3", { exact: true })).toBeFocused();
+    // La Directora de Marca no crea materias primas ni edita las listas del grupo: no ve esos botones.
+    await expect(page.getByRole("button", { name: "Nueva materia prima" })).toHaveCount(0);
 
     // Rendimiento del plato: peso de la porción → porciones → costo por porción.
     await openSection(page, "Rendimiento");
@@ -174,7 +179,8 @@ test.describe("en la computadora", () => {
     await page.getByRole("button", { name: "Aprobar", exact: true }).click();
     await expect(notice(page).filter({ hasText: "Aprobada y publicada" })).toBeVisible();
     await page.reload();
-    await expect(page.getByText(/^Vigente v1$/)).toBeVisible();
+    await expect(page.getByText(/^Versión 1 · Publicada$/)).toBeVisible();
+    await expect(page.getByText(/^desde el \d+\/\d+\/\d+/)).toBeVisible();
   });
 
   test("se carga una preparación con su peso neto y su rendimiento", async ({ page }) => {
@@ -231,8 +237,8 @@ test.describe("en la computadora", () => {
       await page.keyboard.press("Enter");
       await expect(page.getByLabel(`Cantidad, fila ${row}`, { exact: true })).toBeFocused();
       await page.keyboard.type("10");
-      // Al llenar la décima aparece la undécima, y así.
-      if (row >= 10) await expect(page.getByLabel(/^Ingrediente, fila \d+$/)).toHaveCount(row + 1);
+      // Al llenar la octava aparece la novena, y así.
+      if (row >= 8) await expect(page.getByLabel(/^Ingrediente, fila \d+$/)).toHaveCount(row + 1);
     }
 
     // 12 pasos en su panel.
@@ -295,8 +301,9 @@ test.describe("en la computadora", () => {
     const panel = page.getByRole("dialog", { name: "Datos generales" });
     await expect(panel).toBeVisible();
     await axe(page);
-    if ((await page.getByLabel("Sector").getAttribute("readonly")) === null) {
-      await page.getByLabel("Sector").fill("Sector de prueba");
+    if ((await page.getByLabel("Sector", { exact: true }).getAttribute("readonly")) === null) {
+      // De la lista del grupo (ADR-0064).
+      await page.getByLabel("Sector", { exact: true }).selectOption({ label: "Cocina fría" });
       await closePanels(page);
       await expect(
         page.getByRole("status").filter({ hasText: "1 cambio sin guardar" }),
@@ -305,6 +312,127 @@ test.describe("en la computadora", () => {
       await page.getByRole("button", { name: "Descartar" }).click();
       await expect(page.getByRole("status").filter({ hasText: "Sin cambios" })).toBeVisible();
     }
+  });
+
+  test("la medida práctica se calcula, se corrige a mano y vuelve al cálculo", async ({ page }) => {
+    test.setTimeout(180_000);
+    const name = `Plato con medidas ${Date.now() % 1_000_000}`;
+    await login(page, "director@ejemplo.test", { mfa: true });
+    await newRecipe(page, "Plato", "Pastas", name);
+    await fillSheetRow(page, 1, "Harina 000", /Harina 000/, "480");
+    await fillSheetRow(page, 2, "Leche entera", /Leche entera/, "360");
+    // Se ofrecen las de la misma clase: peso con peso, volumen con volumen.
+    const measure = (n: number) => page.getByLabel(`Medida práctica, fila ${n}`, { exact: true });
+    const count = (n: number) =>
+      page.getByLabel(`Cuántas medidas prácticas, fila ${n}`, { exact: true });
+    await expect(measure(1).locator("option", { hasText: "Nido de pasta (120 g)" })).toHaveCount(1);
+    await expect(measure(1).locator("option", { hasText: "Taza" })).toHaveCount(0);
+    await expect(measure(2).locator("option", { hasText: "Nido de pasta" })).toHaveCount(0);
+    await measure(1).selectOption({ label: "Nido de pasta (120 g)" });
+    await expect(count(1)).toHaveValue("4");
+    await page.getByLabel("Cantidad, fila 1", { exact: true }).fill("600");
+    await expect(count(1)).toHaveValue("5");
+    await measure(2).selectOption({ label: "Taza (240 ml)" });
+    await expect(count(2)).toHaveValue("1,5");
+    // A mano: queda fija aunque cambie la cantidad, y se marca.
+    await count(2).fill("2");
+    await expect(page.getByText("a mano", { exact: false }).first()).toBeVisible();
+    await page.getByLabel("Cantidad, fila 2", { exact: true }).fill("240");
+    await expect(count(2)).toHaveValue("2");
+    await axe(page);
+    await saveSheet(page, "Con medidas prácticas");
+    await page.reload();
+    await expect(count(1)).toHaveValue("5");
+    await expect(count(2)).toHaveValue("2");
+    // Vuelve al cálculo desde las opciones de la fila.
+    await page.getByRole("button", { name: "Más opciones de la fila 2" }).click();
+    await page.getByRole("button", { name: /^Volver al cálculo/ }).click();
+    await expect(count(2)).toHaveValue("1");
+    // En kilos es la misma clase: se recalcula.
+    await page.getByLabel("Unidad, fila 1", { exact: true }).selectOption("kg");
+    await expect(count(1)).toHaveValue("5000");
+    await page.getByRole("button", { name: "Descartar" }).click();
+    await expect(count(2)).toHaveValue("2");
+  });
+
+  test("el Chef del grupo crea una materia prima y un sector sin salir de la receta", async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const stamp = Date.now() % 1_000_000;
+    const letters = Array.from(String(stamp), (d) => "bcdfghjklm"[Number(d)]).join("");
+    const ingredient = `Xanto${letters}`;
+    const sector = `Sector ${stamp}`;
+    await login(page, "chefgrupo@ejemplo.test");
+    await page.goto(`/recetas/${RAVIOLES}`);
+    await expect(
+      page.getByRole("heading", { name: "Ravioles de ricota", exact: true }),
+    ).toBeVisible();
+    test.skip(
+      (await page.getByRole("button", { name: "Nueva materia prima" }).count()) === 0,
+      "Otra prueba dejó la receta en revisión.",
+    );
+    await page.getByRole("button", { name: "Nueva materia prima" }).click();
+    const modal = page.getByRole("dialog", { name: "Nueva materia prima" });
+    // Lo que falta se dice en cada campo, con el foco en el primero.
+    await modal.getByRole("button", { name: "Crear y usar" }).click();
+    await expect(modal.getByText("Escribí el nombre.")).toBeVisible();
+    await expect(modal.getByLabel(/^Nombre/)).toBeFocused();
+    // Una que ya está: se ofrece en lugar de repetirla.
+    await modal.getByLabel(/^Nombre/).fill("aceite de óliva");
+    await modal.getByLabel(/^Rubro/).focus();
+    await expect(modal.getByRole("status")).toContainText("¿Es esta?");
+    await expect(modal.getByRole("button", { name: "Usar esta: Aceite de oliva" })).toBeVisible();
+    await axe(page);
+    await modal.getByLabel(/^Nombre/).fill(ingredient);
+    // Solo los rubros que van a recetas.
+    await expect(
+      modal.getByLabel(/^Rubro/).locator("option", { hasText: "Descartables" }),
+    ).toHaveCount(0);
+    await modal.getByLabel(/^Rubro/).selectOption({ label: "Especias y condimentos" });
+    await modal.getByLabel(/^Se usa en recetas en/).selectOption("kg");
+    await modal.getByLabel(/^Motivo/).fill("Para la prueba automática");
+    await modal.getByRole("button", { name: "Crear y usar" }).click();
+    await expect(modal).toHaveCount(0);
+    // Queda en el primer renglón vacío, con el foco en la cantidad.
+    const row = page.getByLabel(/^Ingrediente, fila \d+$/).filter({ visible: true });
+    await expect
+      .poll(() => row.evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value)))
+      .toContain(ingredient);
+    await expect(page.getByRole("status").filter({ hasText: /sin guardar/ })).toBeVisible();
+    await page.getByRole("button", { name: "Descartar" }).click();
+
+    // Un sector nuevo, desde «Editar datos»: queda en la lista y elegido.
+    await page.getByRole("button", { name: /^Editar datos/ }).click();
+    await page.getByRole("button", { name: "Agregar un sector" }).click();
+    const quick = page.getByRole("dialog", { name: "Nuevo sector" });
+    await quick.getByLabel(/^Nombre del sector/).fill(sector);
+    await quick.getByLabel(/^Motivo/).fill("Para la prueba automática");
+    await quick.getByRole("button", { name: "Agregar y usar" }).click();
+    await expect(quick).toHaveCount(0);
+    await expect(page.getByLabel("Sector", { exact: true }).locator("option:checked")).toHaveText(
+      sector,
+    );
+    await closePanels(page);
+    await page.getByRole("button", { name: "Descartar" }).click();
+    await logout(page);
+
+    // Compras recibe el aviso para completarla.
+    await login(page, "compras@ejemplo.test", { mfa: true });
+    await page.goto("/aprobaciones");
+    await expect(page.getByText(`Materia prima nueva: «${ingredient}»`).first()).toBeVisible();
+  });
+
+  test("un jefe de cocina no ve las altas cortas y elige de las listas", async ({ page }) => {
+    await login(page, "jefecocina@ejemplo.test");
+    await page.goto(`/recetas/${uuid(1120)}`);
+    await expect(page.getByRole("table", { name: "Ingredientes y costos" })).toBeVisible();
+    for (const name of ["Nueva materia prima", "Agregar un sector", "Agregar una partida"])
+      await expect(page.getByRole("button", { name })).toHaveCount(0);
+    await page.getByRole("button", { name: /^(Editar datos|Ver todos los datos)/ }).click();
+    await expect(page.getByRole("dialog", { name: "Datos generales" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Agregar un sector" })).toHaveCount(0);
+    await axe(page);
   });
 
   test("capturas de la ficha en 1440, 1600 y 1920", async ({ page }, testInfo) => {
@@ -319,6 +447,11 @@ test.describe("en la computadora", () => {
       await expect(page.getByRole("table", { name: "Ingredientes y costos" })).toBeVisible();
       await noVerticalScroll(page);
       await noHorizontalScroll(page);
+      // Sin dinero, la planilla entra entera de ancho (con dinero se desplaza dentro de su tarjeta).
+      if ((await page.getByText("Elegí un local arriba para ver los costos.").count()) > 0)
+        expect(
+          await sheet(page).evaluate((el) => el.scrollWidth - el.clientWidth),
+        ).toBeLessThanOrEqual(0);
       if (size.height === 843) await axe(page);
       await page.screenshot({ path: testInfo.outputPath(`ficha-${size.width}.png`) });
     }

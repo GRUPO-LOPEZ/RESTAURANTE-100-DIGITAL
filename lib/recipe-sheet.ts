@@ -139,8 +139,8 @@ export function costPerNetKg(totalCost: number | null, netGrams: number | null):
     : (totalCost / netGrams) * 1000;
 }
 
-// La grilla arranca con 10 filas y, cuando se completa la última, suma otra vacía.
-export const START_ROWS = 10;
+// La grilla arranca con 8 filas y, cuando se completa la última, suma otra vacía (pedido de Soy, ADR-0064).
+export const START_ROWS = 8;
 export function withTrailingRow<T>(rows: T[], isFilled: (row: T) => boolean, make: () => T): T[] {
   const out = [...rows];
   while (out.length < START_ROWS) out.push(make());

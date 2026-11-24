@@ -109,6 +109,7 @@ export const getMenus = cache(async () => {
     payments,
     pay,
     purchasingBoard,
+    createIngredients,
   ] = await Promise.all([
     check("users.view"),
     check("users.invite"),
@@ -172,6 +173,7 @@ export const getMenus = cache(async () => {
     check("purchasing.view_payments"),
     check("purchasing.pay"),
     check("purchasing.view_dashboard"),
+    groupWide("catalog.create_ingredients"),
   ]);
   return {
     users,
@@ -182,6 +184,10 @@ export const getMenus = cache(async () => {
     roles,
     catalog,
     catalogManage,
+    // Crear una materia prima desde la receta (ADR-0064): nombre, rubro y unidad, para todo el grupo.
+    createIngredients: catalogManage || createIngredients,
+    // Sectores, partidas y equipos: quién los agrega sin salir de la receta (la regla de catalog.can_manage_list).
+    kitchenLists: catalogManage || rubrosRecipes,
     yieldsRecord,
     yieldsApprove,
     // Configuración del catálogo: categorías (catalog.manage), procesos (yields.approve) o

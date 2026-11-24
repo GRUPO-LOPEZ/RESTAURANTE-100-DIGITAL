@@ -339,6 +339,7 @@ const NOTICE_KINDS = [
   "price_list_expired",
   "order_news",
   "account_changed",
+  "ingredient_created",
 ] as const;
 export type NoticeKind = (typeof NOTICE_KINDS)[number];
 

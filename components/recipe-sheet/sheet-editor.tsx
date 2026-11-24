@@ -3,12 +3,23 @@
 import { Fragment, useEffect, useId, useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, Trash2, Undo2 } from "lucide-react";
 
-import { previewSheetLinesAction, saveSheetAction, unitOptionsAction } from "@/app/recetas/actions";
+import {
+  previewSheetLinesAction,
+  saveSheetAction,
+  unitOptionsAction,
+  type QuickIngredient,
+  type QuickList,
+} from "@/app/recetas/actions";
 import type { ComponentFound, ComponentSearch } from "@/lib/recipe-search";
 import { FormNotice } from "@/components/form-notice";
 import { Missing } from "@/components/recipe-sheet/missing";
+import {
+  QuickIngredientModal,
+  QuickListModal,
+  type NewListItem,
+} from "@/components/recipe-sheet/quick-add";
 import { ReviewBox } from "@/components/recipe-sheet/review-box";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +30,7 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { Metric } from "@/components/ui/metric";
 import { Notice } from "@/components/ui/notice";
 import { Tile } from "@/components/ui/tile";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
 import { useUnsavedWarning } from "@/components/use-unsaved-warning";
 import type { ActionState } from "@/lib/auth/results";
 import { reasonField, recipeLinesSchema, recipeStepsSchema } from "@/lib/forms/schemas";
@@ -58,7 +69,22 @@ import {
   yieldRatio,
   type PreviewLine,
 } from "@/lib/recipe-sheet";
-import type { RecipeLine, RecipeStep, VersionStatus } from "@/lib/recipes";
+import {
+  isContentUnit,
+  measureCount,
+  measureLabel,
+  measureText,
+  measuresFor,
+  type Measure,
+} from "@/lib/measures";
+import type {
+  KitchenEquipment,
+  KitchenItem,
+  KitchenLists,
+  RecipeLine,
+  RecipeStep,
+  VersionStatus,
+} from "@/lib/recipes";
 
 export type SheetRecipe = {
   id: string;
@@ -68,7 +94,13 @@ export type SheetRecipe = {
   categoryId: string | null;
   sector: string | null;
   station: string | null;
+  sectorId: string | null;
+  stationId: string | null;
+  groupId: string;
 };
+
+// Un texto de antes de las listas, que no está en ninguna: se ve y se conserva hasta elegir otro (ADR-0064).
+const OFF_LIST = "fuera";
 export type SheetVersion = {
   id: string;
   number: number;
@@ -98,6 +130,12 @@ type Row = {
   notes: string;
   // Las medidas que admite (null: todavía no se sabe; se ofrecen todas).
   dims: UnitDimension[] | null;
+  // Medida práctica: la elegida («» = sin medida) y, si se corrigió a mano, cuántas van.
+  measure_id: string;
+  measure_count: string;
+  measure_manual: boolean;
+  // Gramos por unidad de la materia prima, si los tiene.
+  unit_weight: number | null;
 };
 type Step = {
   key: number;
@@ -106,6 +144,7 @@ type Step = {
   active_minutes: string;
   passive_minutes: string;
   equipment: string;
+  equipment_id: string;
   equipment_capacity: string;
   capacity_unit: string;
   depends: number[];
@@ -114,8 +153,9 @@ type Data = {
   name: string;
   short_name: string;
   category_id: string;
-  sector: string;
-  station: string;
+  // El elemento de la lista, vacío, u OFF_LIST si es un texto que no está en la lista.
+  sector_id: string;
+  station_id: string;
 };
 type Draft = {
   description: string;
@@ -150,11 +190,11 @@ function anchorFor(box: DOMRect): Anchor {
 }
 
 const comma = (n: number | null) => (n === null ? "" : String(n).replace(".", ","));
-// Las dos columnas fijas a la izquierda de la planilla (ADR-0047): Código mide siempre 140 px (w-35), que es el
+// Las dos columnas fijas a la izquierda de la planilla (ADR-0047): Código mide siempre 128 px (w-32), que es el
 // corrimiento de Ingrediente; el borde marca dónde termina lo fijo. Debajo del título y del total fijos (z-10).
 // La celda de Ingrediente lleva la lista de sugerencias: mientras está abierta sube por encima del título y del total.
-const STICKY_CODE = "sticky left-0 z-5 w-35 min-w-35 max-w-35";
-const STICKY_NAME = "sticky left-35 min-w-36 shadow-[inset_-1px_0_var(--color-line)]";
+const STICKY_CODE = "sticky left-0 z-5 w-32 min-w-32 max-w-32";
+const STICKY_NAME = "sticky left-32 min-w-32 shadow-[inset_-1px_0_var(--color-line)]";
 const blankRow = (key: number): Row => ({
   key,
   ingredient_id: null,
@@ -168,6 +208,10 @@ const blankRow = (key: number): Row => ({
   no_scale: false,
   notes: "",
   dims: null,
+  measure_id: "",
+  measure_count: "",
+  measure_manual: false,
+  unit_weight: null,
 });
 const isFilled = (r: Row) =>
   (r.ingredient_id !== null || r.sub_recipe_id !== null) &&
@@ -187,6 +231,8 @@ const rowSnapshot = (r: Row) =>
     r.unit,
     r.basis,
     r.notes,
+    r.measure_id,
+    r.measure_id !== "" && r.measure_manual ? parseAmount(r.measure_count) : null,
   ]);
 
 function stepPayload(steps: Step[]) {
@@ -197,6 +243,7 @@ function stepPayload(steps: Step[]) {
     active_minutes: s.active_minutes,
     passive_minutes: s.passive_minutes,
     equipment: s.equipment,
+    equipment_id: s.equipment_id,
     equipment_capacity: s.equipment_capacity,
     equipment_capacity_unit: s.capacity_unit,
     depends_on: s.depends
@@ -223,6 +270,11 @@ export function SheetEditor({
   lines: initialLines,
   steps: initialSteps,
   unitOptions,
+  unitWeights,
+  lists: initialLists,
+  canAddIngredient,
+  canAddToLists,
+  ingredientCategories,
   editable,
   canSubmit,
   place,
@@ -245,6 +297,13 @@ export function SheetEditor({
   lines: RecipeLine[];
   steps: RecipeStep[];
   unitOptions: Record<string, UnitDimension[]>;
+  unitWeights: Record<string, number>;
+  // Las listas de la cocina (también los inactivos: los que ya usa la receta se siguen viendo).
+  lists: KitchenLists;
+  // Crear una materia prima, o un elemento de una lista, sin salir de la receta (ADR-0064).
+  canAddIngredient: boolean;
+  canAddToLists: boolean;
+  ingredientCategories: { id: string; label: string }[];
   editable: boolean;
   canSubmit: boolean;
   place: { id: string; name: string } | null;
@@ -277,8 +336,8 @@ export function SheetEditor({
     name: recipe.name,
     short_name: recipe.shortName ?? "",
     category_id: recipe.categoryId ?? "",
-    sector: recipe.sector ?? "",
-    station: recipe.station ?? "",
+    sector_id: recipe.sectorId ?? (recipe.sector ? OFF_LIST : ""),
+    station_id: recipe.stationId ?? (recipe.station ? OFF_LIST : ""),
   };
   const startDraft: Draft = {
     description: version.description ?? "",
@@ -304,6 +363,10 @@ export function SheetEditor({
     dims: l.subRecipeId
       ? [unitDimension(l.unit) ?? "mass"]
       : (unitOptions[l.ingredientId ?? ""] ?? null),
+    measure_id: l.measureId ?? "",
+    measure_count: comma(l.measureCount),
+    measure_manual: l.measureManual,
+    unit_weight: unitWeights[l.ingredientId ?? ""] ?? null,
   }));
   const startSteps = initialSteps.map((s): Step => ({
     key: s.number,
@@ -312,6 +375,7 @@ export function SheetEditor({
     active_minutes: String(s.activeMinutes),
     passive_minutes: String(s.passiveMinutes),
     equipment: s.equipment ?? "",
+    equipment_id: s.equipmentId ?? "",
     equipment_capacity: comma(s.equipmentCapacity),
     capacity_unit: s.equipmentCapacityUnit ?? "",
     depends: s.dependsOn,
@@ -355,6 +419,25 @@ export function SheetEditor({
   const [openRow, setOpenRow] = useState<number | null>(null);
   // El panel abierto: los datos generales o los pasos (trabajan sobre el mismo borrador).
   const [panel, setPanel] = useState<"datos" | "pasos" | null>(null);
+  // Lo que se agrega a las listas sin salir de la ficha se suma acá (la base ya lo guardó).
+  const [lists, setLists] = useState(initialLists);
+  // El alta de una materia prima: en qué renglón cae (nulo: el primero vacío) y el nombre que ya se escribió.
+  const [addingIngredient, setAddingIngredient] = useState<{
+    row: number | null;
+    name: string;
+  } | null>(null);
+  // El último renglón que tuvo el foco.
+  const lastRow = useRef<number | null>(null);
+  const [addingTo, setAddingTo] = useState<{ list: QuickList; step: number | null } | null>(null);
+  // A dónde vuelve el foco al cerrar un alta corta.
+  const [focusAfter, setFocusAfter] = useState<{ id: string; n: number } | null>(null);
+  useEffect(() => {
+    if (!focusAfter) return;
+    // Después de que el modal suelte el foco.
+    const timer = setTimeout(() => document.getElementById(focusAfter.id)?.focus(), 60);
+    return () => clearTimeout(timer);
+  }, [focusAfter]);
+  const focusOn = (id: string) => setFocusAfter((f) => ({ id, n: (f?.n ?? 0) + 1 }));
   const previewSeq = useRef(0);
   const searchSeq = useRef(0);
 
@@ -503,7 +586,7 @@ export function SheetEditor({
   const update = (key: number, change: Partial<Row>) =>
     setRows((all) =>
       withTrailingRow(
-        all.map((r) => (r.key === key ? { ...r, ...change } : r)),
+        all.map((r) => (r.key === key ? keepMeasure({ ...r, ...change }) : r)),
         isFilled,
         () => blankRow(-1),
       ).map((r) => (r.key === -1 ? { ...r, key: nextKeyRef.current++ } : r)),
@@ -512,6 +595,15 @@ export function SheetEditor({
   useEffect(() => {
     nextKeyRef.current = Math.max(nextKeyRef.current, nextKey);
   }, [nextKey]);
+
+  // Al cambiar la unidad o el ingrediente, una medida de otra clase ya no va.
+  function keepMeasure(r: Row): Row {
+    if (r.measure_id === "") return r;
+    const m = lists.measures.find((x) => x.id === r.measure_id);
+    const fits =
+      m && (r.unit === "" || measuresFor([m], r.unit, r.unit_weight, r.measure_id).length > 0);
+    return fits ? r : { ...r, measure_id: "", measure_count: "", measure_manual: false };
+  }
 
   function typeIn(key: number, field: "code" | "name", input: HTMLInputElement) {
     const value = input.value;
@@ -547,21 +639,107 @@ export function SheetEditor({
       basis: preparation ? "finished" : "purchase",
       yield_profile_id: null,
       dims: preparation ? [unitDimension(unit) ?? "mass"] : null,
+      measure_id: "",
+      measure_count: "",
+      measure_manual: false,
+      unit_weight: preparation ? null : (unitWeights[item.id] ?? null),
     });
     setSearch(null);
     if (!preparation) {
       // Si no se pueden leer las medidas, se ofrecen todas: la base controla la unidad al guardar.
       unitOptionsAction([item.id])
         .then((o) => {
-          const dims = o[item.id];
-          if (dims)
+          const found = o[item.id];
+          if (found)
             setRows((all) =>
-              all.map((r) => (r.ingredient_id === item.id && r.dims === null ? { ...r, dims } : r)),
+              all.map((r) =>
+                r.ingredient_id === item.id && r.dims === null
+                  ? { ...r, dims: found.dims, unit_weight: found.unitWeight }
+                  : r,
+              ),
             );
         })
         .catch(() => undefined);
     }
     document.getElementById(`${prefix}-cantidad-${key}`)?.focus();
+  }
+
+  // El renglón donde cae lo que se agrega: el primero vacío; si no hay, uno nuevo. Nunca pisa uno con datos.
+  function emptyRow(): number {
+    const empty = rows.find((r) => !isTouched(r));
+    if (empty) return empty.key;
+    // Un número que no choca con los que suma la planilla sola.
+    const key = Math.max(0, ...rows.map((r) => r.key)) + 1000;
+    setNextKey(key + 1);
+    setRows((all) => [...all, blankRow(key)]);
+    return key;
+  }
+  function addIngredient() {
+    focusOn(`${prefix}-ingrediente-${emptyRow()}`);
+  }
+  // «Nueva materia prima» va al renglón que se estaba cargando, si todavía no tiene ingrediente elegido (su texto
+  // precarga el nombre); si no, al primero vacío.
+  function openNewIngredient(key?: number) {
+    const row = rows.find((r) => r.key === (key ?? lastRow.current));
+    const own = row && row.ingredient_id === null && row.sub_recipe_id === null ? row : null;
+    setSearch(null);
+    setAddingIngredient({ row: own?.key ?? null, name: own?.name.trim() ?? "" });
+  }
+  function placeIngredient(item: QuickIngredient) {
+    const own = rows.find((r) => r.key === addingIngredient?.row);
+    const key =
+      own && own.ingredient_id === null && own.sub_recipe_id === null ? own.key : emptyRow();
+    setAddingIngredient(null);
+    choose(key, { ...item, kind: "ingredient" } as Search["items"][number]);
+    focusOn(`${prefix}-cantidad-${key}`);
+  }
+  function placeListItem(list: QuickList, item: NewListItem) {
+    const step = addingTo?.step ?? null;
+    setAddingTo(null);
+    const base: KitchenItem = { id: item.id, name: item.name, isActive: true };
+    if (list === "equipment") {
+      const created: KitchenEquipment = {
+        ...base,
+        capacity: parseAmount(item.capacity),
+        capacityUnit: item.capacityUnit || null,
+        capacityLabel: item.capacityLabel || null,
+      };
+      setLists((l) => ({ ...l, equipment: [...l.equipment, created] }));
+      if (step !== null) {
+        chooseEquipment(step, created);
+        focusOn(`${prefix}-paso-${step}-equipo`);
+      }
+      return;
+    }
+    setLists((l) => ({ ...l, [list]: [...l[list], base] }));
+    setData((d) => ({ ...d, [list === "sectors" ? "sector_id" : "station_id"]: item.id }));
+    focusOn(`${prefix}-${list === "sectors" ? "sector" : "partida"}`);
+  }
+  // El equipo trae su capacidad si está en una unidad como la del rendimiento; si va en palabras, se muestra al lado.
+  function chooseEquipment(key: number, item: KitchenEquipment | null) {
+    const yieldUnit = dish
+      ? draft.portion_grams || draft.yield_unit
+        ? "portion"
+        : ""
+      : draft.yield_unit;
+    const same =
+      item?.capacity != null &&
+      item.capacityUnit !== null &&
+      unitDimension(item.capacityUnit) !== null &&
+      unitDimension(item.capacityUnit) === unitDimension(yieldUnit);
+    setSteps((all) =>
+      all.map((x) =>
+        x.key === key
+          ? {
+              ...x,
+              equipment: item?.name ?? "",
+              equipment_id: item?.id ?? "",
+              equipment_capacity: same ? comma(item.capacity) : "",
+              capacity_unit: same ? (item.capacityUnit ?? "") : "",
+            }
+          : x,
+      ),
+    );
   }
 
   function onSearchKey(e: React.KeyboardEvent, key: number) {
@@ -593,6 +771,42 @@ export function SheetEditor({
     setOpenRow(null);
   }
 
+  // La medida práctica de una fila. Al editar, la de la lista de hoy; en lectura, la que quedó congelada con la versión.
+  const frozen = new Map(
+    initialLines.map((l, i) => [
+      i + 1,
+      {
+        count: l.measureCount,
+        name: l.measureName,
+        content: l.measureContent,
+        unit: l.measureUnit,
+      },
+    ]),
+  );
+  function measureOf(r: Row) {
+    if (!editable) {
+      const f = frozen.get(r.key);
+      const unit = f?.unit ?? "";
+      return {
+        measureCalc: null as number | null,
+        measureShown: f?.count ?? null,
+        measureName: f?.name ?? null,
+        measureDetail:
+          f?.name && f.content !== null && isContentUnit(unit)
+            ? measureLabel({ name: f.name, content: f.content, unit, isActive: true })
+            : null,
+      };
+    }
+    const m = lists.measures.find((x) => x.id === r.measure_id);
+    const calc = m ? measureCount(parseAmount(r.quantity), r.unit, m, r.unit_weight) : null;
+    return {
+      measureCalc: calc,
+      measureShown: r.measure_manual ? parseAmount(r.measure_count) : calc,
+      measureName: m?.name ?? null,
+      measureDetail: m ? measureLabel(m) : null,
+    };
+  }
+
   // Valores de cada fila, con lo que devolvió la base.
   const computed = rows.map((r, i) => {
     const p = isFilled(r) ? preview.get(i + 1) : undefined;
@@ -605,6 +819,7 @@ export function SheetEditor({
       cost: p?.lineCost ?? null,
       costReason: p ? missingReason(p.status) : "Se calcula al completar la fila.",
       price: bigUnitPrice(p?.unitCost ?? null, p?.costUnit ?? null),
+      ...measureOf(r),
     };
   });
   const filled = computed.filter((c) => c.filled);
@@ -632,7 +847,7 @@ export function SheetEditor({
     const bad = rows.findIndex((r) => isTouched(r) && !isFilled(r));
     if (bad >= 0)
       errors.push(
-        `Fila ${bad + 1}: elegí el ingrediente de la lista, la cantidad y la medida (o vaciá la fila).`,
+        `Fila ${bad + 1}: elegí el ingrediente de la lista, la cantidad y la unidad (o vaciá la fila).`,
       );
     const lines = touched.filter(isFilled).map((r) => ({
       ingredient_id: r.ingredient_id,
@@ -644,6 +859,8 @@ export function SheetEditor({
       yield_profile_id: r.yield_profile_id,
       no_scale: r.no_scale,
       notes: r.notes,
+      measure_id: r.measure_id || null,
+      measure_count: r.measure_id && r.measure_manual ? r.measure_count : "",
     }));
     const parsedLines = recipeLinesSchema.safeParse(lines);
     if (!parsedLines.success) {
@@ -691,7 +908,17 @@ export function SheetEditor({
         expectedUpdatedAt: version.updatedAt,
         reason,
         submit,
-        recipe: dataChanged > 0 ? data : null,
+        // Un texto fuera de la lista no viaja: queda como está hasta elegir otro.
+        recipe:
+          dataChanged > 0
+            ? {
+                name: data.name,
+                short_name: data.short_name,
+                category_id: data.category_id,
+                ...(data.sector_id === OFF_LIST ? {} : { sector_id: data.sector_id }),
+                ...(data.station_id === OFF_LIST ? {} : { station_id: data.station_id }),
+              }
+            : null,
         draft: draftOut && Object.keys(draftOut).length > 0 ? draftOut : null,
         lines: linesChanged > 0 ? parsedLines.data : null,
         steps: stepsChanged > 0 ? parsedSteps.data : null,
@@ -768,13 +995,21 @@ export function SheetEditor({
   ).length;
   const total = totalState(filled.length, incomplete);
   // Lo que cambió en el panel de datos (cuenta en la barra; acá se avisa al lado de «Editar datos»).
-  const panelData = (["name", "short_name", "sector", "station"] as const).filter(
+  const panelData = (["name", "short_name", "sector_id", "station_id"] as const).filter(
     (k) => data[k] !== saved.data[k],
   ).length;
   const panelDraft = (
     ["description", "storage_notes", "presentation_notes", "change_summary"] as const
   ).filter((k) => draft[k] !== saved.draft[k]).length;
   const dataPanelChanges = panelData + panelDraft;
+  // «Cocina caliente · Pastas», de consulta en la tarjeta: se eligen en «Editar datos».
+  const kitchenPlace =
+    [
+      listText(lists.sectors, data.sector_id, recipe.sector),
+      listText(lists.stations, data.station_id, recipe.station),
+    ]
+      .filter(Boolean)
+      .join(" · ") || "—";
   const categoryLabel = categories.find((c) => c.id === data.category_id)?.label ?? "Sin rubro";
 
   function addStep() {
@@ -789,6 +1024,7 @@ export function SheetEditor({
         active_minutes: "0",
         passive_minutes: "0",
         equipment: "",
+        equipment_id: "",
         equipment_capacity: "",
         capacity_unit: "",
         depends: previous ? [previous.key] : [],
@@ -817,6 +1053,11 @@ export function SheetEditor({
       ro={ro}
       yieldLabel={stepYieldLabel}
       changed={saved.stepList[index] !== stepsNow[index]}
+      equipment={lists.equipment}
+      onEquipment={(item) => chooseEquipment(s.key, item)}
+      onAddEquipment={
+        canAddToLists ? () => setAddingTo({ list: "equipment", step: s.key }) : undefined
+      }
       onChange={(change) =>
         setSteps((all) => all.map((x) => (x.key === s.key ? { ...x, ...change } : x)))
       }
@@ -842,7 +1083,7 @@ export function SheetEditor({
 
       {/* Dos columnas que ocupan el alto que queda: la planilla (la única parte con scroll propio) y 300 px a la
           derecha. En el celular, una debajo de la otra. */}
-      <div className="grid gap-4 desk:min-h-0 desk:flex-1 desk:grid-cols-[minmax(0,1fr)_300px] desk:grid-rows-[minmax(0,1fr)]">
+      <div className="grid gap-4 desk:min-h-0 desk:flex-1 desk:grid-cols-[minmax(0,1fr)_300px] desk:grid-rows-[minmax(0,1fr)] desk:gap-3">
         <Tile
           id={anchor("ingredientes")}
           title="Ingredientes y costos"
@@ -865,7 +1106,7 @@ export function SheetEditor({
                     : ""}
             </span>
           }
-          className="desk:min-h-0"
+          className="desk:min-h-0 desk:p-3"
         >
           {previewFailed ? (
             <Notice status="warn" role="status" className="py-2 text-sm">
@@ -881,7 +1122,7 @@ export function SheetEditor({
             tabIndex={0}
             role="region"
             aria-label="Planilla de ingredientes (se desplaza)"
-            className="relative hidden min-h-0 scroll-pt-12 scroll-pb-12 scroll-pl-76 overflow-auto rounded-sm border border-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary desk:block desk:h-0 desk:flex-[1_1_0px]"
+            className="relative hidden min-h-0 scroll-pt-12 scroll-pb-12 scroll-pl-72 overflow-auto rounded-sm border border-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary desk:block desk:h-0 desk:flex-[1_1_0px]"
           >
             <table className="w-full border-collapse text-sm" aria-label="Ingredientes y costos">
               <thead className="sticky top-0 z-10 bg-app">
@@ -889,40 +1130,50 @@ export function SheetEditor({
                   {/* Anchos mínimos: el código y la medida se leen enteros. Sin dinero entra en 1440; con dinero, la
                       planilla se desplaza de costado dentro de su tarjeta (nunca la página). */}
                   {/* Código e Ingrediente quedan fijos a la izquierda al desplazar de costado (con dinero, en 1440 y
-                      1600): nunca se pierde de qué fila es cada número. Código mide siempre 140 px, el corrimiento
+                      1600): nunca se pierde de qué fila es cada número. Código mide siempre 128 px, el corrimiento
                       de Ingrediente. */}
-                  <th scope="col" className={`${STICKY_CODE} bg-app px-2 py-2 font-medium`}>
+                  <th scope="col" className={`${STICKY_CODE} bg-app px-1.5 py-2 font-medium`}>
                     Código
                   </th>
                   <th scope="col" className={`${STICKY_NAME} z-5 bg-app px-2 py-2 font-medium`}>
                     Ingrediente
                   </th>
-                  <th scope="col" className="min-w-20 px-2 py-2 text-right font-medium">
+                  <th scope="col" className="w-17 min-w-17 px-1 py-2 text-right font-medium">
                     Cantidad
                   </th>
-                  <th scope="col" className="min-w-22 px-2 py-2 font-medium">
-                    Medida
+                  <th scope="col" className="w-20 min-w-20 px-1 py-2 font-medium">
+                    <abbr title="Unidad de la cantidad" className="no-underline">
+                      Unidad
+                    </abbr>
+                  </th>
+                  <th scope="colgroup" colSpan={2} className="px-1 py-2 font-medium">
+                    <abbr
+                      title="Medida práctica: cuántas van, para el cocinero"
+                      className="no-underline"
+                    >
+                      Medida práctica
+                    </abbr>
                   </th>
                   {[0, 1].map((col) => (
-                    <th key={col} scope="col" className="min-w-28 px-2 py-1 text-right font-medium">
+                    <th key={col} scope="col" className="min-w-16 px-1 py-1 text-right font-medium">
                       <span className="flex flex-col items-end">
-                        <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                          Hacer
-                          <Input
-                            aria-label={`Hacer: cantidad de recetas, columna ${col === 0 ? "A" : "B"}`}
-                            inputMode="numeric"
-                            className="w-12 px-1 text-center desk:h-8 desk:min-h-8 desk:text-sm"
-                            value={timesText[col]}
-                            onChange={(e) =>
-                              setTimesText((t) =>
-                                col === 0 ? [e.target.value, t[1]] : [t[0], e.target.value],
-                              )
-                            }
-                          />
-                        </span>
                         <span className="text-xs whitespace-nowrap">
-                          {showMoney ? "peso / costo" : "peso"}
+                          Hacer
+                          <span className="sr-only">
+                            : {showMoney ? "peso y costo" : "peso"} para esa cantidad de recetas
+                          </span>
                         </span>
+                        <Input
+                          aria-label={`Hacer: cantidad de recetas, columna ${col === 0 ? "A" : "B"}`}
+                          inputMode="numeric"
+                          className="w-9 px-0.5 text-center desk:h-8 desk:min-h-8 desk:text-sm"
+                          value={timesText[col]}
+                          onChange={(e) =>
+                            setTimesText((t) =>
+                              col === 0 ? [e.target.value, t[1]] : [t[0], e.target.value],
+                            )
+                          }
+                        />
                       </span>
                     </th>
                   ))}
@@ -951,14 +1202,14 @@ export function SheetEditor({
                   ) : null}
                   <th
                     scope="col"
-                    className="min-w-16 px-2 py-2 text-right font-medium whitespace-nowrap"
+                    className="min-w-13 px-1 py-2 text-right font-medium whitespace-nowrap"
                   >
                     <abbr title="Incidencia en el peso" className="no-underline">
                       % peso
                     </abbr>
                   </th>
                   {editable ? (
-                    <th scope="col" className="w-10 px-1 py-2">
+                    <th scope="col" className="w-9 px-0.5 py-2">
                       <span className="sr-only">Más opciones</span>
                     </th>
                   ) : null}
@@ -979,9 +1230,12 @@ export function SheetEditor({
                   return (
                     <Fragment key={r.key}>
                       <tr
+                        onFocus={() => {
+                          lastRow.current = r.key;
+                        }}
                         className={`border-b border-line align-top ${mark ? "bg-review" : "bg-surface"}`}
                       >
-                        <td className={`${STICKY_CODE} bg-inherit px-2 py-1`}>
+                        <td className={`${STICKY_CODE} bg-inherit px-1 py-1`}>
                           {ro ? (
                             <span className="inline-flex min-h-8 items-center text-ink tabular-nums">
                               {r.code}
@@ -997,7 +1251,7 @@ export function SheetEditor({
                               aria-autocomplete="list"
                               autoComplete="off"
                               placeholder="Código"
-                              className="px-2 desk:h-8 desk:min-h-8 desk:text-sm"
+                              className="px-1.5 desk:h-8 desk:min-h-8 desk:text-sm"
                               value={r.code}
                               onChange={(e) => typeIn(r.key, "code", e.currentTarget)}
                               onKeyDown={(e) => onSearchKey(e, r.key)}
@@ -1006,7 +1260,7 @@ export function SheetEditor({
                           )}
                         </td>
                         <td
-                          className={`${STICKY_NAME} ${open ? "z-30" : "z-5"} bg-inherit px-2 py-1`}
+                          className={`${STICKY_NAME} ${open ? "z-30" : "z-5"} bg-inherit px-1 py-1`}
                         >
                           {ro ? (
                             <span className="flex min-h-8 flex-wrap items-center gap-2 text-ink">
@@ -1030,8 +1284,9 @@ export function SheetEditor({
                                 aria-activedescendant={active("name")}
                                 aria-autocomplete="list"
                                 autoComplete="off"
-                                placeholder="Escribí para buscar"
-                                className="desk:h-8 desk:min-h-8 desk:text-sm"
+                                placeholder="Buscar…"
+                                title={r.name || undefined}
+                                className="px-2 desk:h-8 desk:min-h-8 desk:text-sm"
                                 value={r.name}
                                 onChange={(e) => typeIn(r.key, "name", e.currentTarget)}
                                 onKeyDown={(e) => onSearchKey(e, r.key)}
@@ -1087,10 +1342,24 @@ export function SheetEditor({
                                 : search.status === "done"
                                   ? `Sin resultados para «${search.query}».`
                                   : "Buscando…"}
+                              {search.status === "done" && canAddIngredient ? (
+                                <button
+                                  type="button"
+                                  tabIndex={-1}
+                                  className="ml-2 inline-flex min-h-8 items-center text-primary underline underline-offset-4"
+                                  // Antes de que el campo pierda el foco y la lista se cierre.
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    openNewIngredient(r.key);
+                                  }}
+                                >
+                                  Crear la materia prima
+                                </button>
+                              ) : null}
                             </p>
                           ) : null}
                         </td>
-                        <td className="px-2 py-1 text-right">
+                        <td className="px-1 py-1 text-right">
                           {ro ? (
                             <span className="inline-flex min-h-8 items-center tabular-nums">
                               {r.quantity}
@@ -1100,13 +1369,13 @@ export function SheetEditor({
                               id={`${prefix}-cantidad-${r.key}`}
                               aria-label={`Cantidad, fila ${n}`}
                               inputMode="decimal"
-                              className="text-right tabular-nums desk:h-8 desk:min-h-8 desk:text-sm"
+                              className="px-1.5 text-right tabular-nums desk:h-8 desk:min-h-8 desk:text-sm"
                               value={r.quantity}
                               onChange={(e) => update(r.key, { quantity: e.target.value })}
                             />
                           )}
                         </td>
-                        <td className="px-2 py-1">
+                        <td className="px-1 py-1">
                           {ro ? (
                             <span className="inline-flex min-h-8 items-center">
                               {unitLabel(r.unit)}
@@ -1114,8 +1383,8 @@ export function SheetEditor({
                           ) : (
                             <Select
                               id={`${prefix}-medida-${r.key}`}
-                              aria-label={`Medida, fila ${n}`}
-                              className="pr-1 pl-2 desk:h-8 desk:min-h-8 desk:text-sm"
+                              aria-label={`Unidad, fila ${n}`}
+                              className="pr-0 pl-1 desk:h-8 desk:min-h-8 desk:text-sm"
                               value={r.unit}
                               onChange={(e) => update(r.key, { unit: e.target.value as LineUnit })}
                             >
@@ -1132,6 +1401,19 @@ export function SheetEditor({
                             </Select>
                           )}
                         </td>
+                        <MeasureCells
+                          prefix={prefix}
+                          row={r}
+                          n={n}
+                          ro={ro}
+                          filled={c.filled}
+                          calc={c.measureCalc}
+                          shown={c.measureShown}
+                          name={c.measureName}
+                          detail={c.measureDetail}
+                          options={measuresFor(lists.measures, r.unit, r.unit_weight, r.measure_id)}
+                          onChange={(change) => update(r.key, change)}
+                        />
                         {scaleCols.map((times, col) => {
                           // El peso arriba y el costo abajo: la columna es angosta y la fila casi no crece. Si faltan los
                           // dos, un solo «—» con los dos motivos.
@@ -1142,7 +1424,7 @@ export function SheetEditor({
                           const costWhy =
                             times === null ? "Escribí cuántas recetas." : c.costReason;
                           return (
-                            <td key={col} className="px-2 py-1 text-right">
+                            <td key={col} className="px-1 py-1 text-right">
                               {!c.filled ? null : grams === null && cost === null ? (
                                 <span className="flex min-h-8 items-center justify-end">
                                   <Missing
@@ -1205,9 +1487,12 @@ export function SheetEditor({
                         <td className="px-2 py-1 text-right whitespace-nowrap tabular-nums">
                           {c.filled ? (
                             totals.grams === null ? (
-                              <Missing reason="Falta el peso total: alguna fila no se pasa a gramos." />
+                              <Missing
+                                compact
+                                reason="Falta el peso total: alguna fila no se pasa a gramos."
+                              />
                             ) : c.grams === null ? (
-                              <Missing reason={c.gramsReason} />
+                              <Missing compact reason={c.gramsReason} />
                             ) : (
                               <span className="inline-flex min-h-8 items-center">
                                 {formatPct(incidence(c.grams, totals.grams))}
@@ -1216,7 +1501,7 @@ export function SheetEditor({
                           ) : null}
                         </td>
                         {editable ? (
-                          <td className="px-1 py-1">
+                          <td className="px-0.5 py-1">
                             {isTouched(r) ? (
                               <Button
                                 type="button"
@@ -1274,6 +1559,21 @@ export function SheetEditor({
                                   onChange={(e) => update(r.key, { notes: e.target.value })}
                                 />
                               </Field>
+                              {r.measure_id !== "" && r.measure_manual ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() =>
+                                    update(r.key, { measure_manual: false, measure_count: "" })
+                                  }
+                                >
+                                  <Undo2 aria-hidden="true" />
+                                  Volver al cálculo
+                                  {c.measureCalc !== null
+                                    ? ` (${formatQuantity(c.measureCalc)})`
+                                    : ""}
+                                </Button>
+                              ) : null}
                               <Button
                                 type="button"
                                 variant="outline"
@@ -1302,7 +1602,7 @@ export function SheetEditor({
                       <Badge status={total.status}>{total.label}</Badge>
                     </span>
                   </th>
-                  <td colSpan={2} className="px-2 py-2 text-right">
+                  <td colSpan={4} className="px-2 py-2 text-right">
                     {filled.length > 0
                       ? gramsCell(
                           totals.grams,
@@ -1313,7 +1613,7 @@ export function SheetEditor({
                       : null}
                   </td>
                   {scaleCols.map((times, col) => (
-                    <td key={col} className="px-2 py-2 text-right">
+                    <td key={col} className="px-1 py-2 text-right text-xs">
                       {filled.length > 0 ? (
                         <span className="flex flex-col items-end whitespace-nowrap">
                           {gramsCell(scale(totals.grams, times), "Falta un dato.")}
@@ -1338,7 +1638,7 @@ export function SheetEditor({
                       {totalCost !== null ? "100 %" : ""}
                     </td>
                   ) : null}
-                  <td className="px-2 py-2 text-right whitespace-nowrap tabular-nums">
+                  <td className="px-1 py-2 text-right text-xs whitespace-nowrap tabular-nums">
                     {totals.grams !== null ? "100 %" : ""}
                   </td>
                   {editable ? <td /> : null}
@@ -1346,6 +1646,28 @@ export function SheetEditor({
               </tfoot>
             </table>
           </div>
+
+          {editable ? (
+            <div className="hidden flex-wrap items-center gap-2 desk:flex">
+              <Button type="button" variant="outline" size="sm" onClick={addIngredient}>
+                <Plus aria-hidden="true" />
+                Agregar ingrediente
+              </Button>
+              {canAddIngredient ? (
+                <Button
+                  id={`${prefix}-nueva-mp`}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-haspopup="dialog"
+                  onClick={() => openNewIngredient()}
+                >
+                  <Plus aria-hidden="true" />
+                  Nueva materia prima
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           {/* Celular: tarjetas de consulta. */}
           <ol className="flex flex-col gap-2 desk:hidden" aria-label="Ingredientes">
@@ -1367,6 +1689,9 @@ export function SheetEditor({
                 </span>
                 <span className="text-sm text-ink-muted tabular-nums">
                   {c.row.code} · {c.row.quantity} {unitLabel(c.row.unit)}
+                  {measureText(c.measureShown, c.measureName)
+                    ? ` · ${measureText(c.measureShown, c.measureName)}`
+                    : ""}
                   {showMoney && c.cost !== null ? ` · ${formatMoney(c.cost)}` : ""}
                 </span>
                 {showMoney && c.cost === null ? (
@@ -1385,7 +1710,7 @@ export function SheetEditor({
             32 px (ADR-0046). */}
         <div className="min-w-0 desk:relative desk:min-h-0">
           {/* Por debajo del alto de diseño (900 px), la columna se desplaza adentro en lugar de encimarse. */}
-          <div className="flex min-w-0 flex-col gap-4 desk:absolute desk:inset-0 desk:gap-3 desk:overflow-y-auto">
+          <div className="flex min-w-0 flex-col gap-4 desk:absolute desk:inset-0 desk:gap-2 desk:overflow-y-auto">
             {/* Fotos y datos generales. El resto de los datos se edita en su panel, sobre el mismo borrador. */}
             <Tile
               id={anchor("datos")}
@@ -1432,10 +1757,8 @@ export function SheetEditor({
                       ))}
                     </Select>
                   )}
-                  <span className="text-ink">Alcance</span>
-                  <span className="truncate text-right text-ink-muted" title={scopeLabel}>
-                    {scopeLabel}
-                  </span>
+                  <span className="text-ink">Cocina</span>
+                  <span className="line-clamp-2 text-right text-ink-muted">{kitchenPlace}</span>
                 </div>
               </div>
               {/* Celular: consulta. */}
@@ -1445,8 +1768,14 @@ export function SheetEditor({
                   <ReadRow label="Nombre corto" value={data.short_name} />
                   <ReadRow label="Rubro" value={categoryLabel} />
                   <ReadRow label="Alcance" value={scopeLabel} />
-                  <ReadRow label="Sector" value={data.sector} />
-                  <ReadRow label="Partida" value={data.station} />
+                  <ReadRow
+                    label="Sector"
+                    value={listText(lists.sectors, data.sector_id, recipe.sector)}
+                  />
+                  <ReadRow
+                    label="Partida"
+                    value={listText(lists.stations, data.station_id, recipe.station)}
+                  />
                   <ReadRow label="Tiempo total" value={formatMinutes(totalMinutes)} />
                   <ReadRow label="Conservación" value={draft.storage_notes} />
                   <ReadRow label="Descripción" value={draft.description} />
@@ -1459,30 +1788,69 @@ export function SheetEditor({
               id={anchor("rendimiento")}
               title="Rendimiento"
               titleExtra={
-                <InfoTip label="rendimiento">
+                <InfoTip label="rendimiento" className="desk:size-8">
                   Las mermas de cada materia prima se cargan en su ficha. Acá va el rendimiento
                   final de la receta.
                 </InfoTip>
               }
               className="desk:shrink-0 desk:p-3"
-            >
-              {/* En la computadora, solo el campo: las porciones, el peso bruto y el rendimiento están en los indicadores
-                de arriba y no se repiten (ADR-0046). */}
-              {dish ? (
-                <div className="flex flex-col gap-2 text-sm">
-                  <div className="hidden items-center justify-between gap-2 desk:flex">
+              aside={
+                dish ? (
+                  <span className="hidden items-center gap-2 text-sm desk:flex">
                     <label htmlFor={`${prefix}-peso-porcion`} className="text-ink">
-                      Peso de la porción (g)
+                      <span className="sr-only">Peso de la porción (g)</span>
+                      <span aria-hidden="true" className="text-xs">
+                        Porción (g)
+                      </span>
                     </label>
                     <Input
                       id={`${prefix}-peso-porcion`}
                       inputMode="decimal"
                       readOnly={ro}
                       value={draft.portion_grams}
-                      className={`w-24 text-right tabular-nums desk:h-8 desk:min-h-8 desk:text-sm ${changedInput(draft.portion_grams !== saved.draft.portion_grams)}`}
+                      className={`w-15 px-2 text-right tabular-nums desk:h-8 desk:min-h-8 desk:text-sm ${changedInput(draft.portion_grams !== saved.draft.portion_grams)}`}
                       onChange={(e) => setDraft({ ...draft, portion_grams: e.target.value })}
                     />
-                  </div>
+                  </span>
+                ) : (
+                  <span className="hidden items-center gap-2 text-sm desk:flex">
+                    <label htmlFor={`${prefix}-peso-neto`} className="text-xs text-ink">
+                      Peso neto<span className="sr-only"> total</span>
+                    </label>
+                    <span className="flex gap-1">
+                      <Input
+                        id={`${prefix}-peso-neto`}
+                        inputMode="decimal"
+                        readOnly={ro}
+                        value={draft.yield_quantity}
+                        className={`w-14 px-1.5 text-right tabular-nums desk:h-8 desk:min-h-8 desk:text-sm ${changedInput(draft.yield_quantity !== saved.draft.yield_quantity)}`}
+                        onChange={(e) => setDraft({ ...draft, yield_quantity: e.target.value })}
+                      />
+                      <Select
+                        aria-label="Unidad"
+                        disabled={ro}
+                        value={draft.yield_unit}
+                        className={`w-16 pr-0 pl-1 desk:h-8 desk:min-h-8 desk:text-sm ${changedInput(draft.yield_unit !== saved.draft.yield_unit)}`}
+                        onChange={(e) => setDraft({ ...draft, yield_unit: e.target.value })}
+                      >
+                        <option value="" disabled>
+                          Elegí
+                        </option>
+                        {LINE_UNITS.filter((u) => u.code !== "portion").map((u) => (
+                          <option key={u.code} value={u.code}>
+                            {u.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </span>
+                  </span>
+                )
+              }
+            >
+              {/* En la computadora, solo el campo: las porciones, el peso bruto y el rendimiento están en los indicadores
+                de arriba y no se repiten (ADR-0046). */}
+              {dish ? (
+                <div className="flex flex-col gap-2 text-sm desk:hidden">
                   <dl className="desk:hidden">
                     <ReadRow
                       label="Peso de la porción"
@@ -1498,42 +1866,11 @@ export function SheetEditor({
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 text-sm">
+                <div className="flex flex-col gap-2 text-sm desk:hidden">
                   <div className="flex items-center justify-between gap-2 desk:hidden">
                     <span className="text-ink">Peso bruto (suma)</span>
                     <span className="font-semibold text-ink tabular-nums">
                       {formatGrams(totals.grams)}
-                    </span>
-                  </div>
-                  <div className="hidden items-center justify-between gap-2 desk:flex">
-                    <label htmlFor={`${prefix}-peso-neto`} className="text-ink">
-                      Peso neto total
-                    </label>
-                    <span className="flex gap-1">
-                      <Input
-                        id={`${prefix}-peso-neto`}
-                        inputMode="decimal"
-                        readOnly={ro}
-                        value={draft.yield_quantity}
-                        className={`w-20 text-right tabular-nums desk:h-8 desk:min-h-8 desk:text-sm ${changedInput(draft.yield_quantity !== saved.draft.yield_quantity)}`}
-                        onChange={(e) => setDraft({ ...draft, yield_quantity: e.target.value })}
-                      />
-                      <Select
-                        aria-label="Unidad"
-                        disabled={ro}
-                        value={draft.yield_unit}
-                        className={`w-20 desk:h-8 desk:min-h-8 desk:text-sm ${changedInput(draft.yield_unit !== saved.draft.yield_unit)}`}
-                        onChange={(e) => setDraft({ ...draft, yield_unit: e.target.value })}
-                      >
-                        <option value="" disabled>
-                          Elegí
-                        </option>
-                        {LINE_UNITS.filter((u) => u.code !== "portion").map((u) => (
-                          <option key={u.code} value={u.code}>
-                            {u.label}
-                          </option>
-                        ))}
-                      </Select>
                     </span>
                   </div>
                   <dl className="desk:hidden">
@@ -1665,24 +2002,35 @@ export function SheetEditor({
             onChange={(v) => setData({ ...data, short_name: v })}
             changed={data.short_name !== saved.data.short_name}
           />
-          <TextField
+          <ListField
             id={`${prefix}-sector`}
             label="Sector"
-            value={data.sector}
+            items={lists.sectors}
+            value={data.sector_id}
+            text={recipe.sector}
+            none="Sin sector"
             ro={ro}
-            max={60}
-            onChange={(v) => setData({ ...data, sector: v })}
-            changed={data.sector !== saved.data.sector}
+            changed={data.sector_id !== saved.data.sector_id}
+            onChange={(v) => setData({ ...data, sector_id: v })}
+            onAdd={canAddToLists ? () => setAddingTo({ list: "sectors", step: null }) : undefined}
+            addLabel="Agregar un sector"
           />
-          <TextField
+          <ListField
             id={`${prefix}-partida`}
             label="Partida"
-            value={data.station}
+            items={lists.stations}
+            value={data.station_id}
+            text={recipe.station}
+            none="Sin partida"
             ro={ro}
-            max={60}
-            onChange={(v) => setData({ ...data, station: v })}
-            changed={data.station !== saved.data.station}
+            changed={data.station_id !== saved.data.station_id}
+            onChange={(v) => setData({ ...data, station_id: v })}
+            onAdd={canAddToLists ? () => setAddingTo({ list: "stations", step: null }) : undefined}
+            addLabel="Agregar una partida"
           />
+          <Field id={`${prefix}-alcance`} label="Alcance">
+            <Input readOnly value={scopeLabel} />
+          </Field>
           <Field id={`${prefix}-tiempo`} label="Tiempo total" hint="Sale de los pasos.">
             <Input readOnly value={formatMinutes(totalMinutes)} />
           </Field>
@@ -1760,6 +2108,33 @@ export function SheetEditor({
         ) : null}
       </SidePanel>
 
+      {editable && canAddIngredient ? (
+        <QuickIngredientModal
+          open={addingIngredient !== null}
+          name={addingIngredient?.name ?? ""}
+          groupId={recipe.groupId}
+          categories={ingredientCategories}
+          onUse={placeIngredient}
+          onClose={() => {
+            setAddingIngredient(null);
+            focusOn(`${prefix}-nueva-mp`);
+          }}
+        />
+      ) : null}
+      {editable && canAddToLists ? (
+        <QuickListModal
+          list={addingTo?.list ?? null}
+          groupId={recipe.groupId}
+          onUse={placeListItem}
+          onClose={() => {
+            const to = addingTo;
+            setAddingTo(null);
+            if (to?.list === "equipment") focusOn(`${prefix}-paso-${to.step}-equipo`);
+            else if (to) focusOn(`${prefix}-${to.list === "sectors" ? "sector" : "partida"}`);
+          }}
+        />
+      ) : null}
+
       {/* La barra fija: un solo guardado para toda la ficha (ADR-0039). Solo en la computadora. */}
       {editable ? (
         <div className="sticky bottom-0 z-10 -mx-gutter hidden flex-col gap-2 border-t border-line bg-surface px-gutter py-2 desk:flex wide:-mx-gutter-wide wide:px-gutter-wide">
@@ -1789,7 +2164,7 @@ export function SheetEditor({
               id={`${prefix}-motivo`}
               placeholder="Obligatorio: por qué cambia"
               aria-required="true"
-              className="w-80"
+              className="w-60 wide:w-80"
               maxLength={500}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -1905,6 +2280,262 @@ function AreaField(props: {
   );
 }
 
+// Un sector o una partida: de la lista del grupo. Lo inactivo se ve si ya estaba; un texto de antes que no está en la
+// lista, también, hasta elegir otro.
+function listText(items: KitchenItem[], value: string, text: string | null): string {
+  if (value === OFF_LIST) return text ?? "";
+  return items.find((i) => i.id === value)?.name ?? "";
+}
+
+function ListField({
+  id,
+  label,
+  items,
+  value,
+  text,
+  none,
+  ro,
+  changed,
+  onChange,
+  onAdd,
+  addLabel,
+}: {
+  id: string;
+  label: string;
+  items: KitchenItem[];
+  value: string;
+  text: string | null;
+  none: string;
+  ro: boolean;
+  changed: boolean;
+  onChange: (value: string) => void;
+  onAdd?: () => void;
+  addLabel: string;
+}) {
+  if (ro)
+    return (
+      <Field id={id} label={label}>
+        <Input readOnly value={listText(items, value, text)} />
+      </Field>
+    );
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-sm font-medium text-ink">
+        {label}
+      </label>
+      <span className="flex min-w-0 gap-1">
+        <Select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`min-w-0 ${changed ? "border-dashed border-primary" : ""}`}
+        >
+          <option value="">{none}</option>
+          {text && (value === OFF_LIST || !items.some((i) => i.name === text)) ? (
+            <option value={OFF_LIST}>{text} (fuera de la lista)</option>
+          ) : null}
+          {items
+            .filter((i) => i.isActive || i.id === value)
+            .map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.name}
+                {i.isActive ? "" : " (inactivo)"}
+              </option>
+            ))}
+        </Select>
+        {onAdd ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            aria-label={addLabel}
+            aria-haspopup="dialog"
+            onClick={onAdd}
+          >
+            <Plus aria-hidden="true" />
+          </Button>
+        ) : null}
+      </span>
+    </div>
+  );
+}
+
+function EquipmentSelect({
+  step,
+  items,
+  onEquipment,
+  onAdd,
+  id,
+  ...aria
+}: {
+  step: Step;
+  items: KitchenEquipment[];
+  onEquipment: (item: KitchenEquipment | null) => void;
+  onAdd?: () => void;
+  id?: string;
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean;
+}) {
+  const off = step.equipment !== "" && step.equipment_id === "";
+  const current = items.find((i) => i.id === step.equipment_id);
+  return (
+    <span className="flex flex-col gap-1">
+      <span className="flex gap-1">
+        <Select
+          id={id}
+          {...aria}
+          className="min-w-0"
+          value={off ? OFF_LIST : step.equipment_id}
+          onChange={(e) => {
+            if (e.target.value !== OFF_LIST)
+              onEquipment(items.find((i) => i.id === e.target.value) ?? null);
+          }}
+        >
+          <option value="">Sin equipo</option>
+          {off ? <option value={OFF_LIST}>{step.equipment} (fuera de la lista)</option> : null}
+          {items
+            .filter((i) => i.isActive || i.id === step.equipment_id)
+            .map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.name}
+                {i.isActive ? "" : " (inactivo)"}
+              </option>
+            ))}
+        </Select>
+        {onAdd ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            aria-label="Agregar un equipo"
+            aria-haspopup="dialog"
+            onClick={onAdd}
+          >
+            <Plus aria-hidden="true" />
+          </Button>
+        ) : null}
+      </span>
+      {current?.capacity != null && current.capacityLabel ? (
+        <span className="text-xs text-ink-muted">
+          Entran {formatQuantity(current.capacity)} {current.capacityLabel}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+// Las dos celdas de la medida práctica: cuántas van (calculadas o corregidas a mano) y cuál.
+function MeasureCells({
+  prefix,
+  row,
+  n,
+  ro,
+  filled,
+  calc,
+  shown,
+  name,
+  detail,
+  options,
+  onChange,
+}: {
+  prefix: string;
+  row: Row;
+  n: number;
+  ro: boolean;
+  filled: boolean;
+  calc: number | null;
+  shown: number | null;
+  name: string | null;
+  detail: string | null;
+  options: Measure[];
+  onChange: (change: Partial<Row>) => void;
+}) {
+  if (ro)
+    return (
+      <>
+        <td className="w-12 min-w-12 px-0.5 py-1 text-right">
+          <span className="inline-flex min-h-8 items-center tabular-nums">
+            {shown === null ? "" : formatQuantity(shown)}
+          </span>
+        </td>
+        <td className="max-w-26 min-w-26 px-0.5 py-1">
+          <span className="flex min-h-8 items-center">
+            <span className="truncate" title={detail ?? undefined}>
+              {name ?? ""}
+            </span>
+          </span>
+        </td>
+      </>
+    );
+  const chosen = row.measure_id !== "";
+  // Corregida a mano y distinta del cálculo: se marca, para revisarla.
+  const differs =
+    chosen && row.measure_manual && calc !== null && parseAmount(row.measure_count) !== calc;
+  const id = `${prefix}-medida-cuantas-${row.key}`;
+  return (
+    <>
+      <td className="w-12 min-w-12 px-0.5 py-1 text-right">
+        {chosen ? (
+          <span className="flex flex-col items-end">
+            <Input
+              id={id}
+              aria-label={`Cuántas medidas prácticas, fila ${n}`}
+              aria-describedby={differs ? `${id}-mano` : undefined}
+              inputMode="decimal"
+              className={`px-1 text-right tabular-nums desk:h-8 desk:min-h-8 desk:text-sm ${differs ? "border-warn-ink bg-warn text-warn-ink" : ""}`}
+              value={row.measure_manual ? row.measure_count : shown === null ? "" : comma(shown)}
+              onChange={(e) => onChange({ measure_manual: true, measure_count: e.target.value })}
+              // Vaciarla es volver al cálculo.
+              onBlur={() => {
+                if (row.measure_manual && row.measure_count.trim() === "")
+                  onChange({ measure_manual: false, measure_count: "" });
+              }}
+            />
+            {differs ? (
+              <Tooltip
+                content={`Corregida a mano: el cálculo da ${formatQuantity(calc)}. Para volver, vaciá el campo o usá «Más opciones».`}
+              >
+                <button
+                  type="button"
+                  className="mt-0.5 inline-flex min-h-6 items-center rounded-sm bg-warn px-1 text-xs whitespace-nowrap text-warn-ink focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <span id={`${id}-mano`}>
+                    a mano
+                    <span className="sr-only">, el cálculo da {formatQuantity(calc)}</span>
+                  </span>
+                </button>
+              </Tooltip>
+            ) : null}
+          </span>
+        ) : null}
+      </td>
+      <td className="max-w-26 min-w-26 px-0.5 py-1">
+        {filled || chosen ? (
+          <Select
+            id={`${prefix}-medida-practica-${row.key}`}
+            aria-label={`Medida práctica, fila ${n}`}
+            title={detail ?? undefined}
+            className="pr-0 pl-1 desk:h-8 desk:min-h-8 desk:text-xs"
+            value={row.measure_id}
+            onChange={(e) =>
+              onChange({ measure_id: e.target.value, measure_manual: false, measure_count: "" })
+            }
+          >
+            <option value="">Sin medida</option>
+            {options.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.id === row.measure_id && m.isActive ? m.name : measureLabel(m)}
+              </option>
+            ))}
+          </Select>
+        ) : null}
+      </td>
+    </>
+  );
+}
+
 function StepCard({
   prefix,
   step,
@@ -1913,6 +2544,9 @@ function StepCard({
   ro,
   yieldLabel,
   changed,
+  equipment,
+  onEquipment,
+  onAddEquipment,
   onChange,
   onRemove,
 }: {
@@ -1923,6 +2557,9 @@ function StepCard({
   ro: boolean;
   yieldLabel?: string;
   changed: boolean;
+  equipment: KitchenEquipment[];
+  onEquipment: (item: KitchenEquipment | null) => void;
+  onAddEquipment?: () => void;
   onChange: (change: Partial<Step>) => void;
   onRemove: () => void;
 }) {
@@ -1951,7 +2588,7 @@ function StepCard({
         </span>
         <span className="text-ink">{step.instructions}</span>
       </div>
-      <div className="hidden grid-cols-[2.5rem_3fr_repeat(4,minmax(0,1fr))_auto] items-start gap-3 desk:grid">
+      <div className="hidden grid-cols-[2.5rem_minmax(0,1fr)_7.5rem_5.5rem_5.5rem_12.5rem_auto] items-start gap-3 desk:grid">
         <span
           aria-hidden="true"
           className="mt-7 flex size-control items-center justify-center rounded-full bg-app font-semibold text-ink"
@@ -1993,10 +2630,11 @@ function StepCard({
           />
         </Field>
         <Field id={id("equipo")} label="Equipo">
-          <Input
-            value={step.equipment}
-            maxLength={120}
-            onChange={(e) => onChange({ equipment: e.target.value })}
+          <EquipmentSelect
+            step={step}
+            items={equipment}
+            onEquipment={onEquipment}
+            onAdd={onAddEquipment}
           />
         </Field>
         <Button

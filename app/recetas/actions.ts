@@ -25,6 +25,7 @@ import {
 } from "@/lib/recipe-format";
 import { compatibleDimensions, type PreviewLine } from "@/lib/recipe-sheet";
 import { parseAmount } from "@/lib/money";
+import { getUnitWeights } from "@/lib/recipes";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del recetario (ADR-0023). Cada una llama a una función de la base, que controla el
@@ -339,7 +340,7 @@ export async function previewSheetLinesAction(
 // Medidas que admite cada materia prima de la grilla (para ofrecer solo unidades que se pueden convertir).
 export async function unitOptionsAction(
   ingredientIds: unknown,
-): Promise<Record<string, UnitDimension[]>> {
+): Promise<Record<string, { dims: UnitDimension[]; unitWeight: number | null }>> {
   const list = z.array(uuid).max(200).safeParse(ingredientIds);
   if (!list.success || list.data.length === 0) return {};
   const client = await createClient();
@@ -347,12 +348,154 @@ export async function unitOptionsAction(
     .schema("catalog")
     .rpc("ingredient_unit_options", { p_ids: list.data });
   if (error) return {};
+  // El peso por unidad, para la medida práctica (si no se puede leer, no se ofrece cruzar peso con unidades).
+  const weights = await getUnitWeights(list.data).catch((): Record<string, number> => ({}));
   return Object.fromEntries(
     data.map((o) => [
       o.ingredient_id,
-      compatibleDimensions(o.dimension as UnitDimension, o.has_density, o.has_unit_weight),
+      {
+        dims: compatibleDimensions(o.dimension as UnitDimension, o.has_density, o.has_unit_weight),
+        unitWeight: weights[o.ingredient_id] ?? null,
+      },
     ]),
   );
+}
+
+// «+ Nueva materia prima» desde la receta (ADR-0064): solo nombre, rubro, unidad y motivo. La base controla el permiso
+// (catalog.create_ingredients o catalog.manage para todo el grupo) y le avisa a Compras.
+export type QuickIngredient = { id: string; code: string; name: string; unit: string };
+export type SimilarIngredient = QuickIngredient;
+
+const quickIngredientSchema = z.object({
+  groupId: uuid,
+  name: z.string().trim().min(1, "Escribí el nombre.").max(120, "Hasta 120 caracteres."),
+  categoryId: z.string().uuid("Elegí el rubro."),
+  unit: z.string().min(1, "Elegí la unidad.").max(20),
+  reason: schemas.reason.shape.reason,
+});
+
+export async function quickIngredientAction(
+  payload: z.input<typeof quickIngredientSchema>,
+): Promise<ActionState & { ingredient?: QuickIngredient }> {
+  const parsed = quickIngredientSchema.safeParse(payload);
+  if (!parsed.success) return invalid(parsed.error);
+  const p = parsed.data;
+  const client = await createClient();
+  const { data, error } = await client.schema("catalog").rpc("quick_ingredient", {
+    p_group_id: p.groupId,
+    p_name: p.name,
+    p_category_id: p.categoryId,
+    p_recipe_unit: p.unit,
+    p_reason: p.reason,
+  });
+  const result = toActionState(data, error);
+  const out = z.object({ id: uuid, code: z.string() }).safeParse(data);
+  if (result.status !== "ok" || !out.success) return result;
+  revalidatePath("/materias-primas");
+  const { data: row } = await client
+    .schema("catalog")
+    .from("ingredients")
+    .select("name, recipe_unit_id")
+    .eq("id", out.data.id)
+    .maybeSingle();
+  const { data: unit } = row
+    ? await client
+        .schema("catalog")
+        .from("units")
+        .select("code")
+        .eq("id", row.recipe_unit_id)
+        .maybeSingle()
+    : { data: null };
+  return {
+    ...result,
+    ingredient: {
+      id: out.data.id,
+      code: out.data.code,
+      name: row?.name ?? p.name,
+      unit: unit?.code ?? "g",
+    },
+  };
+}
+
+// «¿Es esta?»: las parecidas, para no crear una repetida. Si no se puede leer, ninguna.
+export async function similarIngredientsAction(
+  groupId: unknown,
+  name: unknown,
+): Promise<SimilarIngredient[]> {
+  const parsed = z
+    .object({ groupId: uuid, name: z.string().max(120) })
+    .safeParse({ groupId, name });
+  if (!parsed.success || parsed.data.name.trim().length < 3) return [];
+  const client = await createClient();
+  const { data, error } = await client.schema("catalog").rpc("similar_ingredients", {
+    p_group_id: parsed.data.groupId,
+    p_name: parsed.data.name,
+  });
+  return error ? [] : data.map((i) => ({ id: i.id, code: i.code, name: i.name, unit: i.unit }));
+}
+
+// «+ Agregar» un sector, una partida o un equipo sin salir de la receta (ADR-0064): lo guarda en la lista en el momento, con
+// su motivo. La base controla quién edita la lista (catalog.save_settings_list) y que no se repita.
+const QUICK_LISTS = {
+  sectors: "kitchen_sectors",
+  stations: "kitchen_stations",
+  equipment: "kitchen_equipment",
+} as const;
+export type QuickList = keyof typeof QUICK_LISTS;
+const quickListSchema = z.object({
+  groupId: uuid,
+  list: z.enum(["sectors", "stations", "equipment"]),
+  name: z.string().trim().min(1, "Escribí el nombre.").max(120, "Hasta 120 caracteres."),
+  capacity: z.string().trim().max(20).default(""),
+  capacityUnit: z.string().max(20).default(""),
+  capacityLabel: z.string().trim().max(40).default(""),
+  reason: schemas.reason.shape.reason,
+});
+
+export async function quickListItemAction(
+  payload: z.input<typeof quickListSchema>,
+): Promise<ActionState & { item?: { id: string; name: string } }> {
+  const parsed = quickListSchema.safeParse(payload);
+  if (!parsed.success) return invalid(parsed.error);
+  const p = parsed.data;
+  const client = await createClient();
+  const { data: list, error: readError } = await client
+    .schema("catalog")
+    .rpc("settings_list", { p_group_id: p.groupId, p_list: p.list });
+  const stamp = z.object({ stamp: z.string() }).safeParse(list);
+  if (readError || !stamp.success)
+    return { status: "bad", message: "No tenés permiso para editar esta lista." };
+  const { data, error } = await client.schema("catalog").rpc("save_settings_list", {
+    p_group_id: p.groupId,
+    p_list: p.list,
+    p_expected_stamp: stamp.data.stamp,
+    p_items: [
+      {
+        name: p.name,
+        ...(p.list === "equipment"
+          ? {
+              capacity: p.capacity,
+              capacity_unit: p.capacityUnit,
+              capacity_label: p.capacityLabel,
+            }
+          : {}),
+      },
+    ],
+    p_reason: p.reason,
+  });
+  const result = toActionState(data, error);
+  if (result.status !== "ok") return result;
+  revalidatePath("/materias-primas/configuracion");
+  // La base devuelve el id de lo creado; el nombre, como quedó (sin espacios de más).
+  const created = z.object({ created: z.array(uuid).length(1) }).safeParse(data);
+  if (!created.success) return result;
+  const { data: item } = await client
+    .schema("catalog")
+    .from(QUICK_LISTS[p.list])
+    .select("id, name")
+    .eq("id", created.data.created[0] ?? "")
+    .maybeSingle();
+  return item ? { ...result, item: { id: item.id, name: item.name } } : result;
 }
 
 // Guardado en lote: datos, rendimiento, líneas y pasos en una sola transacción, con un solo motivo. Con submit,
@@ -414,11 +557,18 @@ export async function saveSheetAction(payload: z.input<typeof sheetPayload>): Pr
           yield_profile_id: l.yield_profile_id ?? null,
           no_scale: l.no_scale,
           notes: l.notes,
+          ...(l.measure_id
+            ? {
+                measure_id: l.measure_id,
+                measure_count: l.measure_count ? String(parseAmount(l.measure_count)) : "",
+              }
+            : {}),
         }))
       : null) as unknown as string,
     p_steps: (p.steps
       ? p.steps.map((s) => ({
-          equipment: s.equipment,
+          // El elemento manda sobre el texto: un borrador abierto mientras la lista cambia un nombre no pierde el vínculo.
+          ...(s.equipment_id ? { equipment_id: s.equipment_id } : { equipment: s.equipment }),
           equipment_capacity: s.equipment_capacity ? String(parseAmount(s.equipment_capacity)) : "",
           equipment_capacity_unit: s.equipment_capacity_unit,
           kind: s.kind,
