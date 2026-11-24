@@ -15,10 +15,13 @@ import { cn } from "@/lib/utils";
 export function MobileMenu({
   groups,
   search,
+  accountNotices = 0,
   signOut,
 }: {
   groups: NavGroup[];
   search: boolean;
+  // Avisos de la propia cuenta sin leer (ADR-0062).
+  accountNotices?: number;
   signOut: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -90,6 +93,12 @@ export function MobileMenu({
               >
                 <UserRound aria-hidden="true" className="size-5 shrink-0" />
                 Mi cuenta
+                {accountNotices > 0 ? (
+                  <span className="ml-auto rounded-sm bg-warn px-1.5 text-xs font-medium text-warn-ink tabular-nums">
+                    {accountNotices}
+                    <span className="sr-only"> sin leer</span>
+                  </span>
+                ) : null}
               </Link>
             </li>
             <li>{signOut}</li>

@@ -19,7 +19,7 @@ test("un formulario muestra el error debajo del campo antes de enviar", async ({
   test.setTimeout(90_000);
   await login(page, "gerente@ejemplo.test", { mfa: true });
   await page.goto(COOK);
-  await openAction(page, "Suspender…");
+  await page.getByRole("button", { name: "Suspender", exact: true }).click();
   // La cocinera no es de Dirección ni Superadministrador: la acción es inmediata, sin aviso de aprobación.
   await expect(page.locator('[data-slot="approval-note"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Suspender la cuenta" }).click();
@@ -29,12 +29,16 @@ test("un formulario muestra el error debajo del campo antes de enviar", async ({
   await expect(reason).toBeFocused();
   // No se envió nada: la cuenta sigue activa y no hay aviso de la base.
   await expect(notice(page)).toHaveCount(0);
-  await expect(page.getByText("Activa", { exact: true })).toBeVisible();
+  await expect(page.getByText("Activa", { exact: true }).first()).toBeVisible();
   await axe(page);
   // Al escribir el motivo, el error se va.
   await reason.fill("Prueba");
   await reason.blur();
   await expect(page.getByText("Escribí el motivo.")).toHaveCount(0);
+  // El modal se cierra sin suspender a nadie, y el foco vuelve al botón.
+  await page.keyboard.press("Escape");
+  await expect(reason).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Suspender", exact: true })).toBeFocused();
   await logout(page);
 });
 
@@ -43,14 +47,19 @@ test("el último acceso lo ve quien administra a la persona, no el auditor", asy
   await login(page, "auditor@ejemplo.test");
   await page.goto(COOK);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByText("Último acceso", { exact: true })).toHaveCount(0);
+  // El indicador dice quién lo ve, sin la fecha; y tampoco el primer ingreso ni las sesiones (ADR-0062).
+  await expect(page.getByText("Lo ve quien administra a la persona.")).toBeVisible();
+  await expect(page.getByText("Primer ingreso", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Sesiones", { exact: true })).toHaveCount(0);
   await expect(page.getByText("los ve quien administra a la persona")).toBeVisible();
   await axe(page);
   await logout(page);
 
   await login(page, "gerente@ejemplo.test", { mfa: true });
   await page.goto(COOK);
-  await expect(page.getByText("Último acceso", { exact: true })).toBeVisible();
+  await expect(page.getByText("Último ingreso", { exact: true })).toBeVisible();
+  await expect(page.getByText("Primer ingreso", { exact: true })).toBeVisible();
+  await expect(page.getByText("Lo ve quien administra a la persona.")).toHaveCount(0);
   await expect(page.getByText("los ve quien administra a la persona")).toHaveCount(0);
   await logout(page);
 });
@@ -160,12 +169,12 @@ test("la desactivación de alguien de Dirección General la decide otra persona 
   // El superadmin la pide: la ficha avisa que queda pendiente y el botón dice que se pide.
   await login(page, "superadmin@ejemplo.test", { mfa: true });
   await page.goto("/usuarios/00000000-0000-4000-8000-000000000412");
-  await openAction(page, "Desactivar…");
+  await page.getByRole("button", { name: "Desactivar", exact: true }).click();
   await expect(page.getByText("Esta persona es de Dirección General.")).toBeVisible();
   await page.getByLabel("Motivo para desactivar").fill(reason);
   await page.getByRole("button", { name: "Pedir la desactivación" }).click();
   await expect(notice(page)).toContainText("otra persona de Dirección General");
-  await expect(page.getByText("Activa", { exact: true })).toBeVisible();
+  await expect(page.getByText("Activa", { exact: true }).first()).toBeVisible();
   await axe(page);
   // En su bandeja la ve, pero no la puede decidir.
   await page.goto("/aprobaciones");

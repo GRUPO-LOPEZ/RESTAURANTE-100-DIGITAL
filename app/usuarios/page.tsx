@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { List, UserPlus } from "lucide-react";
+import { List } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
-import { HistoryList } from "@/components/history-list";
+import { InviteModal } from "@/components/invite-modal";
 import { LoginsByDayChart } from "@/components/logins-by-day-chart";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { DataTable } from "@/components/ui/data-table";
 import { Field, Input, Select } from "@/components/ui/field";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Kpi } from "@/components/ui/kpi";
 import { EmptyState } from "@/components/ui/states";
+import { Tile } from "@/components/ui/tile";
 import {
+  ACTION_LABELS,
   MODULE_LABELS,
+  TABLE_LABELS,
   first,
   formatDate,
   formatDateTime,
@@ -33,8 +34,10 @@ import { getMenus, requireMenu } from "@/lib/auth/session";
 export default function UsuariosPage({ searchParams }: PageProps<"/usuarios">) {
   return (
     <AppShell
-      title="¿Quién tiene acceso y qué está pasando?"
-      description="Las cuentas de tu alcance, los ingresos y los cambios importantes."
+      title="Tablero de usuarios"
+      heading="¿Quién tiene acceso y qué está pasando?"
+      fill
+      meta={<span className="text-sm text-ink-muted">cuentas, ingresos y cambios importantes</span>}
       actions={
         <Suspense fallback={null}>
           <Actions />
@@ -59,15 +62,37 @@ async function Actions() {
           Ver personas
         </Link>
       </Button>
-      {menus.invite ? (
-        <Button asChild>
-          <Link href="/usuarios/invitar">
-            <UserPlus aria-hidden="true" />
-            Invitar a una persona
-          </Link>
-        </Button>
-      ) : null}
+      {menus.invite ? <InviteModal /> : null}
     </>
+  );
+}
+
+// Nombre y cantidad, en renglones de 28 px: entran todos los roles sin desplazar (ADR-0045).
+function CountList({
+  label,
+  rows,
+  empty,
+}: {
+  label: string;
+  rows: { key: string; name: string; people: number }[];
+  empty: string;
+}) {
+  if (rows.length === 0) return <EmptyState title={empty} />;
+  return (
+    <ul aria-label={label} className="flex flex-col">
+      {rows.map((r) => (
+        <li
+          key={r.key}
+          className="flex min-h-7 items-center justify-between gap-2 border-b border-line text-sm text-ink last:border-0"
+        >
+          <span className="min-w-0">{r.name}</span>
+          <span className="shrink-0 font-medium tabular-nums">
+            {r.people.toLocaleString("es-AR")}
+            <span className="sr-only">{r.people === 1 ? " persona" : " personas"}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -185,14 +210,15 @@ async function Dashboard({
 
       <section
         aria-label="Indicadores"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 desk:grid-cols-4"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 desk:grid-cols-4 desk:gap-4"
       >
         {/* Los tres primeros son el estado de hoy (no dependen del período elegido). */}
         <Kpi
+          compact
           label="Cuentas activas"
           period="Hoy"
           value={panel.active}
-          detail={
+          note={
             panel.active === 0
               ? "Sin cuentas activas en lo que estás mirando."
               : [
@@ -208,10 +234,11 @@ async function Dashboard({
           hrefLabel="Ver cuáles"
         />
         <Kpi
+          compact
           label="Desactivadas o suspendidas"
           period="Hoy"
           value={off}
-          detail={`${weekAgo(off, offBefore, panel.prev_as_of)} · ${panel.deactivated} desactivadas · ${panel.suspended} suspendidas`}
+          note={`${weekAgo(off, offBefore, panel.prev_as_of)} · ${panel.deactivated} desactivadas · ${panel.suspended} suspendidas`}
           status={off > 0 ? "warn" : "ok"}
           statusLabel={off > 0 ? "Revisar" : "Ninguna"}
           href={
@@ -222,10 +249,11 @@ async function Dashboard({
           hrefLabel="Ver cuáles"
         />
         <Kpi
+          compact
           label="Aprobaciones pendientes"
           period="Hoy"
           value={panel.pending_approvals}
-          detail={weekAgo(panel.pending_approvals, panel.pending_prev, panel.prev_as_of)}
+          note={weekAgo(panel.pending_approvals, panel.pending_prev, panel.prev_as_of)}
           status={panel.pending_approvals > 0 ? "info" : "ok"}
           statusLabel={panel.pending_approvals > 0 ? "Esperan decisión" : "Nada pendiente"}
           href={panel.pending_approvals > 0 ? "/aprobaciones" : undefined}
@@ -233,9 +261,10 @@ async function Dashboard({
         />
         {panel.can_view_security && panel.rejected_7d !== null ? (
           <Kpi
+            compact
             label="Accesos rechazados en 7 días"
             value={panel.rejected_7d}
-            detail={
+            note={
               prevRejected === null
                 ? "Sin el dato de los 7 días anteriores para comparar."
                 : comparison(panel.rejected_7d, prevRejected)
@@ -253,110 +282,96 @@ async function Dashboard({
           />
         ) : (
           <Kpi
+            compact
             label="Accesos rechazados en 7 días"
             value="—"
-            detail="Lo ven quienes tienen permiso sobre el registro de seguridad."
+            note="Lo ven quienes tienen permiso sobre el registro de seguridad."
             status="none"
             statusLabel="Sin permiso"
           />
         )}
       </section>
 
-      <Card className="flex flex-col gap-4">
-        <CardTitle>Accesos por día</CardTitle>
-        {panel.logins_by_day &&
-        panel.logins_by_day.every((d) => d.succeeded === 0 && d.failed === 0) ? (
-          <EmptyState title="No hubo ingresos en el período." />
-        ) : panel.logins_by_day ? (
-          <LoginsByDayChart data={panel.logins_by_day} />
-        ) : (
-          <EmptyState title="No tenés permiso para ver los ingresos.">
-            Los ven Superadministración, Dirección y Auditoría.
-          </EmptyState>
-        )}
-      </Card>
-
-      <div className="grid gap-6 desk:grid-cols-2">
-        <Card className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <CardTitle>Personas por local</CardTitle>
-            <CardDescription>
-              Con un rol de ese local o de su marca. Con acceso a todo el grupo:{" "}
-              {panel.group_wide_people}.
-            </CardDescription>
-          </div>
-          {panel.by_restaurant.length === 0 ? (
-            <EmptyState title="No hay locales en tu alcance." />
+      {/* Cuatro columnas que ocupan el alto que queda; lo que no entra se desplaza dentro de su tarjeta (ADR-0051). */}
+      <div className="grid gap-4 desk:min-h-0 desk:flex-[1_1_0px] desk:grid-cols-[4fr_3fr_3fr_4fr] desk:grid-rows-[minmax(0,1fr)]">
+        <Tile id="accesos" title="Accesos por día" scroll>
+          {panel.logins_by_day &&
+          panel.logins_by_day.every((d) => d.succeeded === 0 && d.failed === 0) ? (
+            <EmptyState title="No hubo ingresos en el período." />
+          ) : panel.logins_by_day ? (
+            <LoginsByDayChart data={panel.logins_by_day} />
           ) : (
-            <DataTable
-              caption="Personas por local"
-              columns={[
-                {
-                  key: "place",
-                  header: "Local",
-                  mobile: "title",
-                  cell: (r) => (
-                    <span>
-                      {r.restaurant_name}{" "}
-                      <span className="text-sm text-ink-muted">· {r.brand_name}</span>
-                    </span>
-                  ),
-                },
-                {
-                  key: "people",
-                  header: "Personas",
-                  align: "right",
-                  cell: (r) => r.people.toLocaleString("es-AR"),
-                },
-              ]}
-              rows={panel.by_restaurant}
-              rowKey={(r) => r.restaurant_id}
-            />
+            <EmptyState title="No tenés permiso para ver los ingresos.">
+              Los ven Superadministración, Dirección y Auditoría.
+            </EmptyState>
           )}
-        </Card>
-        <Card className="flex flex-col gap-4">
-          <CardTitle>Personas por rol</CardTitle>
-          {panel.by_role.length === 0 ? (
-            <EmptyState title="No hay personas con roles en tu alcance." />
-          ) : (
-            <DataTable
-              caption="Personas por rol"
-              columns={[
-                { key: "role", header: "Rol", mobile: "title", cell: (r) => r.role_name },
-                {
-                  key: "people",
-                  header: "Personas",
-                  align: "right",
-                  cell: (r) => r.people.toLocaleString("es-AR"),
-                },
-              ]}
-              rows={panel.by_role}
-              rowKey={(r) => r.role_code}
-            />
-          )}
-        </Card>
-      </div>
-
-      <section aria-labelledby="criticos" className="flex flex-col gap-4">
-        <h2 id="criticos" className="text-xl text-ink">
-          Últimos cambios críticos
-        </h2>
-        <p className="text-sm text-ink-muted">
-          Roles, permisos, cuentas y aprobaciones del período, dentro de lo que podés ver del
-          historial.
-        </p>
-        {panel.critical_changes.length === 0 ? (
-          <EmptyState title="No hubo cambios críticos en el período." />
-        ) : (
-          <HistoryList rows={panel.critical_changes.slice(0, CRITICAL_SHOWN)} compact />
-        )}
-        <Link
-          href={historyHref}
-          className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline desk:min-h-control"
+        </Tile>
+        <Tile
+          id="por-local"
+          title="Personas por local"
+          scroll
+          titleExtra={
+            <span className="text-xs text-ink-muted">
+              {panel.group_wide_people} con todo el grupo
+            </span>
+          }
         >
-          Ver todos los cambios en el Historial
-        </Link>
-      </section>
+          <CountList
+            label="Personas por local"
+            rows={panel.by_restaurant.map((r) => ({
+              key: r.restaurant_id,
+              name: r.restaurant_name,
+              people: r.people,
+            }))}
+            empty="No hay locales en tu alcance."
+          />
+        </Tile>
+        <Tile id="por-rol" title="Personas por rol" scroll>
+          <CountList
+            label="Personas por rol"
+            rows={panel.by_role.map((r) => ({
+              key: r.role_code,
+              name: r.role_name,
+              people: r.people,
+            }))}
+            empty="No hay personas con roles en tu alcance."
+          />
+        </Tile>
+        <Tile id="criticos" title="Últimos cambios críticos" scroll>
+          {panel.critical_changes.length === 0 ? (
+            <EmptyState title="No hubo cambios críticos en el período." />
+          ) : (
+            <ol className="flex flex-col gap-2">
+              {panel.critical_changes.slice(0, CRITICAL_SHOWN).map((r) => (
+                <li
+                  key={r.sequence_number}
+                  className="flex flex-col border-b border-line pb-2 text-sm last:border-0"
+                >
+                  <span className="font-medium text-ink">
+                    {ACTION_LABELS[r.action] ?? "Cambio"} ·{" "}
+                    {TABLE_LABELS[`${r.table_schema}.${r.table_name}`] ?? "Dato del sistema"}
+                  </span>
+                  <span className="text-xs text-ink-muted">
+                    <time dateTime={r.occurred_at}>{formatDateTime(r.occurred_at)}</time> ·{" "}
+                    {[r.actor_name, r.place_name].filter(Boolean).join(" · ")}
+                  </span>
+                  {r.reason ? (
+                    <span className="truncate text-xs text-ink-muted" title={r.reason}>
+                      {r.reason}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+          )}
+          <Link
+            href={historyHref}
+            className="inline-flex min-h-touch items-center self-start text-sm text-primary underline-offset-4 hover:underline desk:min-h-8"
+          >
+            Ver todos los cambios en el Historial
+          </Link>
+        </Tile>
+      </div>
     </>
   );
 }

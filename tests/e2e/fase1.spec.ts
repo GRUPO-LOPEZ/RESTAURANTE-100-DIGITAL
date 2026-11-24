@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { PASSWORD, fillLogin, freshTotp, login, logout, notice, openAction } from "./helpers";
+import { PASSWORD, fillLogin, freshTotp, login, logout, notice } from "./helpers";
 
 function publicEnv(name: string): string {
   const line = readFileSync(".env.example", "utf8")
@@ -123,17 +123,19 @@ test.describe("8 y A5. una cuenta desactivada pierde el acceso; reactivada vuelv
       .first()
       .click();
     await expect(page.getByRole("heading", { level: 1, name: /Prueba Baja/ })).toBeVisible();
-    await openAction(page, "Desactivar…");
+    await page.getByRole("button", { name: "Desactivar", exact: true }).click();
     await page.getByLabel("Motivo para desactivar").fill("Prueba automática: baja temporal");
     await page.getByRole("button", { name: "Desactivar la cuenta" }).click();
     // Al desactivarse, la ficha cambia: ahora ofrece pedir la reactivación.
-    await expect(page.locator("summary", { hasText: "Pedir la reactivación…" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Pedir la reactivación", exact: true }),
+    ).toBeVisible();
     await expect(page.getByText("Desactivada", { exact: true }).first()).toBeVisible();
 
     // Pide la reactivación: no la puede aprobar él mismo.
-    await openAction(page, "Pedir la reactivación…");
+    await page.getByRole("button", { name: "Pedir la reactivación", exact: true }).click();
     await page.getByLabel("Motivo para reactivar").fill("Prueba automática: vuelve a trabajar");
-    await page.getByRole("button", { name: "Pedir la reactivación" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Pedir la reactivación" }).click();
     await expect(page.getByText(/pendiente hasta que la apruebe otra persona/)).toBeVisible();
     await page.goto("/aprobaciones");
     const request = page

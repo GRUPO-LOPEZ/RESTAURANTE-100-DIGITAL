@@ -13,7 +13,7 @@ import { RestaurantSelector } from "@/components/restaurant-selector";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { displayName, getMenus, requireOperable } from "@/lib/auth/session";
-import { getActiveRestaurantId, getMyScopes, getUnreadCount } from "@/lib/data";
+import { getAccountNotices, getActiveRestaurantId, getMyScopes, getUnreadCount } from "@/lib/data";
 import { SIDEBAR_COOKIE, mobileItems, navGroups } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -137,11 +137,12 @@ async function SessionBottomNav() {
 
 async function SessionTopbar() {
   const session = await requireOperable();
-  const [menus, scopes, activeId, unread] = await Promise.all([
+  const [menus, scopes, activeId, unread, account] = await Promise.all([
     getMenus(),
     getMyScopes(),
     getActiveRestaurantId(session.user_id),
     getUnreadCount(),
+    getAccountNotices(),
   ]);
   const search = menus.recipes || menus.catalog;
   const person = displayName(session);
@@ -152,6 +153,7 @@ async function SessionTopbar() {
       <MobileMenu
         groups={navGroups(menus, unread)}
         search={search}
+        accountNotices={account.length}
         signOut={
           <form action={signOut}>
             <Button
@@ -231,7 +233,7 @@ async function SessionTopbar() {
       <Link
         href="/mi-cuenta"
         title={person}
-        className="hidden min-h-control shrink-0 items-center gap-2 rounded-sm px-2 text-sm text-ink hover:bg-line/50 desk:flex"
+        className="relative hidden min-h-control shrink-0 items-center gap-2 rounded-sm px-2 text-sm text-ink hover:bg-line/50 desk:flex"
       >
         <span
           aria-hidden="true"
@@ -239,7 +241,18 @@ async function SessionTopbar() {
         >
           {initials(person)}
         </span>
-        <span className="sr-only">Perfil de {person}</span>
+        <span className="sr-only">
+          Perfil de {person}
+          {account.length > 0 ? ` (avisos de tu cuenta sin leer: ${account.length})` : ""}
+        </span>
+        {account.length > 0 ? (
+          <span
+            aria-hidden="true"
+            className="absolute top-0.5 right-0.5 rounded-sm bg-warn px-1 text-xs font-medium text-warn-ink tabular-nums"
+          >
+            {account.length}
+          </span>
+        ) : null}
       </Link>
     </>
   );

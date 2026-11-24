@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { UserPlus } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
+import { InviteModal } from "@/components/invite-modal";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Field, Input, Select } from "@/components/ui/field";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { Notice } from "@/components/ui/notice";
 import { EmptyState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
 import {
@@ -45,7 +44,8 @@ export default function ListaPage({ searchParams }: PageProps<"/usuarios/lista">
   return (
     <AppShell
       title="Personas"
-      description="Todas las personas de tu alcance, con sus roles y el estado de su cuenta."
+      fill
+      meta={<span className="text-sm text-ink-muted">con sus roles y el estado de su cuenta</span>}
       actions={
         <Suspense fallback={null}>
           <Actions />
@@ -63,14 +63,7 @@ async function Actions() {
   await requireMenu("users");
   const menus = await getMenus();
   if (!menus.invite) return null;
-  return (
-    <Button asChild>
-      <Link href="/usuarios/invitar">
-        <UserPlus aria-hidden="true" />
-        Invitar a una persona
-      </Link>
-    </Button>
-  );
+  return <InviteModal />;
 }
 
 // El grupo va solo con su nombre, que ya dice "Grupo" (como scopeLabel de lib/data.ts).
@@ -90,7 +83,9 @@ async function People({
 }) {
   const session = await requireMenu("users");
   const raw = await searchParams;
-  const params = plainParams(raw);
+  // El aviso es de esta vez: no viaja en las pestañas, los filtros ni las páginas.
+  const params = { ...plainParams(raw) };
+  delete params.aviso;
   const activeId = await getActiveRestaurantId(session.user_id);
   const local = restaurantFilter(first(raw.local), activeId);
   const status = first(raw.estado);
@@ -157,22 +152,23 @@ async function People({
       header: "Persona",
       mobile: "title",
       cell: (row) => (
-        <span className="flex flex-col">
+        <span className="flex flex-col desk:flex-row desk:items-baseline desk:gap-2">
           <Link
             href={`/usuarios/${row.id}?volver=${encodeURIComponent(here)}`}
             className="inline-flex min-h-touch items-center font-medium text-primary underline-offset-4 hover:underline desk:min-h-0"
           >
             {personName(row)}
           </Link>
-          <span className="text-sm break-all text-ink-muted">{row.email}</span>
+          <span
+            className="text-sm break-all text-ink-muted desk:max-w-48 desk:truncate wide:max-w-none"
+            title={row.email}
+          >
+            {row.email}
+          </span>
         </span>
       ),
     },
-    {
-      key: "job",
-      header: "Puesto y área",
-      cell: (row) => [row.job_title, row.area_name].filter(Boolean).join(" · ") || "—",
-    },
+    { key: "status", header: "Estado", mobile: "status", cell: (row) => <StatusBadge row={row} /> },
     {
       key: "roles",
       header: "Roles y lugar",
@@ -180,7 +176,8 @@ async function People({
         row.roles.length === 0 ? (
           <span className="text-sm text-ink-muted">Sin roles</span>
         ) : (
-          <ul className="flex flex-col gap-1">
+          // Una fila, un renglón: los roles seguidos; el que no entra se lee desplazando la tabla de costado.
+          <ul className="flex flex-col gap-1 desk:flex-row desk:gap-3">
             {row.roles.map((r) => (
               <li key={r.assignment_id} className="text-sm text-ink">
                 {r.role_name}{" "}
@@ -193,89 +190,112 @@ async function People({
           </ul>
         ),
     },
-    { key: "status", header: "Estado", mobile: "status", cell: (row) => <StatusBadge row={row} /> },
+    {
+      key: "job",
+      header: "Puesto y área",
+      cell: (row) => {
+        const text = [row.job_title, row.area_name].filter(Boolean).join(" · ");
+        return (
+          <span className="block desk:max-w-56 desk:truncate wide:max-w-none" title={text}>
+            {text || "—"}
+          </span>
+        );
+      },
+    },
   ];
 
   return (
-    <Card className="flex flex-col gap-4">
-      <CardTitle>
-        {placeName ? `Personas de ${placeName}` : "Personas de todo tu alcance"}
-      </CardTitle>
-      <FilterBar label="Filtros de personas" active={active}>
-        <Field id="q" label="Buscar" className="w-full desk:w-72">
-          <Input
-            type="search"
-            name="q"
-            defaultValue={filter.search}
-            placeholder="Nombre, correo o puesto"
-          />
-        </Field>
-        <Field id="rol" label="Rol" className="w-full desk:w-56">
-          <Select name="rol" defaultValue={filter.roleCode ?? ""}>
-            <option value="">Todos</option>
-            {roles.map((r) => (
-              <option key={r.code} value={r.code}>
-                {r.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        {local.restaurantId ? null : (
-          <Field id="marca" label="Marca" className="w-full desk:w-56">
-            <Select name="marca" defaultValue={filter.brandId ?? ""}>
-              <option value="">Todas</option>
-              {places.brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
+    <>
+      {first(raw.aviso) === "fuera" ? (
+        <Notice status="info">
+          Cambios guardados. La persona quedó sin roles en tu alcance: ya no la ves en tu lista. Si
+          fue un error, pedíselo a quien administra el grupo.
+        </Notice>
+      ) : null}
+      <section
+        aria-label="Personas"
+        className="flex flex-col gap-3 rounded-md border border-line bg-surface p-4 desk:min-h-0 desk:flex-[1_1_0px]"
+      >
+        <h2 className="text-base font-semibold text-ink">
+          {placeName ? `Personas de ${placeName}` : "Personas de todo tu alcance"}
+        </h2>
+        <FilterBar label="Filtros de personas" active={active}>
+          <Field id="q" label="Buscar" className="w-full desk:w-72">
+            <Input
+              type="search"
+              name="q"
+              defaultValue={filter.search}
+              placeholder="Nombre, correo o puesto"
+            />
+          </Field>
+          <Field id="rol" label="Rol" className="w-full desk:w-56">
+            <Select name="rol" defaultValue={filter.roleCode ?? ""}>
+              <option value="">Todos</option>
+              {roles.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.name}
                 </option>
               ))}
             </Select>
           </Field>
-        )}
-        <Field id="area" label="Área" className="w-full desk:w-56">
-          <Select name="area" defaultValue={filter.areaId ?? ""}>
-            <option value="">Todas</option>
-            {areas.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      </FilterBar>
-      <Tabs
-        label="Estado de las cuentas"
-        items={STATUS_TABS.map((t) => ({
-          href: listHref(PATH, params, {
-            estado: t.value,
-            despues_de: undefined,
-            despues_id: undefined,
-          }),
-          label: t.label,
-          current: t.value === filter.status,
-        }))}
-      />
-      <DataTable
-        caption="Personas"
-        columns={columns}
-        rows={page}
-        rowKey={(r) => r.id}
-        empty={
-          <EmptyState title="No hay personas con esos filtros.">
-            Probá con otro nombre, estado, rol, marca o área, o elegí otro local arriba.
-          </EmptyState>
-        }
-      />
-      <CursorPagination
-        size={list.size}
-        shown={page.length}
-        noun={page.length === 1 ? "persona" : "personas"}
-        nextPatch={last ? { despues_de: last.sort_key, despues_id: last.id } : null}
-        atStart={!filter.afterId}
-        cursorKeys={CURSOR}
-        path={PATH}
-        params={params}
-      />
-    </Card>
+          {local.restaurantId ? null : (
+            <Field id="marca" label="Marca" className="w-full desk:w-56">
+              <Select name="marca" defaultValue={filter.brandId ?? ""}>
+                <option value="">Todas</option>
+                {places.brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+          <Field id="area" label="Área" className="w-full desk:w-56">
+            <Select name="area" defaultValue={filter.areaId ?? ""}>
+              <option value="">Todas</option>
+              {areas.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </FilterBar>
+        <Tabs
+          label="Estado de las cuentas"
+          items={STATUS_TABS.map((t) => ({
+            href: listHref(PATH, params, {
+              estado: t.value,
+              despues_de: undefined,
+              despues_id: undefined,
+            }),
+            label: t.label,
+            current: t.value === filter.status,
+          }))}
+        />
+        <DataTable
+          caption="Personas"
+          scroll
+          columns={columns}
+          rows={page}
+          rowKey={(r) => r.id}
+          empty={
+            <EmptyState title="No hay personas con esos filtros.">
+              Probá con otro nombre, estado, rol, marca o área, o elegí otro local arriba.
+            </EmptyState>
+          }
+        />
+        <CursorPagination
+          size={list.size}
+          shown={page.length}
+          noun={page.length === 1 ? "persona" : "personas"}
+          nextPatch={last ? { despues_de: last.sort_key, despues_id: last.id } : null}
+          atStart={!filter.afterId}
+          cursorKeys={CURSOR}
+          path={PATH}
+          params={params}
+        />
+      </section>
+    </>
   );
 }

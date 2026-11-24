@@ -3,6 +3,7 @@ import { MonitorSmartphone, ShieldCheck } from "lucide-react";
 
 import {
   changePasswordAction,
+  readAccountNoticesAction,
   signOutOthersAction,
   updateMyProfileAction,
 } from "@/app/mi-cuenta/actions";
@@ -17,7 +18,14 @@ import { ErrorState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
 import { FormInput } from "@/components/ui/form";
 import { requireOperable } from "@/lib/auth/session";
-import { first, formatDateTime, getMyAccount, getUser, scopeLabel } from "@/lib/data";
+import {
+  first,
+  formatDateTime,
+  getAccountNotices,
+  getMyAccount,
+  getUser,
+  scopeLabel,
+} from "@/lib/data";
 
 // Mi cuenta (sección 9; pestañas del rediseño, ADR-0036): datos propios y roles, contraseña, doble verificación y
 // sesiones abiertas. Los roles se ven acá desde que el Inicio es un tablero (ADR-0045). La pestaña va en la dirección (?seccion=).
@@ -74,10 +82,11 @@ async function Account({
 }) {
   // Primero la sesión (que sea operable); después los datos de la cuenta.
   const session = await requireOperable();
-  const [account, me, query] = await Promise.all([
+  const [account, me, query, notices] = await Promise.all([
     getMyAccount(),
     getUser(session.user_id ?? ""),
     searchParams,
+    getAccountNotices(),
   ]);
   const wanted = first(query.seccion);
   const section: Section = SECTIONS.find((t) => t.key === wanted)?.key ?? "datos";
@@ -101,6 +110,38 @@ async function Account({
 
   return (
     <>
+      {notices.length > 0 ? (
+        <Card className="flex max-w-3xl flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle>Avisos de tu cuenta</CardTitle>
+            <Badge status="warn">Sin leer: {notices.length}</Badge>
+          </div>
+          <ul className="flex flex-col gap-2" aria-label="Avisos de tu cuenta">
+            {notices.map((n) => (
+              <li key={n.id} className="border-b border-line pb-2 last:border-0 last:pb-0">
+                <p className="text-base font-medium text-ink">
+                  {n.title}{" "}
+                  <span className="text-sm font-normal text-ink-muted">
+                    · {formatDateTime(n.createdAt)}
+                  </span>
+                </p>
+                {n.body ? <p className="text-base break-words text-ink">{n.body}</p> : null}
+              </li>
+            ))}
+          </ul>
+          <ActionForm
+            action={readAccountNoticesAction}
+            submitLabel="Entendido"
+            pendingLabel="Guardando…"
+            variant="outline"
+          >
+            {notices.map((n) => (
+              <input key={n.id} type="hidden" name="noticeId" value={n.id} />
+            ))}
+          </ActionForm>
+        </Card>
+      ) : null}
+
       <Tabs
         label="Secciones de mi cuenta"
         items={SECTIONS.map((t) => ({

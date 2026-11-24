@@ -156,9 +156,15 @@ const NOTICE_LABELS: Record<NoticeRow["kind"], { badge: string; link: string }> 
   unmapped_article: { badge: "Artículos para mapear", link: "Ver la cola" },
   price_list_expired: { badge: "Lista vencida", link: "Ver el proveedor" },
   order_news: { badge: "Orden de compra", link: "Ver la orden" },
+  account_changed: { badge: "Tu cuenta", link: "Ver mi cuenta" },
 };
 // Los que piden atención van en amarillo; el resto, como información.
-const NOTICE_WARN = new Set(["yield_deviation", "supplier_account_changed", "price_list_expired"]);
+const NOTICE_WARN = new Set([
+  "yield_deviation",
+  "supplier_account_changed",
+  "price_list_expired",
+  "account_changed",
+]);
 
 // Avisos de cambios de recetas: qué cambió y el enlace a la receta. Se marcan como leídos con el
 // botón de arriba, junto con los de solicitudes.

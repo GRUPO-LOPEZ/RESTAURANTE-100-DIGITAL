@@ -1182,6 +1182,44 @@ export const placeSheetSchema = z.object({
     .refine((c) => Object.keys(c).length > 0, "No hay cambios para guardar."),
 });
 
+// Ficha de la persona en una pantalla (ADR-0062): datos, roles que se dan (rol y lugar) y roles que se quitan.
+export const userSheetSchema = z.object({
+  userId: z.string().uuid(),
+  expectedStamp: z.string().min(1, "Recargá la página."),
+  reason: reasonField,
+  changes: z
+    .object({
+      profile: z
+        .object({
+          first_name: z
+            .string()
+            .trim()
+            .min(1, "Escribí el nombre.")
+            .max(80, "Hasta 80 caracteres."),
+          last_name: z
+            .string()
+            .trim()
+            .min(1, "Escribí el apellido.")
+            .max(80, "Hasta 80 caracteres."),
+          job_title: shortText(80),
+          area_id: z.union([z.literal(""), z.string().uuid("Elegí un área de la lista.")]),
+        })
+        .partial()
+        .optional(),
+      roles_add: z
+        .array(
+          z.object({
+            role_code: z.string().regex(/^[a-z_]{1,60}$/, "Elegí un rol de la lista."),
+            place: z.string().min(1, "Elegí el lugar."),
+          }),
+        )
+        .max(20, "Hasta 20 roles.")
+        .optional(),
+      roles_remove: z.array(z.string().uuid()).max(20, "Hasta 20 roles.").optional(),
+    })
+    .refine((c) => Object.keys(c).length > 0, "No hay cambios para guardar."),
+});
+
 // Ficha de la razón social (ADR-0061): los datos de la constancia de ARCA y sus actividades.
 export const legalEntitySheetSchema = z.object({
   legalEntityId: z.string().uuid(),

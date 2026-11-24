@@ -382,7 +382,8 @@ export type Database = {
         | "password_changed"
         | "mfa_enrolled"
         | "audit_exported"
-        | "report_exported";
+        | "report_exported"
+        | "sessions_closed";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -2676,6 +2677,12 @@ export type Database = {
       };
       can_view_user: { Args: { p_user_id: string }; Returns: boolean };
       cannot_act_on_user: { Args: { p_permission: string; p_user_id: string }; Returns: string };
+      cannot_edit_user: { Args: { p_permission: string; p_user_id: string }; Returns: string };
+      cannot_place_user: { Args: { p_user_id: string }; Returns: string };
+      check_person_name: {
+        Args: { p_first_name: string; p_last_name: string };
+        Returns: undefined;
+      };
       check_person_separation: {
         Args: { p_group_id: string; p_role_id: string; p_user_id: string };
         Returns: undefined;
@@ -2693,6 +2700,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      close_user_sessions: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
       current_aal: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_id: { Args: Record<PropertyKey, never>; Returns: string };
       current_actor_subject: { Args: Record<PropertyKey, never>; Returns: string };
@@ -2717,6 +2725,7 @@ export type Database = {
         Args: { p_group_id: string; p_without_assignment: string; p_without_user: string };
         Returns: string;
       };
+      has_hidden_characters: { Args: { p_text: string }; Returns: boolean };
       has_permission: { Args: { p_permission: string; p_restaurant_id: string }; Returns: boolean };
       has_permission_anywhere: { Args: { p_permission: string }; Returns: boolean };
       has_permission_for_scope: {
@@ -2831,11 +2840,16 @@ export type Database = {
       revoke_role: { Args: { p_assignment_id: string; p_reason: string }; Returns: Json };
       role_holders: { Args: { p_role_id: string }; Returns: Json };
       role_permission_codes: { Args: { p_role_id: string }; Returns: string[] };
+      save_user_sheet: {
+        Args: { p_changes: Json; p_expected_stamp: string; p_reason: string; p_user_id: string };
+        Returns: Json;
+      };
       set_active_restaurant: { Args: { p_restaurant_id?: string }; Returns: Json };
       set_change_context: { Args: { p_origin: string; p_reason: string }; Returns: undefined };
       suspend_user: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
       unlock_user: { Args: { p_reason: string; p_user_id: string }; Returns: Json };
       update_my_profile: { Args: { p_first_name: string; p_last_name: string }; Returns: Json };
+      user_area_ids: { Args: { p_user_id: string }; Returns: string[] };
       user_detail: { Args: { p_user_id: string }; Returns: Json };
       user_group: { Args: { p_user_id: string }; Returns: string };
       user_has_permission_for_scope: {
@@ -2871,6 +2885,8 @@ export type Database = {
         };
         Returns: string[];
       };
+      user_sheet_stamp_internal: { Args: { p_user_id: string }; Returns: string };
+      user_sheet_state: { Args: { p_user_id: string }; Returns: Json };
       users_control_panel: {
         Args: {
           p_brand_id?: string;
@@ -2931,7 +2947,8 @@ export type Database = {
         | "receipt_differences"
         | "invoice_observed"
         | "price_variation"
-        | "payment_due";
+        | "payment_due"
+        | "account_changed";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -9603,6 +9620,7 @@ export const Constants = {
         "mfa_enrolled",
         "audit_exported",
         "report_exported",
+        "sessions_closed",
       ],
     },
   },
@@ -9641,6 +9659,7 @@ export const Constants = {
         "invoice_observed",
         "price_variation",
         "payment_due",
+        "account_changed",
       ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],
