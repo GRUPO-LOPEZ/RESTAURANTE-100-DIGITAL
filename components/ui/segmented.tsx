@@ -21,6 +21,7 @@ export function Segmented({
   compact = false,
   inline = false,
   labelClassName,
+  describedBy,
   className,
 }: {
   name: string;
@@ -34,10 +35,13 @@ export function Segmented({
   inline?: boolean;
   // Ancho de la etiqueta en línea, para alinear varias filas.
   labelClassName?: string;
+  // El id de su mensaje de error.
+  describedBy?: string;
   className?: string;
 }) {
   return (
     <fieldset
+      aria-describedby={describedBy}
       className={cn(
         // El margen va siempre: al marcar el cambio, la fila no salta.
         "flex flex-col gap-1 rounded-sm border border-transparent p-1",

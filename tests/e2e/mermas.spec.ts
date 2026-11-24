@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, notice, openAction, openSection } from "./helpers";
+import { login, notice, openSection } from "./helpers";
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page })
@@ -121,7 +121,7 @@ test("la Chef propone una merma con vista previa y queda en revisión", async ({
 test("las unidades se eligen como «Kilogramo (kg)» y Compras suma una nueva", async ({
   page,
   isMobile,
-}, testInfo) => {
+}) => {
   await login(page, "compras@ejemplo.test", { mfa: true });
   if (!isMobile) {
     await openIngredient(page, "Comino", "Precios de compra");
@@ -132,32 +132,56 @@ test("las unidades se eligen como «Kilogramo (kg)» y Compras suma una nueva", 
     await page.keyboard.press("Escape");
   }
 
-  await page.goto("/materias-primas/configuracion");
-  const units = page.getByRole("list", { name: "Unidades de volumen" });
-  // Si el nombre ya es la abreviatura, no se repite: «Taza».
-  await expect(units).toContainText("Taza= 240 ml");
-  await openAction(page, "Nueva unidad");
-  const code = testInfo.project.name === "celular" ? "cucharon_cel" : "cucharon_comp";
+  await page.goto("/materias-primas/configuracion?lista=unidades");
+  if (isMobile) {
+    // En el celular, la lista es de consulta (ADR-0063).
+    await expect(
+      page
+        .getByRole("list", { name: "Unidades de medida" })
+        .getByRole("listitem")
+        .filter({ hasText: "Taza" }),
+    ).toContainText("= 240 ml");
+    await axe(page);
+    return;
+  }
+  const table = page.getByRole("table", { name: "Unidades de medida" });
+  await expect(table.getByRole("row").filter({ hasText: "Taza" })).toContainText("= 240 ml");
+  // Un nombre y un código por corrida: si se repite, no choca con el de antes (queda dado de baja, no se borra).
+  const suffix = Array.from(String(Date.now()).slice(-6), (d) => "abcdefghij"[Number(d)]).join("");
+  const name = `Cucharón ${suffix}`;
+  await page.getByRole("button", { name: "Agregar unidad" }).click();
+  await page.getByLabel("Nombre: Unidad nueva", { exact: true }).fill(name);
+  await page.getByLabel(`Abreviatura: ${name}`).fill("cuch");
+  await page.getByLabel(`Código: ${name}`).fill(`cucharon_${suffix}`);
+  const row = page
+    .getByRole("row")
+    .filter({ has: page.getByLabel(`Nombre: ${name}`, { exact: true }) });
   // Los tipos son botones a la vista (radios): se elige tocando la opción.
-  await page.getByRole("group", { name: "Tipo" }).getByText("Volumen", { exact: true }).click();
-  await expect(page.getByRole("radio", { name: "Volumen" })).toBeChecked();
-  await page.locator("#cfg-unidad-nombre").fill(`Cucharón ${testInfo.project.name}`);
-  await page.locator("#cfg-unidad-abrev").fill("cuch");
-  await page.locator("#cfg-unidad-codigo").fill(code);
-  await page.locator("#cfg-unidad-factor").fill("60");
-  await page.locator("#cfg-unidad-motivo").fill("La usamos en la cocina (prueba)");
-  await page.getByRole("button", { name: "Crear unidad" }).click();
-  await expect(notice(page)).toContainText(`Unidad «Cucharón ${testInfo.project.name}» creada.`);
-  await expect(units).toContainText(`Cucharón ${testInfo.project.name} (cuch)`);
+  await row.getByText("Volumen", { exact: true }).click();
+  await expect(row.getByRole("radio", { name: "Volumen" })).toBeChecked();
+  await page.getByLabel(`Equivale a (g, ml o unidades): ${name}`).fill("60");
+  await page
+    .getByLabel("Motivo de los cambios", { exact: true })
+    .fill("La usamos en la cocina (prueba)");
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(notice(page)).toContainText("Cambios guardados");
+  // Guardada, ya no se edita: las recetas publicadas leen su nombre.
+  const saved = page.getByRole("row").filter({ hasText: name });
+  await expect(saved).toContainText("= 60 ml");
+  await expect(row).toHaveCount(0);
+  // Las del sistema no se dan de baja.
+  await expect(page.getByRole("button", { name: "Activa: Taza" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Más información: por qué no se da de baja Taza" }),
+  ).toBeVisible();
   await axe(page);
 
   // Nada la usa: se puede dar de baja (así se corrige un error de carga). Así tampoco queda en la base.
-  const label = `Cucharón ${testInfo.project.name} (cuch)`;
-  await openAction(page, `Dar de baja «${label}»`);
-  const archive = page.getByRole("group").filter({ hasText: `Dar de baja «${label}»` });
-  await archive.getByLabel("Motivo de la baja").fill("Era de prueba");
-  await archive.getByRole("button", { name: "Dar de baja", exact: true }).click();
-  await expect(units).not.toContainText(label);
+  await page.getByRole("button", { name: `Activa: ${name}` }).click();
+  await page.getByLabel("Motivo de los cambios", { exact: true }).fill("Era de prueba");
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(notice(page)).toContainText("Cambios guardados");
+  await expect(saved).toHaveCount(0);
 });
 
 test("la sub-receta muestra su rendimiento final y la merma de cocción, sin suponer", async ({

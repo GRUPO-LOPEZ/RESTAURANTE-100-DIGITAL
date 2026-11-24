@@ -158,10 +158,16 @@ test("la Cocinera no ve borradores ni crea recetas", async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
 });
 
-test("el Chef del grupo administra las categorías de recetas", async ({ page }) => {
+test("el Chef del grupo administra las categorías de recetas", async ({ page, isMobile }) => {
   await login(page, "chefgrupo@ejemplo.test");
-  await page.goto("/materias-primas/configuracion");
-  await expect(page.getByRole("list", { name: "Categorías de recetas" })).toContainText("Salsas");
+  await page.goto("/materias-primas/configuracion?lista=categorias-de-recetas");
+  // En la computadora se editan en la tabla; en el celular, de consulta (ADR-0063).
+  if (isMobile)
+    await expect(page.getByRole("list", { name: "Categorías de recetas" })).toContainText("Salsas");
+  else {
+    await expect(page.getByLabel("Nombre: Salsas", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Agregar subcategoría" })).toBeVisible();
+  }
   await axe(page);
 });
 

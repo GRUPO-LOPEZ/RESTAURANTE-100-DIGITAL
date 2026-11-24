@@ -432,44 +432,6 @@ export async function getYieldAlertThreshold(ingredientId: string): Promise<numb
   return Number(data);
 }
 
-// Las unidades con su equivalencia en la base, para la configuración (ADR-0040): «Taza (taza) = 240 ml».
-// canArchive: cargada a mano y sin usar (catalog.archive_unit; las del sistema y las base, nunca).
-export type SettingsUnit = Unit & { equivalence: string | null; canArchive: boolean };
-
-export async function getSettingsUnits(): Promise<SettingsUnit[]> {
-  const client = await createClient();
-  const [units, conversions, authors] = await Promise.all([
-    getUnits(),
-    client.schema("catalog").from("unit_conversions").select("from_unit_id, to_unit_id, factor"),
-    client.schema("catalog").from("units").select("id, created_by"),
-  ]);
-  if (conversions.error) failed("las conversiones");
-  if (authors.error) failed("las unidades");
-  const manual = new Set(authors.data.filter((u) => u.created_by !== null).map((u) => u.id));
-  const byId = new Map(units.map((u) => [u.id, u]));
-  const factor = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 6 });
-  // Solo las cargadas a mano y sin usar (catalog.unit_in_use) se pueden dar de baja.
-  const usage = await Promise.all(
-    units.map((u) =>
-      !manual.has(u.id)
-        ? Promise.resolve(true)
-        : client
-            .schema("catalog")
-            .rpc("unit_in_use", { p_unit_id: u.id })
-            .then((r) => r.error !== null || r.data !== false),
-    ),
-  );
-  return units.map((u, i) => {
-    const c = conversions.data.find((x) => x.from_unit_id === u.id);
-    const to = c ? byId.get(c.to_unit_id) : undefined;
-    return {
-      ...u,
-      equivalence: c && to ? `${factor.format(Number(c.factor))} ${to.name}` : null,
-      canArchive: usage[i] === false,
-    };
-  });
-}
-
 // Si hay un pedido pendiente para dejar de comprarla congelada (ADR-0040). Si no se puede leer, se dice que no.
 export async function getThawingChangePending(ingredientId: string): Promise<boolean> {
   const client = await createClient();
@@ -553,74 +515,6 @@ export async function getIngredientUsage(ingredientId: string): Promise<Ingredie
       status: r.status,
     }))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
-}
-
-// Configuración del catálogo (ADR-0022): categorías con sus subcategorías y procesos de un grupo, con
-// cuánto se usan, para saber qué se puede dar de baja (la base lo vuelve a controlar al guardar).
-export type SettingsCategory = {
-  id: string;
-  name: string;
-  // Cuánto se usa: materias primas (o recetas, en las categorías de recetas).
-  uses: number;
-  children: { id: string; name: string; uses: number }[];
-};
-export type SettingsProcess = { id: string; code: string; name: string; standards: number };
-
-// Grupos donde la sesión tiene el permiso para todo el grupo (el catálogo es de todo el grupo).
-export async function getSettingsGroups(permission: string): Promise<string[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("core")
-    .rpc("permitted_group_ids", { p_permission: permission });
-  if (error) failed("los grupos");
-  return Array.isArray(data) ? data.filter((x): x is string => typeof x === "string") : [];
-}
-
-export async function getSettingsCategories(groupId: string): Promise<SettingsCategory[]> {
-  const supabase = await createClient();
-  const [categories, usage] = await Promise.all([
-    supabase
-      .schema("catalog")
-      .from("ingredient_categories")
-      .select("id, parent_id, name")
-      .eq("group_id", groupId)
-      .order("name"),
-    // Se cuenta en la base: la API devuelve hasta 1.000 filas.
-    supabase.schema("catalog").rpc("category_usage"),
-  ]);
-  if (categories.error) failed("las categorías");
-  if (usage.error) failed("las materias primas");
-  const used = new Map(usage.data.map((u) => [u.category_id, u.ingredients]));
-  const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "es");
-  return categories.data
-    .filter((c) => !c.parent_id)
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      uses: used.get(c.id) ?? 0,
-      children: categories.data
-        .filter((s) => s.parent_id === c.id)
-        .map((s) => ({ id: s.id, name: s.name, uses: used.get(s.id) ?? 0 }))
-        .sort(byName),
-    }))
-    .sort(byName);
-}
-
-export async function getSettingsProcesses(groupId: string): Promise<SettingsProcess[]> {
-  const supabase = await createClient();
-  const [processes, usage] = await Promise.all([
-    supabase
-      .schema("catalog")
-      .from("yield_processes")
-      .select("id, code, name")
-      .eq("group_id", groupId)
-      .order("name"),
-    supabase.schema("catalog").rpc("process_usage"),
-  ]);
-  if (processes.error) failed("los procesos");
-  if (usage.error) failed("los rendimientos");
-  const used = new Map(usage.data.map((u) => [u.process_id, u.standards]));
-  return processes.data.map((p) => ({ ...p, standards: used.get(p.id) ?? 0 }));
 }
 
 // Lo que la ficha de una materia prima necesita para editar sin que la base la rechace después (ADR-0043): el sello
