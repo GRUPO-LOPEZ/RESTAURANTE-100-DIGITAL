@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { chooseLocal, fillLogin, login, logout, menuLink, notice, openAction } from "./helpers";
+import { chooseLocal, fillLogin, login, logout, menuLink, notice } from "./helpers";
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page })
@@ -107,14 +107,24 @@ test.describe("aprobaciones e historial", () => {
     const reason = `Prueba automática de una aprobación (${testInfo.project.name})`;
 
     await login(page, "director@ejemplo.test", { mfa: true });
+    // Los roles se editan en la computadora (en el celular la ficha es de consulta; ADR-0062). El enlace de antes
+    // (?seccion=roles) lleva a la tarjeta.
+    const size = page.viewportSize();
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/usuarios/${personId}?seccion=roles`);
+    await expect(page).toHaveURL(/#roles$/);
     await expect(page.getByRole("heading", { level: 1, name: personName })).toBeVisible();
     await page.getByLabel("Rol", { exact: true }).selectOption("executive_chef");
     await page.getByLabel("Dónde", { exact: true }).selectOption({ label: "Marca · Demo Pastas" });
-    await page.getByLabel("Motivo para dar el rol").fill(reason);
-    await page.getByRole("button", { name: "Dar el rol" }).click();
+    await page.getByRole("button", { name: "Agregar a los cambios" }).click();
+    await expect(page.getByText("1 cambio sin guardar")).toBeVisible();
+    await page.getByLabel("Motivo de los cambios").fill(reason);
+    await page.getByRole("button", { name: "Guardar cambios" }).click();
     await expect(notice(page)).toContainText("pendiente");
+    // El rol no figura como dado hasta que otra persona lo apruebe.
+    await expect(page.getByRole("list", { name: "Roles" })).not.toContainText("Chef Ejecutivo");
     await axe(page);
+    if (size) await page.setViewportSize(size);
 
     // Quien lo pidió no lo puede decidir.
     await page.goto("/aprobaciones");
@@ -181,13 +191,15 @@ test.describe("cuentas", () => {
       .first()
       .click();
     await expect(page.getByRole("heading", { level: 1, name: /Prueba Pausa/ })).toBeVisible();
-    await expect(page.getByText("Último acceso")).toBeVisible();
+    await expect(page.getByText("Último ingreso")).toBeVisible();
     await axe(page);
-    await openAction(page, "Suspender…");
+    await page.getByRole("button", { name: "Suspender", exact: true }).click();
     await page.getByLabel("Motivo para suspender").fill("Prueba automática: licencia");
     await page.getByRole("button", { name: "Suspender la cuenta" }).click();
     // Al suspenderse, la ficha cambia: ahora ofrece levantar la suspensión.
-    await expect(page.locator("summary", { hasText: "Levantar la suspensión…" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Levantar la suspensión", exact: true }),
+    ).toBeVisible();
     await expect(page.getByText("Suspendida", { exact: true }).first()).toBeVisible();
     await logout(page);
 
@@ -200,10 +212,10 @@ test.describe("cuentas", () => {
       .getByRole("link", { name: /Prueba Pausa/ })
       .first()
       .click();
-    await openAction(page, "Levantar la suspensión…");
+    await page.getByRole("button", { name: "Levantar la suspensión", exact: true }).click();
     await page.getByLabel("Motivo para levantar la suspensión").fill("Prueba automática: volvió");
-    await page.getByRole("button", { name: "Levantar la suspensión" }).click();
-    await expect(page.locator("summary", { hasText: "Suspender…" })).toBeVisible();
+    await page.getByRole("dialog").getByRole("button", { name: "Levantar la suspensión" }).click();
+    await expect(page.getByRole("button", { name: "Suspender", exact: true })).toBeVisible();
     await logout(page);
 
     await login(page, email);
@@ -262,7 +274,7 @@ test.describe("administración con el sistema nuevo", () => {
     await logout(page);
   });
 
-  test("la ficha de una persona va por pestañas y vuelve a la lista con sus filtros", async ({
+  test("la ficha de una persona va en una pantalla y vuelve a la lista con sus filtros", async ({
     page,
   }) => {
     // Ingreso con doble verificación y varias pantallas: el mismo margen que las otras pruebas de Dirección.
@@ -273,15 +285,9 @@ test.describe("administración con el sistema nuevo", () => {
       .getByRole("link", { name: /Compras/ })
       .first()
       .click();
-    await expect(page.getByRole("navigation", { name: "Secciones de la persona" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Datos", exact: true })).toBeVisible();
-    await page
-      .getByRole("navigation", { name: "Secciones de la persona" })
-      .getByRole("link", { name: "Roles", exact: true })
-      .click();
-    await expect(page).toHaveURL(/seccion=roles/);
-    await expect(page.getByRole("heading", { name: "Roles", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Datos", exact: true })).toHaveCount(0);
+    // Todo a la vista: datos, cuenta, roles y lo último que hizo (ADR-0062; antes, por pestañas).
+    for (const name of ["Datos", "Cuenta", "Roles y dónde los usa", "Lo último que hizo"])
+      await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
     await axe(page);
     await page.getByRole("link", { name: "Volver a personas" }).click();
     await expect(page).toHaveURL(/q=compras/);

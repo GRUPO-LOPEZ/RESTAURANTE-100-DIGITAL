@@ -23,6 +23,11 @@ export function first(value: string | string[] | undefined): string | undefined 
   return Array.isArray(value) ? value[0] : value;
 }
 
+// Lo que hay en un mapa con esa clave de la dirección (?aviso=…). Solo claves propias: «constructor» no es un aviso.
+export function own<T>(map: Record<string, T>, key: string | undefined): T | undefined {
+  return key !== undefined && Object.hasOwn(map, key) ? map[key] : undefined;
+}
+
 const accountStatus = z.enum(["active", "suspended", "deactivated"]);
 export type AccountStatus = z.infer<typeof accountStatus>;
 
@@ -225,6 +230,40 @@ const userDetail = z.object({
 });
 export type UserDetail = z.infer<typeof userDetail>;
 
+// Lo que la sesión puede hacer en la ficha de una persona, el sello para guardar y los indicadores (ADR-0062). Nulo en
+// un indicador = esta sesión no lo ve.
+const userSheetState = z.object({
+  stamp: z.string(),
+  is_me: z.boolean(),
+  can_edit_profile: z.boolean(),
+  // Puesto y área: no dan permisos, piden menos que el nombre.
+  can_edit_job: z.boolean(),
+  areas: z.array(z.object({ id: z.string(), label: z.string() })),
+  can_assign: z.boolean(),
+  revocable: z.array(z.string()),
+  can_close_sessions: z.boolean(),
+  can_unlock: z.boolean(),
+  can_suspend: z.boolean(),
+  can_deactivate: z.boolean(),
+  can_reactivate: z.boolean(),
+  mfa: z.boolean().nullable(),
+  sessions: z.number().nullable(),
+  changes_30d: z.number().nullable(),
+  rejected_7d: z.number().nullable(),
+});
+export type UserSheetState = z.infer<typeof userSheetState>;
+
+export async function getUserSheetState(userId: string): Promise<UserSheetState | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("core")
+    .rpc("user_sheet_state", { p_user_id: userId });
+  if (error) failed("la ficha");
+  if (data === null) return null;
+  const parsed = userSheetState.safeParse(data);
+  return parsed.success ? parsed.data : failed("la ficha");
+}
+
 export async function getUserDetail(userId: string): Promise<UserDetail | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.schema("core").rpc("user_detail", { p_user_id: userId });
@@ -299,16 +338,26 @@ const NOTICE_KINDS = [
   "unmapped_article",
   "price_list_expired",
   "order_news",
+  "account_changed",
 ] as const;
 export type NoticeKind = (typeof NOTICE_KINDS)[number];
 
-export async function getRecipeNotices(limit = 20): Promise<NoticeRow[]> {
+// Los de la propia cuenta (otra persona le cambió el nombre o le cerró las sesiones; ADR-0062): los ve cualquiera en
+// Mi cuenta, también quien no tiene la bandeja de aprobaciones.
+export async function getAccountNotices(): Promise<NoticeRow[]> {
+  return getRecipeNotices(20, ["account_changed"]);
+}
+
+export async function getRecipeNotices(
+  limit = 20,
+  kinds: readonly NoticeKind[] = NOTICE_KINDS,
+): Promise<NoticeRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .schema("core")
     .from("notifications")
     .select("id, kind, title, body, link, created_at")
-    .in("kind", [...NOTICE_KINDS])
+    .in("kind", [...kinds])
     .is("read_at", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -479,12 +528,14 @@ export async function getActiveRestaurantId(userId: string | undefined): Promise
 }
 
 // Catálogo de roles y lugares visibles (para formularios y filtros).
-export async function getRoles(): Promise<{ code: string; name: string; level: number | null }[]> {
+export async function getRoles(): Promise<
+  { code: string; name: string; level: number | null; requires_mfa: boolean }[]
+> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .schema("core")
     .from("roles")
-    .select("code, name, level")
+    .select("code, name, level, requires_mfa")
     .is("deleted_at", null)
     .order("level");
   if (error) failed("los roles");
@@ -633,6 +684,52 @@ export const TABLE_LABELS: Record<string, string> = {
   "purchasing.supplier_payment_accounts": "Cuenta de pago de un proveedor",
   "purchasing.supplier_categories": "Rubro de un proveedor",
   "purchasing.supplier_customer_numbers": "Número de cliente en un proveedor",
+  // Todas las tablas con auditoría tienen nombre (lo vigila tests/unit/table-labels.test.ts).
+  "ai.integration_permissions": "Permiso de una integración",
+  "catalog.code_series": "Numeración de códigos",
+  "core.permission_modules": "Módulo de permisos",
+  "core.service_accounts": "Cuenta técnica",
+  "costing.cost_scenario_overrides": "Cambio de un escenario de costos",
+  "costing.cost_scenarios": "Escenario de costos",
+  "costing.price_records": "Precio",
+  "costing.price_settings": "Configuración de precios",
+  "imports.import_errors": "Error de una importación",
+  "imports.import_jobs": "Importación",
+  "imports.import_prices": "Precio importado",
+  "imports.import_staging_rows": "Fila importada",
+  "inventory.stock_movements": "Movimiento de stock",
+  "org.legal_entities": "Razón social",
+  "org.legal_entity_activities": "Actividad de una razón social",
+  "org.legal_entity_documents": "Constancia de una razón social",
+  "org.restaurant_legal_entities": "Razón social de un local",
+  "purchasing.article_aliases": "Artículo de un proveedor",
+  "purchasing.attachments": "Archivo de compras",
+  "purchasing.credit_debit_notes": "Nota de crédito o débito",
+  "purchasing.invoice_checks": "Control de una factura",
+  "purchasing.invoice_lines": "Línea de una factura",
+  "purchasing.invoice_orders": "Orden de una factura",
+  "purchasing.invoice_taxes": "Impuesto de una factura",
+  "purchasing.invoices": "Factura",
+  "purchasing.outbound_messages": "Mensaje a un proveedor",
+  "purchasing.payment_allocations": "Aplicación de un pago",
+  "purchasing.payments": "Pago",
+  "purchasing.price_list_items": "Artículo de una lista de precios",
+  "purchasing.price_lists": "Lista de precios",
+  "purchasing.purchase_order_events": "Novedad de una orden de compra",
+  "purchasing.purchase_order_lines": "Línea de una orden de compra",
+  "purchasing.purchase_orders": "Orden de compra",
+  "purchasing.receipt_lines": "Línea de una recepción",
+  "purchasing.receipts": "Recepción",
+  "purchasing.unmapped_articles": "Artículo sin mapear",
+  "recipes.component_base_quantities": "Cantidad de una receta",
+  "recipes.recipe_assignments": "Receta de un local",
+  "recipes.recipe_categories": "Categoría de recetas",
+  "recipes.recipe_components": "Ingrediente de una receta",
+  "recipes.recipe_media": "Foto de una receta",
+  "recipes.recipe_step_dependencies": "Orden de los pasos de una receta",
+  "recipes.recipe_steps": "Paso de una receta",
+  "recipes.recipe_versions": "Versión de una receta",
+  "recipes.recipes": "Receta",
 };
 
 // Módulos del historial (audit.module_for), con su nombre en español.

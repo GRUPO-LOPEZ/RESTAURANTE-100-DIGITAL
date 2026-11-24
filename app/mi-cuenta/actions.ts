@@ -32,6 +32,21 @@ export async function updateMyProfileAction(
   return toActionState(data, error);
 }
 
+// Los avisos de la propia cuenta (ADR-0062): solo los propios, lo controla la base.
+export async function readAccountNoticesAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const ids = z.array(z.string().uuid()).min(1).max(50).safeParse(formData.getAll("noticeId"));
+  if (!ids.success) return { status: "bad", message: "No hay avisos para marcar." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .schema("core")
+    .rpc("mark_notifications_read", { p_ids: ids.data });
+  revalidatePath("/", "layout");
+  return error ? toActionState(null, error) : { status: "ok", message: "Avisos leídos." };
+}
+
 // Contraseña: mínimo 12 caracteres, con letras y números (P8; mismo criterio que Auth).
 
 export async function changePasswordAction(

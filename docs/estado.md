@@ -1,8 +1,20 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-22._ **En curso: correcciones del Módulo 1 (Tanda 1, Panel de control; rama `feat/panel-y-usuarios-en-una-pantalla`, ADR-0061). Antes: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Fusionadas las facturas (base #86 y pantallas #88, ADR-0058) y las pruebas en paralelo en GitHub (PR #87, ADR-0059). Terminado el Prompt 6, pagos, cuenta corriente y tablero de compras (`feat/pagos-y-tablero-de-compras`, ADR-0060): PR abierto, el último de la Fase 3. Abierto: dependencias (#89, en verde).**
+_Última actualización: 2026-11-24._ **En curso: correcciones del Módulo 1. Panel de control fusionado (PR #98, ADR-0061); Usuarios con el PR abierto (`feat/usuarios-en-una-pantalla`, ADR-0062), que cierra la Tanda 1. Antes: Fase 3, compras y facturas. Fusionados el plan (PR #72, ADR-0049), la ficha de proveedor (PR #74, ADR-0050), listas de precios (PR #76, ADR-0052), órdenes de compra (PR #77, ADR-0053), la importación de proveedores (PR #82, ADR-0055), la recepción y stock (PR #83, ADR-0056), el botón «Recibir mercadería» (PR #84) y el menú con grupos plegados y el grupo Compras (PR #85, ADR-0057). Fusionadas las facturas (base #86 y pantallas #88, ADR-0058) y las pruebas en paralelo en GitHub (PR #87, ADR-0059). Terminado el Prompt 6, pagos, cuenta corriente y tablero de compras (`feat/pagos-y-tablero-de-compras`, ADR-0060): PR abierto, el último de la Fase 3. Abierto: dependencias (#89, en verde).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
+
+## Para retomar (2026-11-24): Usuarios en una pantalla (cierra la Tanda 1)
+
+- **Rama `feat/usuarios-en-una-pantalla`, ADR-0062, lista para Soy en `docs/modulos/23-usuarios-lista-de-cambios.md`, capturas en `docs/capturas/usuarios/`. PR abierto; lo fusiona Joaco.**
+- **Base:** migraciones `20261213110000` (eventos y aviso nuevos) y `20261213120000`: `core.save_user_sheet` (guardado en lote con sello), `core.user_sheet_state`, `core.close_user_sessions`, `core.cannot_place_user` y el control del nombre.
+- **Pantallas:** ficha de persona, invitar en un modal, tablero y lista sin scroll; en Mi cuenta, los avisos de la propia cuenta (`account_changed`) y su número en el perfil.
+- **Decisiones de Joaco (2026-11-24):** otro Superadministrador queda como está (no se edita sin Dirección). El puesto y el área no dan permisos: cambiarlos pide `users.manage` en todos los lugares de la persona, sin tener todos sus permisos. Darle `users.manage` a Dirección no resolvía nada (editaría solo a los Auditores).
+- **Pruebas:** pgTAP 410 (87), Vitest `user-sheet` y `table-labels`, Playwright `usuarios.spec.ts`; ajustados `admin`, `fase1` y `respuestas`.
+  - Corrida completa local: pgTAP y Vitest (560) en verde; Playwright 322 bien, 59 salteadas y 3 fallas. Dos eran de la prueba ajustada (no cerraba el modal antes de salir) y una, lentitud de la ficha de receta al volver de «Enviar a revisión» (el envío se guardó). Corregida la prueba, `respuestas.spec.ts` pasa entero (10 de 10); la suite completa no se repitió en local.
+- **Revisiones:** `db-reviewer` (1 grave), `ui-reviewer` y `security-auditor` (dos pasadas, sin graves), corregidas.
+- **Pendiente, chico:** el control del nombre en la invitación (Edge Function `invite-user`) y que las demás pantallas lean `?aviso=` con `own`.
+- **Sigue:** la Tanda 2 (Base de conocimiento): 4 PR, cada uno con su plan.
 
 ## Para retomar (2026-11-22): correcciones del Módulo 1, Tanda 1 (Panel de control y Usuarios)
 
@@ -10,7 +22,7 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Plan de la Tanda 1, aprobado por Joaco el 2026-11-22:**
   - 3 PR al principio; después Joaco eligió juntar la base y las pantallas del Panel en uno;
   - Usuarios va aparte.
-- **PR del Panel** (rama `feat/panel-y-usuarios-en-una-pantalla`, ADR-0061, lista para Soy en `docs/modulos/22-panel-de-control-lista-de-cambios.md`):
+- **PR del Panel: PR #98, fusionado el 2026-11-22 con GitHub Actions en verde** (rama `feat/panel-y-usuarios-en-una-pantalla`, ADR-0061, lista para Soy en `docs/modulos/22-panel-de-control-lista-de-cambios.md`):
   - **Base:** migraciones `20261212120000` a `20261212160000`.
     - Códigos `NN-PALABRA` y `PALABRA-NNN`; nombre corto y zona.
     - «En apertura» con la columna `opening`; 7 obligatorios para abrir (la razón social es opcional).
@@ -35,7 +47,15 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Trampas de hoy:**
   - Docker Desktop se cayó en medio de las pruebas; al abrirlo, Edge Functions vuelve a quedar apagado (`docker start supabase_edge_runtime_grupo-lf`).
   - El build tarda unos 7 minutos y el `webServer` de Playwright espera 4: correr `npm run build` y `next start -p 3100` a mano (con `GEOREF_URL=http://127.0.0.1:3190` y el stub levantado) antes de Playwright.
-- **Sigue:** el PR de Usuarios (ficha de persona en una pantalla, invitar en modal, tablero y lista sin scroll; ADR-0062). Después, la Tanda 2 (Base de conocimiento) en 4 PR.
+- **Corrida completa local antes del PR:**
+  - lint, tipos y Vitest (554) en verde; pgTAP (3261) en verde;
+  - Playwright: 312 pasan y 4 fallaron, todas resueltas en el PR: `inicio.spec` (2), adaptada al Panel nuevo; `calidad.spec` (1), que elegía otro local mientras el `?local=` se aplicaba; `fase1.spec` (1), intermitente, pasa sola.
+- **Sigue (sesión del 2026-11-22 cerrada acá):**
+  1. **El PR de Usuarios**, que cierra la Tanda 1: ficha de persona en una pantalla, invitar en un modal, y el tablero y la lista sin scroll. Ya está en el plan aprobado (rama `feat/usuarios-en-una-pantalla`, ADR-0062).
+     - Base: `core.close_user_sessions`, `core.save_user_sheet` (roles sensibles a aprobación) y los cambios de 30 días en `core.user_detail`.
+     - Pruebas que se ajustan: `admin.spec`, `fase1.spec`, `respuestas.spec` y `cuenta.spec`.
+  2. **La Tanda 2** (Base de conocimiento): 4 PR, cada uno con su plan (`docs/prompts/2026-11-22-correcciones-modulo-1.md`).
+- **Pendiente para Joaco:** borrar en GitHub la rama `feat/panel-y-usuarios-en-una-pantalla` (ya fusionada).
 
 ## Para retomar (2026-11-19)
 
