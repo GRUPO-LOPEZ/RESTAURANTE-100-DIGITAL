@@ -1564,6 +1564,7 @@ export type Database = {
           ingredients: number;
         }[];
       };
+      category_used_in_recipes: { Args: { p_category_id: string }; Returns: boolean };
       check_ingredient_products: {
         Args: { p_action: string; p_ingredient_id: string };
         Returns: undefined;
@@ -1758,6 +1759,16 @@ export type Database = {
         Returns: string;
       };
       purchase_product_has_prices_internal: { Args: { p_id: string }; Returns: boolean };
+      quick_ingredient: {
+        Args: {
+          p_category_id: string;
+          p_group_id: string;
+          p_name: string;
+          p_reason: string;
+          p_recipe_unit: string;
+        };
+        Returns: Json;
+      };
       raise_friendly: {
         Args: { p_constraint: string; p_message: string; p_state: string };
         Returns: undefined;
@@ -1873,6 +1884,16 @@ export type Database = {
         Returns: string;
       };
       settings_lists: { Args: { p_group_id: string }; Returns: Json };
+      similar_ingredients: {
+        Args: { p_group_id: string; p_name: string };
+        Returns: {
+          code: string;
+          dimension: Database["catalog"]["Enums"]["dimension"];
+          id: string;
+          name: string;
+          unit: string;
+        }[];
+      };
       standard_yield: {
         Args: {
           p_cut?: string;
@@ -3209,7 +3230,8 @@ export type Database = {
         | "invoice_observed"
         | "price_variation"
         | "payment_due"
-        | "account_changed";
+        | "account_changed"
+        | "ingredient_created";
       scope_type: "group" | "brand" | "restaurant";
       version_status: "draft" | "in_review" | "approved" | "published" | "archived";
     };
@@ -8546,8 +8568,14 @@ export type Database = {
           id: string;
           ingredient_id: string | null;
           line_order: number;
+          measure_content: number | null;
+          measure_count: number | null;
+          measure_manual: boolean;
+          measure_name: string | null;
+          measure_unit_id: string | null;
           no_scale: boolean;
           notes: string | null;
+          practical_measure_id: string | null;
           quantity: number;
           quantity_basis: Database["recipes"]["Enums"]["quantity_basis"];
           recipe_version_id: string;
@@ -8569,8 +8597,14 @@ export type Database = {
           id?: string;
           ingredient_id?: string | null;
           line_order: number;
+          measure_content?: number | null;
+          measure_count?: number | null;
+          measure_manual?: boolean;
+          measure_name?: string | null;
+          measure_unit_id?: string | null;
           no_scale?: boolean;
           notes?: string | null;
+          practical_measure_id?: string | null;
           quantity: number;
           quantity_basis?: Database["recipes"]["Enums"]["quantity_basis"];
           recipe_version_id: string;
@@ -8591,8 +8625,14 @@ export type Database = {
           id?: string;
           ingredient_id?: string | null;
           line_order?: number;
+          measure_content?: number | null;
+          measure_count?: number | null;
+          measure_manual?: boolean;
+          measure_name?: string | null;
+          measure_unit_id?: string | null;
           no_scale?: boolean;
           notes?: string | null;
+          practical_measure_id?: string | null;
           quantity?: number;
           quantity_basis?: Database["recipes"]["Enums"]["quantity_basis"];
           recipe_version_id?: string;
@@ -9199,6 +9239,19 @@ export type Database = {
       freeze_base_quantities: { Args: { p_version_id: string }; Returns: undefined };
       install_default_categories: { Args: { p_group_id: string }; Returns: number };
       kitchen_card: { Args: { p_recipe_id: string }; Returns: Json };
+      line_measure: {
+        Args: {
+          p_group_id: string;
+          p_ingredient_id: string;
+          p_item: string;
+          p_line: Json;
+          p_n: number;
+          p_quantity: number;
+          p_unit_id: string;
+          p_version_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
       link_list_pair: {
         Args: {
           p_group_id: string;
@@ -9215,6 +9268,16 @@ export type Database = {
       lock_sub_graph: { Args: { p_group_id: string }; Returns: undefined };
       map_legacy_categories: {
         Args: { p_equivalences?: Json; p_group_id: string };
+        Returns: number;
+      };
+      measure_count_for: {
+        Args: {
+          p_content: number;
+          p_content_unit_id: string;
+          p_ingredient_id: string;
+          p_quantity: number;
+          p_unit_id: string;
+        };
         Returns: number;
       };
       media_recipe_id: { Args: { p_name: string }; Returns: string };
@@ -9300,6 +9363,7 @@ export type Database = {
           version_number: number;
         }[];
       };
+      refresh_measures: { Args: { p_version_id: string }; Returns: undefined };
       remove_media: { Args: { p_media_id: string; p_reason: string }; Returns: Json };
       rename_category: {
         Args: { p_id: string; p_name: string; p_reason: string };
@@ -9384,6 +9448,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      share_measures: { Args: { p_group_id: string }; Returns: undefined };
       sub_depth: { Args: { p_recipe_id: string }; Returns: number };
       sub_height: { Args: { p_recipe_id: string }; Returns: number };
       sub_in_scope: { Args: { p_parent: string; p_sub: string }; Returns: boolean };
@@ -9423,6 +9488,14 @@ export type Database = {
           new_quantity: number;
           old_quantity: number;
           unit: string;
+        }[];
+      };
+      version_measure_diff: {
+        Args: { p_version_id: string };
+        Returns: {
+          ingredient: string;
+          new_measures: string;
+          old_measures: string;
         }[];
       };
       viewable_recipe_ids: { Args: Record<PropertyKey, never>; Returns: string[] };
@@ -9956,6 +10029,7 @@ export const Constants = {
         "price_variation",
         "payment_due",
         "account_changed",
+        "ingredient_created",
       ],
       scope_type: ["group", "brand", "restaurant"],
       version_status: ["draft", "in_review", "approved", "published", "archived"],

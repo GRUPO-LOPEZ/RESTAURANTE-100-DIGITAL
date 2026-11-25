@@ -31,7 +31,8 @@ function Modal({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger ? <Dialog.Trigger asChild>{trigger}</Dialog.Trigger> : null}
       <Dialog.Portal>
-        <Dialog.Overlay className={overlay} />
+        {/* A la altura del contenido: también tapa un panel abierto (el contenido va después y queda encima). */}
+        <Dialog.Overlay className={cn(overlay, "z-50")} />
         <Dialog.Content
           className="fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-md border border-line bg-surface p-6"
           {...(description ? {} : { "aria-describedby": undefined })}

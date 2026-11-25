@@ -37,6 +37,7 @@ import {
   RECIPE_TYPE_LABELS,
   SCOPE_LABELS,
   VERSION_STATUS_LABELS,
+  versionChip,
   createdRecently,
   formatQuantity,
   getAssignments,
@@ -46,6 +47,9 @@ import {
   getVariantDiff,
   getVariants,
   getVersionContent,
+  getKitchenLists,
+  getMeasureMarks,
+  getRecipeIngredientCategories,
   getVersionDiff,
   getVersionPhotos,
   getVersionSummary,
@@ -243,7 +247,6 @@ async function Meta({ params }: { params: PageProps<"/recetas/[id]">["params"] }
   const [recipe, categories] = await Promise.all([recipeById(id), categoriesOnce()]);
   if (!recipe) return null;
   const category = categories.find((c) => c.id === recipe.categoryId);
-  const version = versionOf(recipe);
   return (
     <>
       <span className="text-sm text-ink-muted tabular-nums">
@@ -265,22 +268,30 @@ async function Meta({ params }: { params: PageProps<"/recetas/[id]">["params"] }
           ) : null}
         </span>
       ) : null}
-      {recipe.current ? <Badge status="ok">Vigente v{recipe.current.number}</Badge> : null}
+      {/* «Versión 3 · Borrador» y, al lado, cuál está vigente y desde cuándo (ADR-0064). */}
       {recipe.open ? (
         <Badge status={STATUS_BADGE[recipe.open.status]}>
-          {VERSION_STATUS_LABELS[recipe.open.status]} v{recipe.open.number}
+          {versionChip(recipe.open.number, recipe.open.status)}
         </Badge>
+      ) : recipe.current ? (
+        <Badge status="ok">{versionChip(recipe.current.number, "published")}</Badge>
       ) : null}
-      {recipe.open && recipe.current ? (
-        <InfoTip label="las versiones">
-          La versión v{recipe.open.number} está en preparación. La vigente (v{recipe.current.number}
-          ) sigue en las cocinas hasta que se publique la nueva.
-        </InfoTip>
-      ) : version?.status === "published" && recipe.can.draft && recipe.isActive ? (
-        <InfoTip label="la versión vigente">
-          Ves la versión vigente. Si la cambiás, al guardar se crea un borrador: la vigente sigue
-          igual hasta que se publique.
-        </InfoTip>
+      {recipe.current ? (
+        <span className="inline-flex items-center text-xs text-ink-muted">
+          {recipe.open ? `vigente: versión ${recipe.current.number} del ` : "desde el "}
+          {recipe.current.publishedAt ? formatDate(recipe.current.publishedAt) : "—"}
+          {recipe.open ? (
+            <InfoTip label="las versiones" className="desk:size-8">
+              La versión {recipe.open.number} está en preparación. La vigente (versión{" "}
+              {recipe.current.number}) sigue en las cocinas hasta que se publique la nueva.
+            </InfoTip>
+          ) : recipe.can.draft && recipe.isActive ? (
+            <InfoTip label="la versión vigente" className="desk:size-8">
+              Ves la versión vigente. Si la cambiás, al guardar se crea un borrador: la vigente
+              sigue igual hasta que se publique.
+            </InfoTip>
+          ) : null}
+        </span>
       ) : null}
     </>
   );
@@ -294,7 +305,7 @@ async function HeaderActions({ params }: { params: PageProps<"/recetas/[id]">["p
   const recipe = await recipeById(id);
   if (!recipe?.current) return null;
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 desk:shrink-0 desk:flex-nowrap">
       <Button asChild variant="outline" size="sm">
         <Link href={`/recetas/${recipe.id}/cocina`}>
           <ChefHat aria-hidden="true" />
@@ -387,8 +398,14 @@ async function Recipe({
   );
   const menus = await getMenus();
   const costPlace = menus.costs ? (await resolveCostPlace(session.user_id)).place : null;
-  const [unitOptions, prices, request] = await Promise.all([
-    unitOptionsAction(content.lines.flatMap((l) => (l.ingredientId ? [l.ingredientId] : []))),
+  const ingredientIds = content.lines.flatMap((l) => (l.ingredientId ? [l.ingredientId] : []));
+  const [unitInfo, lists, ingredientCategories, measureMarks, prices, request] = await Promise.all([
+    unitOptionsAction(ingredientIds),
+    getKitchenLists(recipe.groupId),
+    editable && menus.createIngredients
+      ? getRecipeIngredientCategories(recipe.groupId)
+      : Promise.resolve([]),
+    reviewing && version ? getMeasureMarks(version.id) : Promise.resolve({}),
     costPlace ? hasPermissionIn("prices.view", costPlace.id) : Promise.resolve(false),
     version?.status === "in_review" ? reviewRequest(version.requestId) : Promise.resolve(null),
   ]);
@@ -403,12 +420,11 @@ async function Recipe({
     )
     .map((c) => ({ id: c.id, label: c.label }));
   // Lo que cambió contra la versión anterior, marcado en la planilla de quien revisa («antes 380 g» o «Nueva»).
-  const marks = Object.fromEntries(
-    diff.flatMap((d) => {
-      const label = reviewMark(d);
-      return label ? [[d.ingredient, label]] : [];
-    }),
-  );
+  const marks: Record<string, string> = { ...measureMarks };
+  for (const d of diff) {
+    const label = reviewMark(d);
+    if (label) marks[d.ingredient] = [label, marks[d.ingredient]].filter(Boolean).join(" · ");
+  }
   const codeNotice =
     first(query.aviso) === "codigo" && (await createdRecently("recipe", recipe.id))
       ? codeNoticeFromQuery(first(query.aviso), first(query.previsto), recipe.code)
@@ -463,13 +479,25 @@ async function Recipe({
             categoryId: recipe.categoryId,
             sector: recipe.sector,
             station: recipe.station,
+            sectorId: recipe.sectorId,
+            stationId: recipe.stationId,
+            groupId: recipe.groupId,
           }}
           version={version}
           categories={categoryOptions}
           scopeLabel={SCOPE_LABELS[recipe.scope]}
           lines={content.lines}
           steps={content.steps}
-          unitOptions={unitOptions}
+          unitOptions={Object.fromEntries(Object.entries(unitInfo).map(([k, v]) => [k, v.dims]))}
+          unitWeights={Object.fromEntries(
+            Object.entries(unitInfo).flatMap(([k, v]) =>
+              v.unitWeight === null ? [] : [[k, v.unitWeight]],
+            ),
+          )}
+          lists={lists}
+          canAddIngredient={Boolean(editable && menus.createIngredients)}
+          canAddToLists={Boolean(editable && menus.kitchenLists)}
+          ingredientCategories={ingredientCategories}
           editable={Boolean(editable)}
           canSubmit={recipe.can.review && recipe.isActive}
           place={costPlace}
@@ -482,8 +510,7 @@ async function Recipe({
               ? {
                   requestId: version.requestId,
                   // Lo que se ve marcado en la planilla (filas nuevas o cambiadas); lo quitado se cuenta aparte.
-                  changes: diff.filter((d) => d.change === "added" || d.change === "changed")
-                    .length,
+                  changes: Object.keys(marks).length,
                   removed: diff.filter((d) => d.change === "removed").length,
                 }
               : null

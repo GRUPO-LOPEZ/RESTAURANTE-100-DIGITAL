@@ -97,14 +97,17 @@ test("el Chef ve el costo proyectado y carga la capacidad en un borrador", async
   await openSection(page, "Procedimiento");
   await page.getByRole("button", { name: "Agregar paso" }).click();
   await page.getByLabel("Qué se hace").fill("Hornear");
-  await page.getByLabel("Equipo", { exact: true }).fill("Horno");
+  // El equipo sale de la lista del grupo, con su capacidad en palabras al lado (ADR-0064); la del paso se carga.
+  const equipment = page.getByLabel("Equipo", { exact: true });
+  await equipment.selectOption({ label: "Horno combi" });
+  await expect(page.getByText("Entran 10 bandejas GN 1/1")).toBeVisible();
   await page.getByText("Capacidad del equipo y orden").click();
   await page.getByLabel(/Capacidad del equipo/).fill("5");
   await saveSheet(page, "Prueba automática");
   await page.reload();
   // Los pasos se ven y se editan en su panel (ADR-0047).
   await page.getByRole("button", { name: /^(Editar|Ver) el paso$/ }).click();
-  await expect(page.getByLabel("Equipo", { exact: true })).toHaveValue("Horno");
+  await expect(equipment.locator("option:checked")).toHaveText("Horno combi");
   await page.getByText("Capacidad del equipo y orden").click();
   await expect(page.getByLabel(/Capacidad del equipo/)).toHaveValue("5");
 });

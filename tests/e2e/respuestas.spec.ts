@@ -88,8 +88,8 @@ test("quien mandó una receta a revisión no la aprueba: la aprueba otra persona
     await page.locator('[id$="-motivo-version"]').fill("Prueba de revisión");
     await page.getByRole("button", { name: "Crear versión nueva" }).click();
   }
-  // La versión en preparación se ve en el encabezado (ADR-0047): el chip «Borrador vN».
-  await expect(page.getByText(/^Borrador v\d+$/)).toBeVisible();
+  // La versión en preparación se ve en el encabezado (ADR-0047): el chip «Versión N · Borrador».
+  await expect(page.getByText(/^Versión \d+ · Borrador$/)).toBeVisible();
   // En la computadora se envía con la barra de la ficha (ADR-0042); en el celular, desde «Versiones».
   if (testInfo.project.name === "celular") {
     await openSection(page, "Versiones y aprobaciones");
@@ -122,7 +122,7 @@ test("quien mandó una receta a revisión no la aprueba: la aprueba otra persona
   ).toBeVisible();
   // Aprobar es publicar: la versión nueva queda vigente.
   await page.goto(recipe);
-  await expect(page.getByText(/Vigente v[2-9]/).first()).toBeVisible();
+  await expect(page.getByText(/Versión [2-9] · Publicada/).first()).toBeVisible();
   await logout(page);
 });
 

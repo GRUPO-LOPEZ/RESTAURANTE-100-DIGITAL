@@ -748,6 +748,18 @@ export const recipeLinesSchema = z
         yield_profile_id: z.string().uuid().nullable().optional(),
         no_scale: z.boolean(),
         notes: z.string().trim().max(500, "Hasta 500 caracteres."),
+        // Medida práctica (ADR-0064): vacía, sin medida. measure_count vacío = la calcula la base.
+        measure_id: z.string().uuid("Elegí la medida práctica.").nullable().optional(),
+        measure_count: z
+          .string()
+          .trim()
+          .refine(
+            (v) => v === "" || ((parseAmount(v) ?? 0) > 0 && (parseAmount(v) ?? 0) < 1_000_000),
+            {
+              message: "Escribí cuántas medidas van: un número mayor que cero.",
+            },
+          )
+          .optional(),
       })
       .refine((l) => (l.ingredient_id === null) !== (l.sub_recipe_id === null), {
         message: "Elegí una materia prima o una preparación.",
@@ -788,6 +800,10 @@ export const recipeStepsSchema = z
           .trim()
           .regex(/^[0-9]{1,5}$/, "Minutos: un número entero, por ejemplo 15."),
         equipment: z.string().trim().max(120, "Hasta 120 caracteres."),
+        // El equipo de la lista; vacío si el texto no está en la lista.
+        equipment_id: z
+          .union([z.literal(""), z.string().uuid("Elegí el equipo de la lista.")])
+          .optional(),
         equipment_capacity: z
           .string()
           .trim()
@@ -798,7 +814,7 @@ export const recipeStepsSchema = z
         depends_on: z.array(z.number().int().min(1).max(100)).max(99),
       })
       .refine((s) => s.equipment_capacity === "" || s.equipment !== "", {
-        message: "Para cargar la capacidad, escribí el equipo.",
+        message: "Para cargar la capacidad, elegí el equipo.",
         path: ["equipment"],
       }),
   )
@@ -812,8 +828,9 @@ export const recipeSheetDataSchema = z.object({
   name: catalogName,
   short_name: sheetText(40, "Hasta 40 caracteres."),
   category_id: z.string().max(60).optional(),
-  sector: sheetText(60, "Hasta 60 caracteres."),
-  station: sheetText(60, "Hasta 60 caracteres."),
+  // De las listas del grupo (ADR-0064). Sin la clave, queda lo que tenía (también un texto fuera de la lista).
+  sector_id: z.union([z.literal(""), z.string().uuid("Elegí el sector de la lista.")]).optional(),
+  station_id: z.union([z.literal(""), z.string().uuid("Elegí la partida de la lista.")]).optional(),
 });
 export const recipeSheetDraftSchema = z.object({
   yield_quantity: z

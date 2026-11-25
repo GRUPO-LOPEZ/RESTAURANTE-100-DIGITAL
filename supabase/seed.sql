@@ -562,11 +562,19 @@ select format('00000000-0000-4000-8000-%s', lpad((1200 + r.n)::text, 12, '0'))::
        r.portion_grams, 'Receta de prueba (DEMO).'
   from seed_recipes r join catalog.units u on u.code = r.yield_unit;
 
-insert into recipes.recipe_components (group_id, recipe_version_id, line_order, ingredient_id, quantity, unit_id)
+-- Tres con medida práctica (ADR-0064): el pollo (aceite en cucharaditas), el budín (leche en tazas) y la ensalada (aceite).
+insert into recipes.recipe_components (group_id, recipe_version_id, line_order, ingredient_id, quantity, unit_id,
+                                       practical_measure_id, measure_count, measure_name, measure_content, measure_unit_id)
 select '00000000-0000-4000-8000-000000000001', format('00000000-0000-4000-8000-%s', lpad((1200 + l.n)::text, 12, '0'))::uuid,
        row_number() over (partition by l.n order by l.ord), format('00000000-0000-4000-8000-%s', lpad((800 + l.ingredient)::text, 12, '0'))::uuid,
-       l.qty, u.id
-  from seed_recipe_lines l join catalog.units u on u.code = l.unit;
+       l.qty, u.id, m.id,
+       recipes.measure_count_for(format('00000000-0000-4000-8000-%s', lpad((800 + l.ingredient)::text, 12, '0'))::uuid, l.qty, u.id,
+                                 m.content, m.content_unit_id), m.name, m.content, m.content_unit_id
+  from seed_recipe_lines l join catalog.units u on u.code = l.unit
+  left join (values (17, 33, 'Cucharadita'), (18, 23, 'Taza'), (19, 33, 'Cucharadita')) as x (n, ingredient, measure)
+    on x.n = l.n and x.ingredient = l.ingredient
+  left join catalog.practical_measures m
+    on m.name = x.measure and m.group_id = '00000000-0000-4000-8000-000000000001';
 
 -- Subrecetas (etapa 2.2 B): la Lasaña usa la Salsa bolognesa y la Salsa blanca; los Ravioles, la bolognesa.
 insert into recipes.recipe_components (group_id, recipe_version_id, line_order, sub_recipe_id, quantity, unit_id, quantity_basis)

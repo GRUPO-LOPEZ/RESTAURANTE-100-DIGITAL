@@ -765,28 +765,34 @@ Categorías y subcategorías de recetas (dos niveles), por grupo.
 
 Líneas de una versión de receta: una materia prima o una preparación (subreceta), con su cantidad. Solo cambian en un borrador; nada se borra: se da de baja.
 
-| Columna             | Tipo                       | Nulo | Qué guarda                                                                                                                |
-| ------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                     | no   | Identificador de la línea.                                                                                                |
-| `group_id`          | `uuid`                     | no   | Grupo de la receta.                                                                                                       |
-| `brand_id`          | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.                                               |
-| `restaurant_id`     | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                                                                 |
-| `recipe_version_id` | `uuid`                     | no   | Versión a la que pertenece.                                                                                               |
-| `line_order`        | `integer`                  | no   | Orden de la línea en la receta.                                                                                           |
-| `ingredient_id`     | `uuid`                     | sí   | Materia prima, si la línea es una materia prima.                                                                          |
-| `quantity`          | `numeric(18,6)`            | no   | Cantidad, en unit_id.                                                                                                     |
-| `unit_id`           | `uuid`                     | no   | Unidad de la cantidad. Tiene que poder pasarse a la unidad de la materia prima, o a la del rendimiento de la preparación. |
-| `quantity_basis`    | `recipes.quantity_basis`   | no   | Qué representa la cantidad: peso de compra, limpio o cocido (materia prima), o cantidad terminada (preparación).          |
-| `yield_profile_id`  | `uuid`                     | sí   | Rendimiento estándar a aplicar (de esta materia prima), si corresponde.                                                   |
-| `no_scale`          | `boolean`                  | no   | Si la línea no se escala (terminaciones, redondeos): se ajusta a mano.                                                    |
-| `notes`             | `text`                     | sí   | Observaciones de la línea.                                                                                                |
-| `created_at`        | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                         |
-| `created_by`        | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                          |
-| `updated_at`        | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                        |
-| `updated_by`        | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                         |
-| `deleted_at`        | `timestamp with time zone` | sí   | Borrado lógico: al guardar las líneas de un borrador, las anteriores quedan borradas.                                     |
-| `deleted_by`        | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                         |
-| `sub_recipe_id`     | `uuid`                     | sí   | Subreceta (una preparación), si la línea es una receta. Se usa siempre su versión vigente.                                |
+| Columna                | Tipo                       | Nulo | Qué guarda                                                                                                                |
+| ---------------------- | -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`                   | `uuid`                     | no   | Identificador de la línea.                                                                                                |
+| `group_id`             | `uuid`                     | no   | Grupo de la receta.                                                                                                       |
+| `brand_id`             | `uuid`                     | sí   | Marca de la receta (la copia la base): sirve para la auditoría por alcance.                                               |
+| `restaurant_id`        | `uuid`                     | sí   | Local de la receta, si es de un local (lo copia la base).                                                                 |
+| `recipe_version_id`    | `uuid`                     | no   | Versión a la que pertenece.                                                                                               |
+| `line_order`           | `integer`                  | no   | Orden de la línea en la receta.                                                                                           |
+| `ingredient_id`        | `uuid`                     | sí   | Materia prima, si la línea es una materia prima.                                                                          |
+| `quantity`             | `numeric(18,6)`            | no   | Cantidad, en unit_id.                                                                                                     |
+| `unit_id`              | `uuid`                     | no   | Unidad de la cantidad. Tiene que poder pasarse a la unidad de la materia prima, o a la del rendimiento de la preparación. |
+| `quantity_basis`       | `recipes.quantity_basis`   | no   | Qué representa la cantidad: peso de compra, limpio o cocido (materia prima), o cantidad terminada (preparación).          |
+| `yield_profile_id`     | `uuid`                     | sí   | Rendimiento estándar a aplicar (de esta materia prima), si corresponde.                                                   |
+| `no_scale`             | `boolean`                  | no   | Si la línea no se escala (terminaciones, redondeos): se ajusta a mano.                                                    |
+| `notes`                | `text`                     | sí   | Observaciones de la línea.                                                                                                |
+| `created_at`           | `timestamp with time zone` | no   | Cuándo se creó (lo pone la base).                                                                                         |
+| `created_by`           | `uuid`                     | sí   | Quién la creó (lo pone la base).                                                                                          |
+| `updated_at`           | `timestamp with time zone` | no   | Cuándo se cambió por última vez (lo pone la base).                                                                        |
+| `updated_by`           | `uuid`                     | sí   | Quién la cambió por última vez (lo pone la base).                                                                         |
+| `deleted_at`           | `timestamp with time zone` | sí   | Borrado lógico: al guardar las líneas de un borrador, las anteriores quedan borradas.                                     |
+| `deleted_by`           | `uuid`                     | sí   | Quién la borró (lo pone la base).                                                                                         |
+| `sub_recipe_id`        | `uuid`                     | sí   | Subreceta (una preparación), si la línea es una receta. Se usa siempre su versión vigente.                                |
+| `practical_measure_id` | `uuid`                     | sí   | Medida práctica elegida para el cocinero (cucharón, nido). Vacía = sin medida práctica.                                   |
+| `measure_count`        | `numeric(18,6)`            | sí   | Cuántas medidas prácticas van: calculada o corregida a mano.                                                              |
+| `measure_name`         | `text`                     | sí   | Nombre de la medida práctica. Queda congelado con la versión.                                                             |
+| `measure_content`      | `numeric(18,6)`            | sí   | Lo que contiene la medida práctica, en su unidad base. Queda congelado con la versión.                                    |
+| `measure_unit_id`      | `uuid`                     | sí   | Unidad base de lo que contiene la medida práctica (ml, g o unidad).                                                       |
+| `measure_manual`       | `boolean`                  | no   | Si la cantidad de medidas se corrigió a mano (no se recalcula).                                                           |
 
 ## `recipes.recipe_media`
 

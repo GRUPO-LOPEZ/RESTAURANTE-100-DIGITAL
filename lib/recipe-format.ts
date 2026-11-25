@@ -39,6 +39,11 @@ export const VERSION_STATUS_LABELS: Record<VersionStatus, string> = {
   archived: "Archivada",
 };
 
+// «Versión 3 · Borrador» (ADR-0064): el chip de la ficha y del listado.
+export function versionChip(number: number, status: VersionStatus): string {
+  return `Versión ${number} · ${status === "published" ? "Publicada" : VERSION_STATUS_LABELS[status]}`;
+}
+
 export const BASIS_LABELS: Record<QuantityBasis, string> = {
   purchase: "Peso de compra",
   clean: "Limpio",

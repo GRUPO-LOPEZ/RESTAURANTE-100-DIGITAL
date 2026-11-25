@@ -205,8 +205,8 @@ test("las fotos van con la versión: la Cocinera las ve cuando se publica", asyn
     await page.locator('[id$="-motivo-version"]').fill("Fotos del emplatado");
     await page.getByRole("button", { name: "Crear versión nueva" }).click();
   }
-  // La versión en preparación se ve en el encabezado (ADR-0047): el chip «Borrador vN».
-  await expect(page.getByText(/^Borrador v\d+$/)).toBeVisible({ timeout: 15_000 });
+  // La versión en preparación se ve en el encabezado (ADR-0047): el chip «Versión N · Borrador».
+  await expect(page.getByText(/^Versión \d+ · Borrador$/)).toBeVisible({ timeout: 15_000 });
   // La foto se agrega desde el carrusel de «Datos generales» (con el panel de versiones cerrado).
   await closePanels(page);
   await page.getByRole("button", { name: "Agregar foto" }).click();
