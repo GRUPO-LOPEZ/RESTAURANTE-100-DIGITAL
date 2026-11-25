@@ -131,7 +131,7 @@ async function Home({ searchParams }: { searchParams: Params }) {
     {
       href: "/recetas",
       label: "Recetas",
-      text: "Las recetas vigentes y su ficha de cocina.",
+      text: "Las recetas vigentes y sus fichas técnicas.",
       Icon: BookOpen,
       show: menus.recipes,
     },

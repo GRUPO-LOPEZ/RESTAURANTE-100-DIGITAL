@@ -1,6 +1,6 @@
 // Recetas (Fase 2, etapa 2.2 A; ficha única, ADR-0042): el Jefe de Cocina carga una receta completa, sale y vuelve y la
 // encuentra igual (caso 12), pide la revisión; la Chef la aprueba en la bandeja y la Cocinera la ve
-// en la vista de cocina, sin ningún valor económico (caso 24). En celular y computadora, con axe.
+// en las fichas técnicas, sin ningún valor económico (caso 24). En celular y computadora, con axe.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -131,10 +131,10 @@ test("el Jefe de Cocina carga una receta y, aprobada, la cocina la ve sin costos
   ).toBeVisible();
   await logout(page);
 
-  // La Cocinera la ve en la vista de cocina, sin ningún valor económico.
+  // La Cocinera la ve en las fichas técnicas, sin ningún valor económico.
   await login(page, "cocinero@ejemplo.test");
   await page.goto(url);
-  await expect(page).toHaveURL(/\/cocina$/);
+  await expect(page).toHaveURL(/\/fichas$/);
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   const ingredients = page.getByRole("list", { name: "Ingredientes" });
   await expect(ingredients).toContainText("Harina 000");
@@ -241,7 +241,7 @@ test("las fotos van con la versión: la Cocinera las ve cuando se publica", asyn
   // En revisión, la cocina todavía no la ve.
   await login(page, "cocinero@ejemplo.test");
   await page.goto(url);
-  await expect(page).toHaveURL(/\/cocina$/);
+  await expect(page).toHaveURL(/\/fichas$/);
   await expect(page.getByRole("img", { name: alt })).toHaveCount(0);
   await logout(page);
 

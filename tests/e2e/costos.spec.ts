@@ -189,8 +189,8 @@ test("Compras y la Cocinera no ven costos", async ({ page }, testInfo) => {
   await login(page, "cocinero@ejemplo.test");
   await page.goto("/costos");
   await expect(page).toHaveURL(/\/$/);
-  // La vista de cocina sigue sin importes, con costos reales.
-  await page.goto(`/recetas/${uuid(1104)}/cocina`);
+  // Las fichas técnicas (antes, la vista de cocina) siguen sin importes, con costos reales.
+  await page.goto(`/recetas/${uuid(1104)}/fichas`);
   await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible();
   await expect(page.getByText(/\$\s?\d/)).toHaveCount(0);
 });

@@ -993,15 +993,20 @@ export async function getPublishedPhotos(recipeId: string): Promise<PhotoSet> {
 }
 
 // ---------------------------------------------------------------------------
-// Vista de cocina
+// Fichas técnicas (ADR-0065; antes, la vista de cocina)
 // ---------------------------------------------------------------------------
 export type KitchenCard = {
   code: string;
   name: string;
   versionNumber: number;
   publishedAt: string;
+  // Nombre y apellido; nulo si no hay quién la aprobó o su cuenta no tiene nombre.
+  approvedBy: string | null;
+  sector: string | null;
+  station: string | null;
   yieldQuantity: number | null;
   yieldUnit: string | null;
+  yieldUnitCode: string | null;
   portions: number | null;
   portionGrams: number | null;
   description: string | null;
@@ -1014,10 +1019,11 @@ export type KitchenCard = {
   components: {
     line: number;
     ingredient: string;
-    // Una preparación: enlace a su propia ficha de cocina.
+    // Una preparación: enlace a su propia ficha.
     sub_recipe_id: string | null;
     quantity: number;
     unit: string;
+    unit_code: string;
     basis: QuantityBasis;
     notes: string | null;
     measure_count: number | null;
@@ -1041,7 +1047,7 @@ export async function getKitchenCard(recipeId: string): Promise<KitchenCard | nu
   const { data, error } = await supabase
     .schema("recipes")
     .rpc("kitchen_card", { p_recipe_id: recipeId });
-  if (error) failed("la ficha de cocina");
+  if (error) failed("la ficha técnica");
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
   const c = data as Record<string, unknown>;
   return {
@@ -1049,8 +1055,12 @@ export async function getKitchenCard(recipeId: string): Promise<KitchenCard | nu
     name: String(c.name),
     versionNumber: Number(c.version_number),
     publishedAt: String(c.published_at),
+    approvedBy: c.approved_by_name == null ? null : String(c.approved_by_name),
+    sector: c.sector == null ? null : String(c.sector),
+    station: c.station == null ? null : String(c.station),
     yieldQuantity: c.yield_quantity == null ? null : Number(c.yield_quantity),
     yieldUnit: c.yield_unit == null ? null : String(c.yield_unit),
+    yieldUnitCode: c.yield_unit_code == null ? null : String(c.yield_unit_code),
     portions: c.portions == null ? null : Number(c.portions),
     portionGrams: c.portion_grams == null ? null : Number(c.portion_grams),
     description: c.description == null ? null : String(c.description),

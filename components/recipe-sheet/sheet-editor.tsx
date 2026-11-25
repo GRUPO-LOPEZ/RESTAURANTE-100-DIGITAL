@@ -33,7 +33,9 @@ import { Tile } from "@/components/ui/tile";
 import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
 import { useUnsavedWarning } from "@/components/use-unsaved-warning";
 import type { ActionState } from "@/lib/auth/results";
+import { CriticalPoint } from "@/components/recipe-cards/critical-point";
 import { reasonField, recipeLinesSchema, recipeStepsSchema } from "@/lib/forms/schemas";
+import { scaleLine, spoonEquivalent, toBigger, unitText, type Amount } from "@/lib/scaling-units";
 import { formatMoney, parseAmount } from "@/lib/money";
 import {
   BASIS_LABELS,
@@ -147,6 +149,8 @@ type Step = {
   equipment_id: string;
   equipment_capacity: string;
   capacity_unit: string;
+  // Punto crítico (ADR-0065): qué controlar en el paso. Vacío = sin punto crítico.
+  control_point: string;
   depends: number[];
 };
 type Data = {
@@ -246,6 +250,7 @@ function stepPayload(steps: Step[]) {
     equipment_id: s.equipment_id,
     equipment_capacity: s.equipment_capacity,
     equipment_capacity_unit: s.capacity_unit,
+    control_point: s.control_point,
     depends_on: s.depends
       .map((d) => position.get(d))
       .filter((n): n is number => typeof n === "number")
@@ -378,6 +383,7 @@ export function SheetEditor({
     equipment_id: s.equipmentId ?? "",
     equipment_capacity: comma(s.equipmentCapacity),
     capacity_unit: s.equipmentCapacityUnit ?? "",
+    control_point: s.controlPoint ?? "",
     depends: s.dependsOn,
   }));
 
@@ -970,6 +976,21 @@ export function SheetEditor({
       <span className="tabular-nums">{formatGrams(v)}</span>
     );
   const scaleCols = [timesA, timesB] as const;
+  // Lo que rinde una receta: porciones en un plato, el rendimiento en una preparación.
+  const shownPortions = portions ?? manualPortions;
+  const yieldQuantity = parseAmount(draft.yield_quantity);
+  const yields = dish
+    ? shownPortions === null
+      ? null
+      : { value: shownPortions, unit: "portion" }
+    : yieldQuantity === null || !draft.yield_unit
+      ? null
+      : { value: yieldQuantity, unit: draft.yield_unit };
+  // El costo de N recetas: las líneas que no se multiplican cuentan una sola vez (como costing.scaled_cost).
+  const scaledCost = (times: number | null) =>
+    totalCost === null || times === null
+      ? null
+      : filled.reduce((a, c) => a + (c.cost ?? 0) * (c.row.no_scale ? 1 : times), 0);
 
   // Los 4 indicadores de arriba (no se repiten abajo) y el estado del total de la planilla.
   const kpis = sheetKpis({
@@ -1027,6 +1048,7 @@ export function SheetEditor({
         equipment_id: "",
         equipment_capacity: "",
         capacity_unit: "",
+        control_point: "",
         depends: previous ? [previous.key] : [],
       },
     ]);
@@ -1160,7 +1182,8 @@ export function SheetEditor({
                         <span className="text-xs whitespace-nowrap">
                           Hacer
                           <span className="sr-only">
-                            : {showMoney ? "peso y costo" : "peso"} para esa cantidad de recetas
+                            : {showMoney ? "cantidad y costo" : "cantidad"} para esa cantidad de
+                            recetas
                           </span>
                         </span>
                         <Input
@@ -1415,32 +1438,32 @@ export function SheetEditor({
                           onChange={(change) => update(r.key, change)}
                         />
                         {scaleCols.map((times, col) => {
-                          // El peso arriba y el costo abajo: la columna es angosta y la fila casi no crece. Si faltan los
-                          // dos, un solo «—» con los dos motivos.
-                          const grams = scale(c.grams, times);
-                          const cost = showMoney ? scale(c.cost, times) : undefined;
-                          const gramsWhy =
-                            times === null ? "Escribí cuántas recetas." : c.gramsReason;
+                          // La cantidad en su unidad (nunca en gramos: no hace falta la densidad, ADR-0065) y el costo
+                          // abajo: la columna es angosta y la fila casi no crece. Una línea «no escalar» no se
+                          // multiplica, como en «Hacer varias recetas».
+                          const amount = scaleLine(
+                            parseAmount(r.quantity),
+                            r.unit,
+                            times,
+                            r.no_scale,
+                          );
+                          const also = amount ? spoonEquivalent(amount) : null;
+                          const cost = showMoney
+                            ? scale(c.cost, r.no_scale && times !== null ? 1 : times)
+                            : undefined;
                           const costWhy =
                             times === null ? "Escribí cuántas recetas." : c.costReason;
                           return (
                             <td key={col} className="px-1 py-1 text-right">
-                              {!c.filled ? null : grams === null && cost === null ? (
+                              {!c.filled ? null : amount === null ? (
                                 <span className="flex min-h-8 items-center justify-end">
-                                  <Missing
-                                    compact
-                                    reason={
-                                      gramsWhy === costWhy ? gramsWhy : `${gramsWhy} ${costWhy}`
-                                    }
-                                  />
+                                  <Missing compact reason="Escribí cuántas recetas." />
                                 </span>
                               ) : (
                                 <span className="flex min-h-8 flex-col items-end justify-center text-xs leading-4 whitespace-nowrap tabular-nums">
-                                  {grams === null ? (
-                                    <Missing compact reason={gramsWhy} />
-                                  ) : (
-                                    <span>{formatGrams(grams)}</span>
-                                  )}
+                                  <Quantity amount={amount} />
+                                  {also ? <span>{also}</span> : null}
+                                  {r.no_scale ? <span>No se multiplica</span> : null}
                                   {cost === undefined ? null : cost === null ? (
                                     <Missing compact reason={costWhy} />
                                   ) : (
@@ -1616,8 +1639,22 @@ export function SheetEditor({
                     <td key={col} className="px-1 py-2 text-right text-xs">
                       {filled.length > 0 ? (
                         <span className="flex flex-col items-end whitespace-nowrap">
-                          {gramsCell(scale(totals.grams, times), "Falta un dato.")}
-                          {showMoney ? moneyCell(scale(totalCost, times), "Falta un dato.") : null}
+                          {/* Lo que rinde, no la suma en gramos: para multiplicar no hace falta el peso. */}
+                          {yields ? (
+                            times === null ? (
+                              <Missing compact reason="Escribí cuántas recetas." />
+                            ) : (
+                              <Quantity
+                                amount={toBigger({
+                                  value: yields.value * times,
+                                  unit: yields.unit,
+                                })}
+                              />
+                            )
+                          ) : (
+                            <Missing compact reason="Falta cargar cuánto rinde." />
+                          )}
+                          {showMoney ? moneyCell(scaledCost(times), "Falta un dato.") : null}
                         </span>
                       ) : null}
                     </td>
@@ -1962,6 +1999,7 @@ export function SheetEditor({
                         {s.equipment ? ` · ${s.equipment}` : ""}
                       </span>
                       <span className="text-ink">{s.instructions}</span>
+                      {s.control_point ? <CriticalPoint text={s.control_point} /> : null}
                     </li>
                   ))
                 )}
@@ -2536,6 +2574,16 @@ function MeasureCells({
   );
 }
 
+// Número grande y unidad al lado, chica. Si no entra, la unidad pasa abajo (las columnas «Hacer» son angostas).
+function Quantity({ amount }: { amount: Amount }) {
+  return (
+    <span className="flex flex-wrap items-baseline justify-end gap-x-1">
+      <span className="text-sm font-semibold">{formatQuantity(amount.value)}</span>{" "}
+      <span>{unitText(amount.value, amount.unit)}</span>
+    </span>
+  );
+}
+
 function StepCard({
   prefix,
   step,
@@ -2574,6 +2622,7 @@ function StepCard({
           {step.equipment ? ` · ${step.equipment}` : ""}
         </span>
         <span className="text-ink">{step.instructions}</span>
+        {step.control_point ? <CriticalPoint text={step.control_point} /> : null}
       </li>
     );
   }
@@ -2587,6 +2636,7 @@ function StepCard({
           {n}. {STEP_KIND_LABELS[step.kind]}
         </span>
         <span className="text-ink">{step.instructions}</span>
+        {step.control_point ? <CriticalPoint text={step.control_point} /> : null}
       </div>
       <div className="hidden grid-cols-[2.5rem_minmax(0,1fr)_7.5rem_5.5rem_5.5rem_12.5rem_auto] items-start gap-3 desk:grid">
         <span
@@ -2647,6 +2697,17 @@ function StepCard({
         >
           <Trash2 aria-hidden="true" />
         </Button>
+      </div>
+      <div className="hidden pr-12 pl-13 desk:block">
+        <Field id={id("critico")} label={`Punto crítico (paso ${n})`}>
+          <Textarea
+            value={step.control_point}
+            placeholder="Opcional: qué controlar en este paso"
+            maxLength={500}
+            rows={1}
+            onChange={(e) => onChange({ control_point: e.target.value })}
+          />
+        </Field>
       </div>
       <details className="hidden desk:block">
         <summary className="flex min-h-control cursor-pointer items-center text-sm text-primary underline-offset-4 hover:underline">

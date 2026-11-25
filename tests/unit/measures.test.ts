@@ -6,6 +6,7 @@ import {
   measureCount,
   measureLabel,
   measureText,
+  measureWithContent,
   measuresFor,
   type Measure,
 } from "@/lib/measures";
@@ -73,10 +74,27 @@ describe("cómo se lee", () => {
   it("la medida y cuántas van", () => {
     expect(measureLabel(nest)).toBe("Nido (120 g)");
     expect(measureLabel({ ...pair, isActive: false })).toBe("Par (2 u) · inactiva");
-    expect(measureText(4, "Nido")).toBe("4 × Nido");
-    expect(measureText(1.5, "Taza")).toBe("1,5 × Taza");
+    expect(measureText(4, "Nido")).toBe("4 nidos");
+    expect(measureText(1.5, "Taza")).toBe("1,5 tazas");
+    expect(measureText(1, "Nido de pasta")).toBe("1 nido de pasta");
+    expect(measureText(0.5, "Cucharón")).toBe("0,5 cucharón");
+    expect(measureText(48, "Nido de pasta")).toBe("48 nidos de pasta");
+    expect(measureText(2, "Cucharón")).toBe("2 cucharones");
     expect(measureText(null, "Nido")).toBeNull();
     expect(measureText(4, null)).toBeNull();
+  });
+
+  it("un nombre que no se puede pasar a plural queda como está escrito", () => {
+    expect(measureText(4, "Taza chica")).toBe("4 × Taza chica");
+    expect(measureText(4, "GN 1/1")).toBe("4 × GN 1/1");
+    expect(measureText(4, "Bowl")).toBe("4 × Bowl");
+  });
+
+  it("con lo que contiene cada una", () => {
+    expect(measureWithContent(48, "Nido de pasta", 120, "g")).toBe("48 nidos de pasta de 120 g");
+    expect(measureWithContent(4, "GN 1/1", 2, "unit")).toBe("4 × GN 1/1 de 2 u");
+    expect(measureWithContent(4, "Nido", null, null)).toBe("4 nidos");
+    expect(measureWithContent(null, "Nido", 120, "g")).toBeNull();
   });
 
   it("solo hay tres unidades de contenido", () => {

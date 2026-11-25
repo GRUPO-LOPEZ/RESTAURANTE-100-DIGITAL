@@ -64,7 +64,7 @@ import {
 // en una línea, 4 indicadores y dos columnas que ocupan el alto que queda. La planilla de ingredientes es la única parte
 // con scroll propio, como una hoja de cálculo. Lo que no entra se abre en un panel (datos, pasos, alérgenos, dónde se
 // usa y versiones). Quien la trabaja edita donde ve y guarda todo junto; quien revisa la ve en solo lectura con los
-// cambios marcados y decide en la barra de abajo; quien solo la ve va a la vista de cocina. En el celular, consulta.
+// cambios marcados y decide en la barra de abajo; quien solo la ve va a las fichas técnicas. En el celular, consulta.
 export default function RecetaPage({ params, searchParams }: PageProps<"/recetas/[id]">) {
   return (
     <AppShell
@@ -297,7 +297,7 @@ async function Meta({ params }: { params: PageProps<"/recetas/[id]">["params"] }
   );
 }
 
-// «Ficha de cocina» y «Escalar», a la derecha del nombre (solo con una versión vigente).
+// «Fichas técnicas» y «Hacer varias», a la derecha del nombre (solo con una versión vigente).
 async function HeaderActions({ params }: { params: PageProps<"/recetas/[id]">["params"] }) {
   await requireMenu("recipes");
   const { id } = await params;
@@ -307,15 +307,15 @@ async function HeaderActions({ params }: { params: PageProps<"/recetas/[id]">["p
   return (
     <div className="flex flex-wrap gap-2 desk:shrink-0 desk:flex-nowrap">
       <Button asChild variant="outline" size="sm">
-        <Link href={`/recetas/${recipe.id}/cocina`}>
+        <Link href={`/recetas/${recipe.id}/fichas`}>
           <ChefHat aria-hidden="true" />
-          Ficha de cocina
+          Fichas técnicas
         </Link>
       </Button>
       <Button asChild variant="outline" size="sm">
         <Link href={`/recetas/${recipe.id}/escalar`}>
           <Scale aria-hidden="true" />
-          Escalar
+          Hacer varias
         </Link>
       </Button>
     </div>
@@ -348,8 +348,8 @@ async function Recipe({
   const recipe = await recipeById(id);
   if (!recipe) notFound();
   const works = recipe.can.draft || recipe.can.review || recipe.can.publish;
-  // Quien solo ve la receta, la ve como en la cocina.
-  if (!works) redirect(`/recetas/${recipe.id}/cocina`);
+  // Quien solo ve la receta, la ve en sus fichas técnicas.
+  if (!works) redirect(`/recetas/${recipe.id}/fichas`);
 
   const query = await searchParams;
   // Cada tarjeta lleva el comienzo del id de la receta: Next guarda oculta la ficha anterior, y con dos «#uso» un

@@ -44,6 +44,18 @@ export function versionChip(number: number, status: VersionStatus): string {
   return `Versión ${number} · ${status === "published" ? "Publicada" : VERSION_STATUS_LABELS[status]}`;
 }
 
+// «Versión 2 · REC-PAS-012 · publicada el 20/11/26 · aprobó Ana Pérez» (ADR-0065): en todas las fichas y en lo impreso.
+// La fecha llega ya escrita. Sin el nombre (una versión importada o una cuenta sin nombre), se dice: nunca se supone.
+export function versionLine(v: {
+  number: number;
+  code: string;
+  publishedOn: string;
+  approvedBy: string | null;
+}): string {
+  const by = v.approvedBy ? `aprobó ${v.approvedBy}` : "sin el nombre de quien aprobó";
+  return `Versión ${v.number} · ${v.code} · publicada el ${v.publishedOn} · ${by}`;
+}
+
 export const BASIS_LABELS: Record<QuantityBasis, string> = {
   purchase: "Peso de compra",
   clean: "Limpio",

@@ -1,5 +1,7 @@
+import { CriticalPoint } from "@/components/recipe-cards/critical-point";
+import { formatDate } from "@/lib/data";
 import { getKitchenCard, getPublishedPhotos } from "@/lib/recipes";
-import { STEP_KIND_LABELS, formatMinutes } from "@/lib/recipe-format";
+import { STEP_KIND_LABELS, formatMinutes, versionLine } from "@/lib/recipe-format";
 
 // Lo que la ficha técnica suma a la lista de ingredientes: el paso a paso, las fotos y las notas. No va en el Excel ni
 // en el CSV, que son una tabla: va en la pantalla y en el papel. Se muestra solo después de que la base controló que
@@ -19,6 +21,14 @@ export async function RecipeCardExtras({ recipeId }: { recipeId: string }) {
   const shown = photos.photos.filter((p) => p.url);
   return (
     <>
+      <p className="text-sm text-ink tabular-nums">
+        {versionLine({
+          number: card.versionNumber,
+          code: card.code,
+          publishedOn: formatDate(card.publishedAt),
+          approvedBy: card.approvedBy,
+        })}
+      </p>
       <section className="flex flex-col gap-2 print:break-inside-avoid-page">
         <h3 className="text-xl font-semibold text-ink">Paso a paso</h3>
         {card.steps.length === 0 ? (
@@ -40,7 +50,7 @@ export async function RecipeCardExtras({ recipeId }: { recipeId: string }) {
                   <span className="text-sm text-ink-muted">Equipo: {s.equipment}</span>
                 ) : null}
                 {s.control_point ? (
-                  <span className="text-sm text-ink-muted">Control: {s.control_point}</span>
+                  <CriticalPoint text={s.control_point} className="text-sm" />
                 ) : null}
               </li>
             ))}

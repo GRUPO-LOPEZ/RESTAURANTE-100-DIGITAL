@@ -811,6 +811,8 @@ export const recipeStepsSchema = z
             message: "Escribí un número mayor que cero, como 5 o 2,5.",
           }),
         equipment_capacity_unit: z.string().max(20),
+        // Punto crítico del paso (ADR-0065). Siempre viaja: guardar los pasos los reemplaza enteros.
+        control_point: z.string().trim().max(500, "Punto crítico: hasta 500 caracteres."),
         depends_on: z.array(z.number().int().min(1).max(100)).max(99),
       })
       .refine((s) => s.equipment_capacity === "" || s.equipment !== "", {

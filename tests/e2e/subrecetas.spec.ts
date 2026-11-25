@@ -1,6 +1,6 @@
 // Subrecetas y variantes (Fase 2, etapa 2.2 B; ADR-0025 y ADR-0026): la Chef agrega una preparación
 // desde el buscador, la ficha la enlaza, el Chef del grupo ve dónde se usa y sus avisos, la Cocinera
-// pasa del plato a la preparación en la vista de cocina, y la Chef crea una variante para un local.
+// pasa del plato a la preparación en las fichas técnicas, y la Chef crea una variante para un local.
 // En celular y computadora, con axe.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
@@ -130,15 +130,15 @@ test("el Chef del grupo ve dónde se usa una salsa y sus avisos de cambios", asy
   await expect(page.getByRole("heading", { name: "Salsa bolognesa", exact: true })).toBeVisible();
 });
 
-test("la Cocinera pasa del plato a la ficha de cocina de su preparación", async ({ page }) => {
+test("la Cocinera pasa del plato a la ficha técnica de su preparación", async ({ page }) => {
   await login(page, "cocinero@ejemplo.test");
   await openRecipe(page, "Lasaña bolognesa");
-  await expect(page).toHaveURL(/\/cocina$/);
+  await expect(page).toHaveURL(/\/fichas$/);
   const ingredients = page.getByRole("list", { name: "Ingredientes" });
   await expect(ingredients.getByText("Preparación").first()).toBeVisible();
   await axe(page);
   await ingredients.getByRole("link", { name: "Salsa blanca" }).click();
-  await expect(page).toHaveURL(/\/cocina$/);
+  await expect(page).toHaveURL(/\/fichas$/);
   await expect(page.getByRole("heading", { name: "Salsa blanca", exact: true })).toBeVisible();
   await expect(page.getByText("Crear una variante para un local")).toHaveCount(0);
 });

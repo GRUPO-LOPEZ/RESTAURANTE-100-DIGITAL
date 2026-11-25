@@ -605,6 +605,11 @@ values
    'Rehogar la cebolla y la zanahoria en otra olla.', 30, 0),
   ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001202', 4, 'cooking',
    'Unir todo, ajustar la sal y enfriar.', 10, 0);
+-- Puntos críticos (ADR-0065): uno en la bolognesa y uno en los ñoquis.
+update recipes.recipe_steps set control_point = 'La carne tiene que llegar a 74 °C en el centro.'
+ where recipe_version_id = '00000000-0000-4000-8000-000000001202' and step_number = 2;
+update recipes.recipe_steps set control_point = 'Sacar los ñoquis apenas suben: si siguen en el agua, se deshacen.'
+ where recipe_version_id = '00000000-0000-4000-8000-000000001209' and step_number = 2;
 insert into recipes.recipe_step_dependencies (group_id, step_id, depends_on_step_id)
 select '00000000-0000-4000-8000-000000000001', s.id, d.id
   from (values (2, 1), (3, 2)) as x (step, dep)

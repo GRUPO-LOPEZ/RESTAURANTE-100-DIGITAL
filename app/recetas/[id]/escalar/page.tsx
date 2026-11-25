@@ -1,29 +1,54 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 
 import { AppShell, Loading } from "@/components/app-shell";
+import { BackLink } from "@/components/back-link";
 import { PrintButton } from "@/components/print-button";
-import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
-import { Field, Input, Select } from "@/components/ui/field";
-import { EmptyState, Kpi } from "@/components/ui/kpi";
+import { PaperPages } from "@/components/recipe-cards/paper-pages";
+import { ScaleForm, type ScaleUnit } from "@/components/recipe-cards/scale-form";
+import { Badge } from "@/components/ui/badge";
+import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { EmptyState } from "@/components/ui/kpi";
+import { Metric } from "@/components/ui/metric";
 import { Notice } from "@/components/ui/notice";
+import { ScrollFocus } from "@/components/ui/scroll-focus";
+import { Tile } from "@/components/ui/tile";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 import { RELIABILITY, resolveCostPlace } from "@/lib/costs";
 import { first, formatDate, uuidOrUndefined } from "@/lib/data";
+import { measureWithContent } from "@/lib/measures";
 import { formatMoney, parseAmount } from "@/lib/money";
-import { LINE_UNITS, formatQuantity } from "@/lib/recipe-format";
-import { getRecipe } from "@/lib/recipes";
-import { getScaledCost, scaleVersion, type ScaledRecipe } from "@/lib/scaling";
+import { formatQuantity, unitDimension, versionLine } from "@/lib/recipe-format";
+import { getKitchenCard, getRecipe } from "@/lib/recipes";
+import { getScaledCost, scaleVersion, type ScaleMode, type ScaledRecipe } from "@/lib/scaling";
+import { amountText, spoonEquivalent, toBigger, unitText } from "@/lib/scaling-units";
 
-// Escalado (ADR-0032; sección 13 del documento de Soy): ¿cuánto necesito para este lote? Solo lee: escalar nunca
-// modifica la versión. La ve cualquiera que vea la receta; el costo proyectado, solo quien ve costos.
-export default function EscalarPage({ params, searchParams }: PageProps<"/recetas/[id]/escalar">) {
+// Hacer varias recetas (pedido de Soy, ADR-0065; antes «Escalar», ADR-0032): cuánto hace falta de cada ingrediente, en su
+// unidad y sin densidad. Solo lee: nunca modifica la versión. La ve cualquiera que vea la receta; el costo proyectado,
+// solo quien ve costos.
+type Props = PageProps<"/recetas/[id]/escalar">;
+
+export default function EscalarPage({ params, searchParams }: Props) {
   return (
     <AppShell
-      title="¿Cuánto necesito para este lote?"
-      description="Las cantidades de la receta para el objetivo que elijas. No cambia la receta."
+      title="Hacer varias recetas"
+      fill
+      heading={
+        <Suspense fallback="Hacer varias recetas">
+          <Name params={params} />
+        </Suspense>
+      }
+      back={
+        <Suspense fallback={null}>
+          <Back params={params} />
+        </Suspense>
+      }
+      meta={
+        <Suspense fallback={null}>
+          <Meta params={params} />
+        </Suspense>
+      }
+      actions={<PrintButton />}
     >
       <Suspense fallback={<Loading />}>
         <Scale params={params} searchParams={searchParams} />
@@ -32,65 +57,72 @@ export default function EscalarPage({ params, searchParams }: PageProps<"/receta
   );
 }
 
-// "1 unidad", "12 unidades": las etiquetas de las unidades están en singular.
-function amount(value: number, code: string | null): string {
-  const label = LINE_UNITS.find((u) => u.code === code)?.label ?? code ?? "";
-  const plural =
-    value !== 1 && (code === "unit" || code === "dozen")
-      ? "es".slice(code === "dozen" ? 1 : 0)
-      : "";
-  return `${formatQuantity(value)} ${label}${plural}`;
-}
-const portionsText = (n: number) => `${formatQuantity(n)} ${n === 1 ? "porción" : "porciones"}`;
-const unitLabel = (code: string) => LINE_UNITS.find((u) => u.code === code)?.label ?? code;
+const recipeOnce = cache(getRecipe);
+const cardOnce = cache(getKitchenCard);
 
-async function Scale({
-  params,
-  searchParams,
-}: {
-  params: PageProps<"/recetas/[id]/escalar">["params"];
-  searchParams: PageProps<"/recetas/[id]/escalar">["searchParams"];
-}) {
+async function recipeOf(params: Props["params"]) {
   const session = await requireMenu("recipes");
   const { id } = await params;
   if (!uuidOrUndefined(id)) notFound();
-  const recipe = await getRecipe(id);
+  const recipe = await recipeOnce(id);
   if (!recipe) notFound();
-  const version = recipe.current;
-  const back = (
-    <Link
-      href={`/recetas/${recipe.id}`}
-      className="inline-flex min-h-touch items-center self-start text-base text-primary underline-offset-4 hover:underline print:hidden"
-    >
-      Volver a la receta
-    </Link>
+  return { session, recipe };
+}
+
+const portionsText = (n: number) => `${formatQuantity(n)} ${unitText(n, "portion")}`;
+const recipesText = (n: number) => `${formatQuantity(n)} ${n === 1 ? "receta" : "recetas"}`;
+
+async function Name({ params }: { params: Props["params"] }) {
+  return (await recipeOf(params)).recipe.name;
+}
+
+async function Back({ params }: { params: Props["params"] }) {
+  const { recipe } = await recipeOf(params);
+  return (
+    <BackLink href={`/recetas/${recipe.id}`} label="Volver a la receta">
+      Receta
+    </BackLink>
   );
-  if (!version)
-    return (
-      <>
-        {back}
-        <EmptyState title="Esta receta todavía no tiene una versión vigente." />
-      </>
-    );
+}
+
+async function Meta({ params }: { params: Props["params"] }) {
+  const { recipe } = await recipeOf(params);
+  const v = recipe.current;
+  if (!v) return null;
+  return (
+    <span className="text-sm text-ink-muted tabular-nums">
+      Versión {v.number}
+      {v.portions !== null ? ` · ${portionsText(v.portions)}` : ""}
+      {v.yieldQuantity !== null && v.yieldUnit
+        ? ` · rinde ${amountText({ value: v.yieldQuantity, unit: v.yieldUnit })}`
+        : ""}
+    </span>
+  );
+}
+
+async function Scale({ params, searchParams }: Props) {
+  const { session, recipe } = await recipeOf(params);
+  const version = recipe.current;
+  if (!version) return <EmptyState title="Esta receta todavía no tiene una versión vigente." />;
 
   const query = await searchParams;
-  const portions = version.portions;
-  const yieldUnit = version.yieldUnit;
-  const canPortions = portions !== null;
-  const canYield = version.yieldQuantity !== null && yieldUnit !== null;
-  if (!canPortions && !canYield)
-    return (
-      <>
-        {back}
-        <EmptyState title="No se puede escalar esta receta.">
-          No tiene porciones ni rendimiento cargados.
-        </EmptyState>
-      </>
-    );
-
+  const yieldUnit = version.yieldQuantity !== null ? version.yieldUnit : null;
+  const units: ScaleUnit[] = [{ value: "recetas", label: "recetas" }];
+  if (version.portions !== null) units.push({ value: "porciones", label: "porciones" });
+  if (yieldUnit !== null)
+    units.push({
+      value: "rendimiento",
+      label:
+        unitDimension(yieldUnit) === "count"
+          ? unitText(2, yieldUnit)
+          : `${unitText(1, yieldUnit)} de producto`,
+    });
+  // Los enlaces de antes (?por=porciones&objetivo=8) siguen andando; lo que la receta no tiene, por recetas.
   const wanted = first(query.por);
-  const mode = wanted === "rendimiento" && canYield ? "yield" : canPortions ? "portions" : "yield";
-  const raw = first(query.objetivo)?.trim() ?? "";
+  const unit = units.find((u) => u.value === wanted)?.value ?? "recetas";
+  const mode: ScaleMode =
+    unit === "porciones" ? "portions" : unit === "rendimiento" ? "yield" : "recipes";
+  const raw = first(query.objetivo)?.trim() ?? "1";
   const target = parseAmount(raw);
   const result =
     target !== null
@@ -99,48 +131,33 @@ async function Scale({
 
   return (
     <>
-      {back}
-      <Card className="flex flex-col gap-4 print:hidden">
-        <div className="flex flex-col gap-1">
-          <CardTitle>{recipe.name}</CardTitle>
-          <CardDescription>
-            Versión {version.number}
-            {portions !== null ? ` · ${portionsText(portions)}` : ""}
-            {canYield ? ` · rinde ${amount(version.yieldQuantity ?? 0, yieldUnit)}` : ""}
-          </CardDescription>
-        </div>
-        <form
-          method="get"
-          aria-label="Objetivo del lote"
-          className="grid gap-4 sm:grid-cols-3 sm:items-end"
-        >
-          <Field id="escalar-objetivo" label="¿Cuánto querés hacer?">
-            <Input
-              name="objetivo"
-              inputMode="decimal"
-              enterKeyHint="go"
-              autoComplete="off"
-              defaultValue={first(query.objetivo) ?? ""}
-              required
-            />
-          </Field>
-          <Field id="escalar-por" label="Medido en">
-            <Select name="por" defaultValue={mode === "yield" ? "rendimiento" : "porciones"}>
-              {canPortions ? <option value="porciones">Porciones</option> : null}
-              {canYield ? <option value="rendimiento">{unitLabel(yieldUnit ?? "")}</option> : null}
-            </Select>
-          </Field>
-          <Button type="submit">Escalar</Button>
-        </form>
-      </Card>
-      {raw !== "" && target === null ? (
-        <Notice status="bad">Escribí un número, como 25 o 2,5.</Notice>
-      ) : null}
-      {result?.status === "bad" ? <Notice status="bad">{result.message}</Notice> : null}
+      <section
+        aria-label="Cuánto"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-surface p-4 desk:py-3 print:hidden"
+      >
+        <ScaleForm
+          path={`/recetas/${recipe.id}/escalar`}
+          target={raw}
+          unit={unit}
+          units={units}
+          error={
+            target === null
+              ? "Escribí un número, como 25 o 2,5."
+              : result?.status === "bad"
+                ? result.message
+                : undefined
+          }
+        />
+        {result?.status === "ok" ? (
+          <p className="text-base text-ink tabular-nums" aria-live="polite">
+            = <Lot data={result.data} mode={mode} />
+          </p>
+        ) : null}
+      </section>
       {result?.status === "ok" ? (
         <Result
+          recipeId={recipe.id}
           name={recipe.name}
-          versionNumber={version.number}
           versionId={version.id}
           data={result.data}
           userId={session.user_id}
@@ -150,20 +167,57 @@ async function Scale({
   );
 }
 
+// «48 porciones · 15,4 kg»: lo que sale. Cuántas recetas son, si se pidió en otra cosa.
+function Lot({ data, mode }: { data: ScaledRecipe; mode: ScaleMode }) {
+  const parts = [
+    mode !== "recipes" ? recipesText(data.factor) : null,
+    data.targetPortions !== null ? portionsText(data.targetPortions) : null,
+    data.targetYield !== null && data.yieldUnit
+      ? amountText(toBigger({ value: data.targetYield, unit: data.yieldUnit }))
+      : null,
+  ].filter((p): p is string => p !== null);
+  if (parts.length === 0) return <>sin rendimiento cargado</>;
+  return (
+    <>
+      <span className="font-semibold">{parts[0]}</span>
+      {parts.slice(1).map((p) => ` · ${p}`)}
+    </>
+  );
+}
+
+type Line = ScaledRecipe["lines"][number];
+
+const scaledAmount = (l: Line) => toBigger({ value: l.scaled, unit: l.unit });
+
+function BigAmount({ line }: { line: Line }) {
+  const amount = scaledAmount(line);
+  const also = spoonEquivalent(amount);
+  return (
+    <span className="inline-flex flex-wrap items-baseline justify-end gap-x-1 whitespace-nowrap tabular-nums">
+      <span className="text-xl font-semibold">{formatQuantity(amount.value)}</span>{" "}
+      <span className="text-sm">{unitText(amount.value, amount.unit)}</span>
+      {also ? <span className="text-sm">· {also}</span> : null}
+    </span>
+  );
+}
+
+const measureOf = (l: Line) =>
+  measureWithContent(l.measureScaled, l.measureName, l.measureContent, l.measureUnit);
+
 async function Result({
+  recipeId,
   name,
-  versionNumber,
   versionId,
   data,
   userId,
 }: {
+  recipeId: string;
   name: string;
-  versionNumber: number;
   versionId: string;
   data: ScaledRecipe;
   userId: string | undefined;
 }) {
-  const menus = await getMenus();
+  const [menus, card] = await Promise.all([getMenus(), cardOnce(recipeId)]);
   const place = menus.costs ? (await resolveCostPlace(userId)).place : null;
   // El costo es secundario: si falla, las cantidades se ven igual, con un aviso.
   const cost = place
@@ -171,15 +225,34 @@ async function Result({
     : null;
   const scaled = data.lines.filter((l) => !l.noScale);
   const manual = data.lines.filter((l) => l.noScale);
-  const batches = data.steps.filter((s) => s.batches !== null && s.batches > 1);
-  const lot =
-    data.targetPortions !== null
-      ? portionsText(data.targetPortions)
-      : amount(data.targetYield ?? 0, data.yieldUnit);
-  const lotDetail =
-    data.targetPortions !== null && data.targetYield !== null
-      ? amount(data.targetYield, data.yieldUnit)
-      : undefined;
+  const columns: DataColumn<Line>[] = [
+    {
+      key: "item",
+      header: "Ingrediente",
+      mobile: "title",
+      cell: (l) => <span className="text-base font-medium">{l.item}</span>,
+    },
+    {
+      key: "one",
+      header: "Para 1 receta",
+      align: "right",
+      cell: (l) => amountText({ value: l.quantity, unit: l.unit }),
+    },
+    {
+      key: "many",
+      header: `Para ${recipesText(data.factor)}`,
+      align: "right",
+      mobile: "status",
+      cell: (l) => <BigAmount line={l} />,
+    },
+  ];
+  // Sin ninguna medida práctica, la columna no dice nada.
+  if (scaled.some((l) => l.measureScaled !== null))
+    columns.push({
+      key: "measure",
+      header: "Medida práctica",
+      cell: (l) => measureOf(l) ?? <span className="text-ink-muted">—</span>,
+    });
 
   return (
     <>
@@ -188,99 +261,137 @@ async function Result({
           No pudimos calcular el costo proyectado. Las cantidades están bien.
         </Notice>
       ) : null}
-      {batches.map((s) => (
-        <Notice key={s.number} status="warn">
-          Paso {s.number}: en {s.equipment} hacen falta {s.batches} tandas. Los tiempos no se
-          multiplican: calculá cada tanda.
-        </Notice>
-      ))}
-      <Card className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-col gap-1">
-            <CardTitle>{name}</CardTitle>
-            <p className="text-base text-ink tabular-nums">
-              Para {lot}
-              {lotDetail ? ` (${lotDetail})` : ""} · × {formatQuantity(data.factor)} · Versión{" "}
-              {versionNumber}
-              <span className="hidden print:inline">
-                {" "}
-                · Calculado el {formatDate(new Date().toISOString())}
-              </span>
-            </p>
+      <PaperPages
+        header={
+          <>
+            <span className="text-2xl font-semibold text-ink">{name}</span>
+            <span className="text-base text-ink tabular-nums">
+              Para {recipesText(data.factor)}: <Lot data={data} mode="recipes" />
+            </span>
+            <span className="text-sm text-ink tabular-nums">
+              {card
+                ? `${versionLine({
+                    number: card.versionNumber,
+                    code: card.code,
+                    publishedOn: formatDate(card.publishedAt),
+                    approvedBy: card.approvedBy,
+                  })} · `
+                : ""}
+              calculado el {formatDate(new Date().toISOString())}
+            </span>
+          </>
+        }
+      >
+        {/* Por debajo de 1.280 px, una columna: la tabla con su alto y la página con scroll. */}
+        <div className="grid gap-4 xl:min-h-64 xl:flex-[1_1_0px] xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] print:block print:space-y-4">
+          <div className="flex min-w-0 flex-col desk:h-96 xl:h-auto xl:min-h-0 print:h-auto">
+            <DataTable
+              caption="Cantidades para este lote"
+              columns={columns}
+              rows={scaled}
+              rowKey={(l) => String(l.order)}
+              scroll
+              empty={<EmptyState title="Esta receta no tiene líneas para multiplicar." />}
+            />
           </div>
-          <PrintButton />
+          <section
+            aria-label="Costo y equipos"
+            className="relative flex min-w-0 flex-col gap-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary xl:min-h-0 xl:overflow-y-auto print:overflow-visible"
+          >
+            <ScrollFocus />
+            {menus.costs && cost !== "failed" ? (
+              <Metric
+                label={place ? `Costo proyectado en ${place.name}` : "Costo proyectado"}
+                value={cost && cost.total !== null ? formatMoney(cost.total) : null}
+                missingReason={
+                  !place
+                    ? "Elegí un local arriba para ver el costo."
+                    : cost
+                      ? "Falta el costo de algún ingrediente."
+                      : "No ves los costos de ese local."
+                }
+                emptyLabel="Sin datos"
+                comparison={
+                  cost && cost.gross !== null ? `Con IVA: ${formatMoney(cost.gross)}` : undefined
+                }
+                status={cost ? RELIABILITY[cost.reliability].status : "none"}
+                statusLabel={cost ? RELIABILITY[cost.reliability].label : "Sin datos"}
+                compact
+                className="desk:shrink-0 print:hidden"
+              />
+            ) : null}
+            {manual.length > 0 ? (
+              <Tile title="Para ajustar a mano" className="desk:shrink-0 print:border-0 print:p-0">
+                <p className="text-sm text-ink-muted">
+                  No se multiplican: quedan como en la receta.
+                </p>
+                <ul
+                  aria-label="Líneas que no se multiplican"
+                  className="flex flex-col divide-y divide-line"
+                >
+                  {manual.map((l) => (
+                    <li
+                      key={l.order}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 py-2 print:break-inside-avoid"
+                    >
+                      <span className="text-base text-ink">{l.item}</span>
+                      <span className="text-right text-base font-semibold text-ink tabular-nums">
+                        {amountText(scaledAmount(l))}
+                        {measureOf(l) ? (
+                          <span className="block text-sm font-normal">{measureOf(l)}</span>
+                        ) : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Tile>
+            ) : null}
+            {data.steps.length > 0 ? (
+              <Tile title="Equipos" className="desk:shrink-0 print:border-0 print:p-0">
+                <ul aria-label="Equipo" className="flex flex-col divide-y divide-line">
+                  {data.steps.map((s) => (
+                    <li
+                      key={s.number}
+                      className="flex flex-wrap items-center justify-between gap-2 py-2 print:break-inside-avoid"
+                    >
+                      <span className="min-w-0 text-base text-ink">
+                        Paso {s.number}: {s.equipment}
+                        <span className="block text-sm text-ink-muted tabular-nums">
+                          {s.capacity === null
+                            ? "Sin capacidad cargada: no se puede avisar si hacen falta más tandas."
+                            : s.batches === null
+                              ? `Entran ${amountText({ value: s.capacity, unit: s.capacityUnit ?? "" })}. No se pueden calcular las tandas: revisá el rendimiento de la receta.`
+                              : `Entran ${amountText({ value: s.capacity, unit: s.capacityUnit ?? "" })}`}
+                        </span>
+                      </span>
+                      {s.batches === null ? null : (
+                        <Badge status={s.batches > 1 ? "warn" : "ok"}>
+                          {s.batches === 1 ? "1 tanda" : `${s.batches} tandas`}
+                        </Badge>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {data.steps.some((s) => s.batches !== null && s.batches > 1) ? (
+                  <p className="text-sm text-ink">
+                    Los tiempos no se multiplican: calculá cada tanda.
+                  </p>
+                ) : null}
+              </Tile>
+            ) : null}
+            <Tile
+              title="Cada ingrediente sigue en su unidad"
+              className="desk:shrink-0 print:hidden"
+            >
+              <p className="text-sm text-ink">
+                Los gramos pasan a kilos y los mililitros a litros al llegar a 1.000. Lo que va en
+                litros nunca se pasa a peso. Las cucharadas y las tazas, si quedan muchas, dicen al
+                lado cuánto son.
+              </p>
+            </Tile>
+          </section>
         </div>
-        {scaled.length === 0 ? (
-          <EmptyState title="Esta receta no tiene líneas para escalar." />
-        ) : (
-          <ul aria-label="Cantidades para este lote" className="flex flex-col divide-y divide-line">
-            {scaled.map((l) => (
-              <Line key={l.order} line={l} />
-            ))}
-          </ul>
-        )}
-      </Card>
-      {manual.length > 0 ? (
-        <Card className="flex flex-col gap-4">
-          <CardTitle>Para ajustar a mano</CardTitle>
-          <CardDescription>Estas líneas no se escalan: quedan como en la receta.</CardDescription>
-          <ul aria-label="Líneas que no se escalan" className="flex flex-col divide-y divide-line">
-            {manual.map((l) => (
-              <Line key={l.order} line={l} />
-            ))}
-          </ul>
-        </Card>
-      ) : null}
-      <div className="grid gap-4 sm:grid-cols-3 print:hidden">
-        <Kpi label="Multiplicás por" value={`× ${formatQuantity(data.factor)}`} />
-        <Kpi label="Lote" value={lot} detail={lotDetail} />
-        {cost && cost !== "failed" && place ? (
-          <Kpi
-            label={`Costo proyectado en ${place.name}`}
-            value={cost.total === null ? "Sin costo" : formatMoney(cost.total)}
-            detail={cost.gross === null ? undefined : `Con IVA: ${formatMoney(cost.gross)}`}
-            status={RELIABILITY[cost.reliability].status}
-            statusLabel={RELIABILITY[cost.reliability].label}
-          />
-        ) : null}
-      </div>
-      {data.steps.length > 0 ? (
-        <Card className="flex flex-col gap-4 print:break-inside-avoid">
-          <CardTitle>Equipo que se usa</CardTitle>
-          <ul aria-label="Equipo" className="flex flex-col divide-y divide-line">
-            {data.steps.map((s) => (
-              <li key={s.number} className="flex flex-col gap-1 py-3">
-                <span className="text-base font-medium text-ink">
-                  Paso {s.number}: {s.equipment}
-                </span>
-                <span className="text-base text-ink tabular-nums">
-                  {s.capacity === null
-                    ? "Sin capacidad cargada: no se puede avisar si hacen falta más tandas."
-                    : s.batches === null
-                      ? `Entran ${amount(s.capacity, s.capacityUnit)}. No se pueden calcular las tandas: revisá el rendimiento de la receta.`
-                      : `Entran ${amount(s.capacity, s.capacityUnit)} · ${s.batches === 1 ? "1 tanda" : `${s.batches} tandas`}`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
+      </PaperPages>
     </>
-  );
-}
-
-function Line({ line }: { line: ScaledRecipe["lines"][number] }) {
-  return (
-    <li className="flex flex-wrap items-baseline justify-between gap-x-4 py-3 print:break-inside-avoid">
-      <span className="text-xl font-medium text-ink">{line.item}</span>
-      <span className="flex shrink-0 flex-col items-end">
-        <span className="text-xl font-semibold whitespace-nowrap text-ink tabular-nums">
-          {amount(line.scaled, line.unit)}
-        </span>
-        <span className="text-sm text-ink-muted tabular-nums">
-          Receta: {amount(line.quantity, line.unit)}
-        </span>
-      </span>
-    </li>
   );
 }
