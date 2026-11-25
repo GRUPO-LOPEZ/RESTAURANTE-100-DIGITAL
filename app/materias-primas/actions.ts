@@ -14,9 +14,10 @@ import {
   isChecked,
   schemas,
 } from "@/lib/forms/schemas";
-import { parseAmount } from "@/lib/money";
+import { parseAmount, parseMoney } from "@/lib/money";
 import { productChanges } from "@/lib/purchase-product";
 import { PHOTO_EXTENSIONS, checkPhoto } from "@/lib/photo-file";
+import type { PricePreview } from "@/lib/price-proposal";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del catálogo. Cada una llama a una función de la base que valida catalog.manage, pide
@@ -112,7 +113,8 @@ export async function createProductAction(
   const supabase = await createClient();
   const { error } = await supabase.schema("catalog").rpc("create_purchase_product", {
     p_ingredient_id: id.data,
-    p_code: fields.data.code,
+    // Sin código: lo arma la base (ADR-0067). El tipo generado no refleja que acepta nulo.
+    p_code: null as unknown as string,
     p_description: fields.data.description,
     p_package_unit: fields.data.package_unit,
     p_units_per_package: Number(fields.data.units_per_package),
@@ -328,6 +330,69 @@ export async function proposeWasteAction(
 const PLACE =
   /^(group|brand|restaurant):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 
+// Cómo quedaría el precio antes de proponerlo (ADR-0067): la base hace la misma cuenta y los mismos controles que al
+// proponer, sin guardar nada. Los mensajes de sus controles ya vienen en español.
+const previewSchema = z.object({
+  net_unit_cost: z.number(),
+  gross_unit_cost: z.number(),
+  base_unit: z.string(),
+  variation: z.number().nullable(),
+  variation_today: z.number().nullable(),
+  variation_lookback: z.number().nullable(),
+  lookback_days: z.number(),
+  first: z.boolean(),
+  direction: z.boolean(),
+});
+
+export async function previewPriceAction(
+  values: Record<string, string>,
+): Promise<{ preview?: PricePreview; message?: string }> {
+  // Los mismos campos que al proponer; el motivo todavía puede faltar. La pantalla ya los controló.
+  const fields = schemas.priceProposal.safeParse({ ...values, reason: "Vista previa" });
+  if (!fields.success) return { message: "Revisá los datos." };
+  const v = fields.data;
+  const product = uuid.safeParse(v.product_id);
+  const place = PLACE.exec(v.place);
+  const supplier = v.supplier_id ? uuid.safeParse(v.supplier_id) : null;
+  if (!product.success || !place || (supplier && !supplier.success))
+    return { message: "Revisá los datos." };
+  const [, scope, placeId] = place;
+  const invoice = v.document_type === "invoice";
+  const supabase = await createClient();
+  const { data, error } = await supabase.schema("costing").rpc("preview_price", {
+    p_purchase_product_id: product.data,
+    p_scope_type: scope as string,
+    // La función acepta lugares vacíos (según el alcance); el tipo generado no lo refleja.
+    p_brand_id: (scope === "brand" ? placeId : null) as string,
+    p_restaurant_id: (scope === "restaurant" ? placeId : null) as string,
+    p_valid_from: v.valid_from,
+    p_package_price: parseMoney(v.package_price) ?? 0,
+    p_document_type: v.document_type,
+    p_vat_rate: (invoice ? Number(v.vat_rate) : null) as number,
+    p_price_includes_vat: invoice ? isChecked(v.price_includes_vat) : true,
+    p_discount_amount: parseMoney(v.discount_amount || "0") ?? 0,
+    p_supplier_id: (supplier?.data ?? null) as string,
+    p_source: v.source,
+  });
+  if (error) return { message: toActionState(null, error).message };
+  const row = previewSchema.safeParse(data);
+  if (!row.success) return { message: "No pudimos calcular cómo queda." };
+  const r = row.data;
+  return {
+    preview: {
+      netUnitCost: r.net_unit_cost,
+      grossUnitCost: r.gross_unit_cost,
+      baseUnit: r.base_unit,
+      variation: r.variation,
+      variationToday: r.variation_today,
+      variationLookback: r.variation_lookback,
+      lookbackDays: r.lookback_days,
+      first: r.first,
+      direction: r.direction,
+    },
+  };
+}
+
 export async function proposePriceAction(
   _prev: ActionState,
   formData: FormData,
@@ -353,11 +418,11 @@ export async function proposePriceAction(
     p_brand_id: (scope === "brand" ? placeId : null) as string,
     p_restaurant_id: (scope === "restaurant" ? placeId : null) as string,
     p_valid_from: fields.data.valid_from,
-    p_package_price: decimal(fields.data.package_price),
+    p_package_price: parseMoney(fields.data.package_price) ?? 0,
     p_document_type: fields.data.document_type,
     p_vat_rate: (invoice ? Number(fields.data.vat_rate) : null) as number,
     p_price_includes_vat: invoice ? isChecked(fields.data.price_includes_vat) : true,
-    p_discount_amount: fields.data.discount_amount ? decimal(fields.data.discount_amount) : 0,
+    p_discount_amount: parseMoney(fields.data.discount_amount || "0") ?? 0,
     p_supplier_id: (supplier?.data ?? null) as string,
     p_source: fields.data.source,
     p_notes: fields.data.notes ?? "",

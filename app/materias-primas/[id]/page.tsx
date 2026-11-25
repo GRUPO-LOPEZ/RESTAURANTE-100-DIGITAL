@@ -13,6 +13,8 @@ import {
 } from "@/app/materias-primas/actions";
 import { ActionForm } from "@/components/action-form";
 import { ActionModal, ProposalModal } from "@/components/action-modal";
+import { ChoiceField } from "@/components/choice-field";
+import { MoreData } from "@/components/more-data";
 import { AppShell, Loading } from "@/components/app-shell";
 import { BackLink } from "@/components/back-link";
 import { FocusTarget } from "@/components/focus-target";
@@ -29,7 +31,7 @@ import {
   ThawingToggle,
 } from "@/components/ingredient-sheet/sheet-editor";
 import { Badge } from "@/components/ui/badge";
-import { FormCheckbox, FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
+import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
 import { InfoTip } from "@/components/ui/info-tip";
 import { ToggleField } from "@/components/ui/toggle-field";
 import { Metric } from "@/components/ui/metric";
@@ -788,28 +790,19 @@ function ProductEdit({
           maxLength={200}
           defaultValue={original.description}
         />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormSelect
-            id={`pe-${key}-supplier_id`}
-            label="Proveedor habitual"
-            name="supplier_id"
-            defaultValue={original.supplier_id}
-          >
-            <option value="">Sin proveedor fijo</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </FormSelect>
-          <FormInput
-            id={`pe-${key}-brand_name`}
-            label="Marca"
-            name="brand_name"
-            maxLength={80}
-            defaultValue={original.brand_name}
-          />
-        </div>
+        <FormSelect
+          id={`pe-${key}-supplier_id`}
+          label="Proveedor habitual"
+          name="supplier_id"
+          defaultValue={original.supplier_id}
+        >
+          <option value="">Sin proveedor fijo</option>
+          {suppliers.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </FormSelect>
         <fieldset
           className="flex flex-col gap-4"
           aria-describedby={priced ? `pe-${key}-envase-fijo` : undefined}
@@ -866,13 +859,28 @@ function ProductEdit({
             <UnitOptions units={units.filter((u) => u.dimension !== "package")} />
           </FormSelect>
         </fieldset>
-        <FormTextarea
-          id={`pe-${key}-notes`}
-          label="Observaciones"
-          name="notes"
-          maxLength={1000}
-          defaultValue={original.notes}
-        />
+        <MoreData
+          names={["brand_name", "notes"]}
+          summary={[
+            original.brand_name || "sin marca",
+            original.notes ? "con observaciones" : "sin observaciones",
+          ].join(" · ")}
+        >
+          <FormInput
+            id={`pe-${key}-brand_name`}
+            label="Marca"
+            name="brand_name"
+            maxLength={80}
+            defaultValue={original.brand_name}
+          />
+          <FormTextarea
+            id={`pe-${key}-notes`}
+            label="Observaciones"
+            name="notes"
+            maxLength={1000}
+            defaultValue={original.notes}
+          />
+        </MoreData>
         <ToggleField
           id={`pe-${key}-activo`}
           name="is_active"
@@ -1030,8 +1038,8 @@ function PurchaseCard({
               label="Proponer precio"
               icon="none"
               size="sm"
-              title="Proponer precio"
-              description="Lo aprueba el Controller; si cambia mucho, también Dirección General."
+              title={`Proponer precio · ${ingredient.name}`}
+              side
             >
               <IngredientPrices
                 part="propose"
@@ -1404,11 +1412,10 @@ function CreateProduct({
       size="sm"
       accessibleName="Agregar producto de compra"
       title="Agregar producto de compra"
-      description="Qué trae el envase, como lo vende el proveedor."
+      description="Qué trae el envase, como lo vende el proveedor. El código se arma solo."
     >
       <ActionForm action={createProductAction} schema="product" submitLabel="Agregar producto">
         <input type="hidden" name="ingredientId" value={ingredient.id} />
-        <FormInput id="mp-code" label="Código" name="code" required maxLength={30} />
         <FormInput
           id="mp-description"
           label="Descripción"
@@ -1473,7 +1480,9 @@ function CreateProduct({
             </option>
           ))}
         </FormSelect>
-        <FormInput id="mp-brand_name" label="Marca" name="brand_name" maxLength={80} />
+        <MoreData names={["brand_name"]} summary="Marca">
+          <FormInput id="mp-brand_name" label="Marca" name="brand_name" maxLength={80} />
+        </MoreData>
         <Reason id="mp-motivo-producto" />
       </ActionForm>
     </ActionModal>
@@ -1801,13 +1810,16 @@ function WasteForm({
         grossCost={netCost?.gross ?? null}
         per={netCost?.per ?? ""}
       />
-      <FormCheckbox
+      <ToggleField
         id="mp-merma-sin"
         name="declared_no_loss"
-        label="No tiene merma"
+        label="Declaro que no tiene merma"
         hint="Obligatorio para cargar 0 %: el sistema nunca supone que no hay merma."
+        defaultValue={false}
       />
-      <FormTextarea id="mp-merma-metodo" label="Cómo se midió" name="method" maxLength={500} />
+      <MoreData names={["method"]} summary="Cómo se midió">
+        <FormTextarea id="mp-merma-metodo" label="Cómo se midió" name="method" maxLength={500} />
+      </MoreData>
       <Reason id="mp-motivo-merma" />
     </ActionForm>
   );
@@ -1823,22 +1835,12 @@ function YieldProposalForm({
   return (
     <ActionForm action={proposeYieldAction} schema="yieldProposal" submitLabel="Proponer estándar">
       <input type="hidden" name="ingredientId" value={ingredient.id} />
-      <FormSelect id="mp-est-proceso" label="Proceso" name="process_id" required defaultValue="">
-        <option value="" disabled>
-          Elegí el proceso
-        </option>
-        {processes.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </FormSelect>
-      <FormInput
-        id="mp-est-corte"
-        label="Corte o presentación"
-        hint="Solo si cambia el rendimiento. Por ejemplo, «en cubos»."
-        name="cut"
-        maxLength={80}
+      <ChoiceField
+        id="mp-est-proceso"
+        name="process_id"
+        label="Proceso"
+        options={processes.map((p) => ({ value: p.id, label: p.name }))}
+        placeholder="Elegí el proceso"
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput
@@ -1859,13 +1861,23 @@ function YieldProposalForm({
           defaultValue="1"
         />
       </div>
-      <FormTextarea id="mp-est-metodo" label="Cómo se midió" name="method" maxLength={500} />
-      <FormCheckbox
+      <ToggleField
         id="mp-est-sin-merma"
         name="declared_no_loss"
-        label="No tiene merma"
+        label="Declaro que no tiene merma"
         hint="Obligatorio si la limpieza es 100 % y el factor 1: sin esta marca, el sistema nunca supone que no hay merma."
+        defaultValue={false}
       />
+      <MoreData names={["cut", "method"]} summary="Corte y cómo se midió">
+        <FormInput
+          id="mp-est-corte"
+          label="Corte o presentación"
+          hint="Solo si cambia el rendimiento. Por ejemplo, «en cubos»."
+          name="cut"
+          maxLength={80}
+        />
+        <FormTextarea id="mp-est-metodo" label="Cómo se midió" name="method" maxLength={500} />
+      </MoreData>
       <Reason id="mp-motivo-estandar" />
     </ActionForm>
   );
@@ -1886,16 +1898,13 @@ function YieldTestForm({
   return (
     <ActionForm action={recordYieldTestAction} schema="yieldTest" submitLabel="Registrar ensayo">
       <input type="hidden" name="ingredientId" value={ingredient.id} />
-      <FormSelect id="mp-ren-proceso" label="Proceso" name="process_id" required defaultValue="">
-        <option value="" disabled>
-          Elegí el proceso
-        </option>
-        {processes.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </FormSelect>
+      <ChoiceField
+        id="mp-ren-proceso"
+        name="process_id"
+        label="Proceso"
+        options={processes.map((p) => ({ value: p.id, label: p.name }))}
+        placeholder="Elegí el proceso"
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         <FormSelect
           id="mp-ren-local"
@@ -1923,13 +1932,6 @@ function YieldTestForm({
           defaultValue={day}
         />
       </div>
-      <FormInput
-        id="mp-ren-corte"
-        label="Corte o presentación"
-        hint="Solo si el estándar es de un corte. Por ejemplo, «en cubos»."
-        name="cut"
-        maxLength={80}
-      />
       <p className="text-sm text-ink-muted">
         Pesos en gramos, sumando todas las muestras. Cargá el par que mediste: bruto y limpio, antes
         y después de cocinar, o los dos.
@@ -1960,23 +1962,35 @@ function YieldTestForm({
           inputMode="decimal"
         />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <MoreData
+        names={["cut", "samples", "responsible"]}
+        summary="Corte, muestras y quién lo midió"
+      >
         <FormInput
-          id="mp-ren-muestras"
-          label="Muestras"
-          hint="Cuántas piezas o tandas pesaste en total."
-          name="samples"
-          inputMode="numeric"
-          required
-          defaultValue="1"
+          id="mp-ren-corte"
+          label="Corte o presentación"
+          hint="Solo si el estándar es de un corte. Por ejemplo, «en cubos»."
+          name="cut"
+          maxLength={80}
         />
-        <FormInput
-          id="mp-ren-responsable"
-          label="Quién lo midió"
-          name="responsible"
-          maxLength={120}
-        />
-      </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormInput
+            id="mp-ren-muestras"
+            label="Muestras"
+            hint="Cuántas piezas o tandas pesaste en total."
+            name="samples"
+            inputMode="numeric"
+            required
+            defaultValue="1"
+          />
+          <FormInput
+            id="mp-ren-responsable"
+            label="Quién lo midió"
+            name="responsible"
+            maxLength={120}
+          />
+        </div>
+      </MoreData>
       <Reason id="mp-motivo-ensayo" />
     </ActionForm>
   );

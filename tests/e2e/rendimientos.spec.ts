@@ -4,7 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { login, logout, notice, openSection, sheetRows } from "./helpers";
+import { login, logout, notice, openSection, sheetRows, pickChoice } from "./helpers";
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page })
@@ -50,7 +50,7 @@ test("el Jefe de Cocina registra un ensayo y el estándar no cambia", async ({ p
   }
 
   await openPanel(page, "Registrar un ensayo");
-  await page.locator("#mp-ren-proceso").selectOption({ label: "Pelado" });
+  await pickChoice(page.getByRole("dialog"), "Proceso", "Pelado");
   await page.getByLabel("Peso bruto (g)").fill("1000");
   await page.getByLabel("Peso limpio (g)").fill("700");
   await page.locator("#mp-motivo-ensayo").fill("Ensayo de prueba automática");
@@ -70,7 +70,9 @@ test("el Chef propone un estándar y el Chef del grupo lo aprueba", async ({ pag
   await openIngredient(page, "Zanahoria");
   const panel = await openPanel(page, "Proponer merma o rendimiento");
   await panel.getByText("Rendimiento por proceso", { exact: true }).click();
-  await page.locator("#mp-est-proceso").selectOption({ label: "Pelado" });
+  await pickChoice(panel, "Proceso", "Pelado");
+  // El panel tiene también el de la merma, oculto.
+  await panel.getByText("Más datos", { exact: true }).filter({ visible: true }).click();
   await page.locator("#mp-est-corte").fill(cut);
   await page.locator("#mp-est-limpieza").fill("85");
   await page.locator("#mp-motivo-estandar").fill("Propuesta de prueba automática");
@@ -120,7 +122,7 @@ test("un ensayo desviado avisa al Chef, que lo ve marcado en la ficha", async ({
   await login(page, "jefecocina@ejemplo.test");
   await openIngredient(page, "Tomate perita");
   await openPanel(page, "Registrar un ensayo");
-  await page.locator("#mp-ren-proceso").selectOption({ label: "Pelado" });
+  await pickChoice(page.getByRole("dialog"), "Proceso", "Pelado");
   // 500 g limpios de 1000: 50 % contra el 80 % del estándar, un desvío de −37,5 %.
   await page.getByLabel("Peso bruto (g)").fill("1000");
   await page.getByLabel("Peso limpio (g)").fill("500");

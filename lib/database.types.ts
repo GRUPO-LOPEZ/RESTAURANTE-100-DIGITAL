@@ -1780,6 +1780,7 @@ export type Database = {
         Args: { p_group_id: string; p_prefix: string; p_width: number };
         Returns: string;
       };
+      next_product_code: { Args: { p_ingredient_id: string }; Returns: string };
       notify_yield_deviation: { Args: { p_test_id: string }; Returns: undefined };
       peek_code: {
         Args: { p_group_id: string; p_prefix: string; p_width: number };
@@ -3946,6 +3947,36 @@ export type Database = {
           total: number;
         }[];
       };
+      check_price_dates: {
+        Args: {
+          p_brand_id: string;
+          p_product_id: string;
+          p_restaurant_id: string;
+          p_scope: Database["core"]["Enums"]["scope_type"];
+          p_valid_from: string;
+        };
+        Returns: undefined;
+      };
+      check_price_proposal: {
+        Args: {
+          p_brand_id: string;
+          p_discount_amount: number;
+          p_document_type: string;
+          p_notes: string;
+          p_package_price: number;
+          p_product: Omit<
+            Database["catalog"]["Tables"]["purchase_products"]["Row"],
+            Database["catalog"]["Tables"]["purchase_products"]["ComputedFields"]
+          >;
+          p_restaurant_id: string;
+          p_scope: Database["core"]["Enums"]["scope_type"];
+          p_source: string;
+          p_supplier_id: string;
+          p_valid_from: string;
+          p_vat_rate: number;
+        };
+        Returns: undefined;
+      };
       check_reference: {
         Args: {
           p_req: Omit<
@@ -4145,6 +4176,23 @@ export type Database = {
           net_amount: number;
         }[];
       };
+      preview_price: {
+        Args: {
+          p_brand_id: string;
+          p_discount_amount: number;
+          p_document_type: string;
+          p_package_price: number;
+          p_price_includes_vat: boolean;
+          p_purchase_product_id: string;
+          p_restaurant_id: string;
+          p_scope_type: string;
+          p_source: string;
+          p_supplier_id: string;
+          p_valid_from: string;
+          p_vat_rate: number;
+        };
+        Returns: Json;
+      };
       preview_sheet_lines: {
         Args: { p_lines: Json; p_restaurant_id: string; p_version_id: string };
         Returns: {
@@ -4183,6 +4231,39 @@ export type Database = {
           label: string;
           price_record_id: string;
           supplier_name: string;
+        }[];
+      };
+      price_proposal_amounts: {
+        Args: {
+          p_brand_id: string;
+          p_discount_amount: number;
+          p_document: Database["costing"]["Enums"]["price_document"];
+          p_package_price: number;
+          p_price_includes_vat: boolean;
+          p_product: Omit<
+            Database["catalog"]["Tables"]["purchase_products"]["Row"],
+            Database["catalog"]["Tables"]["purchase_products"]["ComputedFields"]
+          >;
+          p_restaurant_id: string;
+          p_scope: Database["core"]["Enums"]["scope_type"];
+          p_valid_from: string;
+          p_vat_rate: number;
+        };
+        Returns: {
+          base_quantity: number;
+          gross_package_price: number;
+          gross_unit_cost: number;
+          lookback_days: number;
+          lookback_id: string;
+          net_package_price: number;
+          net_unit_cost: number;
+          reference_as_of: string;
+          reference_gross: number;
+          reference_id: string;
+          reference_net: number;
+          variation: number;
+          variation_lookback: number;
+          variation_today: number;
         }[];
       };
       price_rows: {

@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { chooseLocal, login, logout, notice, openSection } from "./helpers";
+import { chooseLocal, login, logout, notice, openSection, pickChoice } from "./helpers";
 
 // El servidor compila cada pantalla la primera vez: en celular a veces pasa de 30 s.
 test.describe.configure({ timeout: 90_000 });
@@ -212,8 +212,8 @@ test("un precio nuevo muestra a qué recetas les pegó", async ({ page }, testIn
     }
     await expect(panel).toBeVisible({ timeout: 2_000 });
   }).toPass({ timeout: 30_000 });
-  await panel.locator("#precio-producto").selectOption({ index: 1 });
-  await panel.locator("#precio-lugar").selectOption({ label: "Todo el grupo (Grupo Demo)" });
+  await panel.getByRole("group", { name: "Qué producto" }).locator("label").first().click();
+  await pickChoice(panel, "Para quién vale", "Todo el grupo (Grupo Demo)");
   await panel.locator("#precio-envase").fill(price);
   await panel.locator("#precio-motivo").fill("Precio de prueba automática");
   await panel.getByRole("button", { name: "Proponer precio" }).click();

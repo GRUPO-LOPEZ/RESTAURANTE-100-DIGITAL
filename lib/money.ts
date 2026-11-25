@@ -24,3 +24,8 @@ export function parseAmount(text: string): number | null {
   if (/^\d+([.,]\d+)?$/.test(value)) return Number(value.replace(",", "."));
   return null;
 }
+
+// Un importe escrito por una persona: «26.000», «$ 26.000,50», «1500,5». Nulo si no es un importe.
+export function parseMoney(text: string): number | null {
+  return parseAmount(text.replace(/^\s*\$\s*/, ""));
+}

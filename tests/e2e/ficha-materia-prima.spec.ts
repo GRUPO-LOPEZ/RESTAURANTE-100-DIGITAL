@@ -132,7 +132,8 @@ test.describe("en la computadora", () => {
     // Agregar un producto de compra: un alta con su propio motivo, en un panel.
     await page.getByRole("button", { name: "Agregar producto de compra" }).click();
     const product = page.getByRole("dialog", { name: "Agregar producto de compra" });
-    await product.getByLabel("Código", { exact: true }).fill(`FP-${run}`);
+    // El código se arma solo (ADR-0067).
+    await expect(product.getByLabel("Código")).toHaveCount(0);
     await product.getByLabel("Descripción", { exact: true }).fill(`${name}, bolsa de 5 kg`);
     await product.getByLabel("Viene en").selectOption("bag");
     await product.getByLabel("Contenido de cada unidad").fill("5");
@@ -187,7 +188,6 @@ test.describe("en la computadora", () => {
     for (let i = 2; i <= 5; i++) {
       await page.getByRole("button", { name: "Agregar producto de compra" }).click();
       const more = page.getByRole("dialog", { name: "Agregar producto de compra" });
-      await more.getByLabel("Código", { exact: true }).fill(`FP-${run}-${i}`);
       await more.getByLabel("Descripción", { exact: true }).fill(`${name}, caja ${i}`);
       await more.getByLabel("Viene en").selectOption("box");
       await more.getByLabel("Contenido de cada unidad").fill(String(i));

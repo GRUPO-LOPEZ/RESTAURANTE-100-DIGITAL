@@ -107,6 +107,13 @@ test("la Chef propone una merma con vista previa y queda en revisión", async ({
   await page.locator("#mp-motivo-merma").fill("Pesado en la cocina (prueba)");
   await page.getByRole("button", { name: "Proponer mermas" }).click();
   await expect(page.getByText("Con 0 % de merma, marcá que no tiene merma.")).toBeVisible();
+  // El error está en el toggle: recibe el foco, lo describe y se va al corregirlo.
+  const noLoss = page.locator("#mp-merma-sin");
+  await expect(noLoss).toBeFocused();
+  await expect(noLoss).toHaveAttribute("aria-describedby", /mp-merma-sin-error/);
+  await noLoss.click();
+  await expect(page.getByText("Con 0 % de merma, marcá que no tiene merma.")).toHaveCount(0);
+  await noLoss.click();
   await page.getByLabel("Merma de limpieza (%)").fill("12,5");
   await page.getByRole("button", { name: "Proponer mermas" }).click();
   await expect(notice(page)).toContainText("Queda pendiente: la tiene que aprobar un Chef");
