@@ -194,7 +194,7 @@ function BigAmount({ line }: { line: Line }) {
   const also = spoonEquivalent(amount);
   return (
     <span className="inline-flex flex-wrap items-baseline justify-end gap-x-1 whitespace-nowrap tabular-nums">
-      <span className="text-xl font-semibold">{formatQuantity(amount.value)}</span>
+      <span className="text-xl font-semibold">{formatQuantity(amount.value)}</span>{" "}
       <span className="text-sm">{unitText(amount.value, amount.unit)}</span>
       {also ? <span className="text-sm">· {also}</span> : null}
     </span>

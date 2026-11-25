@@ -2578,7 +2578,7 @@ function MeasureCells({
 function Quantity({ amount }: { amount: Amount }) {
   return (
     <span className="flex flex-wrap items-baseline justify-end gap-x-1">
-      <span className="text-sm font-semibold">{formatQuantity(amount.value)}</span>
+      <span className="text-sm font-semibold">{formatQuantity(amount.value)}</span>{" "}
       <span>{unitText(amount.value, amount.unit)}</span>
     </span>
   );
