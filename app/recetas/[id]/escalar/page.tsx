@@ -4,6 +4,7 @@ import { Suspense, cache } from "react";
 import { AppShell, Loading } from "@/components/app-shell";
 import { BackLink } from "@/components/back-link";
 import { PrintButton } from "@/components/print-button";
+import { PaperPages } from "@/components/recipe-cards/paper-pages";
 import { ScaleForm, type ScaleUnit } from "@/components/recipe-cards/scale-form";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
@@ -260,127 +261,137 @@ async function Result({
           No pudimos calcular el costo proyectado. Las cantidades están bien.
         </Notice>
       ) : null}
-      <div className="hidden flex-col gap-1 border-b border-ink pb-2 print:flex">
-        <span className="text-2xl font-semibold text-ink">{name}</span>
-        <span className="text-base text-ink tabular-nums">
-          Para {recipesText(data.factor)}: <Lot data={data} mode="recipes" />
-        </span>
-        <span className="text-sm text-ink tabular-nums">
-          {card
-            ? `${versionLine({
-                number: card.versionNumber,
-                code: card.code,
-                publishedOn: formatDate(card.publishedAt),
-                approvedBy: card.approvedBy,
-              })} · `
-            : ""}
-          calculado el {formatDate(new Date().toISOString())}
-        </span>
-      </div>
-      {/* Por debajo de 1.280 px, una columna: la tabla con su alto y la página con scroll. */}
-      <div className="grid gap-4 xl:min-h-64 xl:flex-[1_1_0px] xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] print:block print:space-y-4">
-        <div className="flex min-w-0 flex-col desk:h-96 xl:h-auto xl:min-h-0 print:h-auto">
-          <DataTable
-            caption="Cantidades para este lote"
-            columns={columns}
-            rows={scaled}
-            rowKey={(l) => String(l.order)}
-            scroll
-            empty={<EmptyState title="Esta receta no tiene líneas para multiplicar." />}
-          />
-        </div>
-        <section
-          aria-label="Costo y equipos"
-          className="relative flex min-w-0 flex-col gap-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary xl:min-h-0 xl:overflow-y-auto print:overflow-visible"
-        >
-          <ScrollFocus />
-          {menus.costs && cost !== "failed" ? (
-            <Metric
-              label={place ? `Costo proyectado en ${place.name}` : "Costo proyectado"}
-              value={cost && cost.total !== null ? formatMoney(cost.total) : null}
-              missingReason={
-                !place
-                  ? "Elegí un local arriba para ver el costo."
-                  : cost
-                    ? "Falta el costo de algún ingrediente."
-                    : "No ves los costos de ese local."
-              }
-              emptyLabel="Sin datos"
-              comparison={
-                cost && cost.gross !== null ? `Con IVA: ${formatMoney(cost.gross)}` : undefined
-              }
-              status={cost ? RELIABILITY[cost.reliability].status : "none"}
-              statusLabel={cost ? RELIABILITY[cost.reliability].label : "Sin datos"}
-              compact
-              className="desk:shrink-0 print:hidden"
+      <PaperPages
+        header={
+          <>
+            <span className="text-2xl font-semibold text-ink">{name}</span>
+            <span className="text-base text-ink tabular-nums">
+              Para {recipesText(data.factor)}: <Lot data={data} mode="recipes" />
+            </span>
+            <span className="text-sm text-ink tabular-nums">
+              {card
+                ? `${versionLine({
+                    number: card.versionNumber,
+                    code: card.code,
+                    publishedOn: formatDate(card.publishedAt),
+                    approvedBy: card.approvedBy,
+                  })} · `
+                : ""}
+              calculado el {formatDate(new Date().toISOString())}
+            </span>
+          </>
+        }
+      >
+        {/* Por debajo de 1.280 px, una columna: la tabla con su alto y la página con scroll. */}
+        <div className="grid gap-4 xl:min-h-64 xl:flex-[1_1_0px] xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] print:block print:space-y-4">
+          <div className="flex min-w-0 flex-col desk:h-96 xl:h-auto xl:min-h-0 print:h-auto">
+            <DataTable
+              caption="Cantidades para este lote"
+              columns={columns}
+              rows={scaled}
+              rowKey={(l) => String(l.order)}
+              scroll
+              empty={<EmptyState title="Esta receta no tiene líneas para multiplicar." />}
             />
-          ) : null}
-          {manual.length > 0 ? (
-            <Tile title="Para ajustar a mano" className="desk:shrink-0 print:border-0 print:p-0">
-              <p className="text-sm text-ink-muted">No se multiplican: quedan como en la receta.</p>
-              <ul
-                aria-label="Líneas que no se multiplican"
-                className="flex flex-col divide-y divide-line"
-              >
-                {manual.map((l) => (
-                  <li
-                    key={l.order}
-                    className="flex flex-wrap items-baseline justify-between gap-x-4 py-2 print:break-inside-avoid"
-                  >
-                    <span className="text-base text-ink">{l.item}</span>
-                    <span className="text-right text-base font-semibold text-ink tabular-nums">
-                      {amountText(scaledAmount(l))}
-                      {measureOf(l) ? (
-                        <span className="block text-sm font-normal">{measureOf(l)}</span>
-                      ) : null}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Tile>
-          ) : null}
-          {data.steps.length > 0 ? (
-            <Tile title="Equipos" className="desk:shrink-0 print:border-0 print:p-0">
-              <ul aria-label="Equipo" className="flex flex-col divide-y divide-line">
-                {data.steps.map((s) => (
-                  <li
-                    key={s.number}
-                    className="flex flex-wrap items-center justify-between gap-2 py-2 print:break-inside-avoid"
-                  >
-                    <span className="min-w-0 text-base text-ink">
-                      Paso {s.number}: {s.equipment}
-                      <span className="block text-sm text-ink-muted tabular-nums">
-                        {s.capacity === null
-                          ? "Sin capacidad cargada: no se puede avisar si hacen falta más tandas."
-                          : s.batches === null
-                            ? `Entran ${amountText({ value: s.capacity, unit: s.capacityUnit ?? "" })}. No se pueden calcular las tandas: revisá el rendimiento de la receta.`
-                            : `Entran ${amountText({ value: s.capacity, unit: s.capacityUnit ?? "" })}`}
-                      </span>
-                    </span>
-                    {s.batches === null ? null : (
-                      <Badge status={s.batches > 1 ? "warn" : "ok"}>
-                        {s.batches === 1 ? "1 tanda" : `${s.batches} tandas`}
-                      </Badge>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {data.steps.some((s) => s.batches !== null && s.batches > 1) ? (
-                <p className="text-sm text-ink">
-                  Los tiempos no se multiplican: calculá cada tanda.
+          </div>
+          <section
+            aria-label="Costo y equipos"
+            className="relative flex min-w-0 flex-col gap-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary xl:min-h-0 xl:overflow-y-auto print:overflow-visible"
+          >
+            <ScrollFocus />
+            {menus.costs && cost !== "failed" ? (
+              <Metric
+                label={place ? `Costo proyectado en ${place.name}` : "Costo proyectado"}
+                value={cost && cost.total !== null ? formatMoney(cost.total) : null}
+                missingReason={
+                  !place
+                    ? "Elegí un local arriba para ver el costo."
+                    : cost
+                      ? "Falta el costo de algún ingrediente."
+                      : "No ves los costos de ese local."
+                }
+                emptyLabel="Sin datos"
+                comparison={
+                  cost && cost.gross !== null ? `Con IVA: ${formatMoney(cost.gross)}` : undefined
+                }
+                status={cost ? RELIABILITY[cost.reliability].status : "none"}
+                statusLabel={cost ? RELIABILITY[cost.reliability].label : "Sin datos"}
+                compact
+                className="desk:shrink-0 print:hidden"
+              />
+            ) : null}
+            {manual.length > 0 ? (
+              <Tile title="Para ajustar a mano" className="desk:shrink-0 print:border-0 print:p-0">
+                <p className="text-sm text-ink-muted">
+                  No se multiplican: quedan como en la receta.
                 </p>
-              ) : null}
+                <ul
+                  aria-label="Líneas que no se multiplican"
+                  className="flex flex-col divide-y divide-line"
+                >
+                  {manual.map((l) => (
+                    <li
+                      key={l.order}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 py-2 print:break-inside-avoid"
+                    >
+                      <span className="text-base text-ink">{l.item}</span>
+                      <span className="text-right text-base font-semibold text-ink tabular-nums">
+                        {amountText(scaledAmount(l))}
+                        {measureOf(l) ? (
+                          <span className="block text-sm font-normal">{measureOf(l)}</span>
+                        ) : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Tile>
+            ) : null}
+            {data.steps.length > 0 ? (
+              <Tile title="Equipos" className="desk:shrink-0 print:border-0 print:p-0">
+                <ul aria-label="Equipo" className="flex flex-col divide-y divide-line">
+                  {data.steps.map((s) => (
+                    <li
+                      key={s.number}
+                      className="flex flex-wrap items-center justify-between gap-2 py-2 print:break-inside-avoid"
+                    >
+                      <span className="min-w-0 text-base text-ink">
+                        Paso {s.number}: {s.equipment}
+                        <span className="block text-sm text-ink-muted tabular-nums">
+                          {s.capacity === null
+                            ? "Sin capacidad cargada: no se puede avisar si hacen falta más tandas."
+                            : s.batches === null
+                              ? `Entran ${amountText({ value: s.capacity, unit: s.capacityUnit ?? "" })}. No se pueden calcular las tandas: revisá el rendimiento de la receta.`
+                              : `Entran ${amountText({ value: s.capacity, unit: s.capacityUnit ?? "" })}`}
+                        </span>
+                      </span>
+                      {s.batches === null ? null : (
+                        <Badge status={s.batches > 1 ? "warn" : "ok"}>
+                          {s.batches === 1 ? "1 tanda" : `${s.batches} tandas`}
+                        </Badge>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {data.steps.some((s) => s.batches !== null && s.batches > 1) ? (
+                  <p className="text-sm text-ink">
+                    Los tiempos no se multiplican: calculá cada tanda.
+                  </p>
+                ) : null}
+              </Tile>
+            ) : null}
+            <Tile
+              title="Cada ingrediente sigue en su unidad"
+              className="desk:shrink-0 print:hidden"
+            >
+              <p className="text-sm text-ink">
+                Los gramos pasan a kilos y los mililitros a litros al llegar a 1.000. Lo que va en
+                litros nunca se pasa a peso. Las cucharadas y las tazas, si quedan muchas, dicen al
+                lado cuánto son.
+              </p>
             </Tile>
-          ) : null}
-          <Tile title="Cada ingrediente sigue en su unidad" className="desk:shrink-0 print:hidden">
-            <p className="text-sm text-ink">
-              Los gramos pasan a kilos y los mililitros a litros al llegar a 1.000. Lo que va en
-              litros nunca se pasa a peso. Las cucharadas y las tazas, si quedan muchas, dicen al
-              lado cuánto son.
-            </p>
-          </Tile>
-        </section>
-      </div>
+          </section>
+        </div>
+      </PaperPages>
     </>
   );
 }

@@ -45,14 +45,14 @@ export function cardVersionLine(card: KitchenCard): string {
   });
 }
 
-// El encabezado del papel: en la pantalla, el nombre y la versión están arriba.
+// El encabezado del papel, que se repite en cada hoja (PaperPages): en la pantalla, el nombre y la versión están arriba.
 export function PaperHeader({ card, label }: { card: KitchenCard; label: string }) {
   return (
-    <div className="hidden flex-col gap-1 border-b border-ink pb-2 print:flex">
+    <>
       <span className="text-sm text-ink">{label}</span>
       <span className="text-2xl font-semibold text-ink">{card.name}</span>
       <span className="text-sm text-ink tabular-nums">{cardVersionLine(card)}</span>
-    </div>
+    </>
   );
 }
 

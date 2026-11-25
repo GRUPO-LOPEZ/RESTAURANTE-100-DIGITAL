@@ -178,6 +178,19 @@ test.describe("en la computadora", () => {
       await page.emulateMedia({ media: "print" });
       await expect(page.getByText(/^Ficha técnica \d · /)).toBeVisible();
       await expect(page.getByText(VERSION).locator("visible=true")).toBeVisible();
+      // El nombre y la versión se repiten en todas las hojas: van en un encabezado que el navegador repite.
+      const repeated = await page
+        .getByText(VERSION)
+        .locator("visible=true")
+        .evaluate((el) => {
+          for (let e: Element | null = el; e; e = e.parentElement) {
+            const css = getComputedStyle(e);
+            if (css.display === "table-header-group")
+              return css.breakInside === "avoid" && /Salsa bolognesa/.test(e.textContent ?? "");
+          }
+          return false;
+        });
+      expect(repeated).toBe(true);
       await expect(page.getByRole("button", { name: "Imprimir esta ficha" })).toBeHidden();
       await expect(page.getByLabel("Local activo")).toBeHidden();
       // Nada queda cortado: ninguna tarjeta recorta su contenido.

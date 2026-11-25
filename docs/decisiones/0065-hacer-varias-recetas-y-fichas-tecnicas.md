@@ -18,6 +18,7 @@ La base ya multiplicaba cada línea en su unidad (`recipes.scale_version`). La p
 2. **`recipes.scale_version` suma el modo `recipes`**, que no pide porciones ni rendimiento. El total de «Hacer» en la planilla es lo que rinde, no la suma en gramos.
 3. **Cuatro fichas en `/recetas/[id]/fichas?ver=`**, de la versión vigente y sin importes. `/recetas/[id]/cocina` redirige (temporal, en `next.config.ts`: con Cache Components una página que solo redirige no se puede prearmar).
    - Se acomodan por el ancho, no por el aparato: desde 1.280 px, en columnas y sin scroll de página; por debajo, una columna; por debajo de 800, además, letra de 20 px y 44 px. Con un corte único en 800, una tablet o el zoom dejaban columnas de menos de 100 px. En el papel sale todo: una hoja A4 mide menos de 800 px, así que lo que hace falta va también con `print:`.
+   - El nombre y la versión se repiten en todas las hojas impresas, también en «Hacer varias recetas» (pedido de Joaco, 2026-11-25; `components/recipe-cards/paper-pages.tsx`).
    - La foto de la receta es el producto final; si no hay, el emplatado; si no, la primera.
 4. **«aprobó {nombre y apellido}» lo ve todo el que ve la ficha** (decisión de Joaco). La base manda solo el nombre: ni el id ni el correo. Si no lo hay (sin aprobador o cuenta sin nombre), se dice «sin el nombre de quien aprobó». El nombre es el de hoy: si la persona lo corrige, cambia en la ficha.
 5. **En la ficha de Servicio va grande la medida que da entera; si no da («0,42 taza»), el gramaje, con la medida abajo** (decisión de Joaco, 2026-11-25).

@@ -13,7 +13,7 @@ Tercera de las cuatro entregas de la **Tanda 2**. Detalle técnico en ADR-0065. 
 
 ## Las 4 fichas
 
-- **1 Completa** (para capacitar), **2 Servicio** (la medida práctica grande; si no da entera, el gramaje grande), **3 Foto** y **4 Procedimiento**. Cada una se imprime.
+- **1 Completa** (para capacitar), **2 Servicio** (la medida práctica grande; si no da entera, el gramaje grande), **3 Foto** y **4 Procedimiento**. Cada una se imprime, con el nombre y la versión en todas las hojas.
 - Todas dicen «Versión 2 · REC-PAS-012 · publicada el 20/11/26 · aprobó Ana Pérez».
 - Se acomodan al ancho: en el celular, una columna con letra grande.
 - **Reemplazan a la ficha de cocina.** Los enlaces guardados siguen andando.

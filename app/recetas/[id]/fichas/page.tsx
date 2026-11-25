@@ -6,6 +6,7 @@ import { Suspense, cache } from "react";
 import { AppShell, Loading } from "@/components/app-shell";
 import { BackLink } from "@/components/back-link";
 import { PrintButton } from "@/components/print-button";
+import { PaperPages } from "@/components/recipe-cards/paper-pages";
 import {
   CompleteCard,
   PaperHeader,
@@ -142,16 +143,20 @@ async function Cards({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 xl:min-h-0 xl:flex-[1_1_0px] print:block print:space-y-4">
-        <PaperHeader
-          card={card}
-          label={`Ficha técnica ${number + 1} · ${current.label}, ${current.purpose}`}
-        />
+      <PaperPages
+        className="flex flex-col gap-4 xl:min-h-0 xl:flex-[1_1_0px]"
+        header={
+          <PaperHeader
+            card={card}
+            label={`Ficha técnica ${number + 1} · ${current.label}, ${current.purpose}`}
+          />
+        }
+      >
         {view === "completa" ? <CompleteCard card={card} photos={photos} /> : null}
         {view === "servicio" ? <ServiceCard card={card} /> : null}
         {view === "foto" ? <PhotoCard photos={photos} /> : null}
         {view === "procedimiento" ? <StepsCard card={card} /> : null}
-      </div>
+      </PaperPages>
 
       <Button asChild variant="outline" className="desk:hidden print:hidden">
         <Link href={`/recetas/${id}/escalar`}>
