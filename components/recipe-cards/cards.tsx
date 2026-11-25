@@ -16,7 +16,13 @@ import {
   formatQuantity,
   versionLine,
 } from "@/lib/recipe-format";
-import { afterSteps, mainPhoto, recipeCardHref, type RecipeCardKey } from "@/lib/recipe-cards";
+import {
+  afterSteps,
+  mainPhoto,
+  recipeCardHref,
+  serviceAmount,
+  type RecipeCardKey,
+} from "@/lib/recipe-cards";
 import type { KitchenCard, PhotoSet, RecipePhoto } from "@/lib/recipes";
 import { amountText, spoonEquivalent } from "@/lib/scaling-units";
 import { cn } from "@/lib/utils";
@@ -294,7 +300,7 @@ function Note({ title, children }: { title: string; children: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// 2 · Servicio: la medida práctica, grande; el gramaje, chico abajo
+// 2 · Servicio: la medida práctica, grande, y el gramaje chico abajo; al revés si la medida no da entera
 // ---------------------------------------------------------------------------
 export function ServiceCard({ card }: { card: KitchenCard }) {
   const yields = yieldText(card);
@@ -317,10 +323,12 @@ export function ServiceCard({ card }: { card: KitchenCard }) {
           aria-label="Ingredientes"
         >
           {card.components.map((c) => {
-            const measure = measureText(c.measure_count, c.measure_name);
-            const amount = amountText(lineAmount(c));
-            // Sin medida práctica: la cantidad es lo grande, y las cucharadas y tazas dicen abajo cuánto son.
-            const small = measure ? amount : spoonEquivalent(lineAmount(c));
+            const { big, small } = serviceAmount({
+              count: c.measure_count,
+              measure: measureText(c.measure_count, c.measure_name),
+              amount: amountText(lineAmount(c)),
+              equivalent: spoonEquivalent(lineAmount(c)),
+            });
             return (
               <li
                 key={c.line}
@@ -328,7 +336,7 @@ export function ServiceCard({ card }: { card: KitchenCard }) {
               >
                 <IngredientName line={c} view="servicio" />
                 <span className="flex max-w-[60%] shrink-0 flex-col items-end text-right text-ink tabular-nums">
-                  <span className="text-2xl font-semibold print:text-xl">{measure ?? amount}</span>
+                  <span className="text-2xl font-semibold print:text-xl">{big}</span>
                   {small ? <span className="text-sm">{small}</span> : null}
                 </span>
               </li>

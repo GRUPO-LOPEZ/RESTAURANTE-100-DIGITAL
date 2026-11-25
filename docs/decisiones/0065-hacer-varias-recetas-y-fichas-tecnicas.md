@@ -20,7 +20,8 @@ La base ya multiplicaba cada línea en su unidad (`recipes.scale_version`). La p
    - Se acomodan por el ancho, no por el aparato: desde 1.280 px, en columnas y sin scroll de página; por debajo, una columna; por debajo de 800, además, letra de 20 px y 44 px. Con un corte único en 800, una tablet o el zoom dejaban columnas de menos de 100 px. En el papel sale todo: una hoja A4 mide menos de 800 px, así que lo que hace falta va también con `print:`.
    - La foto de la receta es el producto final; si no hay, el emplatado; si no, la primera.
 4. **«aprobó {nombre y apellido}» lo ve todo el que ve la ficha** (decisión de Joaco). La base manda solo el nombre: ni el id ni el correo. Si no lo hay (sin aprobador o cuenta sin nombre), se dice «sin el nombre de quien aprobó». El nombre es el de hoy: si la persona lo corrige, cambia en la ficha.
-5. **Punto crítico por paso** (decisión de Joaco). La columna existía; la ficha no la mandaba y guardar los pasos la borraba.
+5. **En la ficha de Servicio va grande la medida que da entera; si no da («0,42 taza»), el gramaje, con la medida abajo** (decisión de Joaco, 2026-11-25).
+6. **Punto crítico por paso** (decisión de Joaco). La columna existía; la ficha no la mandaba y guardar los pasos la borraba.
 
 ## Opciones descartadas
 
@@ -30,7 +31,6 @@ La base ya multiplicaba cada línea en su unidad (`recipes.scale_version`). La p
 
 ## Pendiente, anotado
 
-- **Para Soy:** en la ficha de Servicio, una medida que no da entera sale como la calcula el sistema («0,42 taza», con 100 ml debajo). Falta decidir si conviene otra cosa.
 - Una cantidad `NaN` se puede guardar por la API con el permiso de editar recetas (`NaN > 0` es verdadero). Ya estaba; va en una migración aparte.
 - La medida multiplicada no tiene tope (solo se muestra).
 - Guardar los pasos no conserva «workers» ni «sector» del paso, que la ficha no carga (ya estaba; hoy no hay ninguno).

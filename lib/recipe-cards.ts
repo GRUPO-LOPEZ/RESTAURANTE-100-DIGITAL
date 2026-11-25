@@ -31,6 +31,22 @@ export function mainPhoto<T extends { kind: MediaKind }>(photos: T[]): T | null 
   return photos[0] ?? null;
 }
 
+/**
+ * La ficha de Servicio: qué va en grande y qué en chico. La medida práctica, si da entera («2 cucharaditas»); si no
+ * («0,42 taza»), el gramaje, con la medida abajo. Sin medida, la cantidad y, si tiene, su equivalente.
+ */
+export function serviceAmount(line: {
+  count: number | null;
+  measure: string | null;
+  amount: string;
+  equivalent: string | null;
+}): { big: string; small: string | null } {
+  if (line.measure === null) return { big: line.amount, small: line.equivalent };
+  return Number.isInteger(line.count)
+    ? { big: line.measure, small: line.amount }
+    : { big: line.amount, small: line.measure };
+}
+
 /** «después del paso 1», «después de los pasos 1 y 3». */
 export function afterSteps(steps: number[]): string | null {
   if (steps.length === 0) return null;

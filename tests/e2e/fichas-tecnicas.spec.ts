@@ -105,7 +105,9 @@ test("la Cocinera ve las 4 fichas con su versión, sin importes", async ({ page,
   }
 });
 
-test("la medida práctica va grande en la ficha de servicio", async ({ page }) => {
+test("en la ficha de servicio va grande la medida que da entera; si no, el gramaje", async ({
+  page,
+}) => {
   await login(page, "cocinero@ejemplo.test");
   // Una cocinera de Pastas no ve esta receta del Café: lo dice, sin nombrarla.
   await page.goto(`/recetas/${uuid(1118)}/fichas`);
@@ -114,13 +116,26 @@ test("la medida práctica va grande en la ficha de servicio", async ({ page }) =
 
   await login(page, "chefgrupo@ejemplo.test");
   await page.goto(`/recetas/${uuid(1118)}/fichas?ver=servicio`);
-  const milk = page
-    .getByRole("list", { name: "Ingredientes" })
-    .getByRole("listitem")
-    .filter({ hasText: "Leche entera" });
-  // 100 ml en tazas de 240: la medida, y abajo lo que pesa o mide.
-  await expect(milk).toContainText(/0,42 taza/);
-  await expect(milk).toContainText(/100\s?ml/);
+  const item = (name: string) =>
+    page
+      .getByRole("list", { name: "Ingredientes" })
+      .getByRole("listitem")
+      .filter({ hasText: name });
+  const size = (name: string, text: RegExp) =>
+    item(name)
+      .getByText(text)
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  // 100 ml en tazas de 240 no dan una medida entera: el gramaje en grande y la medida abajo.
+  await expect(item("Leche entera")).toContainText(/100\s?ml\s*0,42 taza/);
+  expect(await size("Leche entera", /^100\s?ml$/)).toBeGreaterThan(
+    await size("Leche entera", /^0,42 taza$/),
+  );
+  // 10 ml en cucharaditas de 5 son 2 justas: la medida en grande y el gramaje abajo.
+  await page.goto(`/recetas/${uuid(1119)}/fichas?ver=servicio`);
+  await expect(item("Aceite de oliva")).toContainText(/2 cucharaditas\s*10\s?ml/);
+  expect(await size("Aceite de oliva", /^2 cucharaditas$/)).toBeGreaterThan(
+    await size("Aceite de oliva", /^10\s?ml$/),
+  );
 });
 
 test.describe("en la computadora", () => {

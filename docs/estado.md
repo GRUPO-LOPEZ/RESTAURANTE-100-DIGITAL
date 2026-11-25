@@ -12,8 +12,9 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **Pantallas:** «Hacer varias recetas», las 4 fichas en `/recetas/[id]/fichas` (`/cocina` redirige), las columnas «Hacer» de la planilla y el punto crítico por paso.
 - **Pruebas:** pgTAP 415 (51, en verde). Joaco pidió correr la suite completa en GitHub Actions (2026-11-25); en local, Playwright de escalado, fichas, recetas y subrecetas.
 - **Revisiones:** las tres, sin graves; los medios, corregidos o anotados en el ADR.
-- **Falta:** volver a medir los 4 tamaños y sacar las capturas (`docs/capturas/fichas-tecnicas/`), celular y papel incluidos.
-- **Para decidir:** qué se muestra en la ficha de Servicio si la medida no da entera («0,42 taza»).
+- **Medido y con capturas** (`docs/capturas/fichas-tecnicas/`): sin scroll de página en los 4 tamaños; celular y papel, con una receta larga simulada (84 filas en 3 hojas, completa).
+- **Pendiente, chico:** en el papel, el nombre y la versión salen solo en la primera hoja.
+- **Decisión de Joaco (2026-11-25):** en la ficha de Servicio, si la medida no da entera («0,42 taza»), el gramaje va en grande.
 - **Trampa:** `next build` lanzado desde Bash en segundo plano falló con `0xc0000142` (Windows no abrió un proceso); desde PowerShell armó bien.
 - **Sigue:** PR D (`feat/materias-primas-y-rubros`), con su plan.
 

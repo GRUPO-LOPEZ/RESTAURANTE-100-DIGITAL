@@ -7,6 +7,7 @@ import {
   mainPhoto,
   recipeCardHref,
   recipeCardKey,
+  serviceAmount,
 } from "@/lib/recipe-cards";
 import { versionLine } from "@/lib/recipe-format";
 
@@ -45,6 +46,34 @@ describe("la foto de la receta", () => {
     expect(mainPhoto([step, plating])).toBe(plating);
     expect(mainPhoto([step])).toBe(step);
     expect(mainPhoto([])).toBeNull();
+  });
+});
+
+describe("qué va en grande en la ficha de Servicio", () => {
+  const amount = "10 ml",
+    equivalent = null;
+  it("la medida práctica, si da entera", () => {
+    expect(serviceAmount({ count: 2, measure: "2 cucharaditas", amount, equivalent })).toEqual({
+      big: "2 cucharaditas",
+      small: "10 ml",
+    });
+  });
+  it("si no da entera, el gramaje, con la medida abajo (decisión de Joaco)", () => {
+    expect(
+      serviceAmount({ count: 0.42, measure: "0,42 taza", amount: "100 ml", equivalent }),
+    ).toEqual({ big: "100 ml", small: "0,42 taza" });
+    expect(
+      serviceAmount({ count: 1.5, measure: "1,5 tazas", amount: "360 ml", equivalent }),
+    ).toEqual({ big: "360 ml", small: "1,5 tazas" });
+  });
+  it("sin medida, la cantidad y su equivalente si lo tiene", () => {
+    expect(
+      serviceAmount({ count: null, measure: null, amount: "8 cda", equivalent: "120 ml" }),
+    ).toEqual({ big: "8 cda", small: "120 ml" });
+    expect(serviceAmount({ count: null, measure: null, amount, equivalent })).toEqual({
+      big: "10 ml",
+      small: null,
+    });
   });
 });
 
