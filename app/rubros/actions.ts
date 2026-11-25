@@ -5,16 +5,13 @@ import { z } from "zod";
 
 import { toActionState, type ActionState } from "@/lib/auth/results";
 import { fieldErrors, formValues, schemas } from "@/lib/forms/schemas";
-import { isRubroClass } from "@/lib/rubros";
+import { RUBRO_DESCRIPTION_MAX, RUBRO_ICONS, isRubroClass } from "@/lib/rubros";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones de Rubros (ADR-0038). Cada una llama a una función de la base, que controla el permiso de la
 // clase (compra: catalog.manage o prices.configure; sub-recetas y menú: recipes.manage_categories), pide el motivo
 // y deja la auditoría.
 const uuid = z.string().uuid();
-
-// Motivo fijo del cambio de nombre en la tarjeta (decisión del plan aprobado): la auditoría guarda quién y cuándo.
-const RENAME_REASON = "Cambio de nombre desde Rubros";
 
 function invalid(error: z.ZodError): ActionState {
   return { status: "bad", message: "Revisá los campos marcados.", fieldErrors: fieldErrors(error) };
@@ -57,26 +54,50 @@ export async function createRubroAction(
     .select("code")
     .eq("id", data)
     .maybeSingle();
-  return done(null, created ? `Rubro creado con el código ${created.code}.` : "Rubro creado.");
+  return done(
+    null,
+    created
+      ? `Rubro creado con el código ${created.code}. Está en «Sin uso» hasta que se use.`
+      : "Rubro creado. Está en «Sin uso» hasta que se use.",
+  );
 }
 
-export async function renameRubroAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const fields = schemas.rubroName.safeParse(formValues(formData));
-  if (!fields.success) return invalid(fields.error);
-  const id = uuid.safeParse(formData.get("rubroId"));
-  const cls = rubroClass(formData);
-  if (!id.success || !cls) return { status: "bad", message: "Falta el rubro." };
+// La ficha entera, con motivo (ADR-0066). La base controla el permiso, las claves y que nadie la haya cambiado.
+const saveSchema = z.object({
+  rubroClass: z.enum(["purchase", "subrecipe", "menu"]),
+  id: uuid,
+  expectedStamp: z.string().min(1),
+  changes: z
+    .object({
+      name: z.string().max(80).optional(),
+      description: z.string().max(RUBRO_DESCRIPTION_MAX).nullable().optional(),
+      icon: z.enum(RUBRO_ICONS).optional(),
+      used_in_recipes: z.boolean().optional(),
+    })
+    .strict(),
+  reason: z.string().trim().min(3, "Escribí el motivo de los cambios.").max(500),
+});
+
+export async function saveRubroAction(payload: z.input<typeof saveSchema>): Promise<ActionState> {
+  const parsed = saveSchema.safeParse(payload);
+  if (!parsed.success)
+    return { status: "bad", message: parsed.error.issues[0]?.message ?? "Revisá los datos." };
   const supabase = await createClient();
-  const { error } = await supabase.schema("recipes").rpc("rename_top_category", {
-    p_class: cls,
-    p_id: id.data,
-    p_name: fields.data.name,
-    p_reason: RENAME_REASON,
+  const { data, error } = await supabase.schema("recipes").rpc("save_top_category", {
+    p_class: parsed.data.rubroClass,
+    p_id: parsed.data.id,
+    p_expected_stamp: parsed.data.expectedStamp,
+    p_changes: parsed.data.changes,
+    p_reason: parsed.data.reason,
   });
-  return done(error, "Nombre cambiado.");
+  const state = toActionState(data, error);
+  // Solo si se guardó: con un conflicto, la página no se recarga y lo escrito queda.
+  if (state.status === "ok") {
+    revalidatePath("/rubros");
+    revalidatePath("/materias-primas", "layout");
+    revalidatePath("/recetas", "layout");
+  }
+  return state;
 }
 
 export async function deactivateRubroAction(
@@ -100,31 +121,6 @@ export async function deactivateRubroAction(
   });
   const moved = typeof data === "number" && data > 0 ? ` Se pasaron ${data} al rubro destino.` : "";
   return done(error, `Rubro dado de baja.${moved}`);
-}
-
-// «Va a recetas» (ADR-0052): sí/no de un clic en los rubros de compra. Motivo fijo, como el nombre: la auditoría guarda
-// quién, cuándo, y el valor de antes y de ahora.
-export async function setUsedInRecipesAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const id = uuid.safeParse(formData.get("rubroId"));
-  const value = formData.get("value");
-  if (!id.success || (value !== "true" && value !== "false"))
-    return { status: "bad", message: "Falta el rubro." };
-  const used = value === "true";
-  const supabase = await createClient();
-  const { data, error } = await supabase.schema("recipes").rpc("set_category_used_in_recipes", {
-    p_id: id.data,
-    p_value: used,
-    p_reason: used ? "Desde Rubros: va a recetas" : "Desde Rubros: no va a recetas",
-  });
-  revalidatePath("/rubros");
-  revalidatePath("/recetas", "layout");
-  const state = toActionState(data, error);
-  return state.status === "ok"
-    ? { status: "ok", message: used ? "Va a recetas." : "No va a recetas." }
-    : state;
 }
 
 export async function reactivateRubroAction(

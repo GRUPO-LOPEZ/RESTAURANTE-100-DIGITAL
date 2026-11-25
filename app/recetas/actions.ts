@@ -16,15 +16,10 @@ import {
   schemas,
 } from "@/lib/forms/schemas";
 import { codeChangedHref } from "@/lib/codes";
-import {
-  LINE_UNIT_CODES,
-  PHOTO_MAX_BYTES,
-  PHOTO_TYPES,
-  type NewRecipeType,
-  type UnitDimension,
-} from "@/lib/recipe-format";
+import { LINE_UNIT_CODES, type NewRecipeType, type UnitDimension } from "@/lib/recipe-format";
 import { compatibleDimensions, type PreviewLine } from "@/lib/recipe-sheet";
 import { parseAmount } from "@/lib/money";
+import { PHOTO_EXTENSIONS, checkPhoto } from "@/lib/photo-file";
 import { getUnitWeights } from "@/lib/recipes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -192,20 +187,6 @@ export async function assignAction(_prev: ActionState, formData: FormData): Prom
 // Fotos (PR 3). La foto llega achicada desde el navegador; acá se controla de nuevo tipo y tamaño,
 // se sube al bucket con la sesión de la persona (Storage aplica los permisos de la receta) y se
 // registra en la base. El nombre del archivo lo arma el servidor, nunca la pantalla.
-const PHOTO_EXTENSIONS: Record<(typeof PHOTO_TYPES)[number], string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-
-// Los primeros bytes de cada formato: JPEG FF D8 FF; PNG 89 50 4E 47; WebP "RIFF" .... "WEBP".
-function matchesType(head: Uint8Array, type: (typeof PHOTO_TYPES)[number]): boolean {
-  const ascii = (from: number, to: number) => String.fromCharCode(...head.slice(from, to));
-  if (type === "image/jpeg") return head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff;
-  if (type === "image/png") return head[0] === 0x89 && ascii(1, 4) === "PNG";
-  return ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP";
-}
-
 export async function uploadPhotoAction(
   _prev: ActionState,
   formData: FormData,
@@ -214,20 +195,9 @@ export async function uploadPhotoAction(
   if (!fields.success) return invalid(fields.error);
   const { recipe } = ids(formData);
   if (!recipe.success) return { status: "bad", message: "Falta la receta." };
-  const photo = formData.get("photo");
-  if (!(photo instanceof File) || photo.size === 0)
-    return { status: "bad", fieldErrors: { photo: "Elegí una foto." } };
-  const type = photo.type as (typeof PHOTO_TYPES)[number];
-  if (!PHOTO_TYPES.includes(type))
-    return { status: "bad", fieldErrors: { photo: "La foto tiene que ser JPG, PNG o WebP." } };
-  if (photo.size > PHOTO_MAX_BYTES)
-    return { status: "bad", fieldErrors: { photo: "La foto pesa más de 3 MB." } };
-  // El contenido real tiene que ser la imagen que dice ser (no solo el tipo que declara el navegador).
-  if (!matchesType(new Uint8Array(await photo.slice(0, 12).arrayBuffer()), type))
-    return {
-      status: "bad",
-      fieldErrors: { photo: "El archivo no es una imagen JPG, PNG o WebP." },
-    };
+  const photo = await checkPhoto(formData.get("photo"));
+  if ("error" in photo) return { status: "bad", fieldErrors: { photo: photo.error } };
+  const { file, type } = photo;
   const supabase = await createClient();
   const { data: row, error: readError } = await supabase
     .schema("recipes")
@@ -239,7 +209,7 @@ export async function uploadPhotoAction(
   const path = `${row.group_id}/${row.id}/${randomUUID()}.${PHOTO_EXTENSIONS[type]}`;
   const { error: uploadError } = await supabase.storage
     .from("recipe-media")
-    .upload(path, photo, { contentType: type, upsert: false });
+    .upload(path, file, { contentType: type, upsert: false });
   if (uploadError)
     return {
       status: "bad",

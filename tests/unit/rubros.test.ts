@@ -3,8 +3,14 @@
 import { describe, expect, it } from "vitest";
 
 import { schemas } from "@/lib/forms/schemas";
+import { listPriceState, listPriceText } from "@/lib/ingredient-price";
+import { Constants } from "@/lib/database.types";
 import {
+  RUBRO_ICONS,
   arrangeRubros,
+  panelRubros,
+  rebaseDraft,
+  rubroChanges,
   isRubroClass,
   rubroClassFromTab,
   sharePercent,
@@ -23,6 +29,7 @@ function rubro(over: Partial<Rubro>): Rubro {
     uses: 0,
     mismatched: 0,
     usedInRecipes: true,
+    icon: "pantry",
     ...over,
   };
 }
@@ -147,5 +154,75 @@ describe("los formularios de rubros", () => {
     expect(
       schemas.subcategory.safeParse({ name: "Quesos", parent_id: "abc", reason: "Sub" }).success,
     ).toBe(true);
+  });
+});
+
+describe("los íconos", () => {
+  it("son los mismos que los de la base", () => {
+    expect([...RUBRO_ICONS].sort()).toEqual([...Constants.catalog.Enums.category_icon].sort());
+  });
+});
+
+describe("el panel de un filtro", () => {
+  it("por cantidad y después por nombre; los dados de baja, al final y solo si tienen algo", () => {
+    const list = panelRubros([
+      rubro({ code: "A", name: "Zeta", uses: 2 }),
+      rubro({ code: "B", name: "Beta", uses: 2 }),
+      rubro({ code: "C", name: "Alfa", uses: 9 }),
+      rubro({ code: "D", name: "Vieja", uses: 5, isActive: false }),
+      rubro({ code: "E", name: "Vacía", uses: 0, isActive: false }),
+      rubro({ code: "F", name: "Nueva", uses: 0 }),
+    ]);
+    expect(list.map((r) => r.name)).toEqual(["Alfa", "Beta", "Zeta", "Nueva", "Vieja"]);
+  });
+});
+
+describe("lo que cambió en la ficha", () => {
+  const saved = { name: "Carnes", description: "", icon: "meat" as const, usedInRecipes: true };
+  it("sin cambios, nada (los espacios de más no cuentan)", () => {
+    expect(rubroChanges(saved, { ...saved, name: " Carnes ", description: "  " })).toEqual({});
+  });
+  it("solo lo que cambió; la descripción vacía se saca", () => {
+    expect(rubroChanges(saved, { ...saved, icon: "fish", usedInRecipes: false })).toEqual({
+      icon: "fish",
+      used_in_recipes: false,
+    });
+    expect(rubroChanges({ ...saved, description: "Algo" }, saved)).toEqual({ description: null });
+  });
+});
+
+describe("lo que se estaba cambiando, si la ficha volvió distinta", () => {
+  const before = { name: "Carnes", description: "", icon: "meat" as const, usedInRecipes: true };
+  it("se conserva solo lo propio; lo de la otra persona no se pisa", () => {
+    const draft = { ...before, description: "Mía" };
+    const now = { ...before, name: "Carnes y aves", usedInRecipes: false };
+    expect(rebaseDraft(before, draft, now)).toEqual({ ...now, description: "Mía" });
+  });
+  it("sin nada propio, queda lo de la base", () => {
+    const now = { ...before, name: "Otra" };
+    expect(rebaseDraft(before, before, now)).toEqual(now);
+  });
+});
+
+describe("el precio en la lista", () => {
+  const ok = { unitCost: 1.25, baseUnit: "g", stale: false, status: "ok" };
+  it("por kilo, litro o unidad, con su palabra", () => {
+    expect(listPriceText(ok)).toMatch(/1\.250,00 \/ kg$/);
+    expect(listPriceState(ok)).toEqual({ status: "ok", label: "Al día" });
+    expect(listPriceState({ ...ok, stale: true })).toEqual({
+      status: "warn",
+      label: "Desactualizado",
+    });
+  });
+  it("sin precio, nunca «Al día»", () => {
+    expect(listPriceText(undefined)).toBeNull();
+    expect(listPriceState(undefined).label).toBe("Sin precio");
+    expect(listPriceState({ ...ok, unitCost: null, status: "missing_price" }).label).toBe(
+      "Sin precio",
+    );
+    expect(listPriceState({ ...ok, unitCost: null, status: "missing_legal_entity" }).label).toBe(
+      "Falta la razón social",
+    );
+    expect(listPriceState({ ...ok, unitCost: null }).label).toBe("Sin datos");
   });
 });

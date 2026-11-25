@@ -175,7 +175,7 @@ function DataTable<T>({
                     className={cn(
                       "px-4 py-2 align-top text-ink",
                       // Una fila, un renglón: así entran más filas en el alto de la pantalla.
-                      scroll && "px-2 py-1.5 whitespace-nowrap",
+                      scroll && "px-2 py-1.5 align-middle whitespace-nowrap",
                       c.align === "right" && "text-right tabular-nums",
                     )}
                   >

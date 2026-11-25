@@ -537,3 +537,33 @@ export async function getIngredientSheetState(id: string): Promise<IngredientShe
     pricedProducts: Array.isArray(state.priced_products) ? state.priced_products : [],
   };
 }
+
+// ---------------------------------------------------------------------------
+// Foto del producto (ADR-0066; bucket privado recipe-media). Los enlaces firmados vencen en 10 minutos, como los de
+// recetas. Si las fotos fallan, la lista y la ficha se muestran igual.
+// ---------------------------------------------------------------------------
+const PHOTO_LINK_SECONDS = 600;
+
+/** La foto vigente de cada materia prima (las que tienen). null si no se pudieron leer. */
+export async function getIngredientPhotos(
+  ids: string[],
+): Promise<Map<string, { url: string | null }> | null> {
+  if (ids.length === 0) return new Map();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("catalog")
+    .from("ingredient_media")
+    .select("ingredient_id, storage_path")
+    .in("ingredient_id", ids);
+  if (error) return null;
+  if (data.length === 0) return new Map();
+  // Storage vuelve a controlar que la sesión pueda ver cada archivo (mismas reglas).
+  const { data: signed } = await supabase.storage.from("recipe-media").createSignedUrls(
+    data.map((m) => m.storage_path),
+    PHOTO_LINK_SECONDS,
+  );
+  const url = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+  return new Map(
+    data.map((m) => [m.ingredient_id, { url: url.get(m.storage_path) || null }] as const),
+  );
+}

@@ -184,8 +184,8 @@ test("las tarjetas de rubros filtran la tabla: un clic filtra, otro clic o la âœ
 test("las materias primas tambiÃ©n se ordenan por rubro", async ({ page }) => {
   await login(page, "compras@ejemplo.test", { mfa: true });
   await page.goto("/materias-primas");
-  const cards = page.getByRole("list", { name: "Rubros de compra" });
-  const carnes = cards.getByRole("link", { name: /^Carnes/ });
+  const panel = page.getByRole("navigation", { name: "Rubros de compra", exact: true });
+  const carnes = panel.getByRole("link", { name: /^Carnes/ });
   await carnes.click();
   await expect(page.getByText("Rubro: Carnes")).toBeVisible();
   await expect(carnes).toHaveAttribute("aria-current", "true");

@@ -213,14 +213,17 @@ select is(pg_temp.msg(pg_temp.u(413), $$select recipes.create_top_category(pg_te
 -- ---------------------------------------------------------------------------
 -- Cambio de nombre
 -- ---------------------------------------------------------------------------
-select is(pg_temp.msg(pg_temp.u(413), $$select recipes.rename_top_category('menu', pg_temp.rub('PL-TAP'), 'Tapas y pinchos', 'Cambio de nombre desde Rubros')$$),
-  'sin error', 'el Chef cambia el nombre de un rubro de menú');
+-- Con la ficha del rubro (ADR-0066), que reemplazó a la función de solo el nombre. Más en 416_rubro_sheet.
+select is(pg_temp.q(pg_temp.u(413), $$select recipes.save_top_category('menu', id, updated_at, '{"name":"Tapas y pinchos"}', 'Cambio de nombre desde Rubros') ->> 'result'
+                                        from recipes.top_categories where code = 'PL-TAP'$$),
+  'applied', 'el Chef cambia el nombre de un rubro de menú');
 select is((select name from recipes.recipe_categories where code = 'PL-TAP'), 'Tapas y pinchos', 'el código sigue igual');
 select ok(exists (select 1 from audit.audit_events where table_schema = 'recipes' and table_name = 'recipe_categories'
                     and action = 'update' and reason = 'Cambio de nombre desde Rubros'),
   'el cambio de nombre queda en la auditoría');
-select is(pg_temp.q(pg_temp.u(413), $$select recipes.rename_top_category('purchase', pg_temp.rub('PL-TAP'), 'X', 'Prueba')::text$$),
-  'ERROR 42501', 'con la clase equivocada no lo encuentra (y no revela si existe)');
+select is(pg_temp.q(pg_temp.u(413), $$select recipes.save_top_category('purchase', id, updated_at, '{"name":"X"}', 'Prueba') ->> 'result'
+                                        from recipes.top_categories where code = 'PL-TAP'$$),
+  'denied', 'con la clase equivocada no lo encuentra (y no revela si existe)');
 
 -- ---------------------------------------------------------------------------
 -- Baja con destino y reactivación
@@ -366,8 +369,9 @@ select ok(pg_temp.q(pg_temp.u(402), $$select recipes.create_top_category(pg_temp
 -- ---------------------------------------------------------------------------
 -- Mapeo de las categorías ya cargadas (sección 5 de la migración)
 -- ---------------------------------------------------------------------------
-alter table catalog.ingredient_categories drop constraint ingredient_categories_code_level;
-alter table recipes.recipe_categories drop constraint recipe_categories_code_level, drop constraint recipe_categories_kind_required;
+alter table catalog.ingredient_categories drop constraint ingredient_categories_code_level, drop constraint ingredient_categories_icon_level;
+alter table recipes.recipe_categories drop constraint recipe_categories_code_level, drop constraint recipe_categories_kind_required,
+  drop constraint recipe_categories_icon_level;
 alter table catalog.ingredient_categories disable trigger enforce_rubro_fields;
 alter table recipes.recipe_categories disable trigger enforce_rubro_fields;
 alter table recipes.recipes disable trigger enforce_recipe_category_class;

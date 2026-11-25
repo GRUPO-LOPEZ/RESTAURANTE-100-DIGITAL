@@ -6,7 +6,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(2);
+select plan(4);
 
 create function pg_temp.u(p_n int) returns uuid language sql as $$
   select format('00000000-0000-4000-8000-%s', lpad(p_n::text, 12, '0'))::uuid
@@ -55,11 +55,32 @@ begin
   end if;
 end
 $$;
+-- La ficha de un rubro con las 500 (ADR-0066): sus indicadores y «con precio al día».
+create temporary table sheet_timings (k text, ms numeric);
+do $$
+declare
+  t0 timestamptz := clock_timestamp();
+  v  integer;
+begin
+  select total into v from costing.category_price_summary('00000000-0000-4000-8000-000000000707', '00000000-0000-4000-8000-000000000201');
+  insert into sheet_timings values ('precios', extract(epoch from clock_timestamp() - t0) * 1000);
+  if v < 500 then
+    raise exception 'Se esperaban al menos 500 materias primas y salieron %', v;
+  end if;
+  t0 := clock_timestamp();
+  perform recipes.top_category_sheet('purchase', '00000000-0000-4000-8000-000000000707');
+  insert into sheet_timings values ('ficha', extract(epoch from clock_timestamp() - t0) * 1000);
+end
+$$;
 reset role;
 
 select ok(true, 'resuelve el precio de las 500 materias primas');
 select cmp_ok((select ms from timings), '<', 300::numeric,
   format('el precio de 500 materias primas tarda menos de 300 ms (tardó %s ms)', (select round(ms) from timings)));
+select cmp_ok((select ms from sheet_timings where k = 'precios'), '<', 300::numeric,
+  format('«con precio al día» de un rubro de 500 tarda menos de 300 ms (tardó %s ms)', (select round(ms) from sheet_timings where k = 'precios')));
+select cmp_ok((select ms from sheet_timings where k = 'ficha'), '<', 300::numeric,
+  format('la ficha de un rubro de 500 tarda menos de 300 ms (tardó %s ms)', (select round(ms) from sheet_timings where k = 'ficha')));
 
 select * from finish();
 rollback;

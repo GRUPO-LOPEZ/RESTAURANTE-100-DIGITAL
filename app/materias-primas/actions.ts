@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/forms/schemas";
 import { parseAmount } from "@/lib/money";
 import { productChanges } from "@/lib/purchase-product";
+import { PHOTO_EXTENSIONS, checkPhoto } from "@/lib/photo-file";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones del catálogo. Cada una llama a una función de la base que valida catalog.manage, pide
@@ -433,4 +435,60 @@ export async function saveIngredientSheetAction(
       message: "Guardado: se compra congelada. Los costos se actualizan en un minuto.",
     };
   return { status: "ok", message: "Cambios guardados." };
+}
+
+// Foto del producto (ADR-0066). Llega achicada desde el navegador; acá se controla de nuevo, se sube al bucket con la
+// sesión de la persona (Storage aplica los permisos) y se registra en la base. El nombre del archivo lo arma el
+// servidor, nunca la pantalla.
+export async function setIngredientPhotoAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.photoReason.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = ingredientId(formData);
+  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
+  const photo = await checkPhoto(formData.get("photo"));
+  if ("error" in photo) return { status: "bad", fieldErrors: { photo: photo.error } };
+  const supabase = await createClient();
+  const { data: row, error: readError } = await supabase
+    .schema("catalog")
+    .from("ingredients")
+    .select("id, group_id")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (readError || !row) return { status: "bad", message: "No encontramos la materia prima." };
+  const path = `${row.group_id}/ingredients/${row.id}/${randomUUID()}.${PHOTO_EXTENSIONS[photo.type]}`;
+  const { error: uploadError } = await supabase.storage
+    .from("recipe-media")
+    .upload(path, photo.file, { contentType: photo.type, upsert: false });
+  // Si Storage la rechazó, se llama igual: sin permiso, la base registra el rechazo; con permiso, dice que no se subió.
+  const { data, error } = await supabase.schema("catalog").rpc("set_ingredient_photo", {
+    p_ingredient_id: row.id,
+    p_storage_path: path,
+    p_reason: fields.data.reason,
+  });
+  revalidatePath(`/materias-primas/${row.id}`);
+  revalidatePath("/materias-primas");
+  if (uploadError && !error && toActionState(data, error).status === "ok")
+    return { status: "bad", message: "No pudimos subir la foto: probá de nuevo." };
+  return toActionState(data, error);
+}
+
+export async function removeIngredientPhotoAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const fields = schemas.photoReason.safeParse(formValues(formData));
+  if (!fields.success) return invalid(fields.error);
+  const id = ingredientId(formData);
+  if (!id.success) return { status: "bad", message: "Falta la materia prima." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.schema("catalog").rpc("remove_ingredient_photo", {
+    p_ingredient_id: id.data,
+    p_reason: fields.data.reason,
+  });
+  revalidatePath(`/materias-primas/${id.data}`);
+  revalidatePath("/materias-primas");
+  return toActionState(data, error);
 }
