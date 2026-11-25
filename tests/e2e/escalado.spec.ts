@@ -1,4 +1,4 @@
-// Escalado (ADR-0032; caso 14): cuánto hace falta para un lote, sin tocar la receta. La cocina escala sin ver
+// Hacer varias recetas (ADR-0032 y ADR-0065; caso 14): cuánto hace falta para un lote, sin tocar la receta. La cocina escala sin ver
 // importes; quien ve costos, con el costo proyectado. En celular y computadora, con axe.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
@@ -18,19 +18,42 @@ const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0
 const NOQUIS = uuid(1109); // 4 porciones, 1,2 kg.
 const PASTAS_CENTRO = uuid(201);
 
-test("la Cocinera escala desde la vista de cocina, sin importes", async ({ page }) => {
+// La tabla en la computadora; tarjetas en el celular.
+const lot = (page: Page) =>
+  page
+    .getByRole("table", { name: "Cantidades para este lote" })
+    .or(page.getByRole("list", { name: "Cantidades para este lote" }));
+const line = (page: Page, name: string) =>
+  lot(page).getByRole("row").or(lot(page).getByRole("listitem")).filter({ hasText: name });
+
+test("la Cocinera escala desde las fichas técnicas, sin importes", async ({ page }) => {
   await login(page, "cocinero@ejemplo.test");
-  await page.goto(`/recetas/${NOQUIS}/cocina`);
-  await expect(page.getByRole("link", { name: "Escalar" })).toHaveAttribute(
+  await page.goto(`/recetas/${NOQUIS}/fichas`);
+  await expect(page.getByRole("link", { name: "Hacer varias recetas" })).toHaveAttribute(
     "href",
     `/recetas/${NOQUIS}/escalar`,
   );
   await page.goto(`/recetas/${NOQUIS}/escalar`);
-  await page.getByLabel("¿Cuánto querés hacer?").fill("10");
-  await page.getByRole("button", { name: "Escalar" }).click();
-  await expect(page.locator('[data-slot="kpi"]').first()).toContainText("2,5");
-  const lines = page.getByRole("list", { name: "Cantidades para este lote" });
-  await expect(lines.getByRole("listitem").first()).toContainText("2.500");
+  // Abre con una receta. Elegir la unidad ya calcula: 10 porciones de una receta de 4 son 2,5 recetas.
+  await expect(line(page, "Papa").first()).toContainText(/1\s?kg/);
+  await page.getByLabel("Quiero hacer").fill("10");
+  await page.getByRole("button", { name: "porciones", exact: true }).click();
+  await expect(page.getByRole("button", { name: "porciones", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("region", { name: "Cuánto" })).toContainText("= 2,5 recetas");
+  // 2.500 g pasan a 2,5 kg.
+  await expect(line(page, "Papa").first()).toContainText(/2,5\s?kg/);
+  // Con Enter también, en la unidad elegida.
+  await page.getByLabel("Quiero hacer").fill("12");
+  await page.getByRole("button", { name: "recetas", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Cuánto" })).toContainText("48 porciones");
+  await page.getByLabel("Quiero hacer").fill("10");
+  await page.getByLabel("Quiero hacer").press("Enter");
+  await expect(page.getByRole("region", { name: "Cuánto" })).toContainText("40 porciones");
+  // El formulario no se vuelve a armar: el foco sigue en el campo.
+  await expect(page.getByLabel("Quiero hacer")).toBeFocused();
   await expect(page.getByText("Costo proyectado")).toHaveCount(0);
   await expect(page.getByText(/\$\s?\d/)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Imprimir" })).toBeVisible();
@@ -41,12 +64,25 @@ test("la Cocinera escala desde la vista de cocina, sin importes", async ({ page 
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
+test("los litros se multiplican sin pedir densidad", async ({ page }) => {
+  // La Salsa blanca lleva 1.000 ml de leche, que no tiene densidad (pedido de Soy, Tanda 2).
+  await login(page, "cocinero@ejemplo.test");
+  await page.goto(`/recetas/${uuid(1103)}/escalar?por=recetas&objetivo=12`);
+  await expect(line(page, "Leche entera").first()).toContainText(/12\s?l/);
+  await expect(line(page, "Leche entera").first()).not.toContainText(/kg/);
+  await expect(page.getByRole("main")).not.toContainText(/Falta la densidad/i);
+  await axe(page);
+});
+
 test("un objetivo inválido se explica", async ({ page }) => {
   await login(page, "cocinero@ejemplo.test");
   await page.goto(`/recetas/${NOQUIS}/escalar?por=porciones&objetivo=0`);
   await expect(page.getByText(/mayor que cero/)).toBeVisible();
   await page.goto(`/recetas/${NOQUIS}/escalar?por=porciones&objetivo=diez`);
   await expect(page.getByText(/Escribí un número/)).toBeVisible();
+  // Un modo que la receta no tiene, por recetas.
+  await page.goto(`/recetas/${NOQUIS}/escalar?por=otra&objetivo=2`);
+  await expect(page.getByRole("region", { name: "Cuánto" })).toContainText("8 porciones");
   // "1.500" son mil quinientos, como se ve en la pantalla.
   await page.goto(`/recetas/${NOQUIS}/escalar?por=porciones&objetivo=1.500`);
   await expect(page.getByText(/1\.500 porciones/).first()).toBeAttached();
@@ -63,14 +99,19 @@ test("el Chef ve el costo proyectado y carga la capacidad en un borrador", async
   await expect(page.getByText(/Costo proyectado en Demo Pastas Centro/)).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.locator('[data-slot="kpi"]').nth(2)).toContainText("2.922,87");
+  await expect(
+    page.locator('[data-slot="kpi"]').filter({ hasText: "Costo proyectado" }),
+  ).toContainText("2.922,87");
   await axe(page);
-  // En la hoja impresa no salen el costo, el menú ni el formulario.
+  // En la hoja impresa no salen el costo, el menú ni el formulario; sí la versión y quién la aprobó.
   await page.emulateMedia({ media: "print" });
   await expect(page.getByText(/Costo proyectado/)).toBeHidden();
-  await expect(page.getByLabel("¿Cuánto querés hacer?")).toBeHidden();
+  await expect(page.getByLabel("Quiero hacer")).toBeHidden();
+  await expect(
+    page.getByText(/Versión \d+ · DEMO-PAS-04 · publicada el .+ · aprobó /),
+  ).toBeVisible();
   await expect(page.getByLabel("Local activo")).toBeHidden();
-  await expect(page.getByRole("list", { name: "Cantidades para este lote" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Cantidades para este lote" })).toBeVisible();
   await page.emulateMedia({ media: "screen" });
 
   await chooseLocal(page, { label: "Todos mis locales" });

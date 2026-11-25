@@ -346,10 +346,10 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
           ) : null}
           {report.key === "recipe_card" && recipe ? (
             <Link
-              href={`/recetas/${recipe}/cocina`}
+              href={`/recetas/${recipe}/fichas`}
               className="inline-flex min-h-touch w-fit items-center text-base text-primary underline-offset-4 hover:underline print:hidden"
             >
-              Ver en la cocina, con letra grande
+              Ver las fichas técnicas, con letra grande
             </Link>
           ) : null}
         </div>

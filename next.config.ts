@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async redirects() {
+    // La vista de cocina pasó a las fichas técnicas (ADR-0065): los enlaces guardados siguen andando.
+    return [
+      { source: "/recetas/:id/cocina", destination: "/recetas/:id/fichas", permanent: false },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -78,7 +78,7 @@ test.describe("quién ve qué", () => {
     // El borrador no lo ve: se busca por su nombre, porque la lista va por páginas.
     await page.goto("/recetas?q=Risotto");
     await expect(page.getByText("Risotto de hongos")).toHaveCount(0);
-    await page.goto(`/recetas/${RAVIOLES}/cocina`);
+    await page.goto(`/recetas/${RAVIOLES}/fichas`);
     await expect(page.getByRole("heading", { name: "Ravioles de ricota" })).toBeVisible();
     await expect(page.locator("main")).not.toContainText(/\$|costo|precio/i);
     await axe(page);

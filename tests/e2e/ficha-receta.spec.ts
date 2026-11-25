@@ -129,6 +129,16 @@ test.describe("en la computadora", () => {
     await page.getByLabel("Cantidad de recetas, columna A").fill("2");
     await expect(row1).toContainText("200 g");
     await expect(page).toHaveURL(/hacer=2(%2C|,)10/);
+    // Lo que va en litros sigue en litros: sin densidad (la leche no tiene) también se multiplica (ADR-0065).
+    await fillSheetRow(page, 3, "Leche entera", /Leche entera/, "600");
+    const milk = page
+      .getByRole("row")
+      .filter({ has: page.getByLabel("Cantidad, fila 3", { exact: true }) });
+    await expect(milk).toContainText(/1,2\s?l/);
+    await expect(milk).toContainText(/6\s?l/);
+    await page.getByRole("button", { name: "Más opciones de la fila 3" }).click();
+    await page.getByRole("button", { name: "Quitar la fila" }).click();
+    await expect(page.getByLabel("Ingrediente, fila 3", { exact: true })).toHaveValue("");
 
     // La fila 9 aparece sola al completar la octava; quitarla vuelve a 8. «Agregar ingrediente» va al primer renglón vacío.
     await fillSheetRow(page, 8, "Sal fina", /Sal fina/, "2");

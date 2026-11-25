@@ -18,6 +18,11 @@ const scaledSchema = z.object({
       quantity: z.number(),
       scaled: z.number(),
       no_scale: z.boolean(),
+      // Medida práctica, con el nombre y el contenido congelados en la versión (ADR-0065).
+      measure_name: z.string().nullable(),
+      measure_content: z.number().nullable(),
+      measure_unit: z.string().nullable(),
+      measure_scaled: z.number().nullable(),
     }),
   ),
   steps: z.array(
@@ -44,6 +49,10 @@ export type ScaledRecipe = {
     quantity: number;
     scaled: number;
     noScale: boolean;
+    measureName: string | null;
+    measureContent: number | null;
+    measureUnit: string | null;
+    measureScaled: number | null;
   }[];
   steps: {
     number: number;
@@ -64,17 +73,29 @@ export function parseScaled(data: unknown): ScaledRecipe | null {
     targetPortions: d.target_portions,
     targetYield: d.target_yield,
     yieldUnit: d.yield_unit,
-    lines: d.lines.map((l) => ({ ...l, noScale: l.no_scale })),
+    lines: d.lines.map((l) => ({
+      order: l.order,
+      item: l.item,
+      unit: l.unit,
+      quantity: l.quantity,
+      scaled: l.scaled,
+      noScale: l.no_scale,
+      measureName: l.measure_name,
+      measureContent: l.measure_content,
+      measureUnit: l.measure_unit,
+      measureScaled: l.measure_scaled,
+    })),
     steps: d.steps.map((s) => ({ ...s, capacityUnit: s.capacity_unit })),
   };
 }
 
+export type ScaleMode = "recipes" | "portions" | "yield";
 export type ScaleResult = { status: "ok"; data: ScaledRecipe } | { status: "bad"; message: string };
 
 export async function scaleVersion(
   versionId: string,
   target: number,
-  mode: "portions" | "yield",
+  mode: ScaleMode,
   unit: string | null,
 ): Promise<ScaleResult> {
   const supabase = await createClient();

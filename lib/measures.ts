@@ -20,7 +20,7 @@ const CONTENT_DIMENSION: Record<ContentUnit, UnitDimension> = {
 };
 
 // Cuánto vale cada unidad en la base de su clase (los factores de catalog.unit_conversions).
-const TO_BASE: Record<LineUnit, number> = {
+export const TO_BASE: Record<LineUnit, number> = {
   g: 1,
   kg: 1000,
   mg: 0.001,
@@ -91,9 +91,42 @@ export function measureLabel(m: Pick<Measure, "name" | "content" | "unit" | "isA
   return `${m.name} (${formatQuantity(m.content)} ${SHORT[m.unit]})${m.isActive ? "" : " · inactiva"}`;
 }
 
-/** «4 × Nido de pasta»: cuántas van, para el cocinero. */
+// El plural de la primera palabra, si se puede sin inventar: «Nido de pasta» → «nidos de pasta». Un nombre con un adjetivo
+// («Taza chica») o un código («GN 1/1») queda como está escrito: null.
+function pluralName(name: string): string | null {
+  const m = /^([A-ZÁÉÍÓÚÑ]?[a-záéíóúñ]{2,})((?: (?:de|del|para|con) .+)?)$/.exec(name.trim());
+  if (!m || m[1] === undefined) return null;
+  const word = m[1].toLowerCase();
+  const plural = word.endsWith("ón")
+    ? `${word.slice(0, -2)}ones`
+    : /[aeiouáéó]$/.test(word)
+      ? `${word}s`
+      : word.endsWith("z")
+        ? `${word.slice(0, -1)}ces`
+        : /[dr]$/.test(word)
+          ? `${word}es`
+          : null;
+  return plural === null ? null : plural + (m[2] ?? "");
+}
+
+/** «4 nidos de pasta»: cuántas van, para el cocinero. Si el nombre no se puede pasar a plural: «4 × Taza chica». */
 export function measureText(count: number | null, name: string | null): string | null {
-  return count === null || !name ? null : `${formatQuantity(count)} × ${name}`;
+  if (count === null || !name) return null;
+  const plural = pluralName(name);
+  if (plural === null) return `${formatQuantity(count)} × ${name}`;
+  return `${formatQuantity(count)} ${count > 1 ? plural : name.charAt(0).toLowerCase() + name.slice(1)}`;
+}
+
+/** «48 nidos de pasta de 120 g»: con lo que contiene cada una. */
+export function measureWithContent(
+  count: number | null,
+  name: string | null,
+  content: number | null,
+  unit: string | null,
+): string | null {
+  const text = measureText(count, name);
+  if (text === null || content === null || unit === null || !isContentUnit(unit)) return text;
+  return `${text} de ${formatQuantity(content)} ${SHORT[unit]}`;
 }
 
 export function isContentUnit(value: string): value is ContentUnit {

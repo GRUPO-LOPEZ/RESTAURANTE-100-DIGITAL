@@ -575,6 +575,7 @@ export async function saveSheetAction(payload: z.input<typeof sheetPayload>): Pr
           instructions: s.instructions,
           active_minutes: Number(s.active_minutes),
           passive_minutes: Number(s.passive_minutes),
+          control_point: s.control_point,
           depends_on: s.depends_on,
         }))
       : null) as unknown as string,

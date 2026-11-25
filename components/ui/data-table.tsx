@@ -56,7 +56,7 @@ function DataTable<T>({
   return (
     <div
       data-slot="data-table"
-      className={cn("flex flex-col", scroll && "desk:min-h-0 desk:flex-[1_1_0px]")}
+      className={cn("flex flex-col", scroll && "desk:min-h-0 desk:flex-[1_1_0px] print:block")}
     >
       <ul className="flex flex-col gap-2 desk:hidden print:hidden" aria-label={caption}>
         {rows.map((row) => (
@@ -103,7 +103,7 @@ function DataTable<T>({
           "hidden overflow-x-auto rounded-md border border-line bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary desk:block print:block",
           // relative: el título oculto de la tabla (sr-only, absoluto) no escapa del recorte ni agranda la página.
           scroll &&
-            "relative desk:h-0 desk:min-h-0 desk:flex-[1_1_0px] desk:overflow-auto print:h-auto",
+            "relative desk:h-0 desk:min-h-0 desk:flex-[1_1_0px] desk:overflow-auto print:h-auto print:flex-none",
         )}
       >
         <table className="w-full border-collapse text-left">

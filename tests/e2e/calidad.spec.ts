@@ -58,8 +58,8 @@ test("el Controller abre un indicador y llega a la ficha", async ({ page }) => {
   // «Ir» apunta a la sección donde se corrige: las fotos de la ficha (ADR-0042).
   await expect(go).toHaveAttribute("href", /\/recetas\/[0-9a-f-]{36}\?seccion=fotos$/);
   await go.click();
-  // El Controller solo lee recetas: la ficha lo lleva a la vista de cocina, como antes de la ficha única.
-  await expect(page).toHaveURL(/\/recetas\/[0-9a-f-]{36}\/cocina$/);
+  // El Controller solo lee recetas: la ficha lo lleva a las fichas técnicas (antes, la vista de cocina).
+  await expect(page).toHaveURL(/\/recetas\/[0-9a-f-]{36}\/fichas$/);
 });
 
 test("quien no ve borradores los cuenta, sin ver sus nombres", async ({ page }) => {

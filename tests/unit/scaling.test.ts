@@ -13,6 +13,7 @@ const step = {
   equipment: "Horno",
   equipment_capacity: "4,5",
   equipment_capacity_unit: "",
+  control_point: "",
   depends_on: [],
 };
 
@@ -55,6 +56,19 @@ describe("la capacidad del equipo", () => {
   });
 });
 
+describe("el punto crítico del paso", () => {
+  it("siempre viaja, hasta 500 caracteres: guardar los pasos los reemplaza enteros", () => {
+    const parsed = recipeStepsSchema.safeParse([{ ...step, control_point: " A 74 °C " }]);
+    expect(parsed.success && parsed.data[0]?.control_point).toBe("A 74 °C");
+    expect(recipeStepsSchema.safeParse([{ ...step, control_point: "x".repeat(501) }]).success).toBe(
+      false,
+    );
+    expect(recipeStepsSchema.safeParse([{ ...step, control_point: undefined }]).success).toBe(
+      false,
+    );
+  });
+});
+
 describe("lo que devuelve la base", () => {
   const data = {
     factor: 2.5,
@@ -62,7 +76,21 @@ describe("lo que devuelve la base", () => {
     target_portions: 25,
     target_yield: 5,
     yield_unit: "kg",
-    lines: [{ order: 1, item: "Papa", unit: "g", quantity: 1000, scaled: 2500, no_scale: false }],
+    lines: [
+      {
+        order: 1,
+        item: "Papa",
+        unit: "g",
+        quantity: 1000,
+        scaled: 2500,
+        no_scale: false,
+        measure_name: "Bol",
+        measure_content: 500,
+        measure_unit: "g",
+        measure_count: 2,
+        measure_scaled: 5,
+      },
+    ],
     steps: [{ number: 1, equipment: "Horno", capacity: 3, capacity_unit: "kg", batches: 2 }],
   };
 
@@ -70,6 +98,8 @@ describe("lo que devuelve la base", () => {
     const scaled = parseScaled(data);
     expect(scaled?.factor).toBe(2.5);
     expect(scaled?.lines[0]?.noScale).toBe(false);
+    expect(scaled?.lines[0]?.measureScaled).toBe(5);
+    expect(scaled?.lines[0]?.measureName).toBe("Bol");
     expect(scaled?.steps[0]?.batches).toBe(2);
   });
 

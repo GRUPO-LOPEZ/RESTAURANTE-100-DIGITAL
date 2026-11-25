@@ -11,7 +11,10 @@ export type SnapshotReason = Database["costing"]["Enums"]["cost_snapshot_reason"
 export const COSTS_PAGE = 50;
 export const SCENARIO_PAGE = 50;
 
-export const RELIABILITY: Record<Reliability, { label: string; status: BadgeStatus }> = {
+export const RELIABILITY: Record<
+  Reliability,
+  { label: string; status: Extract<BadgeStatus, "ok" | "info" | "warn" | "bad"> }
+> = {
   verified: { label: "Completo y verificado", status: "ok" },
   estimated: { label: "Con estimaciones", status: "info" },
   stale: { label: "Desactualizado", status: "warn" },
