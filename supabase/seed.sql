@@ -197,6 +197,13 @@ insert into catalog.ingredient_categories (id, group_id, name, code) values
   ('00000000-0000-4000-8000-000000000706', '00000000-0000-4000-8000-000000000001', 'Aceites y grasas', 'MP-ACE'),
   ('00000000-0000-4000-8000-000000000707', '00000000-0000-4000-8000-000000000001', 'Almacén', null),
   ('00000000-0000-4000-8000-000000000708', '00000000-0000-4000-8000-000000000001', 'Especias y condimentos', 'MP-ESP');
+-- Descripción de ejemplo de 3 rubros (ADR-0066).
+update catalog.ingredient_categories c set description = v.description
+  from (values
+    ('MP-VER', 'Verduras, hortalizas, frutas y hierbas frescas. Se compran por kg o por atado y se controlan al recibir: frescura, temperatura y estado.'),
+    ('MP-CAR', 'Carnes rojas y aves. Se reciben refrigeradas y se controla la temperatura al llegar.'),
+    ('MP-HUE', 'Huevos frescos y pasteurizados.')) as v (code, description)
+ where c.code = v.code and c.group_id = '00000000-0000-4000-8000-000000000001';
 
 create temporary table seed_ingredients (n int, name text, category int, unit text, aliases text[]) on commit drop;
 insert into seed_ingredients values

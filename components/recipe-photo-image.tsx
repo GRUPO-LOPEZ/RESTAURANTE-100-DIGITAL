@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
 
 import { cn } from "@/lib/utils";
@@ -12,20 +12,24 @@ export function RecipePhotoImage({
   url,
   alt,
   className = "aspect-[4/3] w-full object-cover",
+  fallback,
 }: {
   url: string | null;
   alt: string;
   className?: string;
+  // Qué se ve si no carga, en vez del aviso (una miniatura, donde el texto no entra).
+  fallback?: ReactNode;
 }) {
   const [broken, setBroken] = useState(false);
   if (!url || broken) {
+    if (fallback !== undefined) return <>{fallback}</>;
     return (
       <div
         role="img"
         aria-label={`${alt}: no se pudo cargar`}
         className={cn(
-          className,
           "flex items-center justify-center rounded-sm border border-line p-4 text-center text-base text-ink-muted",
+          className,
         )}
       >
         No pudimos cargar la foto. Recargá la página.

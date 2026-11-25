@@ -29,7 +29,7 @@ function Pagination({
     <nav
       aria-label="Páginas"
       data-slot="pagination"
-      className="flex flex-col gap-3 desk:flex-row desk:items-center desk:justify-between print:hidden"
+      className="flex flex-col gap-3 desk:flex-row desk:flex-wrap desk:items-center desk:justify-between print:hidden"
     >
       {/* Se anuncia al cambiar un filtro o la página: la tabla se actualiza sola (WCAG 4.1.3). */}
       <p role="status" className="text-sm text-ink-muted tabular-nums">

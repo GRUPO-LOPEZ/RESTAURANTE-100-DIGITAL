@@ -1,6 +1,14 @@
+import { z } from "zod";
+
 import { createClient } from "@/lib/supabase/server";
 import { isContentUnit, type Measure } from "@/lib/measures";
-import { isRubroClass, type Rubro } from "@/lib/rubros";
+import {
+  RUBRO_ICONS,
+  isRubroClass,
+  type Rubro,
+  type RubroClass,
+  type RubroSheet,
+} from "@/lib/rubros";
 import type {
   MediaKind,
   QuantityBasis,
@@ -162,8 +170,74 @@ export async function getRubros(): Promise<{ groupId: string; rubros: Rubro[] } 
         uses: Number(r.uses),
         mismatched: Number(r.mismatched),
         usedInRecipes: r.used_in_recipes,
+        icon: r.icon,
       })),
   };
+}
+
+const rubroSheet = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  icon: z.enum(RUBRO_ICONS),
+  description: z.string().nullable(),
+  is_active: z.boolean(),
+  used_in_recipes: z.boolean(),
+  stamp: z.string(),
+  subcategories: z.array(z.string()),
+  ingredients: z.object({ total: z.number(), active: z.number() }).optional(),
+  recipes: z.object({ total: z.number(), published: z.number(), open: z.number().optional() }),
+});
+
+// La ficha de un rubro (ADR-0066), con los números de lo que ve la sesión. null si no lo ve.
+export async function getRubroSheet(
+  rubroClass: RubroClass,
+  id: string,
+): Promise<RubroSheet | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("recipes")
+    .rpc("top_category_sheet", { p_class: rubroClass, p_id: id });
+  if (error) failed("el rubro");
+  if (data === null) return null;
+  const parsed = rubroSheet.safeParse(data);
+  if (!parsed.success) failed("el rubro");
+  const s = parsed.data;
+  return {
+    rubroClass,
+    id: s.id,
+    code: s.code,
+    name: s.name,
+    icon: s.icon,
+    description: s.description,
+    isActive: s.is_active,
+    usedInRecipes: s.used_in_recipes,
+    stamp: s.stamp,
+    subcategories: s.subcategories,
+    ingredients: s.ingredients ?? null,
+    recipes: { ...s.recipes, open: s.recipes.open ?? 0 },
+  };
+}
+
+// Cuántas materias primas activas del rubro tienen el precio al día en un local. null si no ve precios ahí.
+export async function getRubroPrices(
+  categoryId: string,
+  restaurantId: string,
+): Promise<{ total: number; current: number; stale: number; missing: number } | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("costing")
+    .rpc("category_price_summary", { p_category_id: categoryId, p_restaurant_id: restaurantId });
+  if (error) failed("los precios del rubro");
+  const row = data[0];
+  return row
+    ? {
+        total: Number(row.total),
+        current: Number(row.current),
+        stale: Number(row.stale),
+        missing: Number(row.missing),
+      }
+    : null;
 }
 
 // ---------------------------------------------------------------------------

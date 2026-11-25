@@ -599,7 +599,9 @@ export type Database = {
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          description: string | null;
           group_id: string;
+          icon: Database["catalog"]["Enums"]["category_icon"] | null;
           id: string;
           is_active: boolean;
           name: string;
@@ -616,7 +618,9 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          description?: string | null;
           group_id: string;
+          icon?: Database["catalog"]["Enums"]["category_icon"] | null;
           id?: string;
           is_active?: boolean;
           name: string;
@@ -632,7 +636,9 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          description?: string | null;
           group_id?: string;
+          icon?: Database["catalog"]["Enums"]["category_icon"] | null;
           id?: string;
           is_active?: boolean;
           name?: string;
@@ -648,6 +654,54 @@ export type Database = {
             columns: ["parent_id", "group_id"];
             isOneToOne: false;
             referencedRelation: "ingredient_categories";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
+      };
+      ingredient_media: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          ingredient_id: string;
+          storage_path: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          ingredient_id: string;
+          storage_path: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          ingredient_id?: string;
+          storage_path?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_media_ingredient_fkey";
+            columns: ["ingredient_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "ingredients";
             referencedColumns: ["id", "group_id"];
           },
         ];
@@ -1549,6 +1603,7 @@ export type Database = {
         Args: { p_group_id: string; p_list: Database["catalog"]["Enums"]["settings_list"] };
         Returns: boolean;
       };
+      can_manage_photo: { Args: { p_name: string }; Returns: boolean };
       can_see_lists: { Args: { p_group_id: string }; Returns: boolean };
       cannot_archive_item: {
         Args: { p_id: string; p_list: Database["catalog"]["Enums"]["settings_list"] };
@@ -1661,6 +1716,10 @@ export type Database = {
         Args: { p_code: string; p_group_id: string; p_name: string; p_reason: string };
         Returns: string;
       };
+      default_category_icon: {
+        Args: { p_code: string };
+        Returns: Database["catalog"]["Enums"]["category_icon"];
+      };
       free_category_code: {
         Args: { p_name: string; p_prefix: string; p_taken: string[] };
         Returns: string;
@@ -1712,6 +1771,7 @@ export type Database = {
         Returns: string;
       };
       list_key: { Args: { p_name: string }; Returns: string };
+      manageable_photo_folders: { Args: Record<PropertyKey, never>; Returns: string[] };
       missing_conversion: {
         Args: { p_content_unit_id: string; p_ingredient_id: string };
         Returns: string;
@@ -1725,6 +1785,7 @@ export type Database = {
         Args: { p_group_id: string; p_prefix: string; p_width: number };
         Returns: string;
       };
+      photo_ingredient_id: { Args: { p_name: string }; Returns: string };
       preview_ingredient_code: { Args: { p_category_id: string }; Returns: string };
       process_usage: {
         Args: Record<PropertyKey, never>;
@@ -1784,6 +1845,10 @@ export type Database = {
           p_tested_on: string;
         };
         Returns: string;
+      };
+      remove_ingredient_photo: {
+        Args: { p_ingredient_id: string; p_reason: string };
+        Returns: Json;
       };
       rename_category: {
         Args: { p_id: string; p_name: string; p_reason: string };
@@ -1858,6 +1923,10 @@ export type Database = {
       set_ingredient_active: {
         Args: { p_active: boolean; p_id: string; p_reason: string };
         Returns: undefined;
+      };
+      set_ingredient_photo: {
+        Args: { p_ingredient_id: string; p_reason: string; p_storage_path: string };
+        Returns: Json;
       };
       set_requires_thawing: {
         Args: { p_ingredient_id: string; p_reason: string; p_value: boolean };
@@ -1936,6 +2005,7 @@ export type Database = {
         Args: { p_changes: Json; p_id: string; p_reason: string };
         Returns: undefined;
       };
+      visible_photo_paths: { Args: Record<PropertyKey, never>; Returns: string[] };
       yield_alert_threshold: { Args: { p_ingredient_id: string }; Returns: number };
       yield_deviation: {
         Args: { p_test_id: string };
@@ -1971,6 +2041,21 @@ export type Database = {
     };
     Enums: {
       allergen_status: "contains" | "may_contain" | "free_verified";
+      category_icon:
+        | "vegetable"
+        | "meat"
+        | "fish"
+        | "dairy"
+        | "flour"
+        | "oil"
+        | "herb"
+        | "pantry"
+        | "drink"
+        | "cleaning"
+        | "packaging"
+        | "preparation"
+        | "dish"
+        | "dessert";
       conversion_kind: "density" | "unit_weight";
       data_source:
         | "manual"
@@ -3852,6 +3937,15 @@ export type Database = {
       apply_price: { Args: { p_request_id: string }; Returns: undefined };
       apply_price_direction: { Args: { p_request_id: string }; Returns: undefined };
       archive_scenario: { Args: { p_reason: string; p_scenario_id: string }; Returns: undefined };
+      category_price_summary: {
+        Args: { p_category_id: string; p_restaurant_id: string };
+        Returns: {
+          current: number;
+          missing: number;
+          stale: number;
+          total: number;
+        }[];
+      };
       check_reference: {
         Args: {
           p_req: Omit<
@@ -8507,7 +8601,9 @@ export type Database = {
           created_by: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
+          description: string | null;
           group_id: string;
+          icon: Database["catalog"]["Enums"]["category_icon"] | null;
           id: string;
           is_active: boolean;
           kind: Database["recipes"]["Enums"]["category_class"] | null;
@@ -8523,7 +8619,9 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          description?: string | null;
           group_id: string;
+          icon?: Database["catalog"]["Enums"]["category_icon"] | null;
           id?: string;
           is_active?: boolean;
           kind?: Database["recipes"]["Enums"]["category_class"] | null;
@@ -8538,7 +8636,9 @@ export type Database = {
           created_by?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
+          description?: string | null;
           group_id?: string;
+          icon?: Database["catalog"]["Enums"]["category_icon"] | null;
           id?: string;
           is_active?: boolean;
           kind?: Database["recipes"]["Enums"]["category_class"] | null;
@@ -9088,7 +9188,9 @@ export type Database = {
           category_class: Database["recipes"]["Enums"]["category_class"] | null;
           code: string | null;
           created_at: string | null;
+          description: string | null;
           group_id: string | null;
+          icon: Database["catalog"]["Enums"]["category_icon"] | null;
           id: string | null;
           is_active: boolean | null;
           name: string | null;
@@ -9134,6 +9236,7 @@ export type Database = {
         Returns: {
           category_class: Database["recipes"]["Enums"]["category_class"];
           code: string;
+          icon: Database["catalog"]["Enums"]["category_icon"];
           id: string;
           is_active: boolean;
           mismatched: number;
@@ -9369,15 +9472,6 @@ export type Database = {
         Args: { p_id: string; p_name: string; p_reason: string };
         Returns: undefined;
       };
-      rename_top_category: {
-        Args: {
-          p_class: Database["recipes"]["Enums"]["category_class"];
-          p_id: string;
-          p_name: string;
-          p_reason: string;
-        };
-        Returns: undefined;
-      };
       reopen_returned: { Args: { p_version_id: string }; Returns: undefined };
       request_review: { Args: { p_reason: string; p_version_id: string }; Returns: Json };
       require_applied: { Args: { p_res: Json }; Returns: undefined };
@@ -9404,6 +9498,16 @@ export type Database = {
         };
         Returns: Json;
       };
+      save_top_category: {
+        Args: {
+          p_changes: Json;
+          p_class: Database["recipes"]["Enums"]["category_class"];
+          p_expected_stamp: string;
+          p_id: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
       scale_version: {
         Args: { p_mode: string; p_target: number; p_unit?: string; p_version_id: string };
         Returns: Json;
@@ -9424,10 +9528,6 @@ export type Database = {
           p_recipe_id: string;
           p_restaurant_id: string;
         };
-        Returns: Json;
-      };
-      set_category_used_in_recipes: {
-        Args: { p_id: string; p_reason: string; p_value: boolean };
         Returns: Json;
       };
       set_components: {
@@ -9456,6 +9556,10 @@ export type Database = {
       top_category_group: {
         Args: { p_class: Database["recipes"]["Enums"]["category_class"]; p_id: string };
         Returns: string;
+      };
+      top_category_sheet: {
+        Args: { p_class: Database["recipes"]["Enums"]["category_class"]; p_id: string };
+        Returns: Json;
       };
       unit_to_base: { Args: { p_unit_id: string }; Returns: number };
       update_recipe: { Args: { p_changes: Json; p_id: string; p_reason: string }; Returns: Json };
@@ -9986,6 +10090,22 @@ export const Constants = {
   catalog: {
     Enums: {
       allergen_status: ["contains", "may_contain", "free_verified"],
+      category_icon: [
+        "vegetable",
+        "meat",
+        "fish",
+        "dairy",
+        "flour",
+        "oil",
+        "herb",
+        "pantry",
+        "drink",
+        "cleaning",
+        "packaging",
+        "preparation",
+        "dish",
+        "dessert",
+      ],
       conversion_kind: ["density", "unit_weight"],
       data_source: [
         "manual",

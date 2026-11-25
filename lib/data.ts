@@ -670,6 +670,7 @@ export const TABLE_LABELS: Record<string, string> = {
   "catalog.units": "Unidad de medida",
   "catalog.unit_conversions": "Conversión de unidades",
   "catalog.ingredient_categories": "Categoría de materias primas",
+  "catalog.ingredient_media": "Foto de una materia prima",
   "catalog.ingredients": "Materia prima",
   "catalog.ingredient_aliases": "Otro nombre de una materia prima",
   "catalog.ingredient_unit_conversions": "Conversión de una materia prima",

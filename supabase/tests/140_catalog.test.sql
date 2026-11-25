@@ -89,11 +89,11 @@ $$;
 select is(
   (select array_agg(c.relname::text order by c.relname::text) from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'catalog' and c.relkind = 'r'),
-  array['allergens', 'code_series', 'ingredient_aliases', 'ingredient_allergens', 'ingredient_categories', 'ingredient_unit_conversions',
-        'ingredient_yield_profiles', 'ingredient_yield_tests', 'ingredients', 'kitchen_equipment', 'kitchen_sectors',
+  array['allergens', 'code_series', 'ingredient_aliases', 'ingredient_allergens', 'ingredient_categories', 'ingredient_media',
+        'ingredient_unit_conversions', 'ingredient_yield_profiles', 'ingredient_yield_tests', 'ingredients', 'kitchen_equipment', 'kitchen_sectors',
         'kitchen_stations', 'practical_measures', 'purchase_products', 'suppliers',
         'unit_conversions', 'units', 'yield_processes'],
-  'el catálogo tiene sus 18 tablas (10 de 2.1 A, 3 de rendimientos, 2.1 B, los contadores de códigos, ADR-0041, y las 4 listas de la cocina, ADR-0063)');
+  'el catálogo tiene sus 19 tablas (10 de 2.1 A, 3 de rendimientos, 2.1 B, los contadores de códigos, ADR-0041, las 4 listas de la cocina, ADR-0063, y las fotos, ADR-0066)');
 select is(
   (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'catalog' and c.relkind = 'r' and not c.relrowsecurity),

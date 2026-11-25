@@ -3,6 +3,28 @@
 
 export type RubroClass = "purchase" | "subrecipe" | "menu";
 
+// Los íconos posibles (ADR-0066): los mismos que catalog.category_icon, en el orden en que se ofrecen.
+export const RUBRO_ICON_LABELS = {
+  vegetable: "Verduras y frutas",
+  meat: "Carnes",
+  fish: "Pescados",
+  dairy: "Lácteos y huevos",
+  flour: "Harinas y pastas",
+  oil: "Aceites",
+  herb: "Hierbas y especias",
+  pantry: "Almacén",
+  drink: "Bebidas",
+  cleaning: "Limpieza",
+  packaging: "Descartables",
+  preparation: "Preparación",
+  dish: "Plato",
+  dessert: "Postre",
+} as const;
+export type RubroIconKey = keyof typeof RUBRO_ICON_LABELS;
+export const RUBRO_ICONS = Object.keys(RUBRO_ICON_LABELS) as RubroIconKey[];
+
+export const RUBRO_DESCRIPTION_MAX = 500;
+
 export type Rubro = {
   rubroClass: RubroClass;
   id: string;
@@ -15,7 +37,73 @@ export type Rubro = {
   mismatched: number;
   // Solo en los de compra (ADR-0052): si sus materias primas se pueden usar en recetas (Limpieza y Descartables, no).
   usedInRecipes: boolean;
+  icon: RubroIconKey;
 };
+
+// La ficha de un rubro (recipes.top_category_sheet).
+export type RubroSheet = {
+  rubroClass: RubroClass;
+  id: string;
+  code: string;
+  name: string;
+  icon: RubroIconKey;
+  description: string | null;
+  isActive: boolean;
+  usedInRecipes: boolean;
+  // El sello del último cambio: quien guarda no pisa lo de otra persona.
+  stamp: string;
+  subcategories: string[];
+  // Solo en los de compra.
+  ingredients: { total: number; active: number } | null;
+  // De compra: las que usan sus materias primas. Sub-recetas y menú: las del rubro.
+  recipes: { total: number; published: number; open: number };
+};
+
+// Lo que se edita en la ficha.
+export type RubroDraft = {
+  name: string;
+  description: string;
+  icon: RubroIconKey;
+  usedInRecipes: boolean;
+};
+
+export type RubroChanges = {
+  name?: string;
+  description?: string | null;
+  icon?: RubroIconKey;
+  used_in_recipes?: boolean;
+};
+
+/** Solo lo que cambió, como lo espera recipes.save_top_category. Los espacios de más no son un cambio. */
+export function rubroChanges(saved: RubroDraft, draft: RubroDraft): RubroChanges {
+  const out: RubroChanges = {};
+  if (draft.name.trim() !== saved.name) out.name = draft.name.trim();
+  if (draft.description.trim() !== saved.description)
+    out.description = draft.description.trim() || null;
+  if (draft.icon !== saved.icon) out.icon = draft.icon;
+  if (draft.usedInRecipes !== saved.usedInRecipes) out.used_in_recipes = draft.usedInRecipes;
+  return out;
+}
+
+/** Lo que se estaba cambiando, sobre lo nuevo que dice la base: lo demás no se pisa con lo viejo. */
+export function rebaseDraft(before: RubroDraft, draft: RubroDraft, saved: RubroDraft): RubroDraft {
+  const c = rubroChanges(before, draft);
+  return {
+    name: c.name === undefined ? saved.name : draft.name,
+    description: c.description === undefined ? saved.description : draft.description,
+    icon: c.icon ?? saved.icon,
+    usedInRecipes: c.used_in_recipes ?? saved.usedInRecipes,
+  };
+}
+
+/** El panel de un filtro: por cantidad y después por nombre; los dados de baja, al final y solo si tienen algo. */
+export function panelRubros(rubros: Rubro[]): Rubro[] {
+  return arrangeRubros(
+    rubros.filter((r) => r.isActive || r.uses > 0),
+    "",
+    "cantidad",
+  );
+}
 
 export type RubroSort = "cantidad" | "az";
 
@@ -24,6 +112,8 @@ export const RUBRO_CLASSES: {
   rubroClass: RubroClass;
   tab: string;
   label: string;
+  // Corto, para los botones de la clase.
+  short: string;
   prefix: string;
   one: string;
   many: string;
@@ -32,6 +122,7 @@ export const RUBRO_CLASSES: {
     rubroClass: "purchase",
     tab: "compra",
     label: "Rubros de compra",
+    short: "De compra",
     prefix: "MP",
     one: "insumo",
     many: "insumos",
@@ -39,7 +130,8 @@ export const RUBRO_CLASSES: {
   {
     rubroClass: "subrecipe",
     tab: "sub-recetas",
-    label: "Sub-recetas",
+    label: "Rubros de preparación",
+    short: "Preparación",
     prefix: "SR",
     one: "sub-receta",
     many: "sub-recetas",
@@ -47,7 +139,8 @@ export const RUBRO_CLASSES: {
   {
     rubroClass: "menu",
     tab: "menu",
-    label: "Rubros de menú",
+    label: "Rubros de carta",
+    short: "Carta",
     prefix: "PL",
     one: "receta",
     many: "recetas",

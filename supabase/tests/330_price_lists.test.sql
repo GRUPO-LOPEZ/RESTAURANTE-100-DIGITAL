@@ -289,14 +289,12 @@ select lives_ok($$ update recipes.recipe_components set quantity = 20
                     where recipe_version_id = pg_temp.u(1211) and line_order = 98 $$,
   'cambiar la cantidad de una línea que ya estaba no se rechaza');
 select is(pg_temp.q(pg_temp.u(405), $$
-  select recipes.set_category_used_in_recipes(
-           (select id from catalog.ingredient_categories where code = 'MP-LIM' and group_id = pg_temp.u(1)), true,
-           'Prueba') ->> 'result' $$),
+  select recipes.save_top_category('purchase', id, updated_at, '{"used_in_recipes":true}', 'Prueba') ->> 'result'
+    from recipes.top_categories where code = 'MP-LIM' $$),
   'denied', 'la Chef no cambia si un rubro va a recetas');
 select is(pg_temp.q(pg_temp.u(408), $$
-  select recipes.set_category_used_in_recipes(
-           (select id from catalog.ingredient_categories where code = 'MP-LIM' and group_id = pg_temp.u(1)), true,
-           'Usamos un desengrasante en una preparación') ->> 'result' $$),
+  select recipes.save_top_category('purchase', id, updated_at, '{"used_in_recipes":true}', 'Usamos un desengrasante en una preparación') ->> 'result'
+    from recipes.top_categories where code = 'MP-LIM' $$),
   'applied', 'Compras sí, con motivo');
 
 -- ---------------------------------------------------------------------------

@@ -17,6 +17,7 @@ import { AppShell, Loading } from "@/components/app-shell";
 import { BackLink } from "@/components/back-link";
 import { FocusTarget } from "@/components/focus-target";
 import { Disclosure } from "@/components/disclosure";
+import { IngredientPhoto } from "@/components/ingredient-photo";
 import { IngredientPrices } from "@/components/ingredient-prices";
 import {
   AllergenSummary,
@@ -56,6 +57,7 @@ import {
   type IngredientUsage,
   type Unit,
   type YieldRow,
+  getIngredientPhotos,
 } from "@/lib/catalog";
 import { codeNoticeFromQuery } from "@/lib/codes";
 import { lineStatusLabel } from "@/lib/cost-labels";
@@ -348,7 +350,7 @@ async function Ingredient({
   ]);
   const costPlace = costResolved?.place ?? null;
   const place = priceResolved?.place ?? null;
-  const [netCost, localCost, productPrices] = await Promise.all([
+  const [netCost, localCost, productPrices, photos] = await Promise.all([
     costPlace && menus.costs
       ? getIngredientNetCost(
           ingredient.id,
@@ -359,6 +361,7 @@ async function Ingredient({
       : Promise.resolve(null),
     place && menus.pricesView ? getLocalCost(ingredient.id, place.id) : Promise.resolve(null),
     place && menus.pricesView ? getProductPrices(ingredient.id, place.id) : Promise.resolve([]),
+    getIngredientPhotos([ingredient.id]),
   ]);
 
   // Solo se edita con catalog.manage y con el sello de la base (si no hay sello, la base no la deja editar).
@@ -588,7 +591,19 @@ async function Ingredient({
             pantalla es más baja (1715 × 843, la de Soy; ADR-0051), lo que sobra se desplaza dentro de su tarjeta. Cada
             eslabón lleva min-h-0 y base 0px. En el celular, una debajo de la otra. */}
         <div className="grid gap-4 desk:min-h-0 desk:flex-[1_1_0px] desk:grid-cols-[4fr_5fr_4fr] desk:grid-rows-[minmax(0,1fr)]">
-          <Tile id={anchor("datos")} title="Datos generales" scroll>
+          <Tile
+            id={anchor("datos")}
+            title="Datos generales"
+            scroll
+            aside={
+              <IngredientPhoto
+                ingredientId={ingredient.id}
+                name={ingredient.name}
+                photo={photos ? (photos.get(ingredient.id) ?? null) : undefined}
+                canManage={canManage}
+              />
+            }
+          >
             <DataSection
               middle={<ThawingToggle pending={thawingPending} />}
               readExtra={

@@ -166,15 +166,32 @@ test("en el celular, la cola se resuelve con controles de 44 px", async ({ page,
   await axe(page);
 });
 
-test("Rubros: «Va a recetas» es un sí/no de un clic", async ({ page, isMobile }) => {
+test("Rubros: «¿Va a recetas?» es un sí/no de un clic que se guarda con motivo", async ({
+  page,
+  isMobile,
+}) => {
   test.skip(isMobile, "Solo en la computadora.");
   await login(page, COMPRAS, { mfa: true });
   await page.goto("/rubros");
-  const toggle = page.getByRole("button", { name: /^Recetas \(Limpieza\)$/ });
-  await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", "true");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await page
+    .getByRole("navigation", { name: "Rubros de compra", exact: true })
+    .getByRole("link", { name: /^Limpieza/ })
+    .click();
+  const sheet = page.getByRole("region", { name: "Ficha de Limpieza" });
+  const toggle = sheet.getByRole("button", { name: "¿Va a recetas?" });
+  // Ida y vuelta: queda guardado cada vez.
+  for (const [from, to] of [
+    ["false", "true"],
+    ["true", "false"],
+  ] as const) {
+    await expect(toggle).toHaveAttribute("aria-pressed", from);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", to);
+    await sheet.getByLabel("Motivo de los cambios").fill("Prueba de «va a recetas»");
+    await sheet.getByRole("button", { name: "Guardar cambios" }).click();
+    await expect(sheet.getByText("Cambios guardados.")).toBeVisible({ timeout: 20_000 });
+    await page.reload();
+    await expect(toggle).toHaveAttribute("aria-pressed", to);
+  }
   await axe(page);
 });

@@ -1,3 +1,4 @@
+import type { ListPrice } from "@/lib/ingredient-price";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/database.types";
 import { todayInArgentina } from "@/lib/forms/schemas";
@@ -268,4 +269,29 @@ export async function getProductPrices(
     isActive: r.is_active,
     origin: r.price_record_id ? (origins.get(r.price_record_id) ?? null) : null,
   }));
+}
+
+// El precio vigente de las materias primas de una página de la lista, en un local (ADR-0066).
+export async function getListPrices(
+  ids: string[],
+  restaurantId: string,
+): Promise<Map<string, ListPrice>> {
+  if (ids.length === 0) return new Map();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .schema("costing")
+    .rpc("resolve_prices", { p_restaurant_id: restaurantId })
+    .in("ingredient_id", ids);
+  if (error) throw new Error("No pudimos cargar los precios.");
+  return new Map(
+    data.map((r) => [
+      r.ingredient_id,
+      {
+        unitCost: r.unit_cost === null ? null : Number(r.unit_cost),
+        baseUnit: r.base_unit,
+        stale: r.stale ?? false,
+        status: r.status,
+      },
+    ]),
+  );
 }

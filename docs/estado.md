@@ -1,12 +1,21 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-25._ **Correcciones del Módulo 1: Tanda 1 cerrada; Tanda 2, PR A y PR B fusionados (#101 y #102). En curso: PR C, hacer varias recetas y fichas técnicas (`feat/fichas-tecnicas`).**
+_Última actualización: 2026-11-25._ **Correcciones del Módulo 1: Tanda 1 cerrada; Tanda 2, PR A, B y C fusionados (#101, #102 y #103). En curso: PR D, en dos partes; D1, rubros y materias primas (`feat/materias-primas-y-rubros`).**
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## Tanda 2, PR C (hacer varias recetas y fichas técnicas): PR abierto (2026-11-25)
+## Tanda 2, PR D1 (rubros, materias primas en una pantalla y foto): PR abierto (2026-11-25)
 
-- **Rama `feat/fichas-tecnicas`, ADR-0065, lista para Soy en `docs/modulos/26-fichas-tecnicas-lista-de-cambios.md`.** Plan aprobado por Joaco el 2026-11-24. Lo fusiona Joaco.
+- **Rama `feat/materias-primas-y-rubros`, ADR-0066, lista para Soy en `docs/modulos/27-rubros-y-materias-primas-lista-de-cambios.md`, capturas en `docs/capturas/rubros-y-materias-primas/`.** Plan aprobado por Joaco el 2026-11-25. Lo fusiona Joaco.
+- **Base:** `20261217110000_rubro_sheet.sql` (ícono y descripción del rubro, ficha que se guarda junta, «con precio al día») y `20261217120000_ingredient_media.sql` (foto de la materia prima). Sin permisos nuevos. Se quitan `recipes.rename_top_category` y `recipes.set_category_used_in_recipes`, que la ficha reemplaza.
+- **Decisiones de Joaco (2026-11-25):** dos PR; la lista de Recetas no cambia; la foto la cambia quien edita la materia prima; el precio vigente en la lista y «Con precio al día», solo quien ve precios, según el local; en D2, la alícuota sale del último precio aprobado del producto (si no, 21 %) y el código de producto es automático.
+- **Pruebas:** pgTAP completo (3.792) y Vitest (616) en verde; Playwright de lo tocado, sin fallas abiertas. La suite completa la corre GitHub Actions. Con 500 materias primas: 41, 30 y 45 ms.
+- **Revisiones:** las tres. Base y seguridad, sin graves; pantallas, 2 graves (lo escrito se perdía al buscar u ordenar; con zoom la tabla quedaba en 0 px), corregidos, y segunda pasada sin graves. Todo corregido o anotado en el ADR.
+- **Sigue:** D2 (`Proponer precio` con 5 datos y las subpantallas de la ficha), con su plan.
+
+## Tanda 2, PR C (hacer varias recetas y fichas técnicas): fusionado por Joaco el 2026-11-25 (PR #103, `43b346e`), publicado en staging
+
+- **Rama `feat/fichas-tecnicas`, ADR-0065, lista para Soy en `docs/modulos/26-fichas-tecnicas-lista-de-cambios.md`.** Plan aprobado por Joaco el 2026-11-24.
 - **Por qué pedía densidad:** la planilla multiplicaba los gramos de cada línea, no su cantidad. La base no tenía el problema.
 - **Base:** `20261216110000_recipe_cards.sql` (la ficha trae sector, partida y quién aprobó; se multiplica por recetas, con medidas prácticas). Sin tablas ni permisos nuevos.
 - **Pantallas:** «Hacer varias recetas», las 4 fichas en `/recetas/[id]/fichas` (`/cocina` redirige), las columnas «Hacer» de la planilla y el punto crítico por paso.
@@ -16,7 +25,6 @@ _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de 
 - **En el papel, el nombre y la versión van en todas las hojas** (pedido de Joaco, 2026-11-25).
 - **Decisión de Joaco (2026-11-25):** en la ficha de Servicio, si la medida no da entera («0,42 taza»), el gramaje va en grande.
 - **Trampa:** `next build` lanzado desde Bash en segundo plano falló con `0xc0000142` (Windows no abrió un proceso); desde PowerShell armó bien.
-- **Sigue:** PR D (`feat/materias-primas-y-rubros`), con su plan.
 
 ## Tanda 2, PR B (ficha de receta): fusionado el 2026-11-24 (PR #102)
 

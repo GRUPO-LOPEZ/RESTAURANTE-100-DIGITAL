@@ -362,6 +362,10 @@ export const schemas = {
   // pide destino solo si el rubro tiene usos (lo controla la base).
   rubro: z.object({ name: settingName, reason: reasonField }),
   rubroName: z.object({ name: settingName }),
+  // Se controla antes de subir un archivo, que después no se borra (la base pide 3 letras).
+  photoReason: z.object({
+    reason: reasonField.min(3, "Escribí el motivo, con al menos 3 letras."),
+  }),
   // Subcategoría (configuración del catálogo): el primer nivel son los rubros, que se crean en Rubros.
   subcategory: z.object({
     name: settingName,

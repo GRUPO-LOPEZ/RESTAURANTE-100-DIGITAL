@@ -5,10 +5,10 @@ import { Settings } from "lucide-react";
 import { AppShell, Loading } from "@/components/app-shell";
 import { CreateModal } from "@/components/create-modal";
 import { NewIngredientForm } from "@/components/new-ingredient-form";
-import { RubroFilterGrid } from "@/components/rubro-filter";
+import { RecipePhotoImage } from "@/components/recipe-photo-image";
+import { RubroPanel } from "@/components/rubro-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Field, Input } from "@/components/ui/field";
 import { FilterBar } from "@/components/ui/filter-bar";
@@ -19,24 +19,32 @@ import {
   INGREDIENT_SORT_KEYS,
   cleanSearch,
   getCategories,
+  getIngredientPhotos,
   getIngredients,
   type IngredientRow,
   type IngredientsFilter,
 } from "@/lib/catalog";
 import { first, uuidOrUndefined } from "@/lib/data";
+import { resolvePricePlace } from "@/lib/costs";
+import { listPriceState, listPriceText } from "@/lib/ingredient-price";
 import { listHref, parseList, plainParams } from "@/lib/list-params";
+import { getListPrices } from "@/lib/prices";
 import { getRubros, withSubcategories } from "@/lib/recipes";
 import { countUnmappedArticles } from "@/lib/price-lists-data";
 import { getMenus, requireMenu } from "@/lib/auth/session";
+import { panelRubros } from "@/lib/rubros";
 
 // Materias primas (sección 18; listado del rediseño, ADR-0036; ordenado por rubro, ADR-0041): ¿qué compramos y cómo
-// lo usamos? Cada una se carga una sola vez para todo el grupo. Arriba, las tarjetas de los rubros de compra, que
-// filtran la tabla con un clic.
+// lo usamos? Cada una se carga una sola vez para todo el grupo. En la computadora entra en una pantalla (ADR-0066):
+// a la izquierda, los rubros, que no se mueven; a la derecha, la tabla, que se desplaza adentro.
 export default function MateriasPrimasPage({ searchParams }: PageProps<"/materias-primas">) {
   return (
     <AppShell
       title="Materias primas"
-      description="Lo que compramos, una sola vez para todo el grupo: cómo se compra, cómo se mide y sus alérgenos."
+      fill
+      meta={
+        <span className="text-sm text-ink-muted">Lo que compramos, una sola vez para el grupo</span>
+      }
       actions={
         <Suspense fallback={null}>
           <Actions />
@@ -96,7 +104,7 @@ async function Ingredients({
 }: {
   searchParams: PageProps<"/materias-primas">["searchParams"];
 }) {
-  await requireMenu("catalog");
+  const session = await requireMenu("catalog");
   const raw = await searchParams;
   const params = plainParams(raw);
   const status = first(raw.estado);
@@ -115,6 +123,13 @@ async function Ingredients({
     desc: list.dir === "desc",
   };
   const [{ rows, total }, menus] = await Promise.all([getIngredients(filter), getMenus()]);
+  const ids = rows.map((r) => r.id);
+  // El precio vigente, solo para quien ve precios y en el local de arriba (decisión de Joaco, ADR-0066).
+  const priced = menus.pricesView ? await resolvePricePlace(session.user_id) : null;
+  const [photos, prices] = await Promise.all([
+    getIngredientPhotos(ids),
+    priced?.place ? getListPrices(ids, priced.place.id) : null,
+  ]);
 
   const remove = (key: string) => listHref(PATH, params, { [key]: undefined, pagina: undefined });
   const active = [
@@ -126,64 +141,124 @@ async function Ingredients({
 
   const columns: DataColumn<IngredientRow>[] = [
     {
-      key: "code",
-      header: "Código",
-      sortKey: "code",
-      // En el celular va debajo del nombre.
-      mobile: "hidden",
-      cell: (row) => <span className="whitespace-nowrap tabular-nums">{row.code}</span>,
-    },
-    {
       key: "name",
       header: "Materia prima",
       sortKey: "name",
       mobile: "title",
       cell: (row) => (
-        <span className="flex flex-col">
-          <Link
-            href={`/materias-primas/${row.id}?volver=${encodeURIComponent(here)}`}
-            className="inline-flex min-h-touch items-center font-medium text-primary underline-offset-4 hover:underline desk:min-h-0"
-          >
-            {row.name}
-          </Link>
-          <span className="text-sm text-ink-muted tabular-nums desk:hidden">{row.code}</span>
+        <span className="flex items-center gap-2">
+          <Thumb photo={photos?.get(row.id)} />
+          <span className="flex min-w-0 flex-col">
+            <Link
+              href={`/materias-primas/${row.id}?volver=${encodeURIComponent(here)}`}
+              title={row.name}
+              className="inline-flex min-h-touch items-center font-medium text-primary underline-offset-4 hover:underline desk:block desk:min-h-7 desk:max-w-44 desk:truncate desk:leading-7 desk:focus-visible:max-w-none wide:max-w-80"
+            >
+              {row.name}
+            </Link>
+            <span className="text-sm text-ink-muted tabular-nums desk:hidden">{row.code}</span>
+          </span>
         </span>
       ),
     },
-    { key: "category", header: "Rubro", cell: (row) => row.category || "—" },
-    { key: "unit", header: "Se mide en", mobile: "hidden", cell: (row) => row.unit || "—" },
+    {
+      key: "code",
+      header: "Código",
+      sortKey: "code",
+      // En el celular va debajo del nombre.
+      mobile: "hidden",
+      cell: (row) => <span className="text-sm whitespace-nowrap tabular-nums">{row.code}</span>,
+    },
+    // Con un rubro elegido, la columna repetiría lo mismo en todas las filas.
+    ...(rubro
+      ? []
+      : [
+          {
+            key: "category",
+            header: "Rubro",
+            cell: (row: IngredientRow) => <span className="text-sm">{row.category || "—"}</span>,
+          },
+        ]),
+    // Con el precio («/ kg») y el rubro a la vista, la unidad no entra de ancho ni hace falta.
+    ...(prices && !rubro
+      ? []
+      : [
+          {
+            key: "unit",
+            header: "Se mide en",
+            mobile: "hidden" as const,
+            cell: (row: IngredientRow) => row.unit || "—",
+          },
+        ]),
+    ...(prices
+      ? [
+          {
+            key: "price",
+            header: "Precio vigente",
+            align: "right" as const,
+            cell: (row: IngredientRow) => (
+              <span className="text-sm">{listPriceText(prices.get(row.id)) ?? "—"}</span>
+            ),
+          },
+        ]
+      : []),
     {
       key: "status",
-      header: "Estado",
+      header: prices ? "Estado del precio" : "Estado",
       mobile: "status",
-      cell: (row) =>
-        row.isActive ? <Badge status="ok">Activa</Badge> : <Badge status="none">Desactivada</Badge>,
+      cell: (row) => {
+        if (!row.isActive) return <Badge status="none">Desactivada</Badge>;
+        if (!prices) return <Badge status="ok">Activa</Badge>;
+        // Con precios, el estado es el del precio (como en el boceto): una activa sin precio no dice «Al día».
+        const state = listPriceState(prices.get(row.id));
+        return <Badge status={state.status}>{state.label}</Badge>;
+      },
     },
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <FilterBar label="Filtros de materias primas" active={active}>
-        <Field id="mp-q" label="Buscar" className="w-full desk:w-72">
-          <Input
-            type="search"
-            name="q"
-            defaultValue={filter.search}
-            placeholder="Nombre, código o alias"
-          />
-        </Field>
-      </FilterBar>
-      <RubroFilterGrid
+    <div className="flex flex-col gap-4 xl:grid xl:min-h-112 xl:flex-[1_1_0px] xl:grid-cols-[250px_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)]">
+      <RubroPanel
         label="Rubros de compra"
-        rubros={rubros}
+        rubros={panelRubros(rubros)}
         selectedId={rubro?.id}
         hrefFor={(id) => listHref(PATH, params, { rubro: id, pagina: undefined })}
+        all={{
+          href: listHref(PATH, params, { rubro: undefined, pagina: undefined }),
+          count: rubros.reduce((n, r) => n + r.uses, 0),
+        }}
         words={{ one: "materia prima", many: "materias primas" }}
       />
-      <Card className="flex flex-col gap-4">
-        <CardTitle className="tabular-nums">
-          {total === 1 ? "1 materia prima" : `${total.toLocaleString("es-AR")} materias primas`}
-        </CardTitle>
+      <section
+        aria-label="Lista de materias primas"
+        className="flex min-w-0 flex-col gap-3 desk:h-160 desk:rounded-md desk:border desk:border-line desk:bg-surface desk:p-4 xl:h-auto xl:min-h-0"
+      >
+        <div className="flex flex-col gap-3 desk:flex-row desk:flex-wrap desk:items-end desk:justify-between">
+          <FilterBar label="Filtros de materias primas" active={active}>
+            <Field id="mp-q" label="Buscar" className="w-full desk:w-72">
+              <Input
+                type="search"
+                name="q"
+                defaultValue={filter.search}
+                placeholder="Nombre, código o alias"
+              />
+            </Field>
+          </FilterBar>
+          <div className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+            <h2 className="text-base font-semibold text-ink">
+              {total === 1 ? "1 materia prima" : `${total.toLocaleString("es-AR")} materias primas`}
+            </h2>
+            <p className="text-sm text-ink-muted">
+              {priced
+                ? priced.place
+                  ? `precios de ${priced.place.name}`
+                  : priced.blockedActive
+                    ? `no ves precios de ${priced.blockedActive}`
+                    : "para ver los precios, elegí un local arriba"
+                : ""}
+            </p>
+          </div>
+        </div>
         <Tabs
           label="Estado de las materias primas"
           items={STATUS_TABS.map((t) => ({
@@ -204,6 +279,7 @@ async function Ingredients({
         ) : (
           <DataTable
             caption="Materias primas"
+            scroll
             columns={columns}
             rows={rows}
             rowKey={(r) => r.id}
@@ -230,7 +306,22 @@ async function Ingredients({
         {total > 0 ? (
           <Pagination list={list} total={total} shown={rows.length} path={PATH} params={params} />
         ) : null}
-      </Card>
+      </section>
     </div>
+  );
+}
+
+// La foto, chica. Sin foto, un cuadro vacío: las filas quedan alineadas.
+function Thumb({ photo }: { photo: { url: string | null } | undefined }) {
+  const empty = <span aria-hidden="true" className="size-8 shrink-0 rounded-sm bg-none" />;
+  if (!photo?.url) return empty;
+  return (
+    // El nombre está al lado: la foto no lo repite. Si no carga, queda el cuadro vacío.
+    <RecipePhotoImage
+      url={photo.url}
+      alt=""
+      fallback={empty}
+      className="size-8 shrink-0 object-cover"
+    />
   );
 }
