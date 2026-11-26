@@ -134,12 +134,12 @@ async function Actions({ params }: { params: PageProps<"/compras/ordenes/[id]">[
       {canReceive ? <StartReceiptButton orderId={o.id} number={o.number} resume={false} /> : null}
       {canSend ? (
         <ActionModal
-          label={o.requiresApproval ? "Enviar a aprobación" : "Mandar OC"}
+          label={o.requiresApproval ? "Enviar a aprobación" : "Enviar orden"}
           icon="none"
-          title={`Mandar la orden ${o.number}`}
+          title={`Enviar la orden ${o.number}`}
           description="Si el proveedor requiere aprobación, va a Compras; si no, queda en la cola de envío."
         >
-          <ActionForm action={submitOrderAction} submitLabel="Mandar">
+          <ActionForm action={submitOrderAction} submitLabel="Enviar">
             <input type="hidden" name="orderId" value={o.id} />
           </ActionForm>
         </ActionModal>
