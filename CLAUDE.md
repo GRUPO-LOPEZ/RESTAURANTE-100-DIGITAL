@@ -36,6 +36,7 @@ Vale para todos los módulos. El detalle visual está en `.claude/rules/design.m
 - **Explicaciones** → tooltip (`components/ui/tooltip.tsx`), no texto largo en pantalla.
 - **Se edita donde se ve**, sin formularios intermedios, salvo en las altas complejas.
 - **Cambios con impacto** → contador de pendientes, guardado en lote (una sola transacción) y auditoría con motivo.
+- **Criterios de Soy para todas las pantallas** (2026-11-22): sin scroll, sin subpantallas, altas en modal corto, listados con panel izquierdo fijo, planillas compactas, listas del catálogo, códigos automáticos y todo en español. Están en `.claude/rules/design.md` y valen para todo módulo nuevo.
 
 ## Stack (no agregar tecnologías sin justificarlo por escrito y sin aprobación de Joaco)
 

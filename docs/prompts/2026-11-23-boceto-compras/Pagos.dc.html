@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Registrar pago</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{height:36px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.seg button.on{background:#EAF0FB;border-color:#4A6FB8;color:#2F4F8F;font-weight:500}
+.btn{height:40px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btnp{height:40px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;min-height:40px;border-bottom:1px solid #E5E7EB}
+input{height:40px;border:1px solid #E5E7EB;border-radius:8px;padding:0 12px;font:inherit;font-size:14px;box-sizing:border-box}
+h2{margin:0;font-size:16px;font-weight:600}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden; position: relative;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>COMPRAS</h4><a href="#">Tablero de compras</a><a href="#">Facturas</a><a href="#" class="on">Pagos</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 80px 32px 24px; box-sizing: border-box;">
+    <h1 style="margin: 0; font-size: 20px; font-weight: 600;">¿Qué hay que pagar?</h1>
+  </main>
+  <div style="position: absolute; inset: 0; background: rgba(31,41,55,0.35);" aria-hidden="true"></div>
+  <aside role="dialog" aria-label="Registrar pago" style="position: absolute; top: 0; right: 0; bottom: 0; width: 560px; background: #FFFFFF; box-sizing: border-box; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;"><h2 style="font-size: 20px;">Registrar pago</h2><button style="border: 0; background: none; color: #3D5E9F; font: inherit; font-size: 14px; cursor: pointer;">Cerrar</button></div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 12px;">
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Proveedor</span><input value="Lácteos Prueba · debe $ 24.598"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Importe</span><input value="$ 24.598" style="font-size: 18px; font-weight: 600;"></label>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Medio de pago</span>
+      <div class="seg"><button>Efectivo</button><button class="on" aria-pressed="true">Transferencia</button><button>Cheque</button><button>E-cheq</button></div></div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">A la cuenta</span><span style="font-size: 14px; min-height: 40px; display: flex; align-items: center;">alias LACTEOS.PRUEBA.PAGO</span></div>
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Fecha</span><input value="22/11/2026"></label>
+    </div>
+    <div style="display: flex; flex-direction: column;">
+      <span style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">Se aplica a</span>
+      <div class="row"><span>Factura-remito A 0003-00004567 <span class="chip" style="background: #FEF3C7; color: #92400E;">Vence hoy</span></span><span style="font-variant-numeric: tabular-nums;">$ 24.598</span></div>
+      <span class="lbl" style="margin-top: 4px;">Se reparte solo, de la que vence antes. Clic en un importe para cambiarlo.</span>
+    </div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end;">
+      <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">N.º de transferencia</span><input placeholder="Opcional"></label>
+      <button class="btn">Subir comprobante</button>
+    </div>
+    <span style="flex: 1;"></span>
+    <label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Motivo</span><input placeholder="Por ejemplo: pago de la semana"></label>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;"><button class="btn">Cancelar</button><button class="btnp">Registrar pago</button></div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

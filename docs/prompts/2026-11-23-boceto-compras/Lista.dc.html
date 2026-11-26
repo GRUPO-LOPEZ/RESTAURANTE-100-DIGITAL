@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cargar lista de precios</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8FA}
+a{color:#3D5E9F}a:hover{color:#2F4F8F}
+.nav a{display:flex;align-items:center;color:#D6DEEC;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:14px}
+.nav a.on{background:#EAF0FB;color:#2F4F8F;font-weight:500}
+.nav h4{margin:12px 12px 4px;font-size:12px;letter-spacing:.04em;color:#D6DEEC;font-weight:600}
+.card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:10px;box-sizing:border-box}
+.chip{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.lbl{font-size:13px;color:#6B7280}
+.btn{height:36px;padding:0 14px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:14px;color:#1F2937;cursor:pointer}
+.btns{height:32px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px;color:#1F2937;cursor:pointer}
+.btnp{height:36px;padding:0 16px;border:0;border-radius:8px;background:#4A6FB8;font:inherit;font-size:14px;font-weight:500;color:#FFFFFF;cursor:pointer}
+.g{width:100%;border-collapse:separate;border-spacing:0}
+.g th{font-size:12px;font-weight:500;color:#4B5563;text-align:left;padding:6px 8px;background:#F7F8FA;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.g td{padding:3px 6px;border-bottom:1px solid #E5E7EB;font-size:14px;height:36px;box-sizing:border-box;font-variant-numeric:tabular-nums}
+.c{height:28px;border:1px solid #E5E7EB;border-radius:6px;padding:0 8px;font:inherit;font-size:14px;box-sizing:border-box;background:#FFFFFF;color:#1F2937;width:100%}
+.r{text-align:right}
+.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#6B7280}
+.f input{height:36px;border:1px solid #E5E7EB;border-radius:8px;padding:0 10px;font:inherit;font-size:14px;color:#1F2937}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4A6FB8;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #F7F8FA; font-family: Inter, system-ui, sans-serif; color: #1F2937; overflow: hidden;">
+  <nav class="nav" aria-label="Menú principal" style="flex: 0 0 240px; background: #22304A; padding: 14px 10px; box-sizing: border-box;">
+    <div style="color: #FFFFFF; font-weight: 600; font-size: 16px; padding: 4px 12px 6px;">Grupo LF</div>
+    <h4>COMPRAS</h4><a href="#">Tablero de compras</a><a href="#" class="on">Listas de precios</a><a href="#">Órdenes de compra</a><a href="#">Facturas</a>
+  </nav>
+  <main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+    <div style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; padding: 0 32px; font-size: 14px; box-sizing: border-box;">
+      <span style="color: #6B7280;">Grupo LF › Listas de precios › <span style="color: #1F2937; font-weight: 500;">Cargar</span></span>
+    </div>
+    <div style="flex: 1 1 auto; min-height: 0; padding: 16px 32px 0; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="#" style="font-size: 14px; text-decoration: none;">← Listas de precios</a>
+        <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Lista nueva de Distribuidora Ejemplo</h1>
+        <span class="chip" style="background: #FFEDD5; color: #9A3412;">Borrador</span>
+      </div>
+      <section class="card" style="padding: 12px 16px; display: grid; grid-template-columns: 280px 150px 150px minmax(0, 1fr); gap: 14px; align-items: end;">
+        <label class="f">Proveedor<input value="Distribuidora Ejemplo"></label>
+        <label class="f">Llegó el<input value="22/11/2026"></label>
+        <label class="f">Vale desde<input value="22/11/2026"></label>
+        <div style="display: flex; gap: 8px; align-items: center;"><button class="btn">Subir foto o PDF de la lista</button><span class="lbl">opcional</span></div>
+      </section>
+      <section class="card" style="flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;">
+        <div style="padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;"><h2 style="margin: 0; font-size: 16px; font-weight: 600;">Artículos</h2><span class="lbl">8 renglones; al llenar el último aparece otro. Los que el sistema no conoce van a «Sin reconocer».</span></div>
+        <table class="g">
+          <thead><tr><th>Artículo (como viene)</th><th style="width: 110px;">Código</th><th class="r" style="width: 120px;">Precio de lista</th><th class="r" style="width: 80px;">Bonif. 1 %</th><th class="r" style="width: 80px;">Bonif. 2 %</th><th class="r" style="width: 100px;">$ por unidad</th><th style="width: 84px;">IVA</th><th class="r" style="width: 110px;">Neto</th><th style="width: 130px;"></th></tr></thead>
+          <tbody>
+            <tr><td><input class="c" value="QUESO CREMOSO HORMA 4KG"></td><td><input class="c" value="LA019"></td><td><input class="c r" value="41.500"></td><td><input class="c r" value="5"></td><td><input class="c r"></td><td><input class="c r"></td><td><select class="c"><option>10,5 %</option></select></td><td class="r">$ 39.425</td><td><span class="chip" style="background: #DCFCE7; color: #166534;">Reconocido</span></td></tr>
+            <tr><td><input class="c" value="HARINA 000 X 25 KG"></td><td><input class="c" value="AL102"></td><td><input class="c r" value="22.000"></td><td><input class="c r" value="3"></td><td><input class="c r"></td><td><input class="c r"></td><td><select class="c"><option>10,5 %</option></select></td><td class="r">$ 21.340</td><td><span class="chip" style="background: #DCFCE7; color: #166534;">Reconocido</span></td></tr>
+            <tr><td><input class="c" value="CREMA LECHE CAJA 12X1L"></td><td><input class="c" value="LA022"></td><td><input class="c r" value="38.900"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><select class="c"><option>21 %</option></select></td><td class="r">$ 38.900</td><td><span class="chip" style="background: #DCFCE7; color: #166534;">Reconocido</span></td></tr>
+            <tr><td><input class="c" value="MOZZARELLA BARRA 3KG"></td><td><input class="c" value="LA031"></td><td><input class="c r" value="27.300"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r" value="500"></td><td><select class="c"><option>21 %</option></select></td><td class="r">$ 26.800</td><td><span class="chip" style="background: #FEF3C7; color: #92400E;">Sin reconocer</span></td></tr>
+            <tr><td><input class="c"></td><td><input class="c"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><select class="c"><option>21 %</option></select></td><td></td><td></td></tr>
+            <tr><td><input class="c"></td><td><input class="c"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><select class="c"><option>21 %</option></select></td><td></td><td></td></tr>
+            <tr><td><input class="c"></td><td><input class="c"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><select class="c"><option>21 %</option></select></td><td></td><td></td></tr>
+            <tr><td><input class="c"></td><td><input class="c"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><input class="c r"></td><td><select class="c"><option>21 %</option></select></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+        <div style="padding: 10px 14px;"><button class="btns">+ Agregar renglón</button></div>
+      </section>
+    </div>
+    <div style="flex: 0 0 60px; margin-top: 12px; background: #FFFFFF; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0 32px; box-sizing: border-box;">
+      <span class="chip" style="background: #FFEDD5; color: #9A3412; font-size: 13px;">4 renglones</span>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">Motivo <input class="c" placeholder="Por qué se carga (obligatorio)" style="width: 280px; height: 36px;"></label>
+      <button class="btn">Descartar</button>
+      <button class="btnp">Cargar lista</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
