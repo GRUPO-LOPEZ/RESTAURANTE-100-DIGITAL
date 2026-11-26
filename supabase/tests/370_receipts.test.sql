@@ -84,13 +84,16 @@ end
 $$;
 
 -- La OC de prueba: la Cocinera le pide a la Verdulería dos artículos (2 envases cada uno) y una mozzarella «sin nombre
--- de factura» (500 g).
+-- de factura» (500 g). Desde ADR-0069 ya no se pide una materia prima suelta, pero las OC de antes la tienen y se
+-- siguen recibiendo: esa línea se agrega como estaba guardada (como postgres), antes de mandarla.
 insert into pg_temp.k
 select 'oc', (pg_temp.q(pg_temp.u(409), $$
-  select purchasing.save_order_draft(null, pg_temp.u(201), pg_temp.u(901),
-           pg_temp.products(901, 2, 2)
-           || jsonb_build_array(jsonb_build_object('ingredient_id', pg_temp.u(819), 'quantity', 500)),
+  select purchasing.save_order_draft(null, pg_temp.u(201), pg_temp.u(901), pg_temp.products(901, 2, 2),
            null, null, 'Prueba de recepción') ->> 'purchase_order_id' $$))::uuid;
+insert into purchasing.purchase_order_lines (group_id, purchase_order_id, line_order, ingredient_id, unit_id, quantity)
+select o.group_id, o.id, 3, i.id, i.recipe_unit_id, 500
+  from purchasing.purchase_orders o, catalog.ingredients i
+ where o.id = pg_temp.k('oc') and i.id = pg_temp.u(819);
 select pg_temp.q(pg_temp.u(409), $$ select purchasing.submit_order(pg_temp.k('oc'), 'Prueba de recepción') ->> 'result' $$);
 
 -- ---------------------------------------------------------------------------

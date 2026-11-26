@@ -8,13 +8,15 @@ import { toActionState, type ActionState } from "@/lib/auth/results";
 import { NEWS_KINDS, orderSchema } from "@/lib/purchase-orders";
 import {
   getExpectedDelivery,
-  getSupplierRanking,
-  searchOrderIngredients,
+  getOrderCatalog,
+  getOrderSupplierInfo,
+  type CatalogProduct,
+  type OrderSupplierInfo,
 } from "@/lib/purchase-orders-data";
 import { createClient } from "@/lib/supabase/server";
 
 // Acciones de órdenes de compra (Fase 3, Prompt 3, ADR-0053). Cada una llama a una función de la base, que controla el
-// permiso en el local, pide el motivo y deja la auditoría. «Mandar OC» guarda el borrador y lo manda: si el proveedor
+// permiso en el local, pide el motivo y deja la auditoría. «Enviar orden» guarda el borrador y lo manda: si el proveedor
 // requiere aprobación, va a Compras.
 
 const uuid = z.string().uuid();
@@ -58,8 +60,7 @@ export async function saveOrderAction(_prev: OrderState, formData: FormData): Pr
     p_restaurant_id: o.restaurant_id,
     p_supplier_id: o.supplier_id,
     p_lines: o.lines.map((l) => ({
-      ...(l.purchase_product_id ? { purchase_product_id: l.purchase_product_id } : {}),
-      ...(l.ingredient_id ? { ingredient_id: l.ingredient_id } : {}),
+      purchase_product_id: l.purchase_product_id,
       quantity: l.quantity,
       ...(l.note ? { note: l.note } : {}),
     })),
@@ -94,7 +95,7 @@ export async function saveOrderAction(_prev: OrderState, formData: FormData): Pr
   );
 }
 
-// Mandar un borrador desde su ficha.
+// Enviar un borrador desde su ficha.
 export async function submitOrderAction(
   _prev: ActionState,
   formData: FormData,
@@ -184,18 +185,20 @@ export async function markOrderNoticesReadAction(
 }
 
 // Lecturas del armado (con la sesión de la persona: la base decide qué ve).
-export async function rankingAction(supplierId: unknown, restaurantId: unknown) {
+// Al elegir el proveedor: su catálogo para pedir y los datos de la orden (ADR-0069). Con la sesión de la persona: la base
+// decide qué ve (sin precios para quien no ve listas). null si no puede pedir en ese local.
+export async function supplierCatalogAction(
+  supplierId: unknown,
+  restaurantId: unknown,
+): Promise<{ products: CatalogProduct[]; info: OrderSupplierInfo } | null> {
   const s = uuid.safeParse(supplierId);
   const r = uuid.safeParse(restaurantId);
-  if (!s.success || !r.success) return [];
-  return getSupplierRanking(s.data, r.data);
-}
-
-export async function ingredientSearchAction(restaurantId: unknown, query: unknown) {
-  const r = uuid.safeParse(restaurantId);
-  const q = z.string().max(80).safeParse(query);
-  if (!r.success || !q.success) return [];
-  return searchOrderIngredients(r.data, q.data);
+  if (!s.success || !r.success) return null;
+  const [products, info] = await Promise.all([
+    getOrderCatalog(s.data, r.data),
+    getOrderSupplierInfo(s.data, r.data),
+  ]);
+  return info ? { products, info } : null;
 }
 
 export async function expectedDeliveryAction(supplierId: unknown, from: unknown) {

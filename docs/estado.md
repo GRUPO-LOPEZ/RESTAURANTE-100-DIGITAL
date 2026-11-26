@@ -1,6 +1,28 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105 fusionado). Fusionados los criterios de pantallas de Soy y el prompt de las correcciones de Compras (PR #106, solo documentación). En curso: correcciones de Compras, PR A (`feat/compras-criterios`, ADR-0068); después vienen B, C y D, cada uno con su plan.**
+_Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los criterios de pantallas de Soy (#106). Correcciones de Compras: PR A (`feat/compras-criterios`, #107, ADR-0068) en verde en GitHub, falta que Joaco lo fusione; PR B (`feat/orden-de-compra-una-pantalla`, ADR-0069) en revisión, apilado sobre el A. Después, C y D.**
+
+## Correcciones de Compras, PR B (orden de compra en una pantalla, ADR-0069): en revisión (2026-11-26)
+
+- **Decisiones de Joaco:**
+  - el precio, el subtotal y el total, solo para quien ve listas de precios;
+  - el pedido mínimo en la orden (ya existía en la condición de pago y se ve con su misma regla);
+  - la aprobación sigue siendo por proveedor.
+- **Base:** migración `20261219130000_order_one_screen`:
+  - `order_catalog`: recientes de 60 días y precio de la lista vigente;
+  - `order_supplier_info`;
+  - `save_order_draft` solo con artículos del proveedor. La de antes pasó a ser `save_order_draft_internal`.
+
+  pgTAP 420 (28). Se ajustaron la 340, la 370 y la 371 (las OC viejas con materia prima se siguen recibiendo) y la 050.
+
+- **Pantalla:** `/compras/ordenes/nueva` en una pantalla:
+  - en la computadora, tres columnas; en el celular, una, con la barra fija;
+  - sin elegir el local antes;
+  - la cantidad arranca en 0;
+  - «Enviar orden».
+- **Pruebas:** pgTAP completo (79), Vitest (673), `ordenes-de-compra` y `recepcion` (11) en local.
+- **Falta:** las revisiones (en curso), la suite en GitHub y el PR.
+- **Para Soy:** `docs/modulos/30-orden-de-compra-lista-de-cambios.md`.
 
 ## Correcciones de Compras, PR A (criterios de Soy en todo Compras, ADR-0068): en curso (2026-11-26)
 

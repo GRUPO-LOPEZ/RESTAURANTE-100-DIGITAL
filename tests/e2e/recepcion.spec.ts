@@ -53,13 +53,16 @@ test.describe("en el celular", () => {
     // La cocinera pide dos artículos a Lácteos.
     await login(page, COCINERA);
     await page.goto("/compras/ordenes/nueva");
-    await page.getByRole("button", { name: /^Lácteos Demo/ }).click();
+    // En el celular, el proveedor se elige arriba (ADR-0069). Lácteos Demo.
+    await page
+      .getByLabel("Proveedor", { exact: true })
+      .selectOption("00000000-0000-4000-8000-000000000903");
     const plus = page.getByRole("button", { name: /^Uno más de / });
     await plus.nth(0).click();
     await plus.nth(0).click();
     await plus.nth(1).click();
     await expect(page.getByText("2 artículos")).toBeVisible();
-    await page.getByRole("button", { name: "Mandar OC" }).click();
+    await page.getByRole("button", { name: "Enviar orden" }).click();
     await expect(
       page.getByText("Orden mandada: quedó en la cola de envío al proveedor."),
     ).toBeVisible();

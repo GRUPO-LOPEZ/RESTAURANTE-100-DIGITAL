@@ -8133,6 +8133,26 @@ export type Database = {
         Returns: undefined;
       };
       number_text: { Args: { p_value: number }; Returns: string };
+      order_catalog: {
+        Args: { p_restaurant_id: string; p_supplier_id: string };
+        Returns: {
+          billed_by_weight: boolean;
+          code: string;
+          content_per_unit: number;
+          content_unit: string;
+          description: string;
+          estimated_weight_per_unit: number;
+          last_ordered_on: string;
+          list_includes_vat: boolean;
+          list_price: number;
+          package_name: string;
+          purchase_product_id: string;
+          recent: boolean;
+          supplier_sku: string;
+          times_ordered: number;
+          units_per_package: number;
+        }[];
+      };
       order_ingredient_search: {
         Args: { p_query: string; p_restaurant_id: string };
         Returns: {
@@ -8211,6 +8231,10 @@ export type Database = {
           supplier_name: string;
           total: number;
         }[];
+      };
+      order_supplier_info: {
+        Args: { p_restaurant_id: string; p_supplier_id: string };
+        Returns: Json;
       };
       payable_invoices: { Args: { p_restaurant_id: string; p_supplier_id: string }; Returns: Json };
       payment_message: { Args: { p_id: string }; Returns: string };
@@ -8423,6 +8447,18 @@ export type Database = {
         Returns: Json;
       };
       save_order_draft: {
+        Args: {
+          p_expected_on: string;
+          p_lines: Json;
+          p_notes: string;
+          p_order_id: string;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_supplier_id: string;
+        };
+        Returns: Json;
+      };
+      save_order_draft_internal: {
         Args: {
           p_expected_on: string;
           p_lines: Json;

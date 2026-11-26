@@ -55,13 +55,14 @@ describe("el esquema de la orden", () => {
   it("acepta una orden con un artículo", () => {
     expect(orderSchema.safeParse(base).success).toBe(true);
   });
-  it("y una materia prima sin nombre de factura", () => {
+  // Decisión 3 de Soy (ADR-0069): solo artículos del proveedor; una materia prima suelta ya no se pide.
+  it("rechaza una materia prima sin nombre de factura", () => {
     expect(
       orderSchema.safeParse({
         ...base,
         lines: [{ ingredient_id: "00000000-0000-4000-8000-000000000819", quantity: 500 }],
       }).success,
-    ).toBe(true);
+    ).toBe(false);
   });
   it("rechaza una orden sin líneas, una cantidad en cero y una línea con las dos cosas", () => {
     expect(orderSchema.safeParse({ ...base, lines: [] }).success).toBe(false);

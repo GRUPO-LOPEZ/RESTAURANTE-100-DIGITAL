@@ -5,7 +5,8 @@ import { type PoStatus } from "@/lib/purchase-orders";
 import { createClient } from "@/lib/supabase/server";
 
 // Lecturas de órdenes de compra (Fase 3, Prompt 3, ADR-0053). Todo pasa por la base con la sesión de la persona: la RLS
-// y las funciones deciden qué ve (el cocinero, su local; Compras, todo el grupo). Sin precios.
+// y las funciones deciden qué ve (el cocinero, su local; Compras, todo el grupo). Los precios de lista, solo
+// para quien ve listas (ADR-0069).
 
 function failed(what: string): never {
   throw new Error(`No pudimos cargar ${what}.`);
@@ -94,7 +95,10 @@ export async function getOrderSuppliers(): Promise<OrderSupplier[]> {
   });
 }
 
-const rankingRow = z.object({
+// El catálogo para pedir (ADR-0069): los artículos del proveedor, primero los pedidos en los últimos 60 días en el
+// local, con el precio neto por envase de la lista vigente. El precio llega vacío si la sesión no ve listas de precios
+// (lo decide la base, decisión de Joaco). Vacío si no puede pedir en ese local.
+const catalogRow = z.object({
   purchase_product_id: z.string(),
   code: z.string(),
   description: z.string(),
@@ -105,37 +109,66 @@ const rankingRow = z.object({
   content_unit: z.string(),
   billed_by_weight: z.boolean(),
   estimated_weight_per_unit: z.coerce.number().nullable(),
+  recent: z.boolean(),
   times_ordered: z.coerce.number(),
+  last_ordered_on: z.string().nullable(),
+  list_price: z.coerce.number().nullable(),
+  list_includes_vat: z.boolean().nullable(),
 });
-export type RankedProduct = z.infer<typeof rankingRow>;
+export type CatalogProduct = z.infer<typeof catalogRow>;
 
-export async function getSupplierRanking(
+export async function getOrderCatalog(
   supplierId: string,
   restaurantId: string,
-): Promise<RankedProduct[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.schema("purchasing").rpc("supplier_product_ranking", {
+): Promise<CatalogProduct[]> {
+  const db = await createClient();
+  const { data, error } = await db.schema("purchasing").rpc("order_catalog", {
     p_supplier_id: supplierId,
     p_restaurant_id: restaurantId,
   });
   if (error) failed("los artículos del proveedor");
-  const parsed = z.array(rankingRow).safeParse(data);
+  const parsed = z.array(catalogRow).safeParse(data);
   if (!parsed.success) failed("los artículos del proveedor");
   return parsed.data;
 }
 
-export async function searchOrderIngredients(
+// Lo que la orden muestra del proveedor: canal, aprobación, próxima entrega, si se ven precios y el pedido mínimo (solo
+// para quien ve la condición de pago). null si la sesión no puede pedir en ese local.
+const infoRow = z.object({
+  channel: z.string().nullable(),
+  requires_approval: z.boolean(),
+  next_delivery: z.string().nullable(),
+  can_see_prices: z.boolean(),
+  minimum_order_amount: z.coerce.number().nullable(),
+});
+export type OrderSupplierInfo = {
+  channel: string | null;
+  requiresApproval: boolean;
+  nextDelivery: string | null;
+  canSeePrices: boolean;
+  minimumOrderAmount: number | null;
+};
+
+export async function getOrderSupplierInfo(
+  supplierId: string,
   restaurantId: string,
-  query: string,
-): Promise<{ id: string; code: string; name: string; unit_name: string }[]> {
-  const q = query.trim().slice(0, 80);
-  if (q.length < 2) return [];
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("purchasing")
-    .rpc("order_ingredient_search", { p_restaurant_id: restaurantId, p_query: q });
-  if (error) failed("las materias primas");
-  return data ?? [];
+): Promise<OrderSupplierInfo | null> {
+  const db = await createClient();
+  const { data, error } = await db.schema("purchasing").rpc("order_supplier_info", {
+    p_supplier_id: supplierId,
+    p_restaurant_id: restaurantId,
+  });
+  if (error) failed("los datos del proveedor");
+  if (data === null) return null;
+  const parsed = infoRow.safeParse(data);
+  if (!parsed.success) failed("los datos del proveedor");
+  return {
+    channel: parsed.data.channel,
+    requiresApproval: parsed.data.requires_approval,
+    nextDelivery: parsed.data.next_delivery,
+    canSeePrices: parsed.data.can_see_prices,
+    minimumOrderAmount: parsed.data.minimum_order_amount,
+  };
 }
 
 export async function getExpectedDelivery(

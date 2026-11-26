@@ -105,15 +105,20 @@ select pg_temp.u(1), v.code, pg_temp.u(v.ing), pg_temp.u(901), v.descr, (select 
                ('T371-HUE', 826, 'Huevo, bandeja de 1 kg', 'pack', 1000, 'g', false, null)) as v (code, ing, descr, pkg, content, cu, by_weight, est);
 
 -- La OC: harina ×2, limón por kg ×2, maple de huevos ×2, carne al peso ×3 y mozzarella «sin nombre de factura» 500 g.
+-- Desde ADR-0069 ya no se pide una materia prima suelta, pero las OC de antes la tienen y su stock entra igual: esa
+-- línea se agrega como estaba guardada (como postgres), antes de mandarla.
 insert into pg_temp.k
 select 'oc', (pg_temp.q(pg_temp.u(409), $$
   select purchasing.save_order_draft(null, pg_temp.u(201), pg_temp.u(901), jsonb_build_array(
            jsonb_build_object('purchase_product_id', pg_temp.product('T371-HAR'), 'quantity', 2),
            jsonb_build_object('purchase_product_id', pg_temp.product('DEMO-PROD-009'), 'quantity', 2),
            jsonb_build_object('purchase_product_id', pg_temp.product('DEMO-PROD-026'), 'quantity', 2),
-           jsonb_build_object('purchase_product_id', pg_temp.product('T371-CAR'), 'quantity', 3),
-           jsonb_build_object('ingredient_id', pg_temp.u(819), 'quantity', 500)),
+           jsonb_build_object('purchase_product_id', pg_temp.product('T371-CAR'), 'quantity', 3)),
            null, null, 'Prueba de stock') ->> 'purchase_order_id' $$))::uuid;
+insert into purchasing.purchase_order_lines (group_id, purchase_order_id, line_order, ingredient_id, unit_id, quantity)
+select o.group_id, o.id, 5, i.id, i.recipe_unit_id, 500
+  from purchasing.purchase_orders o, catalog.ingredients i
+ where o.id = pg_temp.k('oc') and i.id = pg_temp.u(819);
 select pg_temp.q(pg_temp.u(409), $$ select purchasing.submit_order(pg_temp.k('oc'), 'Prueba de stock') ->> 'result' $$);
 insert into pg_temp.k
 select 'r', (pg_temp.q(pg_temp.u(406), $$ select purchasing.start_receipt(pg_temp.k('oc')) ->> 'receipt_id' $$))::uuid;

@@ -116,14 +116,14 @@ select is(pg_temp.msg(pg_temp.u(409), $$ select purchasing.expected_delivery(pg_
   'un proveedor sin días de entrega da un error claro');
 
 -- ---------------------------------------------------------------------------
--- Ranking
+-- Ranking (desde ADR-0069, el catálogo para pedir: primero lo pedido en los últimos 60 días)
 -- ---------------------------------------------------------------------------
 select is(pg_temp.q(pg_temp.u(409), $$
-  select times_ordered::text from purchasing.supplier_product_ranking(pg_temp.u(903), pg_temp.u(201)) limit 1 $$),
+  select times_ordered::text from purchasing.order_catalog(pg_temp.u(903), pg_temp.u(201)) limit 1 $$),
   '2', 'el artículo de Lácteos que está en las dos OC enviadas va primero');
 select is(pg_temp.q(pg_temp.u(409), $$
-  select count(*)::text from purchasing.supplier_product_ranking(pg_temp.u(903), pg_temp.u(202)) $$),
-  '0', 'la Cocinera no ve el ranking de otro local');
+  select count(*)::text from purchasing.order_catalog(pg_temp.u(903), pg_temp.u(202)) $$),
+  '0', 'la Cocinera no ve el catálogo para pedir de otro local');
 
 -- ---------------------------------------------------------------------------
 -- No se pide lo que no es del proveedor
@@ -132,11 +132,14 @@ select is(pg_temp.msg(pg_temp.u(409), $$
   select purchasing.save_order_draft(null, pg_temp.u(201), pg_temp.u(901), pg_temp.lines(902, 1), null, null,
                                      'Prueba') $$),
   'La línea 1 no es un artículo activo de este proveedor.', 'no se pide un artículo de otro proveedor');
-select is(pg_temp.q(pg_temp.u(409), $$
+-- Decisión 3 de Soy (ADR-0069): solo artículos del proveedor. Una materia prima suelta ya no se pide «sin nombre de
+-- factura»: primero se suma el artículo al catálogo del proveedor.
+select is(pg_temp.msg(pg_temp.u(409), $$
   select purchasing.save_order_draft(null, pg_temp.u(201), pg_temp.u(901),
            jsonb_build_array(jsonb_build_object('ingredient_id', pg_temp.u(819), 'quantity', 500)), null, null,
-           'Mozzarella sin nombre de factura') ->> 'result' $$),
-  'applied', 'una materia prima que el proveedor no tiene se pide «sin nombre de factura»');
+           'Mozzarella sin nombre de factura') $$),
+  'Pedí artículos del proveedor: si no está, sumalo primero a su catálogo.',
+  'una materia prima que el proveedor no tiene ya no se pide: primero se suma el artículo');
 
 -- ---------------------------------------------------------------------------
 -- Aprobación (Frigorífico la requiere)
@@ -230,8 +233,10 @@ select is(pg_temp.q(pg_temp.u(409), $$ select count(*)::text from purchasing.out
   '0', 'la Cocinera no ve el mensaje de otro local');
 select is(pg_temp.q(pg_temp.u(409), $$ select count(*)::text from purchasing.order_lines(pg_temp.order_id('PNO-0001')) $$),
   '0', 'ni sus líneas');
-select is(pg_temp.q(pg_temp.u(409), $$ select count(*)::text from purchasing.order_ingredient_search(pg_temp.u(202), 'muzza') $$),
-  '0', 'ni busca materias primas para pedir en otro local');
+-- Desde ADR-0069 ya no se piden materias primas sueltas: la búsqueda no se llama desde la app (ni en su local).
+select ok(not has_function_privilege('authenticated', 'purchasing.order_ingredient_search(uuid, text)', 'execute')
+          and not has_function_privilege('authenticated', 'purchasing.supplier_product_ranking(uuid, uuid)', 'execute'),
+          'ni busca materias primas para pedir: la búsqueda y el ranking de antes ya no se llaman desde la app');
 select ok(not has_column_privilege('authenticated', 'purchasing.purchase_order_lines', 'unit_price', 'select'),
           'el precio de la línea no se lee por la API (protegido por columna)');
 
