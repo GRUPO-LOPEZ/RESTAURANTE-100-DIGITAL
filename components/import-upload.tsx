@@ -10,6 +10,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import type { ActionState } from "@/lib/auth/results";
 import { fieldErrors, schemas } from "@/lib/forms/schemas";
 import { createClient } from "@/lib/supabase/client";
+import { FileUpload } from "@/components/ui/file-upload";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const MAX_BYTES = 15 * 1024 * 1024; // como el bucket
@@ -139,7 +140,7 @@ export function ImportUpload({ brands }: { brands: UploadBrand[] }) {
         hint="Con las solapas INSUMOS, pre-elaborado y PLATOS. Hasta 15 MB."
         error={errors.file}
       >
-        <Input type="file" name="file" accept={`.xlsx,${XLSX}`} className="py-2" />
+        <FileUpload name="file" accept={`.xlsx,${XLSX}`} />
       </Field>
       <Field
         id={`${prefix}-reason`}

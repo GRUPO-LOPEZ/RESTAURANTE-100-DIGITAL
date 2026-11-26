@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SidePanel } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
 import { Segmented } from "@/components/ui/segmented";
@@ -197,7 +198,24 @@ function ReadRow({ label, value }: { label: string; value: string }) {
 }
 
 // Un dato fijo dentro de la parte editable (no se cambia acá).
-function FixedRow({ label, value }: { label: string; value: string }) {
+function FixedRow({
+  label,
+  value,
+  half = false,
+}: {
+  label: string;
+  value: string;
+  half?: boolean;
+}) {
+  if (half)
+    return (
+      <p className="flex min-w-0 flex-col gap-1 text-sm text-ink">
+        <span>{label}</span>
+        <span className="flex min-h-control-sm items-center text-base whitespace-nowrap tabular-nums">
+          {value || "—"}
+        </span>
+      </p>
+    );
   return (
     <p className="col-span-2 flex items-baseline justify-between gap-3 text-sm text-ink">
       <span>{label}</span>
@@ -245,21 +263,31 @@ function HeaderInput({
         </label>
         {tip ? <InfoTip label={label.toLowerCase()}>{tip}</InfoTip> : null}
       </span>
-      <Input
-        id={id}
-        type={type}
-        inputMode={inputMode}
-        maxLength={maxLength}
-        value={draft.header[field]}
-        onChange={(e) =>
-          setDraft((d) => ({ ...d, header: { ...d.header, [field]: e.target.value } }))
-        }
-        className={cn(
-          small,
-          inputMode === "decimal" && "text-right tabular-nums",
-          changed.header.includes(field) && changedRing,
-        )}
-      />
+      {type === "date" ? (
+        // dd/mm/aaaa, nunca el formato del idioma de Chrome (criterio 12 de Soy, ADR-0068).
+        <DateInput
+          id={id}
+          value={draft.header[field]}
+          onChange={(iso) => setDraft((d) => ({ ...d, header: { ...d.header, [field]: iso } }))}
+          inputClassName={cn(small, changed.header.includes(field) && changedRing)}
+        />
+      ) : (
+        <Input
+          id={id}
+          type={type}
+          inputMode={inputMode}
+          maxLength={maxLength}
+          value={draft.header[field]}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, header: { ...d.header, [field]: e.target.value } }))
+          }
+          className={cn(
+            small,
+            inputMode === "decimal" && "text-right tabular-nums",
+            changed.header.includes(field) && changedRing,
+          )}
+        />
+      )}
     </div>
   );
 }
@@ -311,13 +339,13 @@ export function HeaderSection({ legalEntityTaxId }: { legalEntityTaxId: string |
             maxLength={8}
             className={fiscal ? undefined : "col-span-2"}
           />
-          <HeaderInput field="issued_on" label="Fecha" type="date" className="col-span-2" />
+          {/* Fecha y vencimiento en la misma fila: la columna entra sin scroll (criterio 4 de Soy, ADR-0068). */}
+          <HeaderInput field="issued_on" label="Fecha" type="date" />
           <HeaderInput
             field="due_on"
             label="Vencimiento impreso"
             tip="El que dice el papel. Vacío: sale de la condición de pago del proveedor (contado, el mismo día; cuenta corriente, la fecha más los días)."
             type="date"
-            className="col-span-2"
           />
           {fiscal ? (
             <>
@@ -331,29 +359,33 @@ export function HeaderSection({ legalEntityTaxId }: { legalEntityTaxId: string |
                 }
                 changed={changed.header.includes("authorization_kind")}
                 compact
-                className="col-span-2 -m-1"
+                // Desde 1700 px hay ancho para ponerlos en una fila: entra en 1715 × 843 (ADR-0068).
+                className="col-span-2 -m-1 wide:col-span-1"
               />
               <HeaderInput
                 field="authorization_code"
                 label="Número de autorización"
                 inputMode="numeric"
                 maxLength={14}
-                className="col-span-2"
+                className="col-span-2 wide:col-span-1"
               />
             </>
           ) : null}
           <FixedRow label="CUIT del emisor" value={cuit(h.issuer_tax_id)} />
+          {/* El CUIT del receptor al lado del de la razón social del local: se comparan de un vistazo y la columna
+              entra sin scroll (ADR-0068). */}
           <HeaderInput
             field="receiver_tax_id"
             label="CUIT del receptor"
             inputMode="numeric"
             maxLength={13}
-            className="col-span-2"
+            className={legalEntityTaxId ? undefined : "col-span-2"}
           />
           {legalEntityTaxId ? (
             <FixedRow
               label="El de la razón social del local"
               value={formatCuit(legalEntityTaxId)}
+              half
             />
           ) : null}
         </div>

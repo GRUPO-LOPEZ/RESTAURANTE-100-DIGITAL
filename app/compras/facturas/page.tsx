@@ -1,20 +1,25 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { Truck } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { CreateModal } from "@/components/create-modal";
 import { NewInvoiceForm } from "@/components/new-invoice-form";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Field, Select } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { GroupLayout, GroupPanel } from "@/components/ui/group-panel";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/states";
 import { Tabs } from "@/components/ui/tabs";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 import { getSuppliers } from "@/lib/catalog";
 import { first, getActiveRestaurantId, uuidOrUndefined } from "@/lib/data";
+import { sumCounts } from "@/lib/group-counts";
+import { getInvoiceSupplierCounts } from "@/lib/group-counts-data";
 import { INVOICE_STATUS, INVOICE_TABS, failedLabel, invoiceLabel, shortDate } from "@/lib/invoices";
 import {
   getInvoiceSuppliers,
@@ -28,11 +33,13 @@ import { resolveOrderPlace } from "@/lib/purchase-orders-data";
 
 // Facturas (Fase 3, Prompt 5B, ADR-0058), listado tipo C: ¿qué facturas llegaron, cuáles están observadas y por qué? Las
 // del local elegido arriba (o de todos mis locales), pestañas por estado, filtros de proveedor y fecha, y 15 filas por
-// página. «+ Nueva factura» abre el alta corta y lleva a la ficha.
+// página. «+ Nueva factura» abre el alta corta y lleva a la ficha. Con los criterios de Soy (ADR-0068): en una pantalla,
+// los proveedores con su cantidad en el panel de la izquierda y la tabla con su propio scroll.
 export default function FacturasPage({ searchParams }: PageProps<"/compras/facturas">) {
   return (
     <AppShell
       title="Facturas"
+      fill
       description="Las facturas de los proveedores: qué se controló, qué quedó observado y qué está liberado a pago."
       actions={
         <Suspense fallback={null}>
@@ -107,15 +114,19 @@ async function Invoices({
   const date = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
   const from = date(first(raw.desde));
   const to = date(first(raw.hasta));
-  const { rows, total } = await getInvoices({
-    status: tab?.filter,
-    supplierId: supplier?.id,
-    restaurantId: local,
-    from,
-    to,
-    page: list.page - 1,
-    size: list.size,
-  });
+  const [{ rows, total }, groups] = await Promise.all([
+    getInvoices({
+      status: tab?.filter,
+      supplierId: supplier?.id,
+      restaurantId: local,
+      from,
+      to,
+      page: list.page - 1,
+      size: list.size,
+    }),
+    // El panel cuenta con los mismos filtros, menos el proveedor (pgTAP 419).
+    getInvoiceSupplierCounts({ status: tab?.filter, restaurantId: local, from, to }),
+  ]);
 
   const active = [
     ...(supplier
@@ -150,17 +161,30 @@ async function Invoices({
       key: "number",
       header: "Comprobante",
       mobile: "title",
+      wrap: "narrow",
       cell: (r) => (
         <Link
           href={`/compras/facturas/${r.id}?volver=${encodeURIComponent(here)}`}
-          className="inline-flex min-h-touch items-center font-medium whitespace-nowrap text-primary tabular-nums underline-offset-4 hover:underline desk:min-h-0"
+          className="inline-flex min-h-touch items-center font-medium text-primary tabular-nums underline-offset-4 hover:underline desk:min-h-0"
         >
           {invoiceLabel(r.invoice_class, r.point_of_sale, r.number)}
         </Link>
       ),
     },
-    { key: "supplier", header: "Proveedor", mobile: "line", cell: (r) => r.supplier_name },
-    { key: "place", header: "Local", mobile: "hidden", cell: (r) => r.restaurant_name },
+    {
+      key: "supplier",
+      header: "Proveedor",
+      mobile: "line",
+      wrap: true,
+      cell: (r) => r.supplier_name,
+    },
+    {
+      key: "place",
+      header: "Local",
+      mobile: "hidden",
+      wrap: "narrow",
+      cell: (r) => r.restaurant_name,
+    },
     {
       key: "issued",
       header: "Fecha",
@@ -178,6 +202,7 @@ async function Invoices({
       key: "failed",
       header: "Qué no pasó",
       mobile: "hidden",
+      wrap: "narrow",
       // Una conforme que no pasó el control la dio por conforme otra persona, a mano: se dice eso.
       cell: (r) =>
         r.failed.length === 0 ? (
@@ -199,10 +224,25 @@ async function Invoices({
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <GroupLayout
+      panel={
+        <GroupPanel
+          label="Proveedores"
+          icon={Truck}
+          unit={{ one: "factura", many: "facturas" }}
+          allLabel="Todos los proveedores"
+          allCount={sumCounts(groups)}
+          items={groups}
+          selected={supplier ? { id: supplier.id, name: supplier.name } : undefined}
+          hrefFor={(id) => listHref(PATH, params, { proveedor: id, pagina: undefined })}
+        />
+      }
+    >
       <FilterBar label="Filtros de facturas" active={active}>
-        <Field id="fc-proveedor" label="Proveedor" className="w-full desk:w-72">
-          <Select name="proveedor" defaultValue={supplier?.id ?? ""}>
+        {/* En la computadora, el proveedor se elige en el panel; en el celular, acá. La clave lo rehace al cambiar
+            (si no, el filtro de fecha mandaría el proveedor de antes). */}
+        <Field id="fc-proveedor" label="Proveedor" className="w-full desk:hidden">
+          <Select key={supplier?.id ?? "todos"} name="proveedor" defaultValue={supplier?.id ?? ""}>
             <option value="">Todos</option>
             {suppliers.map((s) => (
               <option key={s.id} value={s.id}>
@@ -212,13 +252,16 @@ async function Invoices({
           </Select>
         </Field>
         <Field id="fc-desde" label="Desde" className="w-full desk:w-44">
-          <Input type="date" name="desde" defaultValue={from ?? ""} />
+          <DateInput name="desde" defaultValue={from ?? ""} />
         </Field>
         <Field id="fc-hasta" label="Hasta" className="w-full desk:w-44">
-          <Input type="date" name="hasta" defaultValue={to ?? ""} />
+          <DateInput name="hasta" defaultValue={to ?? ""} />
         </Field>
       </FilterBar>
-      <Card className="flex flex-col gap-4">
+      <section
+        aria-label="Facturas"
+        className="flex flex-col gap-3 rounded-md border border-line bg-surface p-4 desk:min-h-0 desk:flex-[1_1_0px]"
+      >
         <CardTitle className="tabular-nums">
           {total === 1 ? "1 factura" : `${total.toLocaleString("es-AR")} facturas`}
         </CardTitle>
@@ -242,6 +285,7 @@ async function Invoices({
         ) : (
           <DataTable
             caption="Facturas"
+            scroll
             columns={columns}
             rows={rows}
             rowKey={(r) => r.id}
@@ -258,7 +302,7 @@ async function Invoices({
         {total > 0 ? (
           <Pagination list={list} total={total} shown={rows.length} path={PATH} params={params} />
         ) : null}
-      </Card>
-    </div>
+      </section>
+    </GroupLayout>
   );
 }

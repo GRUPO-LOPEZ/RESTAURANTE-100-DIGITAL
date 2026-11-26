@@ -7,7 +7,7 @@ import { Upload } from "lucide-react";
 import { addNoteAction, uploadInvoiceFileAction } from "@/app/compras/facturas/actions";
 import { ActionForm } from "@/components/action-form";
 import { FormNotice } from "@/components/form-notice";
-import { FormInput, FormTextarea } from "@/components/ui/form";
+import { FormInput, FormTextarea, FormDate } from "@/components/ui/form";
 import { SegmentedField } from "@/components/ui/segmented-field";
 import type { ActionState } from "@/lib/auth/results";
 import { todayInArgentina } from "@/lib/forms/schemas";
@@ -103,11 +103,10 @@ export function NoteForm({ invoiceId, invoiceIsA }: { invoiceId: string; invoice
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput id="fc-nota-numero" name="number" label="Número" maxLength={40} />
-        <FormInput
+        <FormDate
           id="fc-nota-fecha"
           name="issued_on"
           label="Fecha"
-          type="date"
           max={todayInArgentina()}
           defaultValue={todayInArgentina()}
           required

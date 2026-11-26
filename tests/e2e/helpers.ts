@@ -276,3 +276,27 @@ export async function pickChoice(scope: Page | Locator, label: string, option: s
   await group.locator("label", { hasText: option }).first().click();
   await expect(group.getByRole("radio", { name: option }).first()).toBeChecked();
 }
+
+// Pantallas sin scroll (ADR-0046 y criterios de Soy, ADR-0068): las cuatro computadoras donde se prueba.
+export const DESK_SIZES = [
+  { width: 1440, height: 900 },
+  { width: 1600, height: 900 },
+  { width: 1715, height: 843 },
+  { width: 1920, height: 1080 },
+] as const;
+
+// Ni scroll de página vertical ni horizontal.
+export async function noPageScroll(page: Page, what = "la página") {
+  const m = await page.evaluate(() => {
+    const d = document.scrollingElement ?? document.documentElement;
+    return { y: d.scrollHeight - d.clientHeight, x: d.scrollWidth - d.clientWidth };
+  });
+  expect(m.y, `${what}: scroll vertical`).toBeLessThanOrEqual(0);
+  expect(m.x, `${what}: scroll horizontal`).toBeLessThanOrEqual(0);
+}
+
+// Un panel, un modal o una tarjeta que tiene que entrar entero, sin desplazarse adentro.
+export async function noInnerScroll(locator: Locator, what: string) {
+  const extra = await locator.evaluate((el) => el.scrollHeight - el.clientHeight);
+  expect(extra, `${what}: se desplaza adentro`).toBeLessThanOrEqual(1);
+}

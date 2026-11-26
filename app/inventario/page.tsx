@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AppShell, Loading } from "@/components/app-shell";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Field, Input, Select } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/states";
@@ -167,10 +168,10 @@ async function Movements({
           </Select>
         </Field>
         <Field id="inv-desde" label="Desde" className="w-full desk:w-44">
-          <Input type="date" name="desde" defaultValue={from ?? ""} />
+          <DateInput name="desde" defaultValue={from ?? ""} />
         </Field>
         <Field id="inv-hasta" label="Hasta" className="w-full desk:w-44">
-          <Input type="date" name="hasta" defaultValue={to ?? ""} />
+          <DateInput name="hasta" defaultValue={to ?? ""} />
         </Field>
       </FilterBar>
       {rows.length === 0 && list.page > 1 ? (

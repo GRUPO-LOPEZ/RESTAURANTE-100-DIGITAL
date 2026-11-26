@@ -18,6 +18,7 @@ import type { ActionState } from "@/lib/auth/results";
 import { fieldErrors, schemas } from "@/lib/forms/schemas";
 import { shrinkPhoto } from "@/lib/photos";
 import { PHOTO_MAX_BYTES } from "@/lib/recipe-format";
+import { FileUpload } from "@/components/ui/file-upload";
 
 // La foto del producto en la ficha de materia prima (pedido de Soy, ADR-0066): chica, en el renglón del título de «Datos
 // generales» (así no le saca alto a la ficha); en un panel se ve grande, se cambia o se quita. Un archivo no viaja en el
@@ -181,20 +182,9 @@ function Upload({ ingredientId }: { ingredientId: string }) {
         hint="En JPG, PNG o WebP (HEIC no). Se achica sola antes de subirla."
         error={errors.photo}
       >
-        <Input type="file" name="photo" accept="image/jpeg,image/png,image/webp" className="py-2" />
+        {/* En el celular suma «Sacar foto», que abre la cámara (campo «camera», que la acción lee primero). */}
+        <FileUpload name="photo" accept="image/jpeg,image/png,image/webp" camera="camera" />
       </Field>
-      {/* En el celular abre la cámara; en la computadora no aporta nada sobre el campo de arriba. */}
-      <div className="desk:hidden">
-        <Field id={`${prefix}-camera`} label="O sacala con la cámara">
-          <Input
-            type="file"
-            name="camera"
-            accept="image/*"
-            capture="environment"
-            className="py-2"
-          />
-        </Field>
-      </div>
       <Field id={`${prefix}-reason`} label="Motivo" required error={errors.reason}>
         <Input name="reason" required maxLength={500} />
       </Field>

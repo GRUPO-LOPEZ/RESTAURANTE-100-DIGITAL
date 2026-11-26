@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { Truck } from "lucide-react";
 
 import { confirmCashAction } from "@/app/compras/pagos/actions";
 import { ActionForm } from "@/components/action-form";
@@ -7,10 +8,11 @@ import { ActionModal } from "@/components/action-modal";
 import { AppShell, Loading } from "@/components/app-shell";
 import { RegisterPayment } from "@/components/register-payment";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Field, Select } from "@/components/ui/field";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { GroupLayout, GroupPanel } from "@/components/ui/group-panel";
 import { Notice } from "@/components/ui/notice";
 import { FormInput, FormTextarea } from "@/components/ui/form";
 import { Pagination } from "@/components/ui/pagination";
@@ -21,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 import { getSuppliers } from "@/lib/catalog";
 import { first, getActiveRestaurantId, uuidOrUndefined } from "@/lib/data";
+import { sumCounts, type GroupItem } from "@/lib/group-counts";
+import { getPaymentSupplierCounts } from "@/lib/group-counts-data";
 import { invoiceLabel, shortDate } from "@/lib/invoices";
 import { listHref, parseList, plainParams } from "@/lib/list-params";
 import { formatMoney } from "@/lib/money";
@@ -36,11 +40,13 @@ import { resolveOrderPlace } from "@/lib/purchase-orders-data";
 
 // Pagos (Fase 3, Prompt 6, ADR-0060), listado tipo C: ¿qué hay que pagar y a quién le debemos? Las facturas liberadas
 // del local elegido arriba (o de todos mis locales) por vencimiento, las vencidas, las pagadas y el efectivo pagado al
-// recibir que falta confirmar. «Registrar pago» abre el panel con las facturas del proveedor.
+// recibir que falta confirmar. «Registrar pago» abre el panel con las facturas del proveedor. Con los criterios de Soy
+// (ADR-0068): en una pantalla, los proveedores con su cantidad en el panel de la izquierda y la tabla con su scroll.
 export default function PagosPage({ searchParams }: PageProps<"/compras/pagos">) {
   return (
     <AppShell
       title="Pagos"
+      fill
       description="Lo que vence, lo que está vencido y lo que ya se pagó a cada proveedor."
       actions={
         <Suspense fallback={null}>
@@ -149,10 +155,11 @@ async function Payments({
       }))}
     />
   );
+  // En la computadora, el proveedor se elige en el panel; en el celular, acá (la clave lo rehace al cambiar).
   const filters = (
     <FilterBar label="Filtros de pagos" active={active}>
-      <Field id="pg-proveedor" label="Proveedor" className="w-full desk:w-72">
-        <Select name="proveedor" defaultValue={supplier?.id ?? ""}>
+      <Field id="pg-proveedor" label="Proveedor" className="w-full desk:hidden">
+        <Select key={supplier?.id ?? "todos"} name="proveedor" defaultValue={supplier?.id ?? ""}>
           <option value="">Todos</option>
           {suppliers.map((s) => (
             <option key={s.id} value={s.id}>
@@ -164,61 +171,102 @@ async function Payments({
     </FilterBar>
   );
 
+  const layout = (groups: GroupItem[], children: React.ReactNode) => (
+    <GroupLayout
+      panel={
+        <GroupPanel
+          label="Proveedores"
+          icon={Truck}
+          unit={{ one: "factura", many: "facturas" }}
+          allLabel="Todos los proveedores"
+          allCount={sumCounts(groups)}
+          items={groups}
+          selected={supplier ? { id: supplier.id, name: supplier.name } : undefined}
+          hrefFor={(id) => listHref(PATH, params, { proveedor: id, pagina: undefined })}
+        />
+      }
+    >
+      {children}
+    </GroupLayout>
+  );
+  const box =
+    "flex flex-col gap-3 rounded-md border border-line bg-surface p-4 desk:min-h-0 desk:flex-[1_1_0px]";
+
   // «Para confirmar»: el efectivo pagado al recibir (decisión 7 de Soy).
   if (tab.tab === "cash") {
-    const cash = (await getCashToConfirm(local)).filter(
-      (c) => !supplier || c.supplier_id === supplier.id,
-    );
+    const all = await getCashToConfirm(local);
+    const cash = all.filter((c) => !supplier || c.supplier_id === supplier.id);
+    // El panel cuenta lo mismo que la tabla, sin el filtro del proveedor.
+    const counts = new Map<string, GroupItem>();
+    for (const c of all) {
+      const g = counts.get(c.supplier_id) ?? { id: c.supplier_id, name: c.supplier_name, count: 0 };
+      g.count += 1;
+      counts.set(c.supplier_id, g);
+    }
     const saved = NOTICES[first(raw.aviso) ?? ""];
-    return (
-      <div className="flex flex-col gap-4">
+    return layout(
+      [...counts.values()],
+      <>
         {saved ? <Notice status="ok">{saved}</Notice> : null}
         {filters}
-        <Card className="flex flex-col gap-4">
+        <section aria-label="Efectivo para confirmar" className={box}>
           <CardTitle className="tabular-nums">
             {cash.length === 1 ? "1 pago para confirmar" : `${cash.length} pagos para confirmar`}
           </CardTitle>
           {tabs}
           <DataTable
             caption="Efectivo para confirmar"
+            scroll
             columns={cashColumns(menus.pay)}
             rows={cash}
             rowKey={(r) => r.payment_id}
             empty={<EmptyState title="No hay efectivo para confirmar." />}
           />
-        </Card>
-      </div>
+        </section>
+      </>,
     );
   }
 
-  const { rows, total } = await getPaymentSchedule({
-    tab: tab.tab,
-    supplierId: supplier?.id,
-    restaurantId: local,
-    page: list.page - 1,
-    size: list.size,
-  });
+  const [{ rows, total }, groups] = await Promise.all([
+    getPaymentSchedule({
+      tab: tab.tab,
+      supplierId: supplier?.id,
+      restaurantId: local,
+      page: list.page - 1,
+      size: list.size,
+    }),
+    // El panel cuenta con la misma pestaña y el mismo local, sin el proveedor (pgTAP 419).
+    getPaymentSupplierCounts({ tab: tab.tab, restaurantId: local }),
+  ]);
   const columns: DataColumn<ScheduleRow>[] = [
     {
       key: "supplier",
       header: "Proveedor",
       mobile: "title",
+      wrap: true,
       cell: (r) => <span className="font-medium text-ink">{r.supplier_name}</span>,
     },
     {
       key: "invoice",
       header: "Factura",
       mobile: "line",
+      wrap: "narrow",
       cell: (r) => (
         <Link
           href={`/compras/facturas/${r.invoice_id}?volver=${encodeURIComponent(here)}`}
-          className="inline-flex min-h-touch items-center whitespace-nowrap text-primary tabular-nums underline-offset-4 hover:underline desk:min-h-0"
+          className="inline-flex min-h-touch items-center text-primary tabular-nums underline-offset-4 hover:underline desk:min-h-0"
         >
           {invoiceLabel(r.invoice_class, r.point_of_sale, r.number)}
         </Link>
       ),
     },
-    { key: "place", header: "Local", mobile: "hidden", cell: (r) => r.restaurant_name },
+    {
+      key: "place",
+      header: "Local",
+      mobile: "hidden",
+      wrap: "narrow",
+      cell: (r) => r.restaurant_name,
+    },
     {
       key: "due",
       header: "Vencimiento",
@@ -252,16 +300,18 @@ async function Payments({
       ),
     },
   ];
-  return (
-    <div className="flex flex-col gap-4">
+  return layout(
+    groups,
+    <>
       {filters}
-      <Card className="flex flex-col gap-4">
+      <section aria-label="Pagos" className={box}>
         <CardTitle className="tabular-nums">
           {total === 1 ? "1 factura" : `${total.toLocaleString("es-AR")} facturas`}
         </CardTitle>
         {tabs}
         <DataTable
           caption="Pagos"
+          scroll
           columns={columns}
           rows={rows}
           rowKey={(r) => r.invoice_id}
@@ -283,8 +333,8 @@ async function Payments({
         {total > 0 ? (
           <Pagination list={list} total={total} shown={rows.length} path={PATH} params={params} />
         ) : null}
-      </Card>
-    </div>
+      </section>
+    </>,
   );
 }
 
@@ -294,6 +344,7 @@ function cashColumns(canPay: boolean): DataColumn<CashRow>[] {
       key: "supplier",
       header: "Proveedor",
       mobile: "title",
+      wrap: true,
       cell: (r) => <span className="font-medium text-ink">{r.supplier_name}</span>,
     },
     {
@@ -312,7 +363,13 @@ function cashColumns(canPay: boolean): DataColumn<CashRow>[] {
           "Sin orden de compra"
         ),
     },
-    { key: "place", header: "Local", mobile: "hidden", cell: (r) => r.restaurant_name },
+    {
+      key: "place",
+      header: "Local",
+      mobile: "hidden",
+      wrap: "narrow",
+      cell: (r) => r.restaurant_name,
+    },
     {
       key: "paid",
       header: "Pagado el",
