@@ -281,6 +281,19 @@ begin
                    then 'PCE1' else 'PCE' end), pg_temp.why('código del local para las órdenes de compra'));
   end if;
 
+  --    Las cajas y cuentas de la razón social de Demo Pastas Centro, para las órdenes de pago (ADR-0070): las carga la
+  --    Superadministradora, si no tiene ninguna. Datos inventados (el CBU no es de nadie).
+  if not exists (select 1 from org.legal_entity_accounts a join org.restaurants r on r.legal_entity_id = a.legal_entity_id
+                  where r.id = v_centro and a.deleted_at is null) then
+    perform pg_temp.as_user(v_admin);
+    perform pg_temp.ok(org.save_legal_entity_accounts(
+              (select legal_entity_id from org.restaurants where id = v_centro),
+              '[{"kind": "cash", "name": "Caja de prueba"},
+                {"kind": "bank", "name": "Cuenta de prueba", "bank": "Banco de Prueba",
+                 "cbu": "0000003100099999999999", "alias": "PRUEBA.CUENTA.OP"}]'::jsonb,
+              pg_temp.why('cajas y cuentas para las órdenes de pago')), 'cargar las cajas y cuentas');
+  end if;
+
   --    Compras completa la ficha de los 3 proveedores: cómo factura, cada cuánto manda la lista, cómo se le paga y sus
   --    cuentas (alias inventados). Pisa las condiciones que tuvieran; las cuentas se suman.
   if exists (select 1 from purchasing.supplier_payment_accounts

@@ -14,13 +14,23 @@ import { FilterBar } from "@/components/ui/filter-bar";
 import { GroupLayout, GroupPanel } from "@/components/ui/group-panel";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/states";
-import { Tabs } from "@/components/ui/tabs";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 import { getSuppliers } from "@/lib/catalog";
 import { first, getActiveRestaurantId, uuidOrUndefined } from "@/lib/data";
 import { sumCounts } from "@/lib/group-counts";
 import { getInvoiceSupplierCounts } from "@/lib/group-counts-data";
-import { INVOICE_STATUS, INVOICE_TABS, failedLabel, invoiceLabel, shortDate } from "@/lib/invoices";
+import {
+  INVOICE_STATUS,
+  INVOICE_TABS,
+  dueState,
+  failedLabel,
+  invoiceLabel,
+  invoiceTab,
+  shortDate,
+} from "@/lib/invoices";
+import { todayInArgentina } from "@/lib/forms/schemas";
+import { monthName, monthRange } from "@/lib/payment-orders";
+import { ReliabilityFilter } from "@/components/costs/reliability-filter";
 import {
   getInvoiceSuppliers,
   getInvoiceableOrders,
@@ -39,8 +49,8 @@ export default function FacturasPage({ searchParams }: PageProps<"/compras/factu
   return (
     <AppShell
       title="Facturas"
+      heading="¿Qué facturas hay para revisar y pagar?"
       fill
-      description="Las facturas de los proveedores: qué se controló, qué quedó observado y qué está liberado a pago."
       actions={
         <Suspense fallback={null}>
           <Actions searchParams={searchParams} />
@@ -81,7 +91,7 @@ async function Actions({
       title="Nueva factura"
       description={
         place
-          ? `En ${place.name}. Las líneas salen de lo recibido en las órdenes que elijas; después la ajustás al papel en su ficha.`
+          ? `En ${place.name}. Las líneas salen de lo recibido, con el precio de la lista.`
           : "Las facturas se cargan de a un local."
       }
     >
@@ -101,7 +111,7 @@ async function Invoices({
   const raw = await searchParams;
   const params = plainParams(raw);
   const list = parseList(raw, [], null);
-  const tab = INVOICE_TABS.find((t) => t.value === first(raw.estado)) ?? INVOICE_TABS[0];
+  const tab = invoiceTab(first(raw.estado));
   // El local de la dirección o el elegido arriba (el selector es único y global); sin ninguno, todos los que ve.
   const local =
     uuidOrUndefined(first(raw.local)) ??
@@ -112,11 +122,24 @@ async function Invoices({
   const supplierId = uuidOrUndefined(first(raw.proveedor));
   const supplier = suppliers.find((s) => s.id === supplierId);
   const date = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
-  const from = date(first(raw.desde));
-  const to = date(first(raw.hasta));
+  // La fecha: este mes, el mes pasado, todas u otras (desde y hasta). Lo que pide hacer algo (observadas, para dar
+  // conforme, vencidas) arranca en todas las fechas: una vencida del mes pasado sigue pendiente.
+  const today = todayInArgentina();
+  const asked = first(raw.fecha);
+  const period: "this" | "last" | "all" | "other" =
+    asked === "mes-pasado"
+      ? "last"
+      : asked === "otras"
+        ? "other"
+        : asked === "todas" || (!asked && tab.todo)
+          ? "all"
+          : "this";
+  const month = period === "this" || period === "last" ? monthRange(today, period) : null;
+  const from = month?.from ?? (period === "other" ? date(first(raw.desde)) : undefined);
+  const to = month?.to ?? (period === "other" ? date(first(raw.hasta)) : undefined);
   const [{ rows, total }, groups] = await Promise.all([
     getInvoices({
-      status: tab?.filter,
+      status: tab.filter,
       supplierId: supplier?.id,
       restaurantId: local,
       from,
@@ -125,7 +148,7 @@ async function Invoices({
       size: list.size,
     }),
     // El panel cuenta con los mismos filtros, menos el proveedor (pgTAP 419).
-    getInvoiceSupplierCounts({ status: tab?.filter, restaurantId: local, from, to }),
+    getInvoiceSupplierCounts({ status: tab.filter, restaurantId: local, from, to }),
   ]);
 
   const active = [
@@ -137,7 +160,7 @@ async function Invoices({
           },
         ]
       : []),
-    ...(from
+    ...(period === "other" && from
       ? [
           {
             label: `Desde el ${shortDate(from)}`,
@@ -145,7 +168,7 @@ async function Invoices({
           },
         ]
       : []),
-    ...(to
+    ...(period === "other" && to
       ? [
           {
             label: `Hasta el ${shortDate(to)}`,
@@ -178,13 +201,18 @@ async function Invoices({
       wrap: true,
       cell: (r) => r.supplier_name,
     },
-    {
-      key: "place",
-      header: "Local",
-      mobile: "hidden",
-      wrap: "narrow",
-      cell: (r) => r.restaurant_name,
-    },
+    // Con un local elegido arriba, la columna sobra (y deja lugar a «Vence»).
+    ...(local
+      ? []
+      : [
+          {
+            key: "place",
+            header: "Local",
+            mobile: "hidden",
+            wrap: "narrow",
+            cell: (r) => r.restaurant_name,
+          } satisfies DataColumn<InvoiceRow>,
+        ]),
     {
       key: "issued",
       header: "Fecha",
@@ -197,6 +225,22 @@ async function Invoices({
       align: "right",
       mobile: "line",
       cell: (r) => <span className="tabular-nums">{formatMoney(r.total_amount)}</span>,
+    },
+    {
+      key: "due",
+      header: "Vence",
+      mobile: "line",
+      cell: (r) => {
+        const due = ["released", "approved"].includes(r.status)
+          ? dueState(r.due_on, today, r.status)
+          : "none";
+        return (
+          <span className="inline-flex items-center gap-2 whitespace-nowrap tabular-nums">
+            {shortDate(r.due_on)}
+            {due === "bad" ? <Badge status="bad">Vencida</Badge> : null}
+          </span>
+        );
+      },
     },
     {
       key: "failed",
@@ -251,12 +295,25 @@ async function Invoices({
             ))}
           </Select>
         </Field>
-        <Field id="fc-desde" label="Desde" className="w-full desk:w-44">
-          <DateInput name="desde" defaultValue={from ?? ""} />
+        <Field id="fc-estado" label="Estado" className="w-full desk:w-48">
+          <Select key={tab.value ?? "todas"} name="estado" defaultValue={tab.value ?? ""}>
+            {INVOICE_TABS.map((t) => (
+              <option key={t.value ?? "todas"} value={t.value ?? ""}>
+                {t.label}
+              </option>
+            ))}
+          </Select>
         </Field>
-        <Field id="fc-hasta" label="Hasta" className="w-full desk:w-44">
-          <DateInput name="hasta" defaultValue={to ?? ""} />
-        </Field>
+        {period === "other" ? (
+          <>
+            <Field id="fc-desde" label="Desde" className="w-full desk:w-44">
+              <DateInput name="desde" defaultValue={from ?? ""} />
+            </Field>
+            <Field id="fc-hasta" label="Hasta" className="w-full desk:w-44">
+              <DateInput name="hasta" defaultValue={to ?? ""} />
+            </Field>
+          </>
+        ) : null}
       </FilterBar>
       <section
         aria-label="Facturas"
@@ -264,15 +321,51 @@ async function Invoices({
       >
         <CardTitle className="tabular-nums">
           {total === 1 ? "1 factura" : `${total.toLocaleString("es-AR")} facturas`}
+          {tab.value ? ` ${tab.label.toLowerCase()}` : ""}
+          {month ? ` de ${monthName(month.from)}` : ""}
         </CardTitle>
-        <Tabs
-          label="Estado de las facturas"
-          items={INVOICE_TABS.map((t) => ({
-            href: listHref(PATH, params, { estado: t.value, pagina: undefined }),
-            label: t.label,
-            current: t.value === tab?.value,
-          }))}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <ReliabilityFilter
+            path={PATH}
+            name="estado"
+            label="Lo que pide hacer algo"
+            keep={keepExcept(params, ["estado", "pagina"])}
+            options={INVOICE_TABS.filter((t) => t.todo).map((t) => ({
+              value: t.value ?? "",
+              label: t.label,
+              current: t.value === tab.value,
+              // Apretar el que está aplicado lo saca (vuelve a todas).
+              href: listHref(PATH, params, {
+                estado: t.value === tab.value ? undefined : t.value,
+                pagina: undefined,
+              }),
+            }))}
+          />
+          <ReliabilityFilter
+            path={PATH}
+            name="fecha"
+            label="Fecha"
+            keep={keepExcept(params, ["fecha", "desde", "hasta", "pagina"])}
+            options={(
+              [
+                ["este-mes", "Este mes", "this"],
+                ["mes-pasado", "El mes pasado", "last"],
+                ["todas", "Todas las fechas", "all"],
+                ["otras", "Otras fechas", "other"],
+              ] as const
+            ).map(([value, label, p]) => ({
+              value,
+              label,
+              current: period === p,
+              href: listHref(PATH, params, {
+                fecha: value,
+                desde: undefined,
+                hasta: undefined,
+                pagina: undefined,
+              }),
+            }))}
+          />
+        </div>
         {rows.length === 0 && list.page > 1 ? (
           <EmptyState title="Esa página no existe.">
             <Link
@@ -305,4 +398,9 @@ async function Invoices({
       </section>
     </GroupLayout>
   );
+}
+
+// Lo que sigue igual al apretar un botón de filtro.
+function keepExcept(params: Record<string, string>, drop: string[]): Record<string, string> {
+  return Object.fromEntries(Object.entries(params).filter(([k]) => !drop.includes(k)));
 }

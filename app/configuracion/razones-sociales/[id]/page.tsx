@@ -3,6 +3,7 @@ import { Suspense, cache } from "react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { BackLink } from "@/components/back-link";
+import { CompanyAccounts } from "@/components/legal-entity-sheet/company-accounts";
 import { ConstanciaUpload } from "@/components/legal-entity-sheet/constancia-upload";
 import {
   ActivitiesSection,
@@ -30,6 +31,7 @@ import {
 } from "@/lib/org-panel";
 import { LEGAL_ENTITY_REQUIRED, type LegalEntityDraft } from "@/lib/org-sheet";
 import { FocusTarget } from "@/components/focus-target";
+import { getLegalEntityAccounts } from "@/lib/payment-orders-data";
 import { createClient } from "@/lib/supabase/server";
 
 // Ficha de la razón social con los datos de la constancia de inscripción de ARCA (Tanda 1 de Soy, ADR-0061), con el
@@ -181,7 +183,11 @@ async function Entity({
 }) {
   const [e, query] = await Promise.all([load(params), searchParams]);
   if (!e) notFound();
-  const [provinces, url] = await Promise.all([getProvinces(), documentUrl(e.documents[0]?.path)]);
+  const [provinces, url, accounts] = await Promise.all([
+    getProvinces(),
+    documentUrl(e.documents[0]?.path),
+    getLegalEntityAccounts(e.id),
+  ]);
   const editable = e.canEdit && e.stamp !== null;
   const saved = NOTICES[first(query.aviso) ?? ""] ?? null;
   const last = e.documents[0]?.issuedOn ?? null;
@@ -299,9 +305,15 @@ async function Entity({
             </h3>
             <FiscalAddressSection />
           </Tile>
-          <Tile id="impuestos" title="Impuestos" scroll>
-            <TaxesSection />
-          </Tile>
+          <div className="flex min-h-0 min-w-0 flex-col gap-4">
+            <Tile id="impuestos" title="Impuestos" scroll className="desk:flex-[1_1_0px]">
+              <TaxesSection />
+            </Tile>
+            {/* De dónde sale la plata de una orden de pago (ADR-0070). */}
+            <Tile id="cajas" title="Cajas y cuentas" scroll className="desk:shrink-0">
+              <CompanyAccounts legalEntityId={e.id} accounts={accounts} editable={e.canEdit} />
+            </Tile>
+          </div>
           <div className="flex min-h-0 min-w-0 flex-col gap-4">
             <Tile id="actividades" title="Actividades en ARCA" scroll>
               <ActivitiesSection />

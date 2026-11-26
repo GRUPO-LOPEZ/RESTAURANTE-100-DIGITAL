@@ -36,6 +36,8 @@ test("en el celular, la cocinera arma una OC con botones grandes y la manda", as
   await page.goto("/compras/ordenes/nueva");
   // En el celular, el proveedor se elige arriba (desplegable, 44 px).
   const supplier = page.getByLabel("Proveedor", { exact: true });
+  // La pantalla llega en streaming: se mide cuando el desplegable ya está (si no, la caja es nula y mide 0).
+  await expect(supplier).toBeVisible();
   expect((await supplier.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   await supplier.selectOption(LACTEOS);
   const plus = page.getByRole("button", { name: /^Uno más de / }).first();

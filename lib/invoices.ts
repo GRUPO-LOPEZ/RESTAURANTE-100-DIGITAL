@@ -21,6 +21,13 @@ export const INVOICE_CLASSES: { value: InvoiceClass; label: string; short: strin
   { value: "handwritten_note", label: "Nota a mano", short: "Nota" },
 ];
 
+// Los que van en «Otro» del alta (los de siempre son botones).
+export const OTHER_INVOICE_CLASSES: InvoiceClass[] = [
+  "invoice_c",
+  "non_fiscal",
+  "handwritten_note",
+];
+
 // Fiscales: llevan punto de venta, autorización y CUIT del emisor (como invoices_fiscal_check).
 export function isFiscal(invoiceClass: InvoiceClass): boolean {
   return invoiceClass !== "non_fiscal" && invoiceClass !== "handwritten_note";
@@ -42,7 +49,7 @@ export const INVOICE_STATUS: Record<
   approved: { label: "Conforme", status: "ok" },
   released: { label: "Liberada", status: "ok" },
   paid: { label: "Pagada", status: "ok" },
-  cancelled: { label: "Cancelada", status: "none" },
+  cancelled: { label: "Anulada", status: "none" },
 };
 
 export const CHECK_LABELS: Record<InvoiceCheckKind, string> = {
@@ -192,14 +199,27 @@ export type InvoiceHeaderInput = z.infer<typeof invoiceHeaderSchema>;
 // ---------------------------------------------------------------------------
 
 // Pestañas del listado. «Conformes» suma las liberadas a pago: el conforme libera en la misma transacción.
-export const INVOICE_TABS: { value: string | undefined; label: string; filter?: string }[] = [
+// Los estados del listado (ADR-0070): un desplegable con todos y, a la vista, los tres que piden hacer algo.
+export const INVOICE_TABS: {
+  value: string | undefined;
+  label: string;
+  filter?: string;
+  todo?: boolean;
+}[] = [
   { value: undefined, label: "Todas" },
   { value: "cargadas", label: "Cargadas", filter: "loaded" },
-  { value: "observadas", label: "Observadas", filter: "observed" },
+  { value: "observadas", label: "Observadas", filter: "observed", todo: true },
+  { value: "para-dar-conforme", label: "Para dar conforme", filter: "to_approve", todo: true },
   { value: "conformes", label: "Conformes", filter: "released" },
+  { value: "vencidas", label: "Vencidas", filter: "overdue", todo: true },
   { value: "pagadas", label: "Pagadas", filter: "paid" },
-  { value: "canceladas", label: "Canceladas", filter: "cancelled" },
+  { value: "anuladas", label: "Anuladas", filter: "cancelled" },
 ];
+// Un enlace de antes (?estado=canceladas) sigue llevando a las anuladas.
+export function invoiceTab(value: string | undefined) {
+  const v = value === "canceladas" ? "anuladas" : value;
+  return INVOICE_TABS.find((t) => t.value === v) ?? INVOICE_TABS[0]!;
+}
 
 export type InvoiceLineClass =
   "product" | "freight" | "service" | "rounding" | "deposit" | "free_of_charge";
@@ -571,40 +591,64 @@ export function shortDate(iso: string | null): string {
 
 // El alta: proveedor, las OC recibidas que cubre (ninguna para un flete o un servicio: P4) y los datos del papel. El local
 // (oculto) y las OC los valida la acción; el CUIT del emisor lo pone la acción: es el del proveedor.
-export const newInvoiceSchema = z
-  .object({
-    supplierId: z.string().uuid("Elegí el proveedor."),
-    invoice_class: z.enum(
-      ["invoice_a", "invoice_b", "invoice_c", "invoice_remito_a", "non_fiscal", "handwritten_note"],
-      { message: "Elegí la clase de comprobante." },
-    ),
-    // En un comprobante X o una nota a mano no se piden: pueden no venir.
-    point_of_sale: z.string().trim().default(""),
-    number: z
-      .string()
-      .trim()
-      .regex(/^\d{1,8}$/, "El número va de 1 a 99999999, sin guiones."),
-    issued_on: isoDate,
-    authorization_kind: z.enum(["cae", "cai", "caea"]).default("cae"),
-    authorization_code: z.string().trim().default(""),
-  })
-  .superRefine((v, ctx) => {
-    if (Number(v.number) < 1)
-      ctx.addIssue({ code: "custom", path: ["number"], message: "El número va de 1 a 99999999." });
-    if (!isFiscal(v.invoice_class)) return;
-    if (!/^\d{1,5}$/.test(v.point_of_sale) || Number(v.point_of_sale) < 1)
-      ctx.addIssue({
-        code: "custom",
-        path: ["point_of_sale"],
-        message: "El punto de venta va de 1 a 99999.",
-      });
-    if (!/^\d{14}$/.test(v.authorization_code))
-      ctx.addIssue({
-        code: "custom",
-        path: ["authorization_code"],
-        message: "La autorización (CAE, CAI o CAEA) tiene 14 números.",
-      });
-  });
+// El comprobante llega como uno de los botones (class_pick) o, con «Otro», como el elegido en el desplegable
+// (other_class); un formulario de antes puede mandar invoice_class directo. El CAE ya no se pide acá (ADR-0070): se
+// completa en la ficha y la base lo exige al controlar. Si viene, tiene que tener sus 14 números.
+const INVOICE_CLASS_VALUES = [
+  "invoice_a",
+  "invoice_b",
+  "invoice_c",
+  "invoice_remito_a",
+  "non_fiscal",
+  "handwritten_note",
+] as const;
+export const newInvoiceSchema = z.preprocess(
+  (raw) => {
+    if (!raw || typeof raw !== "object") return raw;
+    const v = raw as Record<string, unknown>;
+    const pick = typeof v.class_pick === "string" ? v.class_pick : undefined;
+    const invoice_class =
+      pick === "other" ? v.other_class : pick !== undefined ? pick : v.invoice_class;
+    return { ...v, invoice_class };
+  },
+  z
+    .object({
+      supplierId: z.string().uuid("Elegí el proveedor."),
+      class_pick: z.string().optional(),
+      other_class: z.string().optional(),
+      invoice_class: z.enum(INVOICE_CLASS_VALUES, { message: "Elegí la clase de comprobante." }),
+      // En un comprobante X o una nota a mano no se piden: pueden no venir.
+      point_of_sale: z.string().trim().default(""),
+      number: z
+        .string()
+        .trim()
+        .regex(/^\d{1,8}$/, "El número va de 1 a 99999999, sin guiones."),
+      issued_on: isoDate,
+      authorization_kind: z.enum(["cae", "cai", "caea"]).default("cae"),
+      authorization_code: z.string().trim().default(""),
+    })
+    .superRefine((v, ctx) => {
+      if (Number(v.number) < 1)
+        ctx.addIssue({
+          code: "custom",
+          path: ["number"],
+          message: "El número va de 1 a 99999999.",
+        });
+      if (!isFiscal(v.invoice_class)) return;
+      if (!/^\d{1,5}$/.test(v.point_of_sale) || Number(v.point_of_sale) < 1)
+        ctx.addIssue({
+          code: "custom",
+          path: ["point_of_sale"],
+          message: "El punto de venta va de 1 a 99999.",
+        });
+      if (v.authorization_code && !/^\d{14}$/.test(v.authorization_code))
+        ctx.addIssue({
+          code: "custom",
+          path: ["authorization_code"],
+          message: "La autorización (CAE, CAI o CAEA) tiene 14 números.",
+        });
+    }),
+);
 
 // Una nota de crédito, débito o descuento. El total es opcional: sin él, vale el importe. La factura (oculta) la valida
 // la acción.

@@ -120,10 +120,22 @@ const payable = z.object({
       method: z.enum(["cash", "transfer", "check", "echeq", "card", "electronic_code"]),
       bank: z.string().nullable(),
       alias: z.string().nullable(),
+      cbu: z.string().nullable().optional(),
       cbu_end: z.string().nullable(),
+      holder_name: z.string().nullable().optional(),
+      holder_tax_id: z.string().nullable().optional(),
       electronic_code: z.string().nullable(),
     }),
   ),
+  // Quién paga (la razón social del local) y sus cajas y cuentas activas (ADR-0070).
+  payer: z
+    .object({ id: z.string(), name: z.string(), tax_id: z.string().nullable() })
+    .nullable()
+    .optional(),
+  company_accounts: z
+    .array(z.object({ id: z.string(), kind: z.enum(["cash", "bank", "card"]), name: z.string() }))
+    .optional()
+    .default([]),
 });
 export type Payable = z.infer<typeof payable>;
 

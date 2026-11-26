@@ -48,7 +48,7 @@ import { getInvoicePayments, type InvoicePayments } from "@/lib/payments-data";
 import { formatMoney } from "@/lib/money";
 
 // Ficha de una factura (Fase 3, Prompt 5B, ADR-0058), con el patrón de las pantallas de carga sin scroll (ADR-0046):
-// una línea de encabezado con las acciones (Controlar, Dar por conforme, Cancelar), 4 indicadores y tres tarjetas: los
+// una línea de encabezado con las acciones (Controlar, Dar por conforme, Anular), 4 indicadores y tres tarjetas: los
 // datos y el pie, las líneas como planilla con su control, y «Todo junto» (el papel, la recepción, los controles y las
 // notas). Lo que se edita se guarda junto con la barra de abajo, con motivo. Una conforme es de solo lectura.
 export default function FacturaPage({ params, searchParams }: PageProps<"/compras/facturas/[id]">) {
@@ -99,7 +99,8 @@ async function Heading({ params }: { params: PageProps<"/compras/facturas/[id]">
 }
 
 function backHref(volver: string | undefined): string {
-  return volver && /^\/(compras\/facturas(\?|$)|materias-primas\/|costos\/)/.test(volver)
+  return volver &&
+    /^\/(compras\/facturas(\?|$)|compras\/pagos(\?|$)|materias-primas\/|costos\/)/.test(volver)
     ? volver
     : "/compras/facturas";
 }
@@ -111,6 +112,12 @@ async function Back({
 }) {
   const query = await searchParams;
   const href = backHref(first(query.volver));
+  if (href.startsWith("/compras/pagos"))
+    return (
+      <BackLink href={href} label="Volver a pagos">
+        Pagos
+      </BackLink>
+    );
   if (!href.startsWith("/compras/facturas")) return <BackLink href={href}>Volver</BackLink>;
   return (
     <BackLink href={href} label="Volver a facturas">
@@ -146,16 +153,16 @@ async function Actions({ params }: { params: PageProps<"/compras/facturas/[id]">
       {a.can_edit ? (
         <ActionModal
           className="hidden desk:inline-flex"
-          label="Cancelar"
-          accessibleName="Cancelar la factura"
+          label="Anular"
+          accessibleName="Anular la factura"
           icon="none"
-          title="Cancelar la factura"
+          title="Anular la factura"
           description="Para una factura cargada por error. No se borra: queda en la historia, y el mismo número se puede volver a cargar."
         >
           <ActionForm
             action={cancelInvoiceAction}
             schema="invoiceReason"
-            submitLabel="Cancelar la factura"
+            submitLabel="Anular la factura"
             variant="destructive"
           >
             <input type="hidden" name="invoiceId" value={inv.id} />
@@ -218,7 +225,9 @@ const NOTICES: Record<string, { status: "ok" | "info" | "warn"; text: string }> 
     status: "ok",
     text: "Quedó conforme y liberada a pago. Su precio pasa a ser el costo.",
   },
-  cancelada: { status: "info", text: "Factura cancelada. Queda en la historia." },
+  anulada: { status: "info", text: "Factura anulada. Queda en la historia." },
+  // El nombre de antes (un enlace guardado).
+  cancelada: { status: "info", text: "Factura anulada. Queda en la historia." },
   archivo: { status: "ok", text: "Archivo guardado." },
   "nota-observada": {
     status: "warn",
@@ -231,7 +240,15 @@ const NOTICES: Record<string, { status: "ok" | "info" | "warn"; text: string }> 
   guardado: { status: "ok", text: "Cambios guardados. Controlala de nuevo." },
   creada: {
     status: "info",
-    text: "Factura cargada: subí la foto y controlala.",
+    text: "Factura cargada: completá la fecha, el CAE y los totales del papel, subí la foto y controlala.",
+  },
+  "creada-con-foto": {
+    status: "info",
+    text: "Factura cargada con su foto: completá la fecha, el CAE y los totales del papel y controlala.",
+  },
+  "creada-sin-foto": {
+    status: "warn",
+    text: "Factura cargada, pero no pudimos guardar la foto: subila de nuevo acá. Después completá el CAE y controlala.",
   },
 };
 
@@ -262,7 +279,7 @@ async function Invoice({
         </Notice>
       ) : null}
       {inv.status === "cancelled" ? (
-        <Notice status="warn">Cancelada: {inv.cancelledReason}</Notice>
+        <Notice status="warn">Anulada: {inv.cancelledReason}</Notice>
       ) : null}
       <InvoiceSheetProvider
         invoiceId={inv.id}

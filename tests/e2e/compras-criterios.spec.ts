@@ -58,7 +58,7 @@ async function firstSheet(page: Page, list: string, caption: string): Promise<st
 async function everyScreen(page: Page, who: string) {
   const sheets = [
     await firstSheet(page, `/compras/ordenes?local=${PASTAS}&estado=todas`, "Órdenes de compra"),
-    await firstSheet(page, `/compras/facturas?local=${PARRILLA}`, "Facturas"),
+    await firstSheet(page, `/compras/facturas?local=${PARRILLA}&fecha=otras`, "Facturas"),
   ];
   for (const size of DESK_SIZES) {
     await page.setViewportSize(size);
@@ -96,7 +96,7 @@ test.describe("en la computadora", () => {
   }) => {
     await page.setViewportSize(DESK_SIZES[0]);
     await login(page, COMPRAS, { mfa: true });
-    await page.goto(`/compras/facturas?local=${PARRILLA}`);
+    await page.goto(`/compras/facturas?local=${PARRILLA}&fecha=otras`);
     await heading(page);
     expect(
       await page
@@ -192,7 +192,7 @@ test.describe("con Chrome en inglés", () => {
   test("las fechas se escriben y se leen dd/mm/aaaa", async ({ page }) => {
     await page.setViewportSize(DESK_SIZES[0]);
     await login(page, COMPRAS, { mfa: true });
-    await page.goto(`/compras/facturas?local=${PARRILLA}`);
+    await page.goto(`/compras/facturas?local=${PARRILLA}&fecha=otras`);
     await heading(page);
     const desde = page.getByLabel("Desde");
     await expect(desde).toHaveAttribute("placeholder", "dd/mm/aaaa");
@@ -219,7 +219,7 @@ test.describe("en el celular", () => {
 
   test("sin panel: el proveedor se elige arriba, con controles de 44 px", async ({ page }) => {
     await login(page, COMPRAS, { mfa: true });
-    await page.goto(`/compras/facturas?local=${PARRILLA}`);
+    await page.goto(`/compras/facturas?local=${PARRILLA}&fecha=otras`);
     await heading(page);
     await expect(page.getByRole("navigation", { name: "Proveedores" })).toBeHidden();
     const supplier = page.getByLabel("Proveedor").locator("visible=true");

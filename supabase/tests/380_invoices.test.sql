@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(97);
+select plan(98);
 
 create function pg_temp.q(p_user uuid, p_sql text)
 returns text
@@ -468,10 +468,15 @@ select is((select unit_cost from costing.price_rows(pg_temp.u(202), recipes.toda
 select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.create_invoice(%L, %L, null, %L::jsonb, %L)',
   pg_temp.u(903), pg_temp.u(203), pg_temp.header('invoice_a', 900005) || '{"issuer_tax_id": "99-99999999-9"}', 'X')),
   'El CUIT del emisor es de ejemplo (99-99999999-9): esa factura no vale.', 'caso 29: un emisor de ejemplo no se guarda');
-select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.create_invoice(%L, %L, null, %L::jsonb, %L)',
-  pg_temp.u(903), pg_temp.u(203), pg_temp.header('invoice_a', 900005) - 'authorization_code', 'X')),
-  'Una factura fiscal lleva punto de venta, autorización (CAE, CAI o CAEA) y CUIT del emisor.',
-  'caso 29: una A sin CAE no se guarda');
+-- Desde ADR-0070 el alta corta no pide el CAE: una A sin CAE se carga, pero no se controla hasta tenerlo.
+select is(pg_temp.q(pg_temp.u(408), format('select purchasing.create_invoice(%L, %L, null, %L::jsonb, %L) ->> %L',
+  pg_temp.u(903), pg_temp.u(203), pg_temp.header('invoice_a', 900077) - 'authorization_code' - 'authorization_kind',
+  'X', 'result')),
+  'applied', 'caso 29: una A sin CAE se carga (el CAE se completa en la ficha)');
+select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.run_invoice_checks(%L)',
+  (select id from purchasing.invoices where supplier_id = pg_temp.u(903) and number = 900077))),
+  'Cargá la autorización (CAE, CAI o CAEA y su número) antes de controlar.',
+  'caso 29: pero no se controla sin el CAE');
 select is(pg_temp.msg(pg_temp.u(408), format('select purchasing.create_invoice(%L, %L, null, %L::jsonb, %L)',
   pg_temp.u(903), pg_temp.u(203), pg_temp.header('invoice_a', 900005) || '{"issuer_tax_id": "30500000011"}', 'X')),
   'El CUIT de la factura no es el del proveedor.', 'el CUIT del emisor tiene que ser el del proveedor');

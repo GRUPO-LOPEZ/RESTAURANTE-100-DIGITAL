@@ -320,3 +320,47 @@ export async function uploadConstanciaAction(
   revalidatePath(`/configuracion/razones-sociales/${id.data}`);
   return { status: "ok", message: "Constancia guardada." };
 }
+
+// ---------------------------------------------------------------------------
+// Cajas y cuentas de la razón social (ADR-0070): en lote y con motivo, en una transacción
+// (org.save_legal_entity_accounts). Las carga quien administra el grupo (lo decide la base).
+// ---------------------------------------------------------------------------
+const accountChange = z
+  .object({
+    id: uuid.optional(),
+    remove: z.boolean().optional(),
+    kind: z.enum(["cash", "bank", "card"]).optional(),
+    name: z.string().trim().max(80).optional(),
+    bank: z.string().trim().max(80).optional(),
+    account_number: z.string().trim().max(40).optional(),
+    cbu: z.string().trim().max(30).optional(),
+    alias: z.string().trim().max(20).optional(),
+    card_last4: z.string().trim().max(4).optional(),
+    is_active: z.boolean().optional(),
+  })
+  .strict();
+const accountsPayload = z.object({
+  legalEntityId: uuid,
+  reason: z.string().trim().min(3, "Escribí el motivo de los cambios.").max(500),
+  changes: z.array(accountChange).min(1, "No hay cambios para guardar.").max(30),
+});
+
+export async function saveLegalEntityAccountsAction(
+  payload: z.input<typeof accountsPayload>,
+): Promise<ActionState> {
+  const parsed = accountsPayload.safeParse(payload);
+  if (!parsed.success)
+    return { status: "bad", message: parsed.error.issues[0]?.message ?? "Revisá los datos." };
+  const p = parsed.data;
+  const client = await createClient();
+  const { data, error } = await client.schema("org").rpc("save_legal_entity_accounts", {
+    p_legal_entity_id: p.legalEntityId,
+    p_changes: p.changes,
+    p_reason: p.reason,
+  });
+  if (error) return failed(error);
+  const state = toActionState(data, null);
+  if (state.status !== "ok") return state;
+  revalidatePath(`/configuracion/razones-sociales/${p.legalEntityId}`);
+  return { status: "ok", message: "Cajas y cuentas guardadas." };
+}

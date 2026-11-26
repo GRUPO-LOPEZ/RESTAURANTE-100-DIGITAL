@@ -747,6 +747,19 @@ insert into org.legal_entity_activities (group_id, legal_entity_id, code, descri
   ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001501', '561020',
    'Servicios de preparación de comidas para llevar', false);
 
+-- Cajas y cuentas de las razones sociales (ADR-0070): de dónde sale la plata de una orden de pago. Todo ficticio
+-- (CBU inventado). Ids fijos ...0016NN.
+insert into org.legal_entity_accounts (id, group_id, legal_entity_id, kind, name, bank, account_number, cbu, alias,
+                                       card_last4) values
+  ('00000000-0000-4000-8000-000000001601', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001501',
+   'cash', 'Caja Parrilla Centro', null, null, null, null, null),
+  ('00000000-0000-4000-8000-000000001602', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001501',
+   'bank', 'Banco Demo CC 1234', 'Banco Demo (ficticio)', '1234-5678/9', '0000003100012345678901', 'DEMO.GASTRO.CC', null),
+  ('00000000-0000-4000-8000-000000001603', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001501',
+   'card', 'Tarjeta Demo corporativa', null, null, null, null, '4321'),
+  ('00000000-0000-4000-8000-000000001604', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000001502',
+   'cash', 'Caja del café', null, null, null, null, null);
+
 -- Precios de grupo, con factura y 21 % de IVA incluido, de los productos de las materias primas 1 a 50. Las 25, 28 y
 -- 29 no tienen precio: sus recetas salen incompletas, y las pruebas proponen ahí un primer precio o cambian su unidad.
 insert into costing.price_records (group_id, purchase_product_id, supplier_id, scope_type, valid_from, package_price,

@@ -5627,6 +5627,85 @@ export type Database = {
           },
         ];
       };
+      legal_entity_accounts: {
+        Row: {
+          account_number: string | null;
+          alias: string | null;
+          bank: string | null;
+          card_last4: string | null;
+          cbu: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          is_active: boolean;
+          kind: Database["org"]["Enums"]["account_kind"];
+          legal_entity_id: string;
+          name: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          account_number?: string | null;
+          alias?: string | null;
+          bank?: string | null;
+          card_last4?: string | null;
+          cbu?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          is_active?: boolean;
+          kind: Database["org"]["Enums"]["account_kind"];
+          legal_entity_id: string;
+          name: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          account_number?: string | null;
+          alias?: string | null;
+          bank?: string | null;
+          card_last4?: string | null;
+          cbu?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          is_active?: boolean;
+          kind?: Database["org"]["Enums"]["account_kind"];
+          legal_entity_id?: string;
+          name?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "legal_entity_accounts_entity_fkey";
+            columns: ["legal_entity_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "legal_entities";
+            referencedColumns: ["id", "group_id"];
+          },
+          {
+            foreignKeyName: "legal_entity_accounts_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       legal_entity_activities: {
         Row: {
           code: string;
@@ -6050,6 +6129,10 @@ export type Database = {
       restaurant_name: { Args: { p_short_name: string; p_zone: string }; Returns: string };
       restaurant_sheet_stamp_internal: { Args: { p_id: string }; Returns: string };
       restaurant_sheet_state: { Args: { p_id: string }; Returns: Json };
+      save_legal_entity_accounts: {
+        Args: { p_changes: Json; p_legal_entity_id: string; p_reason: string };
+        Returns: Json;
+      };
       save_legal_entity_sheet: {
         Args: { p_changes: Json; p_expected_stamp: string; p_id: string; p_reason: string };
         Returns: Json;
@@ -6089,6 +6172,7 @@ export type Database = {
       };
     };
     Enums: {
+      account_kind: "cash" | "bank" | "card";
       geo_status: "found" | "not_found";
       gross_income_regime: "multilateral" | "local" | "exempt";
       income_tax_status: "registered" | "exempt" | "not_subject";
@@ -6819,9 +6903,101 @@ export type Database = {
           },
         ];
       };
+      payment_orders: {
+        Row: {
+          brand_id: string;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          group_id: string;
+          id: string;
+          legal_entity_id: string;
+          notes: string | null;
+          number: string;
+          paid_on: string;
+          restaurant_id: string;
+          status: Database["purchasing"]["Enums"]["payment_order_status"];
+          supplier_id: string;
+          total_amount: number;
+          updated_at: string;
+          updated_by: string | null;
+          version: number;
+          voided_at: string | null;
+          voided_by: string | null;
+          voided_reason: string | null;
+          withholding_gross_income: number;
+          withholding_income_tax: number;
+          withholding_vat: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          brand_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id: string;
+          id?: string;
+          legal_entity_id: string;
+          notes?: string | null;
+          number: string;
+          paid_on: string;
+          restaurant_id: string;
+          status?: Database["purchasing"]["Enums"]["payment_order_status"];
+          supplier_id: string;
+          total_amount: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          version?: number;
+          voided_at?: string | null;
+          voided_by?: string | null;
+          voided_reason?: string | null;
+          withholding_gross_income?: number;
+          withholding_income_tax?: number;
+          withholding_vat?: number;
+        };
+        Update: {
+          brand_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          group_id?: string;
+          id?: string;
+          legal_entity_id?: string;
+          notes?: string | null;
+          number?: string;
+          paid_on?: string;
+          restaurant_id?: string;
+          status?: Database["purchasing"]["Enums"]["payment_order_status"];
+          supplier_id?: string;
+          total_amount?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+          version?: number;
+          voided_at?: string | null;
+          voided_by?: string | null;
+          voided_reason?: string | null;
+          withholding_gross_income?: number;
+          withholding_income_tax?: number;
+          withholding_vat?: number;
+        };
+        Relationships: [];
+      };
       payments: {
         Row: {
           brand_id: string;
+          check_bank: string | null;
+          check_drawer_name: string | null;
+          check_drawer_tax_id: string | null;
+          check_due_on: string | null;
+          check_number: string | null;
+          check_third_party: boolean;
+          company_account_id: string | null;
           created_at: string;
           created_by: string | null;
           currency: string;
@@ -6834,6 +7010,7 @@ export type Database = {
           paid_on: string;
           payment_account_id: string | null;
           payment_amount: number;
+          payment_order_id: string | null;
           receipt_id: string | null;
           reference: string | null;
           restaurant_id: string;
@@ -6849,6 +7026,13 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           brand_id: string;
+          check_bank?: string | null;
+          check_drawer_name?: string | null;
+          check_drawer_tax_id?: string | null;
+          check_due_on?: string | null;
+          check_number?: string | null;
+          check_third_party?: boolean;
+          company_account_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
@@ -6861,6 +7045,7 @@ export type Database = {
           paid_on: string;
           payment_account_id?: string | null;
           payment_amount: number;
+          payment_order_id?: string | null;
           receipt_id?: string | null;
           reference?: string | null;
           restaurant_id: string;
@@ -6875,6 +7060,13 @@ export type Database = {
         };
         Update: {
           brand_id?: string;
+          check_bank?: string | null;
+          check_drawer_name?: string | null;
+          check_drawer_tax_id?: string | null;
+          check_due_on?: string | null;
+          check_number?: string | null;
+          check_third_party?: boolean;
+          company_account_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
@@ -6887,6 +7079,7 @@ export type Database = {
           paid_on?: string;
           payment_account_id?: string | null;
           payment_amount?: number;
+          payment_order_id?: string | null;
           receipt_id?: string | null;
           reference?: string | null;
           restaurant_id?: string;
@@ -6900,6 +7093,13 @@ export type Database = {
           withholding_amount?: number | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "payments_order_fkey";
+            columns: ["payment_order_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "payment_orders";
+            referencedColumns: ["id", "group_id"];
+          },
           {
             foreignKeyName: "payments_payment_account_id_fkey";
             columns: ["payment_account_id"];
@@ -7910,6 +8110,10 @@ export type Database = {
         Args: { p_id: string };
         Returns: Database["purchasing"]["Enums"]["invoice_status"];
       };
+      check_invoice_internal: {
+        Args: { p_id: string };
+        Returns: Database["purchasing"]["Enums"]["invoice_status"];
+      };
       check_payment_lines: { Args: { p_lines: Json }; Returns: undefined };
       close_article: {
         Args: {
@@ -8037,6 +8241,17 @@ export type Database = {
         }[];
       };
       invoice_payments: { Args: { p_invoice_id: string }; Returns: Json };
+      invoice_status_matches: {
+        Args: {
+          p_created_by: string;
+          p_due_on: string;
+          p_filter: string;
+          p_id: string;
+          p_restaurant_id: string;
+          p_status: Database["purchasing"]["Enums"]["invoice_status"];
+        };
+        Returns: boolean;
+      };
       invoice_supplier_counts: {
         Args: { p_from?: string; p_restaurant_id?: string; p_status?: string; p_to?: string };
         Returns: {
@@ -8096,6 +8311,10 @@ export type Database = {
         Returns: number;
       };
       next_order_number: { Args: { p_code: string; p_group_id: string }; Returns: string };
+      next_payment_order_number: {
+        Args: { p_group_id: string; p_legal_entity_id: string };
+        Returns: string;
+      };
       normalize_name: { Args: { p_name: string }; Returns: string };
       normalize_sku: { Args: { p_sku: string }; Returns: string };
       notify_account_change: {
@@ -8238,6 +8457,38 @@ export type Database = {
       };
       payable_invoices: { Args: { p_restaurant_id: string; p_supplier_id: string }; Returns: Json };
       payment_message: { Args: { p_id: string }; Returns: string };
+      payment_order_detail: { Args: { p_id: string }; Returns: Json };
+      payment_order_list: {
+        Args: {
+          p_limit?: number;
+          p_offset?: number;
+          p_restaurant_id?: string;
+          p_supplier_id?: string;
+        };
+        Returns: {
+          id: string;
+          methods: string[];
+          number: string;
+          paid_on: string;
+          payer_name: string;
+          restaurant_id: string;
+          restaurant_name: string;
+          status: Database["purchasing"]["Enums"]["payment_order_status"];
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
+          total_amount: number;
+        }[];
+      };
+      payment_order_message: { Args: { p_id: string }; Returns: string };
+      payment_order_supplier_counts: {
+        Args: { p_restaurant_id?: string };
+        Returns: {
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
+        }[];
+      };
       payment_schedule_list: {
         Args: {
           p_limit?: number;
@@ -8419,6 +8670,19 @@ export type Database = {
         };
         Returns: Json;
       };
+      register_payment_order: {
+        Args: {
+          p_allocations: Json;
+          p_legal_entity_id: string;
+          p_lines: Json;
+          p_notes: string;
+          p_paid_on: string;
+          p_reason: string;
+          p_restaurant_id: string;
+          p_supplier_id: string;
+        };
+        Returns: Json;
+      };
       release_invoice: {
         Args: { p_approver: string; p_id: string; p_run_id: string };
         Returns: undefined;
@@ -8554,6 +8818,8 @@ export type Database = {
       valid_days: { Args: { p_days: number[] }; Returns: boolean };
       visible_document_paths: { Args: Record<PropertyKey, never>; Returns: string[] };
       void_payment: { Args: { p_id: string; p_reason: string }; Returns: Json };
+      void_payment_internal: { Args: { p_id: string; p_reason: string }; Returns: Json };
+      void_payment_order: { Args: { p_id: string; p_reason: string }; Returns: Json };
       write_invoice_lines: {
         Args: {
           p_inv: Omit<
@@ -8622,6 +8888,7 @@ export type Database = {
         | "non_fiscal"
         | "handwritten_note";
       payment_method: "cash" | "transfer" | "check" | "echeq" | "card" | "electronic_code";
+      payment_order_status: "registered" | "voided";
       payment_status: "to_confirm" | "registered" | "receipt_queued" | "voided";
       payment_terms: "cash" | "cash_on_delivery" | "same_day_transfer" | "account";
       po_event_kind: "news" | "shortage" | "delivery_change" | "note" | "cancelled";
@@ -10363,6 +10630,7 @@ export const Constants = {
   },
   org: {
     Enums: {
+      account_kind: ["cash", "bank", "card"],
       geo_status: ["found", "not_found"],
       gross_income_regime: ["multilateral", "local", "exempt"],
       income_tax_status: ["registered", "exempt", "not_subject"],
@@ -10447,6 +10715,7 @@ export const Constants = {
         "handwritten_note",
       ],
       payment_method: ["cash", "transfer", "check", "echeq", "card", "electronic_code"],
+      payment_order_status: ["registered", "voided"],
       payment_status: ["to_confirm", "registered", "receipt_queued", "voided"],
       payment_terms: ["cash", "cash_on_delivery", "same_day_transfer", "account"],
       po_event_kind: ["news", "shortage", "delivery_change", "note", "cancelled"],

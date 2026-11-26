@@ -688,6 +688,7 @@ export const TABLE_LABELS: Record<string, string> = {
   "purchasing.supplier_terms": "Operativa de un proveedor",
   "purchasing.supplier_payment_terms": "Condición de pago de un proveedor",
   "purchasing.supplier_payment_accounts": "Cuenta de pago de un proveedor",
+  "purchasing.payment_orders": "Orden de pago",
   "purchasing.supplier_categories": "Rubro de un proveedor",
   "purchasing.supplier_customer_numbers": "Número de cliente en un proveedor",
   // Todas las tablas con auditoría tienen nombre (lo vigila tests/unit/table-labels.test.ts).
@@ -705,6 +706,7 @@ export const TABLE_LABELS: Record<string, string> = {
   "imports.import_staging_rows": "Fila importada",
   "inventory.stock_movements": "Movimiento de stock",
   "org.legal_entities": "Razón social",
+  "org.legal_entity_accounts": "Caja o cuenta de una razón social",
   "org.legal_entity_activities": "Actividad de una razón social",
   "org.legal_entity_documents": "Constancia de una razón social",
   "org.restaurant_legal_entities": "Razón social de un local",
