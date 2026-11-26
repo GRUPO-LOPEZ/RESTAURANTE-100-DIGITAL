@@ -37,7 +37,7 @@
 ## Pendiente, anotado
 
 - El calendario que se despliega sigue el idioma de Chrome. El campo siempre muestra dd/mm/aaaa.
-- Con un proveedor de nombre largo y tres acciones, el encabezado de la OC pasa a dos renglones en 1440. Las acciones siguen en fila.
+- Con un proveedor de nombre largo y tres acciones, el encabezado de la OC pasa a dos renglones en 1440. Las acciones siguen en fila. **Joaco decidió dejarlo así (2026-11-26).**
 - Si un grupo tiene cientos de proveedores, el panel se desplaza adentro. La búsqueda dentro del panel queda para cuando haga falta.
 - La nueva OC, el alta de factura, «Registrar pago» y la carga de listas se rediseñan en los PR B, C y D. Acá solo recibieron la fecha y el archivo propios.
 - Revisiones:
