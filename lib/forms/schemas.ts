@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { parseAmount } from "@/lib/money";
+
+import { parseMoney, parseAmount } from "@/lib/money";
 import { LINE_UNIT_CODES } from "@/lib/recipe-format";
 import { validCuit } from "@/lib/suppliers";
 import { newInvoiceSchema, noteSchema } from "@/lib/invoices";
@@ -24,6 +25,12 @@ const lossField = z
   .string()
   .trim()
   .regex(/^$|^[0-9]{1,2}([.,][0-9]{1,2})?$/, "Escribí la merma en %, por ejemplo 12,5.")
+  .optional();
+
+// Sí o no de un formulario: React Hook Form entrega true o false; enviado, una casilla llega como "on" y un toggle, como
+// "true" o "false".
+const flagField = z
+  .union([z.boolean(), z.literal("on"), z.literal("true"), z.literal("false"), z.literal("")])
   .optional();
 
 export const reasonField = z
@@ -87,9 +94,17 @@ export const positiveNumber = z
   .trim()
   .regex(/^[0-9]{1,12}([.,][0-9]{1,6})?$/, "Escribí un número, por ejemplo 0,92.")
   .refine((v) => Number(v.replace(",", ".")) > 0, "Tiene que ser mayor que cero.");
+// Un importe como se escribe acá (parseMoney): hasta 10 cifras y 4 decimales, lo que guarda la base.
+const isMoney = (n: number | null): n is number =>
+  n !== null && n < 1e10 && Math.abs(n * 1e4 - Math.round(n * 1e4)) < 1e-3;
+const priceField = z
+  .string({ message: "Escribí el precio, por ejemplo 26.000." })
+  .trim()
+  .refine((v) => isMoney(parseMoney(v)), "Escribí el precio, por ejemplo 26.000.")
+  .refine((v) => parseMoney(v) !== 0, "Tiene que ser mayor que cero.");
 // Una casilla marcada: true en el navegador, "on" en el formulario enviado.
 export function isChecked(value: boolean | string | undefined): boolean {
-  return value === true || value === "on";
+  return value === true || value === "on" || value === "true";
 }
 // Hoy en la Argentina (AAAA-MM-DD), igual en el navegador y en el servidor.
 export function todayInArgentina(): string {
@@ -303,8 +318,8 @@ export const schemas = {
     source: z.string().max(60).optional(),
     reason: reasonField,
   }),
+  // El código lo arma la base (ADR-0067).
   product: z.object({
-    code: catalogCode,
     description: z
       .string({ message: "Escribí la descripción." })
       .trim()
@@ -449,8 +464,7 @@ export const schemas = {
         "El factor de cocción va hasta 10.",
       ),
       method: z.string().trim().max(500, "Hasta 500 caracteres.").optional(),
-      // React Hook Form la entrega como true o false; el formulario enviado, como "on".
-      declared_no_loss: z.union([z.boolean(), z.literal("on"), z.literal("")]).optional(),
+      declared_no_loss: flagField,
       reason: reasonField,
     })
     .refine(
@@ -470,7 +484,7 @@ export const schemas = {
     .object({
       cleaning_loss: lossField,
       thawing_loss: lossField,
-      declared_no_loss: z.union([z.boolean(), z.literal("on"), z.literal("")]).optional(),
+      declared_no_loss: flagField,
       method: z.string().trim().max(500, "Hasta 500 caracteres.").optional(),
       reason: reasonField,
     })
@@ -677,11 +691,14 @@ export const schemas = {
       product_id: choice("Elegí el producto."),
       place: choice("Elegí para quién vale."),
       valid_from: validDate,
-      package_price: positiveNumber,
+      package_price: priceField,
       discount_amount: z
         .string()
         .trim()
-        .regex(/^$|^[0-9]{1,12}([.,][0-9]{1,4})?$/, "Escribí un número, por ejemplo 150,50.")
+        .refine(
+          (v) => v === "" || isMoney(parseMoney(v)),
+          "Escribí el descuento, por ejemplo 1.500.",
+        )
         .optional(),
       document_type: z.enum(["invoice", "no_invoice"], { message: "Elegí el comprobante." }),
       vat_rate: z.string().trim().optional(),
@@ -697,8 +714,8 @@ export const schemas = {
         !["0", "2.5", "5", "10.5", "21", "27"].includes(v.vat_rate ?? "")
       )
         ctx.addIssue({ code: "custom", path: ["vat_rate"], message: "Elegí la alícuota de IVA." });
-      const price = Number(v.package_price.replace(",", "."));
-      const discount = Number((v.discount_amount || "0").replace(",", "."));
+      const price = parseMoney(v.package_price) ?? 0;
+      const discount = parseMoney(v.discount_amount || "0") ?? 0;
       // Con un precio inválido ya hay un error en el precio: no se suma otro en el descuento.
       if (price > 0 && discount >= price)
         ctx.addIssue({

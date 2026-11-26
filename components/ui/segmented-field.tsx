@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 // Cada opción: la elegida, con borde y fondo del ítem activo y una marca (no solo color). La usa también Segmented. La
 // marca mira solo su propia opción (grupo «opcion»): el contenedor también tiene una opción elegida.
 export const SEGMENT_OPTION =
-  "group/opcion inline-flex min-h-touch cursor-pointer items-center rounded-sm border border-line bg-surface px-3 text-base text-ink has-checked:border-primary has-checked:bg-nav-active has-checked:font-medium has-checked:text-nav-active-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary desk:min-h-control";
+  "group/opcion inline-flex min-h-touch cursor-pointer items-center rounded-sm border border-line bg-surface px-3 py-1 text-base text-ink has-checked:border-primary has-checked:bg-nav-active has-checked:font-medium has-checked:text-nav-active-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary desk:min-h-control";
 
 // Pocas opciones (hasta 5) como botones a la vista, no un desplegable (edición directa, ADR-0039). Son radios nativos
 // dentro de un <fieldset>: se usan con el teclado (flechas) y el lector los anuncia como grupo. Registrados en el

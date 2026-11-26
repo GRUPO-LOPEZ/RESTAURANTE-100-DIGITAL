@@ -229,6 +229,8 @@ export type IngredientDetail = {
     contents: string;
     // Para la tabla de la ficha (ADR-0043): en qué viene («Cajón») y cuánto trae («10 kg», «12 × 500 ml»).
     packageUnit: string;
+    // Solo el nombre («Bolsa»), sin la abreviatura.
+    packageUnitName: string;
     content: string;
     isActive: boolean;
     // Para editarlo (ADR-0044): los valores tal como los guarda la base.
@@ -356,6 +358,7 @@ export async function getIngredient(id: string): Promise<IngredientDetail | null
         unit.get(p.content_unit_id)?.name ?? "",
       ),
       packageUnit: unit.get(p.package_unit_id)?.label ?? "",
+      packageUnitName: unit.get(p.package_unit_id)?.name || "envase",
       content: describeContent(
         p.units_per_package,
         p.content_per_unit,

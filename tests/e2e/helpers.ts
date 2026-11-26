@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 // Datos de prueba del seed (supabase/seed.sql). Solo locales y ficticios.
 export const PASSWORD = "Demo-Local-2026!";
@@ -261,4 +261,18 @@ export function inventedCuit(base: string): string {
   const w = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
   const r = 11 - (w.reduce((acc, x, i) => acc + Number(base[i]) * x, 0) % 11);
   return `${base.slice(0, 2)}-${base.slice(2)}-${r === 11 ? 0 : r === 10 ? 9 : r}`;
+}
+
+// Elige en una lista que, según cuántas opciones tenga, son botones (hasta 5) o un desplegable (ChoiceField, ADR-0067).
+export async function pickChoice(scope: Page | Locator, label: string, option: string | RegExp) {
+  const group = scope.getByRole("group", { name: label, exact: true });
+  const select = scope.getByRole("combobox", { name: label, exact: true });
+  await expect(group.or(select).first()).toBeVisible();
+  if ((await select.count()) > 0) {
+    const text = await select.locator("option", { hasText: option }).first().textContent();
+    await select.selectOption({ label: (text ?? "").trim() });
+    return;
+  }
+  await group.locator("label", { hasText: option }).first().click();
+  await expect(group.getByRole("radio", { name: option }).first()).toBeChecked();
 }

@@ -4,11 +4,11 @@ import { useId, useRef, useState } from "react";
 import { Pencil, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/dialog";
+import { Modal, SidePanel } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 
-// Un alta o una propuesta con su propio flujo (su motivo, su aprobación), en un panel corto al lado (ADR-0036). La
+// Un alta o una propuesta con su propio flujo (su motivo, su aprobación), en una ventana corta o, con side, en un panel al costado (ADR-0036). La
 // ficha única la usa para lo que no entra en el guardado en lote: agregar un producto, proponer una merma (ADR-0043).
 // El formulario de adentro avisa el resultado; al cerrar, el foco vuelve al botón que lo abrió (WCAG 2.4.3).
 // «Editar» en una fila de tabla (ADR-0044) usa el lápiz y un nombre accesible que dice qué se edita. En las pantallas
@@ -23,6 +23,7 @@ export function ActionModal({
   size = "default",
   accessibleName,
   className,
+  side = false,
   children,
 }: {
   label: string;
@@ -33,10 +34,16 @@ export function ActionModal({
   size?: "default" | "sm";
   accessibleName?: string;
   className?: string;
+  // Al costado y de alto entero (un formulario que no entra en una ventana).
+  side?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
+  function change(next: boolean) {
+    setOpen(next);
+    if (!next) requestAnimationFrame(() => opener.current?.focus());
+  }
   return (
     <>
       <Button
@@ -57,17 +64,22 @@ export function ActionModal({
         ) : null}
         {label}
       </Button>
-      <Modal
-        open={open}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (!next) requestAnimationFrame(() => opener.current?.focus());
-        }}
-        title={title}
-        description={description}
-      >
-        {children}
-      </Modal>
+      {side ? (
+        // Con la barra fija abajo, lo que recibe el foco no queda tapado (WCAG 2.4.11).
+        <SidePanel
+          open={open}
+          onOpenChange={change}
+          title={title}
+          description={description}
+          className="scroll-pb-28"
+        >
+          {children}
+        </SidePanel>
+      ) : (
+        <Modal open={open} onOpenChange={change} title={title} description={description}>
+          {children}
+        </Modal>
+      )}
     </>
   );
 }
