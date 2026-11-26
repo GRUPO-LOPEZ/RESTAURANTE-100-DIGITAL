@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Notice } from "@/components/ui/notice";
 import { Pagination } from "@/components/ui/pagination";
@@ -357,10 +358,10 @@ async function Report({ params, searchParams }: Pick<Props, "params" | "searchPa
           // El período es un filtro más: se aplica solo al cambiar una fecha y conserva el local (ADR-0036).
           <FilterBar label="Elegir el período">
             <Field id="reporte-desde" label="Desde" className="w-full sm:w-48">
-              <Input type="date" name="desde" defaultValue={period.from} />
+              <DateInput name="desde" defaultValue={period.from} />
             </Field>
             <Field id="reporte-hasta" label="Hasta" className="w-full sm:w-48">
-              <Input type="date" name="hasta" defaultValue={period.to} />
+              <DateInput name="hasta" defaultValue={period.to} />
             </Field>
           </FilterBar>
         ) : null}

@@ -1,10 +1,36 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-25._ **Correcciones del Módulo 1: Tanda 1 cerrada; Tanda 2, PR A, B, C y D1 fusionados (#101 a #104), `main` en verde y publicado en staging. PR D2 (`Proponer precio`, `feat/proponer-precio`) abierto: con él se cierra la Tanda 2.**
+_Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105 fusionado). Fusionados los criterios de pantallas de Soy y el prompt de las correcciones de Compras (PR #106, solo documentación). En curso: correcciones de Compras, PR A (`feat/compras-criterios`, ADR-0068); después vienen B, C y D, cada uno con su plan.**
+
+## Correcciones de Compras, PR A (criterios de Soy en todo Compras, ADR-0068): en curso (2026-11-26)
+
+- **Plan aprobado por Joaco.** Decidió que el título baje a 20 px en todo el sistema y que la fecha sea un campo propio con el calendario del navegador, sin librerías nuevas.
+- **Base:** migración `20261219120000_purchasing_group_counts`, con 5 conteos para el panel izquierdo. pgTAP 419 (36 pruebas) compara cada conteo con su lista para Compras, el gerente, la gerente de dos locales y el chef, con cada filtro, y nunca sin datos.
+- **Pantallas:**
+  - panel izquierdo en Órdenes, Facturas, Pagos, Listas y Proveedores;
+  - `DateInput` y `FormDate` (dd/mm/aaaa) en los 22 campos de fecha de la app;
+  - `FileUpload` en los 8 campos de archivo;
+  - título de 20 px y acciones en fila;
+  - ficha de la OC con 4 indicadores;
+  - ficha de factura con los datos sin scroll;
+  - nombres sin «…».
+- **Pruebas:**
+  - Vitest: `date-input`, `group-counts`, `order-indicators` y `no-native-inputs`;
+  - Playwright: `compras-criterios.spec.ts`, con axe, sin scroll en los 4 tamaños con Compras y con el Auditor, y con Chrome en inglés para las fechas.
+- **Revisiones:**
+  - seguridad: apta;
+  - base: medios corregidos (la prueba 419, reescrita);
+  - diseño: el grave (`FormDate` sin etiqueta) y los medios, corregidos;
+  - lo anotado está en el ADR.
+- **Para Soy:** `docs/modulos/29-compras-criterios-lista-de-cambios.md`.
+- **Falta:**
+  - capturas en `docs/capturas/compras-criterios/`;
+  - suite completa en GitHub;
+  - el PR.
 
 _Antes (2026-11-14): Soy aprobó la Fase 1 (ADR-0019). Joaco aprobó el plan de la Fase 2 (ADR-0020). Staging funciona. Fusionados: 2.1 A y 2.1 B (PR #19 y #20), configuración del catálogo (#21) y la base de recetas (#22). **Llegaron las respuestas de Soy a las decisiones de la Fase 2 (ADR-0024).** Fusionado el rediseño completo (PR #52). Fusionado Rubros (PR #53), el arreglo del CI más la sincronización al abrir (PR #54) y la matriz de permisos (PR #56). Fusionado medidas, mermas y rendimientos (PR #57) y los prompts de las fichas únicas (PR #58). Fusionado códigos automáticos y listados por rubro (PR #59) y la ficha única de receta (PR #60). Fusionada la ficha única de materia prima (PR #61, ADR-0043): están los 3 prompts de fichas únicas. Fusionados los prompts del Inicio (PR #63) y rubro con precios y producto de compra (PR #64, ADR-0044). Fusionados los prompts de las fichas sin scroll (PR #66). Fusionado el Inicio sin scroll (PR #65, ADR-0045; publicado en staging). Fusionada la ficha de materia prima sin scroll (PR #67, ADR-0046). Fusionada la ficha de receta sin scroll (PR #68, ADR-0047). Fusionados los prompts de Costos (PR #69). Fusionado Costos sin scroll y selector de local (PR #70, ADR-0048). **Próximo: el Módulo 2 «Facturas» (Fase 3, compras): documento de Soy, 7 prompts y 7 decisiones respondidas (2026-11-14).**_
 
-## Tanda 2, PR D2 («Proponer precio» simple y subpantallas de la ficha): PR abierto (2026-11-25)
+## Tanda 2, PR D2 («Proponer precio» simple y subpantallas de la ficha): fusionado el 2026-11-26 (PR #105)
 
 - **Rama `feat/proponer-precio`, ADR-0067, lista para Soy en `docs/modulos/28-proponer-precio-lista-de-cambios.md`, capturas en `docs/capturas/proponer-precio/`.** Plan aprobado por Joaco el 2026-11-25. Última entrega de la Tanda 2. Lo fusiona Joaco (o yo, si lo pide).
 - **Base:** `20261218110000_price_preview.sql` (`costing.preview_price`, `costing.propose_price` partida en controles e importes que usan las dos, sin cambiar lo que guarda; `catalog.next_product_code`, código del producto automático, que también usa `purchasing.resolve_article` y ya no se traba en 100) y `20261218120000_price_not_nan.sql` (un precio `NaN` se rechaza). Sin tablas ni permisos nuevos.

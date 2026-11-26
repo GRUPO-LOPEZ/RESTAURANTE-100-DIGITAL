@@ -133,3 +133,78 @@ export const MESSAGE_STATUS: Record<
 export function messageStatus(status: string) {
   return MESSAGE_STATUS[status] ?? { label: "Sin datos", status: "none" as const };
 }
+
+// ---------------------------------------------------------------------------
+// Los 4 indicadores de la ficha de una OC (criterios de Soy, ADR-0068)
+// ---------------------------------------------------------------------------
+// Con la regla de las métricas confiables (lib/metrics.ts): sin artículos, «Sin artículos»; antes de mandarla, lo
+// recibido no se mide (nunca «0 de 5» en un borrador). Sin precios: la ficha no los muestra.
+export type OrderIndicator = {
+  key: "lines" | "delivery" | "received" | "news";
+  label: string;
+  value: number | string | null;
+  total?: number;
+  comparison?: string;
+  missingReason?: string;
+  status: "ok" | "warn" | "bad" | "info" | "none";
+  statusLabel: string;
+};
+
+const NOT_SENT: PoStatus[] = ["draft", "pending_approval"];
+const WAITING: PoStatus[] = ["sent", "with_news", "partially_received"];
+
+export function orderIndicators(
+  o: {
+    status: PoStatus;
+    expectedOn: string;
+    lines: { quantity: number; receivedQuantity: number }[];
+    events: { kind: string }[];
+  },
+  today: string,
+  formatDay: (iso: string) => string,
+): OrderIndicator[] {
+  const n = o.lines.length;
+  const complete = o.lines.filter((l) => l.receivedQuantity >= l.quantity).length;
+  const news = o.events.filter((e) => e.kind !== "cancelled").length;
+  const notSent = NOT_SENT.includes(o.status);
+  const cancelled = o.status === "cancelled";
+  const late = WAITING.includes(o.status) && o.expectedOn < today;
+  return [
+    { key: "lines", label: "Artículos", value: n, total: n, status: "info", statusLabel: "" },
+    {
+      key: "delivery",
+      label: "Entrega esperada",
+      value: o.expectedOn ? formatDay(o.expectedOn) : null,
+      missingReason: "La orden no tiene fecha de entrega.",
+      ...(cancelled
+        ? { status: "none" as const, statusLabel: "Cancelada" }
+        : late
+          ? { status: "warn" as const, statusLabel: "Atrasada" }
+          : complete === n && n > 0 && !notSent
+            ? { status: "ok" as const, statusLabel: "Llegó" }
+            : { status: "info" as const, statusLabel: "" }),
+    },
+    {
+      key: "received",
+      label: "Recibido",
+      value: notSent || cancelled ? null : complete,
+      total: n,
+      comparison: `de ${n}`,
+      missingReason: cancelled ? "La orden se canceló." : "Todavía no se mandó al proveedor.",
+      ...(complete === n
+        ? { status: "ok" as const, statusLabel: "Completa" }
+        : complete > 0
+          ? { status: "warn" as const, statusLabel: "En parte" }
+          : { status: "none" as const, statusLabel: "Sin recibir" }),
+    },
+    {
+      key: "news",
+      label: "Novedades",
+      value: notSent ? null : news,
+      missingReason: "Todavía no se mandó al proveedor.",
+      ...(news > 0
+        ? { status: "warn" as const, statusLabel: news === 1 ? "Una novedad" : "Con novedades" }
+        : { status: "ok" as const, statusLabel: "Sin novedades" }),
+    },
+  ];
+}

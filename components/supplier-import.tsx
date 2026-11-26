@@ -20,6 +20,7 @@ import { Notice } from "@/components/ui/notice";
 import { EmptyState } from "@/components/ui/states";
 import { reasonField } from "@/lib/forms/schemas";
 import { formatCuit } from "@/lib/suppliers";
+import { FileUpload } from "@/components/ui/file-upload";
 
 const STATUS: Record<PreviewRow["status"], { label: string; badge: "ok" | "none" | "bad" }> = {
   create: { label: "Se crea", badge: "ok" },
@@ -162,12 +163,10 @@ export function SupplierImport() {
                   se omite. Si una fila tiene error, no se crea ninguno.
                 </InfoTip>
               </span>
-              <Input
+              <FileUpload
                 id={`${prefix}-archivo`}
-                type="file"
                 name="file"
                 required
-                className="py-2"
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               />
             </div>

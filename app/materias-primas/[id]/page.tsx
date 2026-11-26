@@ -31,7 +31,7 @@ import {
   ThawingToggle,
 } from "@/components/ingredient-sheet/sheet-editor";
 import { Badge } from "@/components/ui/badge";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
+import { FormInput, FormSelect, FormTextarea, FormDate } from "@/components/ui/form";
 import { InfoTip } from "@/components/ui/info-tip";
 import { ToggleField } from "@/components/ui/toggle-field";
 import { Metric } from "@/components/ui/metric";
@@ -1922,11 +1922,10 @@ function YieldTestForm({
             </option>
           ))}
         </FormSelect>
-        <FormInput
+        <FormDate
           id="mp-ren-fecha"
           label="Fecha"
           name="tested_on"
-          type="date"
           required
           max={day}
           defaultValue={day}

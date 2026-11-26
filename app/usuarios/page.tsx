@@ -6,7 +6,8 @@ import { AppShell, Loading } from "@/components/app-shell";
 import { InviteModal } from "@/components/invite-modal";
 import { LoginsByDayChart } from "@/components/logins-by-day-chart";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Field, Select } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Kpi } from "@/components/ui/kpi";
 import { EmptyState } from "@/components/ui/states";
@@ -174,10 +175,10 @@ async function Dashboard({
     <>
       <FilterBar label="Filtros del tablero" active={active}>
         <Field id="desde" label="Desde" className="w-full sm:w-44">
-          <Input name="desde" type="date" defaultValue={filter.from ?? panel.from} />
+          <DateInput name="desde" defaultValue={filter.from ?? panel.from} />
         </Field>
         <Field id="hasta" label="Hasta" className="w-full sm:w-44">
-          <Input name="hasta" type="date" defaultValue={filter.to ?? panel.to} />
+          <DateInput name="hasta" defaultValue={filter.to ?? panel.to} />
         </Field>
         {local.restaurantId ? null : (
           <Field id="marca" label="Marca" className="w-full desk:w-56">

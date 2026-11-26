@@ -9,7 +9,7 @@ import { ChoiceField } from "@/components/choice-field";
 import { MoreData } from "@/components/more-data";
 import { Button } from "@/components/ui/button";
 import { schemas } from "@/lib/forms/schemas";
-import { FormInput, FormSelect, FormTextarea } from "@/components/ui/form";
+import { FormInput, FormSelect, FormTextarea, FormDate } from "@/components/ui/form";
 import { ToggleField } from "@/components/ui/toggle-field";
 import {
   VAT_RATES,
@@ -188,11 +188,10 @@ function Fields({
           </p>
         )}
         <div className={dateOpen ? undefined : "hidden"}>
-          <FormInput
+          <FormDate
             id="precio-desde"
             label="Vale desde"
             name="valid_from"
-            type="date"
             required
             defaultValue={today}
           />

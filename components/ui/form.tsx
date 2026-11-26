@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { useActionState, useEffect, useRef, useTransition } from "react";
-import { FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
+import { Controller, FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 
+import { DateInput } from "@/components/ui/date-input";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import type { ActionState } from "@/lib/auth/results";
 import { schemas, type FormSchemaName } from "@/lib/forms/schemas";
@@ -62,9 +63,13 @@ export function useServerForm<S extends ActionState>({
     const first = Array.from(formRef.current.elements).find(
       (el): el is HTMLInputElement => "name" in el && names.includes(String(el.name)),
     );
-    // Un toggle guarda su valor en un campo oculto: el foco va a su botón.
+    // Un toggle (o una fecha, ADR-0068) guarda su valor en un campo oculto: el foco va a su botón (o a su texto).
     if (first?.type === "hidden")
-      formRef.current.querySelector<HTMLElement>(`[data-toggle-for="${first.name}"]`)?.focus();
+      formRef.current
+        .querySelector<HTMLElement>(
+          `[data-toggle-for="${first.name}"], [data-focus-for="${first.name}"]`,
+        )
+        ?.focus();
     else if (first) setFocus(first.name);
   }, [formState.errors, setFocus]);
 
@@ -152,6 +157,72 @@ export function FormInput({
   return (
     <Field id={id} label={label} hint={hint} error={error} className={className}>
       <Input {...props} {...registered} />
+    </Field>
+  );
+}
+
+// Una fecha en dd/mm/aaaa (DateInput, ADR-0068) registrada en el formulario: el valor es ISO (aaaa-mm-dd), como el del
+// campo de fecha del navegador al que reemplaza.
+export function FormDate({
+  name,
+  id,
+  label,
+  hint,
+  className,
+  defaultValue,
+  min,
+  max,
+  required,
+  disabled,
+}: FieldProps & {
+  defaultValue?: string;
+  min?: string;
+  max?: string;
+  required?: boolean;
+  disabled?: boolean;
+}) {
+  const context = useFormContext();
+  const message = context?.formState.errors[name]?.message;
+  const error = typeof message === "string" ? message : undefined;
+  return (
+    <Field id={id} label={label} hint={hint} error={error} className={className}>
+      {context ? (
+        <Controller
+          name={name}
+          control={context.control}
+          defaultValue={defaultValue ?? ""}
+          // Field le pone id y descripciones a su hijo directo, que acá es Controller: se pasan a mano (si no, la
+          // etiqueta no apunta al campo y el error no queda vinculado).
+          render={({ field }) => (
+            <DateInput
+              id={id}
+              aria-describedby={
+                [hint ? `${id}-ayuda` : null, error ? `${id}-error` : null]
+                  .filter(Boolean)
+                  .join(" ") || undefined
+              }
+              aria-invalid={error ? true : undefined}
+              name={name}
+              value={typeof field.value === "string" ? field.value : ""}
+              onChange={(iso) => field.onChange(iso)}
+              onBlur={field.onBlur}
+              min={min}
+              max={max}
+              required={required}
+              disabled={disabled}
+            />
+          )}
+        />
+      ) : (
+        <DateInput
+          name={name}
+          defaultValue={defaultValue}
+          min={min}
+          max={max}
+          required={required}
+          disabled={disabled}
+        />
+      )}
     </Field>
   );
 }

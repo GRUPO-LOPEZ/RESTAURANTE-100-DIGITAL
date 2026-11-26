@@ -1,30 +1,36 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { Truck } from "lucide-react";
 
 import { AppShell, Loading } from "@/components/app-shell";
 import { ReliabilityFilter } from "@/components/costs/reliability-filter";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
 import { Field, Select } from "@/components/ui/field";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { GroupLayout, GroupPanel } from "@/components/ui/group-panel";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/states";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 import { getSuppliers } from "@/lib/catalog";
 import { first, formatDate, uuidOrUndefined } from "@/lib/data";
+import { sumCounts } from "@/lib/group-counts";
+import { getPriceListSupplierCounts } from "@/lib/group-counts-data";
 import { listHref, parseList, plainParams } from "@/lib/list-params";
 import { PRICE_LIST_STATUS, STATUS_FILTERS, isStatusFilter, shownStatus } from "@/lib/price-lists";
 import { getPriceLists, type PriceListRow } from "@/lib/price-lists-data";
 
 // Listas de precios (Fase 3, ADR-0052), listado tipo C: ¿qué listas mandaron los proveedores y cuál vale? Filtros que se
 // aplican solos (proveedor y estado como botones), tabla de ancho completo y 15 filas por página. «Vencida» la calcula
-// la base con la frecuencia de cada proveedor. Los precios de lista nunca son costos.
+// la base con la frecuencia de cada proveedor. Los precios de lista nunca son costos. Con los criterios de Soy (ADR-0068):
+// en una pantalla, los proveedores con su cantidad en el panel de la izquierda y la tabla con su propio scroll.
 export default function ListasDePreciosPage({ searchParams }: PageProps<"/listas-de-precios">) {
   return (
     <AppShell
       title="Listas de precios"
+      fill
       description="Lo que mandó cada proveedor, cuál vale hoy y qué artículos esperan en la cola de mapeo."
       actions={
         <Suspense fallback={null}>
@@ -65,12 +71,16 @@ async function Lists({
   const suppliers = await getSuppliers();
   const supplierId = uuidOrUndefined(first(raw.proveedor));
   const supplier = suppliers.find((s) => s.id === supplierId);
-  const { rows, total } = await getPriceLists({
-    supplierId: supplier?.id,
-    status,
-    page: list.page - 1,
-    size: list.size,
-  });
+  const [{ rows, total }, groups] = await Promise.all([
+    getPriceLists({
+      supplierId: supplier?.id,
+      status,
+      page: list.page - 1,
+      size: list.size,
+    }),
+    // El panel cuenta con el mismo estado, sin el proveedor (pgTAP 419).
+    getPriceListSupplierCounts({ status }),
+  ]);
 
   const remove = (key: string) => listHref(PATH, params, { [key]: undefined, pagina: undefined });
   const active = [
@@ -83,6 +93,7 @@ async function Lists({
       key: "supplier",
       header: "Proveedor",
       mobile: "title",
+      wrap: true,
       cell: (row) => (
         <Link
           href={`/listas-de-precios/${row.id}?volver=${encodeURIComponent(here)}`}
@@ -138,10 +149,24 @@ async function Lists({
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <GroupLayout
+      panel={
+        <GroupPanel
+          label="Proveedores"
+          icon={Truck}
+          unit={{ one: "lista", many: "listas" }}
+          allLabel="Todos los proveedores"
+          allCount={sumCounts(groups)}
+          items={groups}
+          selected={supplier ? { id: supplier.id, name: supplier.name } : undefined}
+          hrefFor={(id) => listHref(PATH, params, { proveedor: id, pagina: undefined })}
+        />
+      }
+    >
+      {/* En la computadora, el proveedor se elige en el panel; en el celular, acá (la clave lo rehace al cambiar). */}
       <FilterBar label="Filtros de listas de precios" active={active}>
-        <Field id="lp-proveedor" label="Proveedor" className="w-full desk:w-72">
-          <Select name="proveedor" defaultValue={supplier?.id ?? ""}>
+        <Field id="lp-proveedor" label="Proveedor" className="w-full desk:hidden">
+          <Select key={supplier?.id ?? "todos"} name="proveedor" defaultValue={supplier?.id ?? ""}>
             <option value="">Todos</option>
             {suppliers.map((s) => (
               <option key={s.id} value={s.id}>
@@ -179,7 +204,10 @@ async function Lists({
           ]}
         />
       </div>
-      <Card className="flex flex-col gap-4">
+      <section
+        aria-label="Listas de precios"
+        className="flex flex-col gap-3 rounded-md border border-line bg-surface p-4 desk:min-h-0 desk:flex-[1_1_0px]"
+      >
         <CardTitle className="tabular-nums">
           {total === 1 ? "1 lista" : `${total.toLocaleString("es-AR")} listas`}
         </CardTitle>
@@ -195,6 +223,7 @@ async function Lists({
         ) : (
           <DataTable
             caption="Listas de precios"
+            scroll
             columns={columns}
             rows={rows}
             rowKey={(r) => r.id}
@@ -219,7 +248,7 @@ async function Lists({
         {total > 0 ? (
           <Pagination list={list} total={total} shown={rows.length} path={PATH} params={params} />
         ) : null}
-      </Card>
-    </div>
+      </section>
+    </GroupLayout>
   );
 }

@@ -274,13 +274,12 @@ async function Invoice({
       >
         <Metrics inv={inv} />
 
-        {/* Tres columnas que ocupan el alto que queda (3,5 : 8 : 4,5: las líneas necesitan ancho). Si la pantalla es más
-            baja, lo que sobra se desplaza dentro de su tarjeta (ADR-0051). En el celular, una debajo de otra. */}
-        <div className="grid gap-4 desk:min-h-0 desk:flex-[1_1_0px] desk:grid-cols-[3.5fr_8fr_4.5fr] desk:grid-rows-[minmax(0,1fr)]">
+        {/* Tres columnas que ocupan el alto que queda (5 : 7 : 4). Los datos, en dos columnas y sin scroll (criterio 4 de
+            Soy, ADR-0068); el pie, debajo de las líneas, como en el papel. Si las líneas o los controles no entran, se
+            desplazan dentro de su tarjeta (ADR-0051). En el celular, una debajo de otra. */}
+        <div className="grid gap-4 desk:min-h-0 desk:flex-[1_1_0px] desk:grid-cols-[5fr_7fr_4fr] desk:grid-rows-[minmax(0,1fr)]">
           <Tile id="datos" title="Datos de la factura" scroll>
             <HeaderSection legalEntityTaxId={inv.legalEntityTaxId} />
-            <h3 className="mt-2 text-sm font-semibold text-ink">Pie</h3>
-            <FooterSection />
           </Tile>
           <Tile
             id="lineas"
@@ -295,6 +294,8 @@ async function Invoice({
             }
           >
             <LinesSection />
+            <h3 className="mt-2 text-sm font-semibold text-ink">Pie</h3>
+            <FooterSection />
           </Tile>
           <Tile id="todo-junto" title="Todo junto" scroll>
             <Together inv={inv} payments={payments} />

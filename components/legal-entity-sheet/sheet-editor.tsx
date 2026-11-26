@@ -9,6 +9,7 @@ import { FormNotice } from "@/components/form-notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
 import { Segmented } from "@/components/ui/segmented";
@@ -216,22 +217,36 @@ function TextField({
               Falta {label}
             </span>
           ) : null}
-          <Input
-            aria-invalid={invalid ? "true" : undefined}
-            aria-describedby={invalid ? `${id}-falta` : undefined}
-            onBlur={() => setLeft(true)}
-            id={id}
-            type={type}
-            inputMode={inputMode}
-            value={draft.fields[field]}
-            maxLength={maxLength}
-            placeholder={placeholder}
-            aria-required={required ? "true" : undefined}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, fields: { ...d.fields, [field]: e.target.value } }))
-            }
-            className={cn(small, changed.fields.includes(field) && changedRing)}
-          />
+          {type === "date" ? (
+            // dd/mm/aaaa, nunca el formato del idioma de Chrome (criterio 12 de Soy, ADR-0068).
+            <DateInput
+              id={id}
+              aria-invalid={invalid ? true : undefined}
+              aria-describedby={invalid ? `${id}-falta` : undefined}
+              aria-required={required ? "true" : undefined}
+              onBlur={() => setLeft(true)}
+              value={draft.fields[field]}
+              onChange={(iso) => setDraft((d) => ({ ...d, fields: { ...d.fields, [field]: iso } }))}
+              inputClassName={cn(small, changed.fields.includes(field) && changedRing)}
+            />
+          ) : (
+            <Input
+              aria-invalid={invalid ? "true" : undefined}
+              aria-describedby={invalid ? `${id}-falta` : undefined}
+              onBlur={() => setLeft(true)}
+              id={id}
+              type={type}
+              inputMode={inputMode}
+              value={draft.fields[field]}
+              maxLength={maxLength}
+              placeholder={placeholder}
+              aria-required={required ? "true" : undefined}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, fields: { ...d.fields, [field]: e.target.value } }))
+              }
+              className={cn(small, changed.fields.includes(field) && changedRing)}
+            />
+          )}
         </div>
       }
       read={

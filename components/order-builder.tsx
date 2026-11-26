@@ -15,6 +15,7 @@ import { useUnsavedWarning } from "@/components/use-unsaved-warning";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { estimatedKg, daysLong, daysShort, orderSchema, qtyText } from "@/lib/purchase-orders";
 import type { OrderPlace, OrderSupplier, RankedProduct } from "@/lib/purchase-orders-data";
 import { cn } from "@/lib/utils";
@@ -351,12 +352,7 @@ export function OrderBuilder({
             label="Entrega esperada"
             hint="El próximo día de entrega del proveedor. Si lo cambiás, queda en el historial."
           >
-            <Input
-              type="date"
-              value={expected}
-              min={today}
-              onChange={(e) => setExpected(e.target.value)}
-            />
+            <DateInput value={expected} min={today} onChange={setExpected} />
           </Field>
           <Field id="oc-notas" label="Observaciones para el proveedor">
             <Textarea

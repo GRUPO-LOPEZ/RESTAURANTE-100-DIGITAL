@@ -8,9 +8,10 @@ import { uploadConstanciaAction } from "@/app/configuracion/structure-actions";
 import { FormNotice } from "@/components/form-notice";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import type { ActionState } from "@/lib/auth/results";
 import { todayInArgentina } from "@/lib/forms/schemas";
+import { FileUpload } from "@/components/ui/file-upload";
 
 // «Subir constancia de ARCA» (ADR-0061, decisión 4 de Soy): el PDF de la constancia de inscripción y su fecha de
 // emisión. Se suma a las anteriores (nada se borra) y vale la más reciente. Storage y la base controlan que la sesión
@@ -60,10 +61,9 @@ export function ConstanciaUpload({ legalEntityId }: { legalEntityId: string }) {
             <label htmlFor={`${id}-file`} className="text-sm font-medium text-ink">
               PDF de la constancia<span aria-hidden="true"> *</span>
             </label>
-            <Input
+            <FileUpload
               id={`${id}-file`}
               name="file"
-              type="file"
               accept="application/pdf"
               required
               aria-describedby={`${id}-file-hint`}
@@ -76,10 +76,9 @@ export function ConstanciaUpload({ legalEntityId }: { legalEntityId: string }) {
             <label htmlFor={`${id}-date`} className="text-sm font-medium text-ink">
               Fecha de emisión<span aria-hidden="true"> *</span>
             </label>
-            <Input
+            <DateInput
               id={`${id}-date`}
               name="issued_on"
-              type="date"
               max={today}
               defaultValue={today}
               required

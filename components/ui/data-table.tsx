@@ -18,6 +18,12 @@ export type DataColumn<T> = {
   sortKey?: string;
   // En la tarjeta del celular: el título, el estado, una línea con su etiqueta, la acción (abajo), o nada.
   mobile?: "title" | "status" | "line" | "action" | "hidden";
+  // Con scroll, cada fila va en un renglón; un nombre importante (proveedor, comprobante, materia prima) no se corta
+  // con «…»: pasa a dos renglones (criterio 13 de Soy, ADR-0068). true: la columna principal, de 160 px como mínimo;
+  // "narrow": una secundaria (local, rubros), de 96 px como mínimo, para que la tabla entre en 1440 con el panel.
+  wrap?: boolean | "narrow";
+  // Solo en la tarjeta del celular: en la computadora lo dice otra cosa de la pantalla (la pestaña «Activos»).
+  desk?: "hidden";
 };
 
 function DataTable<T>({
@@ -52,6 +58,7 @@ function DataTable<T>({
   const status = columns.filter((c) => c.mobile === "status");
   const actions = columns.filter((c) => c.mobile === "action");
   const lines = columns.filter((c) => c !== title && (c.mobile ?? "line") === "line");
+  const deskColumns = columns.filter((c) => c.desk !== "hidden");
 
   return (
     <div
@@ -116,7 +123,7 @@ function DataTable<T>({
             )}
           >
             <tr className="border-b border-line">
-              {columns.map((c) => (
+              {deskColumns.map((c) => (
                 <th
                   key={c.key}
                   scope="col"
@@ -129,7 +136,8 @@ function DataTable<T>({
                   }
                   className={cn(
                     "px-4 py-2 text-sm font-medium text-ink-muted",
-                    scroll && "px-2 whitespace-nowrap",
+                    // Un encabezado largo («Entrega esperada») pasa a dos renglones antes que agrandar la tabla.
+                    scroll && "px-2 align-bottom",
                     c.align === "right" ? "text-right" : "text-left",
                   )}
                 >
@@ -169,13 +177,17 @@ function DataTable<T>({
           <tbody>
             {rows.map((row) => (
               <tr key={rowKey(row)} className="border-b border-line last:border-0 hover:bg-app">
-                {columns.map((c) => (
+                {deskColumns.map((c) => (
                   <td
                     key={c.key}
                     className={cn(
                       "px-4 py-2 align-top text-ink",
                       // Una fila, un renglón: así entran más filas en el alto de la pantalla.
                       scroll && "px-2 py-1.5 align-middle whitespace-nowrap",
+                      // break-word y no anywhere: corta entre palabras (con anywhere la tabla achica la columna hasta
+                      // partir una palabra al medio).
+                      scroll && c.wrap && "[overflow-wrap:break-word] whitespace-normal",
+                      scroll && (c.wrap === "narrow" ? "min-w-24" : c.wrap && "min-w-40"),
                       c.align === "right" && "text-right tabular-nums",
                     )}
                   >

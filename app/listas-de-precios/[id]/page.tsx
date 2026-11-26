@@ -10,7 +10,7 @@ import { BackLink } from "@/components/back-link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
-import { FormInput, FormTextarea } from "@/components/ui/form";
+import { FormTextarea } from "@/components/ui/form";
 import { Metric } from "@/components/ui/metric";
 import { Notice } from "@/components/ui/notice";
 import { Pagination } from "@/components/ui/pagination";
@@ -20,6 +20,8 @@ import { UUID, first, formatDate } from "@/lib/data";
 import { parseList, plainParams } from "@/lib/list-params";
 import { PRICE_LIST_STATUS, changeLabel, formatMoney, shownStatus } from "@/lib/price-lists";
 import { getPriceListDetail, type PriceListItem } from "@/lib/price-lists-data";
+import { FileUpload } from "@/components/ui/file-upload";
+import { Field } from "@/components/ui/field";
 
 // Detalle de una lista de precios (ADR-0052): sus artículos con el neto (lista menos las dos bonificaciones y la
 // bonificación en pesos) y la variación contra la lista aceptada anterior del mismo proveedor. Compras la acepta con
@@ -297,13 +299,12 @@ async function Detail({
               >
                 <ActionForm action={attachFileAction} schema="reason" submitLabel="Adjuntar">
                   <input type="hidden" name="priceListId" value={l.id} />
-                  <FormInput
-                    id="lp-adjuntar-archivo"
-                    name="file"
-                    type="file"
-                    label="Archivo"
-                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                  />
+                  <Field id="lp-adjuntar-archivo" label="Archivo">
+                    <FileUpload
+                      name="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                    />
+                  </Field>
                   <FormTextarea
                     id="lp-adjuntar-motivo"
                     name="reason"

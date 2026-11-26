@@ -90,9 +90,8 @@ function AlertRow({ alert }: { alert: PurchasingBoard["alerts"][number] }) {
   const s = SEVERITY[alert.severity];
   return (
     <Link href={alert.link} className={rowLink}>
-      <span className="min-w-0 truncate text-primary" title={alert.title}>
-        {alert.title}
-      </span>
+      {/* El nombre entero, en dos renglones si hace falta: nunca «…» (criterio 13 de Soy, ADR-0068). */}
+      <span className="min-w-0 [overflow-wrap:anywhere] text-primary">{alert.title}</span>
       <Badge status={s.status} className="shrink-0">
         {s.label}
       </Badge>
@@ -270,10 +269,14 @@ async function Board({ searchParams }: { searchParams: Params }) {
             itemKey={(p) => p.invoice_id}
             empty={<p className="text-sm text-ink">No hay facturas por pagar.</p>}
             renderItem={(p) => (
-              <Link href={`/compras/facturas/${p.invoice_id}`} className={rowLink}>
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-primary">{p.supplier}</span>
-                  <span className="truncate text-xs text-ink-muted">{p.label}</span>
+              <Link
+                href={`/compras/facturas/${p.invoice_id}`}
+                className={`${rowLink} flex-wrap py-1`}
+              >
+                {/* El nombre entero: si no entra al lado, la fecha y el importe bajan a su renglón. */}
+                <span className="flex min-w-40 flex-1 flex-col">
+                  <span className="[overflow-wrap:anywhere] text-primary">{p.supplier}</span>
+                  <span className="text-xs [overflow-wrap:anywhere] text-ink-muted">{p.label}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2 text-ink tabular-nums">
                   <span>{shortDate(p.due_on)}</span>
@@ -310,7 +313,7 @@ async function Board({ searchParams }: { searchParams: Params }) {
             }
             renderItem={(a) => (
               <span className="flex min-h-touch items-center text-sm text-ink desk:min-h-7">
-                <span className="truncate" title={a.title}>
+                <span className="[overflow-wrap:anywhere]">
                   {a.title.replace(/^Sin mapear: /, "")}
                 </span>
               </span>

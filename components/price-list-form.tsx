@@ -9,6 +9,7 @@ import { FormNotice } from "@/components/form-notice";
 import { useUnsavedWarning } from "@/components/use-unsaved-warning";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import {
   VAT_RATES,
   formatMoney,
@@ -16,6 +17,7 @@ import {
   parseDecimal,
   priceListItemSchema,
 } from "@/lib/price-lists";
+import { FileUpload } from "@/components/ui/file-upload";
 
 // Cargar una lista de precios (ADR-0052): proveedor, fechas, el archivo (opcional) y una grilla con un renglón por
 // artículo, como viene en la lista del proveedor. Se valida al enviar con el mismo esquema que el servidor. Lo que el
@@ -192,10 +194,10 @@ export function PriceListForm({
           </Select>
         </Field>
         <Field id="lp-received_on" label="Llegó el" error={err("received_on")}>
-          <Input type="date" name="received_on" defaultValue={today} max={today} />
+          <DateInput name="received_on" defaultValue={today} max={today} />
         </Field>
         <Field id="lp-valid_from" label="Vale desde" error={err("valid_from")}>
-          <Input type="date" name="valid_from" defaultValue={today} />
+          <DateInput name="valid_from" defaultValue={today} />
         </Field>
         <Field
           id="lp-file"
@@ -203,7 +205,7 @@ export function PriceListForm({
           hint="Opcional: foto o PDF, hasta 3,5 MB."
           error={err("file")}
         >
-          <Input type="file" name="file" accept="image/jpeg,image/png,image/webp,application/pdf" />
+          <FileUpload name="file" accept="image/jpeg,image/png,image/webp,application/pdf" />
         </Field>
       </div>
 

@@ -9,6 +9,7 @@ import { FormNotice } from "@/components/form-notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { Modal } from "@/components/ui/dialog";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
@@ -809,13 +810,12 @@ export function ConversionsSection() {
                 >
                   Fecha de la medición
                 </label>
-                <Input
-                  type="date"
+                <DateInput
                   id={`${prefix}-conv-${editing}-fecha`}
                   aria-invalid={bad(`conv-${editing}-fecha`)}
                   value={open.measured_on}
                   max={today()}
-                  onChange={(e) => patch(editing, { measured_on: e.target.value })}
+                  onChange={(iso) => patch(editing, { measured_on: iso })}
                 />
               </div>
               <div className="flex flex-col gap-1">

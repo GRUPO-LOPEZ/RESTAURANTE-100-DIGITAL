@@ -11,6 +11,7 @@ import type { ActionState } from "@/lib/auth/results";
 import { fieldErrors, schemas } from "@/lib/forms/schemas";
 import { shrinkPhoto } from "@/lib/photos";
 import { MEDIA_KIND_LABELS, PHOTO_MAX_BYTES, type MediaKind } from "@/lib/recipe-format";
+import { FileUpload } from "@/components/ui/file-upload";
 
 // Subir una foto de la receta: elegirla (o sacarla con el celular), decir qué muestra y el motivo.
 export function RecipePhotoUpload({ recipeId }: { recipeId: string }) {
@@ -72,7 +73,7 @@ export function RecipePhotoUpload({ recipeId }: { recipeId: string }) {
         hint="Del celular o de la compu, en JPG, PNG o WebP (HEIC no). Se achica sola antes de subirla."
         error={errors.photo}
       >
-        <Input type="file" name="photo" accept="image/jpeg,image/png,image/webp" className="py-2" />
+        <FileUpload name="photo" accept="image/jpeg,image/png,image/webp" />
       </Field>
       <Field id={`${prefix}-kind`} label="Qué muestra" error={errors.kind}>
         <Select name="kind" defaultValue="">

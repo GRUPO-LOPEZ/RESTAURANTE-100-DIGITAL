@@ -5,7 +5,11 @@ import { cn } from "@/lib/utils";
 // Encabezado de página (ADR-0036): título, una línea de contexto y la acción principal a la derecha.
 // Mismo lugar para los botones en todo el sistema. Los títulos no compiten con los números.
 // En las pantallas de carga sin scroll (ADR-0046) va todo en una línea: «← Volver», el nombre, sus datos (meta) y la
-// acción a la derecha.
+// acción a la derecha. Criterios de Soy (ADR-0068): el título es de 20 px en todas las pantallas (los números importan,
+// los títulos no) y las acciones van en fila a la derecha, nunca apiladas: si no entra, se acomoda lo de la izquierda.
+// En el celular se acomodan en varias líneas; en la computadora, en una sola fila que no se achica.
+const ACTIONS = "flex flex-wrap items-center gap-2 desk:shrink-0 desk:flex-nowrap";
+
 function PageHeader({
   title,
   heading,
@@ -42,7 +46,7 @@ function PageHeader({
           </h1>
           {meta}
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? <div className={ACTIONS}>{actions}</div> : null}
       </div>
     );
   }
@@ -55,7 +59,9 @@ function PageHeader({
       )}
     >
       <div className="flex min-w-0 flex-col gap-1">
-        <h1 className="text-2xl [overflow-wrap:anywhere] text-ink">{heading ?? title}</h1>
+        <h1 className="text-xl font-semibold [overflow-wrap:anywhere] text-ink">
+          {heading ?? title}
+        </h1>
         {/* empty:hidden: una línea que llega vacía (en streaming) no deja hueco. */}
         {description ? (
           <p className="text-base text-ink-muted empty:hidden">{description}</p>

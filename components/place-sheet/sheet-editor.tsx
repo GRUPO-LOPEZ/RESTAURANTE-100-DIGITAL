@@ -11,6 +11,7 @@ import { OrgMap } from "@/components/org-map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
 import { Segmented } from "@/components/ui/segmented";
@@ -235,22 +236,36 @@ function FieldInput({
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
-      <Input
-        id={id}
-        type={type}
-        inputMode={inputMode}
-        value={draft.fields[field]}
-        maxLength={maxLength}
-        placeholder={placeholder}
-        aria-required={required ? "true" : undefined}
-        aria-invalid={invalid ? "true" : undefined}
-        aria-describedby={invalid ? `${id}-falta` : undefined}
-        onBlur={() => setLeft(true)}
-        onChange={(e) =>
-          setDraft((d) => ({ ...d, fields: { ...d.fields, [field]: e.target.value } }))
-        }
-        className={cn(small, changed.fields.includes(field) && changedRing)}
-      />
+      {type === "date" ? (
+        // dd/mm/aaaa, nunca el formato del idioma de Chrome (criterio 12 de Soy, ADR-0068).
+        <DateInput
+          id={id}
+          value={draft.fields[field]}
+          aria-required={required ? "true" : undefined}
+          aria-invalid={invalid ? true : undefined}
+          aria-describedby={invalid ? `${id}-falta` : undefined}
+          onBlur={() => setLeft(true)}
+          onChange={(iso) => setDraft((d) => ({ ...d, fields: { ...d.fields, [field]: iso } }))}
+          inputClassName={cn(small, changed.fields.includes(field) && changedRing)}
+        />
+      ) : (
+        <Input
+          id={id}
+          type={type}
+          inputMode={inputMode}
+          value={draft.fields[field]}
+          maxLength={maxLength}
+          placeholder={placeholder}
+          aria-required={required ? "true" : undefined}
+          aria-invalid={invalid ? "true" : undefined}
+          aria-describedby={invalid ? `${id}-falta` : undefined}
+          onBlur={() => setLeft(true)}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, fields: { ...d.fields, [field]: e.target.value } }))
+          }
+          className={cn(small, changed.fields.includes(field) && changedRing)}
+        />
+      )}
       {invalid ? (
         <span id={`${id}-falta`} className="text-xs font-medium text-bad-ink">
           Falta
@@ -637,13 +652,12 @@ export function LegalSection({ todayIso }: { todayIso: string }) {
                 <label htmlFor={`${prefix}-desde`} className={labelClass}>
                   Desde
                 </label>
-                <Input
+                <DateInput
                   id={`${prefix}-desde`}
-                  type="date"
                   max={todayIso}
                   value={draft.legalFrom}
-                  onChange={(e) => setDraft((d) => ({ ...d, legalFrom: e.target.value }))}
-                  className={cn(small, changedRing)}
+                  onChange={(iso) => setDraft((d) => ({ ...d, legalFrom: iso }))}
+                  inputClassName={cn(small, changedRing)}
                 />
               </div>
             ) : null}

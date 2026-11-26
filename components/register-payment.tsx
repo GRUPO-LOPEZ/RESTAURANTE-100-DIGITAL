@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SidePanel } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { Segmented } from "@/components/ui/segmented";
 import type { ActionState } from "@/lib/auth/results";
 import { todayInArgentina } from "@/lib/forms/schemas";
@@ -26,6 +27,7 @@ import {
   type PaymentMethod,
 } from "@/lib/payments";
 import { shrinkPhoto } from "@/lib/photos";
+import { FileUpload } from "@/components/ui/file-upload";
 
 // «Registrar pago» (ADR-0060), en un panel lateral: el proveedor, sus facturas con saldo (el importe se reparte solo, de
 // la que vence antes, y cada una se corrige a mano), el medio (las cuentas de su ficha), la fecha, la referencia, el
@@ -310,12 +312,7 @@ export function RegisterPayment({
               ) : null}
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field id={`${prefix}-fecha`} label="Fecha del pago" required error={errors.paidOn}>
-                  <Input
-                    type="date"
-                    max={todayInArgentina()}
-                    value={paidOn}
-                    onChange={(e) => setPaidOn(e.target.value)}
-                  />
+                  <DateInput max={todayInArgentina()} value={paidOn} onChange={setPaidOn} />
                 </Field>
                 <Field
                   id={`${prefix}-ref`}
@@ -330,11 +327,7 @@ export function RegisterPayment({
                 </Field>
               </div>
               <Field id={`${prefix}-comprobante`} label="Comprobante (foto o PDF)" hint="Opcional.">
-                <Input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
+                <FileUpload accept="image/*,application/pdf" onFile={setFile} />
               </Field>
               <Field
                 id={`${prefix}-motivo`}

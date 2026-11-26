@@ -8037,6 +8037,14 @@ export type Database = {
         }[];
       };
       invoice_payments: { Args: { p_invoice_id: string }; Returns: Json };
+      invoice_supplier_counts: {
+        Args: { p_from?: string; p_restaurant_id?: string; p_status?: string; p_to?: string };
+        Returns: {
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
+        }[];
+      };
       invoiceable_orders: {
         Args: { p_restaurant_id: string; p_supplier_id?: string };
         Returns: {
@@ -8190,6 +8198,20 @@ export type Database = {
           status: Database["purchasing"]["Enums"]["receipt_status"];
         }[];
       };
+      order_supplier_counts: {
+        Args: {
+          p_from?: string;
+          p_mine?: boolean;
+          p_restaurant_id?: string;
+          p_status?: string;
+          p_to?: string;
+        };
+        Returns: {
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
+        }[];
+      };
       payable_invoices: { Args: { p_restaurant_id: string; p_supplier_id: string }; Returns: Json };
       payment_message: { Args: { p_id: string }; Returns: string };
       payment_schedule_list: {
@@ -8216,6 +8238,14 @@ export type Database = {
           supplier_name: string;
           total: number;
           total_amount: number;
+        }[];
+      };
+      payment_supplier_counts: {
+        Args: { p_restaurant_id?: string; p_tab?: string };
+        Returns: {
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
         }[];
       };
       payment_unapplied: { Args: { p_id: string }; Returns: number };
@@ -8275,6 +8305,14 @@ export type Database = {
           supplier_name: string;
           total: number;
           valid_from: string;
+        }[];
+      };
+      price_list_supplier_counts: {
+        Args: { p_status?: string };
+        Returns: {
+          supplier_id: string;
+          supplier_name: string;
+          total: number;
         }[];
       };
       purchasing_dashboard: { Args: { p_restaurant_id?: string }; Returns: Json };
@@ -8451,6 +8489,18 @@ export type Database = {
           supplier_sku: string;
           times_ordered: number;
           units_per_package: number;
+        }[];
+      };
+      supplier_rubro_counts: {
+        Args: {
+          p_active?: boolean;
+          p_channel?: Database["purchasing"]["Enums"]["channel"];
+          p_search?: string;
+        };
+        Returns: {
+          category_id: string;
+          category_name: string;
+          total: number;
         }[];
       };
       supplier_sheet_stamp_internal: { Args: { p_id: string }; Returns: string };

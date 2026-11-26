@@ -4,7 +4,7 @@ import { createInvoiceAction } from "@/app/compras/facturas/actions";
 import { FormNotice } from "@/components/form-notice";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FormInput, FormSelect, ServerForm, useServerForm } from "@/components/ui/form";
+import { FormInput, FormSelect, ServerForm, useServerForm, FormDate } from "@/components/ui/form";
 import { SegmentedField } from "@/components/ui/segmented-field";
 import { todayInArgentina } from "@/lib/forms/schemas";
 import { AUTHORIZATION_KINDS, INVOICE_CLASSES, isFiscal, type InvoiceClass } from "@/lib/invoices";
@@ -119,11 +119,10 @@ export function NewInvoiceForm({
           hint="Sin el punto de venta ni guiones."
         />
       </div>
-      <FormInput
+      <FormDate
         id="fc-nueva-fecha"
         name="issued_on"
         label="Fecha de la factura"
-        type="date"
         max={todayInArgentina()}
         defaultValue={todayInArgentina()}
         required

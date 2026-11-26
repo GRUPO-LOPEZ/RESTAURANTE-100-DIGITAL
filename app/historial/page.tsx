@@ -8,6 +8,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { CursorPagination } from "@/components/ui/cursor-pagination";
 import { DataTable } from "@/components/ui/data-table";
 import { Field, Input, Select } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { EmptyState } from "@/components/ui/states";
 import { FormNotice } from "@/components/form-notice";
@@ -168,10 +169,10 @@ async function History({
         </div>
         <FilterBar label="Buscar en el historial" active={active}>
           <Field id="desde" label="Desde" className="w-full sm:w-44">
-            <Input name="desde" type="date" defaultValue={from} />
+            <DateInput name="desde" defaultValue={from} />
           </Field>
           <Field id="hasta" label="Hasta" className="w-full sm:w-44">
-            <Input name="hasta" type="date" defaultValue={to} />
+            <DateInput name="hasta" defaultValue={to} />
           </Field>
           <Field id="persona" label="Persona que hizo el cambio" className="w-full desk:w-64">
             <Select name="persona" defaultValue={filter.actorId ?? ""}>

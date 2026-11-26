@@ -15,17 +15,20 @@ import { FocusTarget } from "@/components/focus-target";
 import { ReceiptReport } from "@/components/receipt-report";
 import { StartReceiptButton } from "@/components/receipt-start";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@/components/ui/card";
 import { FormSelect, FormTextarea } from "@/components/ui/form";
+import { Metric } from "@/components/ui/metric";
 import { Notice } from "@/components/ui/notice";
+import { Tile } from "@/components/ui/tile";
 import { getMenus, requireMenu } from "@/lib/auth/session";
 import { UUID, first, formatDate, formatDateTime } from "@/lib/data";
+import { todayInArgentina } from "@/lib/forms/schemas";
 import {
   CHANNEL_NAMES,
   EVENT_KINDS,
   NEWS_KINDS,
   PO_STATUS,
   messageStatus,
+  orderIndicators,
   qtyText,
 } from "@/lib/purchase-orders";
 import { CopyButton } from "@/components/copy-button";
@@ -34,11 +37,13 @@ import { getOrderReceipts } from "@/lib/receipts-data";
 
 // Ficha de una orden de compra (Fase 3, Prompt 3, ADR-0053): las líneas, la línea de tiempo (creada, a aprobar,
 // en cola de envío, novedades) y el mensaje al proveedor. Mientras nadie despache la cola (decisión 9 de Soy), el texto
-// se puede copiar y mandar a mano. Sin precios.
+// se puede copiar y mandar a mano. Sin precios. Con los criterios de Soy (ADR-0068): en una pantalla, con las acciones
+// en fila arriba, 4 indicadores y las tarjetas que se desplazan adentro.
 export default function OrdenPage({ params, searchParams }: PageProps<"/compras/ordenes/[id]">) {
   return (
     <AppShell
       title="Orden de compra"
+      fill
       heading={
         <Suspense fallback="Orden de compra">
           <Heading params={params} />
@@ -105,10 +110,8 @@ async function Meta({ params }: { params: PageProps<"/compras/ordenes/[id]">["pa
   const s = PO_STATUS[o.status];
   return (
     <>
-      <span className="text-sm text-ink-muted tabular-nums">
-        {o.restaurantName} · pedida el {formatDate(o.createdAt)} · entrega esperada el{" "}
-        {formatDate(o.expectedOn)}
-      </span>
+      {/* Cuándo se pidió está en «Qué pasó»: el encabezado entra en una línea en 1440 (criterio 5 de Soy). */}
+      <span className="text-sm text-ink-muted">{o.restaurantName}</span>
       <Badge status={s.status}>{s.label}</Badge>
     </>
   );
@@ -169,8 +172,10 @@ async function Actions({ params }: { params: PageProps<"/compras/ordenes/[id]">[
         </ActionModal>
       ) : null}
       {canCancel ? (
+        // «Cancelar», como en la ficha de la factura (mismo nombre para la misma acción, criterio 15 de Soy).
         <ActionModal
-          label="Cancelar la orden"
+          label="Cancelar"
+          accessibleName="Cancelar la orden"
           icon="none"
           title={`Cancelar la orden ${o.number}`}
           description="No se borra: queda cancelada con su motivo, y si estaba en la cola de envío, no se manda."
@@ -244,15 +249,31 @@ async function Detail({
     })),
   ].sort((a, b) => a.at.localeCompare(b.at));
 
+  const indicators = orderIndicators(o, todayInArgentina(), formatDate);
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 desk:min-h-0 desk:flex-[1_1_0px]">
       <FocusTarget />
       {notice ? <Notice status={notice.status}>{notice.text}</Notice> : null}
-      <div className="grid gap-4 desk:grid-cols-[3fr_2fr]">
-        <Card className="flex flex-col gap-3">
-          <CardTitle className="tabular-nums">
-            {o.lines.length === 1 ? "1 artículo" : `${o.lines.length} artículos`}
-          </CardTitle>
+      {/* Métricas confiables (lib/metrics.ts): antes de mandarla, lo recibido no se mide. No se repiten abajo. */}
+      <div className="grid gap-3 desk:grid-cols-4">
+        {indicators.map((m) => (
+          <Metric
+            key={m.key}
+            compact
+            label={m.label}
+            value={m.value}
+            total={m.total}
+            comparison={m.comparison}
+            emptyLabel="Sin artículos"
+            missingReason={m.missingReason}
+            status={m.status}
+            statusLabel={m.statusLabel}
+          />
+        ))}
+      </div>
+      <div className="grid gap-4 desk:min-h-0 desk:flex-[1_1_0px] desk:grid-cols-[3fr_2fr] desk:grid-rows-[minmax(0,1fr)]">
+        <Tile title="Artículos de la orden" scroll>
           <ul aria-label="Artículos de la orden" className="flex flex-col divide-y divide-line">
             {o.lines.map((l) => (
               <li
@@ -260,7 +281,7 @@ async function Detail({
                 className="flex flex-wrap items-baseline justify-between gap-2 py-2"
               >
                 <div className="min-w-0">
-                  <p className="text-base text-ink">{l.name}</p>
+                  <p className="text-base [overflow-wrap:anywhere] text-ink">{l.name}</p>
                   <p className="text-sm text-ink-muted">
                     {l.withoutInvoiceName
                       ? "Sin nombre de factura"
@@ -281,10 +302,9 @@ async function Detail({
             ))}
           </ul>
           {o.notes ? <p className="text-sm text-ink">Observaciones: {o.notes}</p> : null}
-        </Card>
-        <div className="flex flex-col gap-4">
-          <Card className="flex flex-col gap-2">
-            <CardTitle>Qué pasó</CardTitle>
+        </Tile>
+        <div className="flex flex-col gap-4 desk:min-h-0">
+          <Tile title="Qué pasó" scroll className="desk:flex-[1_1_0px]">
             <ol className="flex flex-col gap-2">
               {timeline.map((t, i) => (
                 <li key={i} className="text-sm text-ink">
@@ -293,39 +313,43 @@ async function Detail({
                 </li>
               ))}
             </ol>
-          </Card>
+            {o.status === "pending_approval" ? (
+              <p className="text-sm text-ink">
+                La aprueba Compras en{" "}
+                <Link
+                  href="/aprobaciones"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  Aprobaciones
+                </Link>
+                .
+              </p>
+            ) : null}
+          </Tile>
           {o.message ? (
-            <Card className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle>Mensaje al proveedor</CardTitle>
+            <Tile
+              title="Mensaje al proveedor"
+              scroll
+              className="desk:flex-[1_1_0px]"
+              aside={
                 <Badge status={messageStatus(o.message.status).status}>
                   {messageStatus(o.message.status).label}
                 </Badge>
-              </div>
+              }
+            >
               <p className="text-sm text-ink-muted">
                 Por {CHANNEL_NAMES[o.message.channel] ?? o.message.channel} a {o.message.target}.
                 Mientras no se despache solo, se puede copiar y mandar a mano.
               </p>
-              {/* Se desplaza adentro: con tabIndex se alcanza con el teclado. */}
-              <pre
-                tabIndex={0}
-                role="region"
-                aria-label="Texto del mensaje al proveedor"
-                className="relative max-h-72 overflow-auto rounded-sm bg-app p-3 font-sans text-sm whitespace-pre-wrap text-ink focus-visible:outline-2 focus-visible:outline-primary"
-              >
+              {/* Sin scroll propio: lo que no entra se desplaza con la tarjeta (ADR-0051). */}
+              <pre className="rounded-sm bg-app p-3 font-sans text-sm whitespace-pre-wrap text-ink">
                 {o.message.body}
               </pre>
               <CopyButton text={o.message.body} label="Copiar mensaje" />
-            </Card>
+            </Tile>
           ) : null}
           {receipts.length > 0 ? (
-            <Card
-              id={anchor}
-              aria-label="Recepción"
-              tabIndex={-1}
-              className="flex flex-col gap-3 outline-none target:border-primary focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              <CardTitle>Recepción</CardTitle>
+            <Tile id={anchor} title="Recepción" scroll className="desk:flex-[1_1_0px]">
               {receipts.map((r, i) =>
                 r.status === "open" ? (
                   <p key={r.id} className="text-sm text-ink">
@@ -352,19 +376,7 @@ async function Detail({
                   </div>
                 ),
               )}
-            </Card>
-          ) : null}
-          {o.status === "pending_approval" ? (
-            <p className="text-sm text-ink">
-              La aprueba Compras en{" "}
-              <Link
-                href="/aprobaciones"
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                Aprobaciones
-              </Link>
-              .
-            </p>
+            </Tile>
           ) : null}
         </div>
       </div>
