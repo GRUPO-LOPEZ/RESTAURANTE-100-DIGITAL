@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "4mb" },
   },
+  // pdfjs-dist lee las listas en PDF en el servidor (ADR-0071): carga su worker con un import dinámico, así que se
+  // usa tal cual desde node_modules, sin empaquetarlo.
+  serverExternalPackages: ["pdfjs-dist"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

@@ -2,37 +2,49 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, cache } from "react";
 
-import { acceptPriceListAction, attachFileAction } from "@/app/listas-de-precios/actions";
+import {
+  acceptPriceListAction,
+  attachFileAction,
+  voidPriceListAction,
+} from "@/app/listas-de-precios/actions";
 import { ActionForm } from "@/components/action-form";
 import { ActionModal } from "@/components/action-modal";
 import { AppShell, Loading } from "@/components/app-shell";
 import { BackLink } from "@/components/back-link";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DataTable, type DataColumn } from "@/components/ui/data-table";
+import { Field } from "@/components/ui/field";
+import { FileUpload } from "@/components/ui/file-upload";
 import { FormTextarea } from "@/components/ui/form";
 import { Metric } from "@/components/ui/metric";
 import { Notice } from "@/components/ui/notice";
-import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/states";
 import { getMenus, requireMenu } from "@/lib/auth/session";
-import { UUID, first, formatDate } from "@/lib/data";
-import { parseList, plainParams } from "@/lib/list-params";
-import { PRICE_LIST_STATUS, changeLabel, formatMoney, shownStatus } from "@/lib/price-lists";
+import { UUID, first, formatDate, formatDateTime } from "@/lib/data";
+import {
+  PRICE_LIST_STATUS,
+  checkBadge,
+  formatMoney,
+  perUseLabel,
+  shownStatus,
+} from "@/lib/price-lists";
 import { getPriceListDetail, type PriceListItem } from "@/lib/price-lists-data";
-import { FileUpload } from "@/components/ui/file-upload";
-import { Field } from "@/components/ui/field";
 
-// Detalle de una lista de precios (ADR-0052): sus artículos con el neto (lista menos las dos bonificaciones y la
-// bonificación en pesos) y la variación contra la lista aceptada anterior del mismo proveedor. Compras la acepta con
-// motivo: la anterior queda reemplazada. Lo que el sistema no reconoció dice «En la cola de mapeo».
-export default function ListaDePreciosPage({
-  params,
-  searchParams,
-}: PageProps<"/listas-de-precios/[id]">) {
+// Ficha de una lista de precios (ADR-0052; controles, versiones y anulación, ADR-0071), sin scroll de página: la
+// versión y el estado arriba, 4 indicadores (artículos, subas sobre el umbral de Dirección, precios para revisar y sin
+// reconocer) y la tabla con su propio scroll, con el neto, el precio por unidad de uso y el control de cada renglón.
+// Acciones en fila: el archivo original, las versiones, Aceptar (pide confirmar los «Revisar»), Corregir (versión
+// nueva con motivo) y Anular (con motivo, sin borrar).
+type Props = PageProps<"/listas-de-precios/[id]">;
+
+export default function ListaDePreciosPage({ params, searchParams }: Props) {
   return (
     <AppShell
       title="Lista de precios"
+      fill
       heading={
         <Suspense fallback="Lista de precios">
           <Heading params={params} />
@@ -50,7 +62,7 @@ export default function ListaDePreciosPage({
       }
       actions={
         <Suspense fallback={null}>
-          <Accept params={params} />
+          <Actions params={params} />
         </Suspense>
       }
     >
@@ -63,14 +75,14 @@ export default function ListaDePreciosPage({
 
 const byId = cache(getPriceListDetail);
 
-async function load(params: PageProps<"/listas-de-precios/[id]">["params"]) {
+async function load(params: Props["params"]) {
   await requireMenu("priceLists");
   const { id } = await params;
   if (!UUID.test(id)) return null;
   return byId(id);
 }
 
-async function Heading({ params }: { params: PageProps<"/listas-de-precios/[id]">["params"] }) {
+async function Heading({ params }: { params: Props["params"] }) {
   const l = await load(params);
   return l ? `Lista de ${l.supplierName}` : "Lista de precios";
 }
@@ -84,11 +96,7 @@ function backTarget(volver: string | undefined): { href: string; label: string }
   return { href: "/listas-de-precios", label: "Listas de precios" };
 }
 
-async function Back({
-  searchParams,
-}: {
-  searchParams: PageProps<"/listas-de-precios/[id]">["searchParams"];
-}) {
+async function Back({ searchParams }: { searchParams: Props["searchParams"] }) {
   const query = await searchParams;
   const target = backTarget(first(query.volver));
   return (
@@ -98,78 +106,179 @@ async function Back({
   );
 }
 
-async function Meta({ params }: { params: PageProps<"/listas-de-precios/[id]">["params"] }) {
+async function Meta({ params }: { params: Props["params"] }) {
   const l = await load(params);
   if (!l) return null;
   const s = PRICE_LIST_STATUS[shownStatus(l.status, l.expired)];
   return (
     <>
       <span className="text-sm text-ink-muted tabular-nums">
-        Recibida el {formatDate(l.receivedOn)} · Vale desde el {formatDate(l.validFrom)}
+        {[`Versión ${l.version}`, `vale desde el ${formatDate(l.validFrom)}`]
+          .filter(Boolean)
+          .join(" · ")}
       </span>
       <Badge status={s.status}>{s.label}</Badge>
     </>
   );
 }
 
-async function Accept({ params }: { params: PageProps<"/listas-de-precios/[id]">["params"] }) {
+async function Actions({ params }: { params: Props["params"] }) {
   const [l, menus] = await Promise.all([load(params), getMenus()]);
-  if (!l || !menus.priceListsManage || l.status !== "received") return null;
+  if (!l) return null;
+  const manage = menus.priceListsManage;
+  const review = l.items.filter((i) => i.review).length;
+  const original = l.attachments.find((a) => a.url);
   return (
-    <ActionModal
-      label="Aceptar"
-      icon="none"
-      title="Aceptar la lista"
-      description="Pasa a ser la vigente del proveedor y la anterior queda como reemplazada. No cambia ningún costo."
-    >
-      <ActionForm action={acceptPriceListAction} schema="reason" submitLabel="Aceptar la lista">
-        <input type="hidden" name="priceListId" value={l.id} />
-        <input type="hidden" name="supplierId" value={l.supplierId} />
-        <FormTextarea
-          id="lp-aceptar-motivo"
-          name="reason"
-          label="Motivo"
-          hint="Queda en el historial."
-          required
-          maxLength={500}
-        />
-      </ActionForm>
-    </ActionModal>
+    <div className="flex flex-wrap items-center gap-2 desk:flex-nowrap">
+      {original?.url ? (
+        <Button asChild variant="outline">
+          <a href={original.url} target="_blank" rel="noopener noreferrer">
+            Archivo original
+            <span className="sr-only"> (se abre en otra pestaña)</span>
+          </a>
+        </Button>
+      ) : null}
+      {l.versions.length > 1 ? (
+        <ActionModal
+          label={`Ver las ${l.versions.length} versiones`}
+          icon="none"
+          variant="outline"
+          title="Versiones de la lista"
+          description="Cada corrección es una versión nueva, con su motivo en el historial. La anterior no se borra."
+        >
+          <ul className="flex flex-col divide-y divide-line">
+            {l.versions.map((v) => (
+              <li key={v.id} className="flex items-center justify-between gap-2 py-2 text-sm">
+                {v.id === l.id ? (
+                  <span className="font-medium text-ink">Versión {v.version} (esta)</span>
+                ) : (
+                  <Link
+                    href={`/listas-de-precios/${v.id}`}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    Versión {v.version}
+                  </Link>
+                )}
+                <span className="flex items-center gap-2">
+                  <span className="text-ink-muted tabular-nums">{formatDateTime(v.createdAt)}</span>
+                  <Badge status={PRICE_LIST_STATUS[v.status].status}>
+                    {PRICE_LIST_STATUS[v.status].label}
+                  </Badge>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </ActionModal>
+      ) : null}
+      {manage && (l.status === "received" || l.status === "accepted") ? (
+        <ActionModal
+          label="Anular"
+          accessibleName="Anular la lista"
+          icon="none"
+          variant="outline"
+          title="Anular la lista"
+          description={
+            l.status === "accepted"
+              ? "Para una lista cargada por error. No se borra: queda en la historia, y vuelve a valer la anterior del proveedor."
+              : "Para una lista cargada por error. No se borra: queda en la historia."
+          }
+        >
+          <ActionForm
+            action={voidPriceListAction}
+            schema="reason"
+            submitLabel="Anular la lista"
+            variant="destructive"
+          >
+            <input type="hidden" name="priceListId" value={l.id} />
+            <FormTextarea
+              id="lp-anular-motivo"
+              name="reason"
+              label="Motivo"
+              hint="Queda en el historial."
+              required
+              maxLength={500}
+            />
+          </ActionForm>
+        </ActionModal>
+      ) : null}
+      {manage && l.status === "accepted" ? (
+        <Button asChild variant="outline">
+          <Link href={`/listas-de-precios/nueva?corregir=${l.id}`}>Corregir</Link>
+        </Button>
+      ) : null}
+      {manage && l.status === "received" ? (
+        <ActionModal
+          label="Aceptar"
+          icon="none"
+          variant="default"
+          title="Aceptar la lista"
+          description="Pasa a ser la vigente del proveedor y la anterior queda como reemplazada. No cambia ningún costo."
+        >
+          <ActionForm action={acceptPriceListAction} schema="reason" submitLabel="Aceptar la lista">
+            <input type="hidden" name="priceListId" value={l.id} />
+            <input type="hidden" name="supplierId" value={l.supplierId} />
+            {review > 0 ? (
+              <>
+                <Notice status="bad">
+                  {review === 1
+                    ? "Hay 1 precio para revisar: es 10 veces más o menos que en la lista anterior."
+                    : `Hay ${review} precios para revisar: son 10 veces más o menos que en la lista anterior.`}
+                </Notice>
+                <Checkbox
+                  id="lp-aceptar-revisar"
+                  name="confirmReview"
+                  label="Revisé los precios para revisar"
+                />
+              </>
+            ) : null}
+            <FormTextarea
+              id="lp-aceptar-motivo"
+              name="reason"
+              label="Motivo"
+              hint="Queda en el historial."
+              required
+              maxLength={500}
+            />
+          </ActionForm>
+        </ActionModal>
+      ) : null}
+    </div>
   );
 }
 
-const NOTICES: Record<string, string> = {
-  aceptada: "Lista aceptada.",
-  reemplazo: "Lista aceptada. La anterior quedó como reemplazada.",
+const NOTICES: Record<string, { status: "ok" | "info"; text: string }> = {
+  aceptada: { status: "ok", text: "Lista aceptada." },
+  reemplazo: { status: "ok", text: "Lista aceptada. La anterior quedó como reemplazada." },
+  corregida: { status: "ok", text: "Versión nueva guardada. La anterior quedó en la historia." },
+  anulada: { status: "info", text: "Lista anulada. No se borró: queda en la historia." },
+  "anulada-vuelve": {
+    status: "info",
+    text: "Lista anulada. Volvió a valer la anterior del proveedor.",
+  },
 };
 
 async function Detail({
   params,
   searchParams,
 }: {
-  params: PageProps<"/listas-de-precios/[id]">["params"];
-  searchParams: PageProps<"/listas-de-precios/[id]">["searchParams"];
+  params: Props["params"];
+  searchParams: Props["searchParams"];
 }) {
   const [l, raw, menus] = await Promise.all([load(params), searchParams, getMenus()]);
   if (!l) notFound();
   const canAttach = menus.priceListsManage && l.status === "received";
-  const list = parseList(raw, [], null);
-  const qp = plainParams(raw);
-  const path = `/listas-de-precios/${l.id}`;
-  const queued = l.items.filter((i) => !i.mapped).length;
+  const unmapped = l.items.filter((i) => !i.mapped).length;
+  const over = l.items.filter((i) => i.overThreshold).length;
+  const review = l.items.filter((i) => i.review).length;
+  const compared = l.items.filter((i) => i.changePct !== null).length;
   const notice = NOTICES[first(raw.aviso) ?? ""];
-  const compared = l.items.filter((i) => i.changePct !== null);
-  const avg =
-    compared.length > 0
-      ? compared.reduce((sum, i) => sum + (i.changePct ?? 0), 0) / compared.length
-      : null;
-  const rows = l.items.slice((list.page - 1) * list.size, list.page * list.size);
 
   const columns: DataColumn<PriceListItem>[] = [
     {
       key: "name",
       header: "Artículo",
       mobile: "title",
+      wrap: true,
       cell: (i) => (
         <span className="flex flex-col">
           <span className="font-medium text-ink">{i.rawName}</span>
@@ -181,7 +290,7 @@ async function Detail({
       key: "list",
       header: "Lista",
       align: "right",
-      mobile: "line",
+      mobile: "hidden",
       cell: (i) => <span className="tabular-nums">{formatMoney(i.listPrice)}</span>,
     },
     {
@@ -206,6 +315,13 @@ async function Detail({
       cell: (i) => <span className="font-medium tabular-nums">{formatMoney(i.net)}</span>,
     },
     {
+      key: "use",
+      header: "Por unidad de uso",
+      align: "right",
+      mobile: "line",
+      cell: (i) => <span className="tabular-nums">{perUseLabel(i.perUsePrice, i.perUseUnit)}</span>,
+    },
+    {
       key: "vat",
       header: "IVA",
       align: "right",
@@ -214,95 +330,47 @@ async function Detail({
     },
     {
       key: "change",
-      header: "Contra la anterior",
-      align: "right",
+      header: "Control",
       mobile: "status",
-      cell: (i) =>
-        i.mapped ? (
-          <span className="tabular-nums">{changeLabel(i.changePct)}</span>
-        ) : (
-          <Badge status="review">En la cola de mapeo</Badge>
-        ),
+      cell: (i) => {
+        if (!i.mapped) return <Badge status="review">En la cola de mapeo</Badge>;
+        const b = checkBadge(i);
+        return <Badge status={b.status}>{b.label}</Badge>;
+      },
     },
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      {notice ? <Notice status="ok">{notice}</Notice> : null}
+    <>
+      {notice ? <Notice status={notice.status}>{notice.text}</Notice> : null}
+      {l.status === "voided" ? (
+        <Notice status="info">
+          Anulada{l.voidedAt ? ` el ${formatDateTime(l.voidedAt)}` : ""}
+          {l.voidedReason ? `: ${l.voidedReason}` : "."}
+        </Notice>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2 desk:grid-cols-4 desk:gap-4">
         <Metric
           compact
           label="Artículos"
           value={l.items.length}
           emptyLabel="Sin artículos"
-          status="none"
-          statusLabel="Cargados"
-        />
-        <Metric
-          compact
-          label="En la cola de mapeo"
-          value={queued}
-          total={l.items.length}
-          emptyLabel="Sin artículos"
-          status={queued === 0 ? "ok" : "warn"}
-          statusLabel={queued === 0 ? "Todos reconocidos" : "Esperan al chef"}
+          status={l.items.length > 0 ? "ok" : "none"}
+          statusLabel={l.items.length > 0 ? "Al día" : "Sin artículos"}
           action={
-            queued > 0 ? (
-              <Link
-                href="/materias-primas/sin-mapear"
-                className="inline-flex min-h-touch items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-8"
-              >
-                Ver la cola
-              </Link>
-            ) : undefined
-          }
-        />
-        <Metric
-          compact
-          label="Variación promedio"
-          value={avg === null ? null : changeLabel(Math.round(avg * 100) / 100)}
-          missingReason="Sin lista anterior para comparar."
-          emptyLabel="Sin datos"
-          status="none"
-          statusLabel={
-            compared.length === 1
-              ? "1 artículo comparado"
-              : `${compared.length} artículos comparados`
-          }
-        />
-        <Metric
-          compact
-          label="Archivo"
-          value={l.attachments.length > 0 ? `${l.attachments.length}` : null}
-          unit={l.attachments.length === 1 ? "archivo" : "archivos"}
-          missingReason="Sin archivo adjunto."
-          emptyLabel="Sin datos"
-          status="none"
-          statusLabel="Adjunto"
-          action={
-            l.attachments[0]?.url ? (
-              <a
-                href={l.attachments[0].url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-touch items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-8"
-              >
-                Ver el archivo
-                <span className="sr-only"> (se abre en otra pestaña)</span>
-              </a>
-            ) : canAttach ? (
+            l.attachments.length === 0 && canAttach ? (
               <ActionModal
                 label="Adjuntar archivo"
                 icon="none"
                 title="Adjuntar el archivo de la lista"
-                description="Foto o PDF, hasta 3,5 MB. Solo mientras la lista está sin aceptar."
+                description="Foto, PDF, Excel o CSV, hasta 3,5 MB. Solo mientras la lista está sin aceptar."
               >
                 <ActionForm action={attachFileAction} schema="reason" submitLabel="Adjuntar">
                   <input type="hidden" name="priceListId" value={l.id} />
                   <Field id="lp-adjuntar-archivo" label="Archivo">
                     <FileUpload
                       name="file"
-                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      accept=".xlsx,.csv,text/csv,application/pdf,image/jpeg,image/png,image/webp"
                     />
                   </Field>
                   <FormTextarea
@@ -318,8 +386,50 @@ async function Detail({
             ) : undefined
           }
         />
+        <Metric
+          compact
+          label="Subas sobre el umbral"
+          value={compared === 0 ? null : over}
+          total={compared}
+          missingReason="Sin lista anterior para comparar."
+          emptyLabel="Sin datos"
+          status={over === 0 ? "ok" : "warn"}
+          statusLabel={over === 0 ? "Ninguna" : "Para mirar"}
+        />
+        <Metric
+          compact
+          label="Precios para revisar"
+          value={compared === 0 ? null : review}
+          total={compared}
+          missingReason="Sin lista anterior para comparar."
+          emptyLabel="Sin datos"
+          status={review === 0 ? "ok" : "bad"}
+          statusLabel={review === 0 ? "Ninguno" : "Para revisar"}
+        />
+        <Metric
+          compact
+          label="Sin reconocer"
+          value={unmapped}
+          total={l.items.length}
+          emptyLabel="Sin artículos"
+          status={unmapped === 0 ? "ok" : "warn"}
+          statusLabel={unmapped === 0 ? "Todos reconocidos" : "Esperan al chef"}
+          action={
+            unmapped > 0 ? (
+              <Link
+                href="/materias-primas/sin-mapear"
+                className="inline-flex min-h-touch items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-8"
+              >
+                {`Ver los ${unmapped}`}
+              </Link>
+            ) : undefined
+          }
+        />
       </div>
-      <Card className="flex flex-col gap-4">
+      <section
+        aria-label="Artículos"
+        className="flex flex-col gap-3 rounded-md border border-line bg-surface p-4 desk:min-h-0 desk:flex-[1_1_0px]"
+      >
         <CardTitle className="tabular-nums">
           {l.items.length === 1
             ? "1 artículo"
@@ -327,24 +437,13 @@ async function Detail({
         </CardTitle>
         <DataTable
           caption="Artículos de la lista"
+          scroll
           columns={columns}
-          rows={rows}
+          rows={l.items}
           rowKey={(r) => r.id}
-          list={list}
-          path={path}
-          params={qp}
           empty={<EmptyState title="Esta lista no tiene artículos." />}
         />
-        {l.items.length > 0 ? (
-          <Pagination
-            list={list}
-            total={l.items.length}
-            shown={rows.length}
-            path={path}
-            params={qp}
-          />
-        ) : null}
-      </Card>
-    </div>
+      </section>
+    </>
   );
 }

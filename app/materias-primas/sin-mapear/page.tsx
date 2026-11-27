@@ -91,6 +91,9 @@ async function Queue({
         <span className="flex flex-col">
           <span className="font-medium text-ink">{a.rawName}</span>
           {a.packageHint ? <span className="text-sm text-ink-muted">{a.packageHint}</span> : null}
+          {a.suggested ? (
+            <span className="text-sm text-ink">Compras sugiere: {a.suggested.description}</span>
+          ) : null}
         </span>
       ),
     },

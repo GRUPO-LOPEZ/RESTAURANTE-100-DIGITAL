@@ -143,7 +143,15 @@ async function Lists({
       mobile: "status",
       cell: (row) => {
         const s = PRICE_LIST_STATUS[shownStatus(row.status, row.expired)];
-        return <Badge status={s.status}>{s.label}</Badge>;
+        return (
+          <span className="inline-flex items-center gap-2 whitespace-nowrap">
+            <Badge status={s.status}>{s.label}</Badge>
+            {/* Una corrección (ADR-0071) dice su versión. */}
+            {row.version > 1 ? (
+              <span className="text-sm text-ink tabular-nums">Versión {row.version}</span>
+            ) : null}
+          </span>
+        );
       },
     },
   ];

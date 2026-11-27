@@ -38,10 +38,10 @@ test.describe("listas de precios", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Cargar lista de precios" }),
     ).toBeVisible();
-    await page.getByLabel("Artículo (como viene), renglón 1").fill(article);
-    await page.getByLabel("Precio de lista ($), renglón 1").fill("1000");
-    await page.getByLabel("Bonif. 1 (%), renglón 1").fill("15");
-    await page.getByLabel("Bonif. 2 (%), renglón 1").fill("10");
+    await page.getByLabel("Artículo, renglón 1").fill(article);
+    await page.getByLabel("Precio de lista, renglón 1").fill("1000");
+    await page.getByLabel("Bonif. 1 %, renglón 1").fill("15");
+    await page.getByLabel("Bonif. 2 %, renglón 1").fill("10");
     // El neto se ve antes de cargar (caso 5).
     await expect(page.getByText("$ 765,00")).toBeVisible();
     await page.getByLabel("Motivo").fill("Llegó la lista del Almacén");
