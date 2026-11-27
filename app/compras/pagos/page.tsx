@@ -28,7 +28,13 @@ import { getPaymentSupplierCounts } from "@/lib/group-counts-data";
 import { invoiceLabel, shortDate } from "@/lib/invoices";
 import { listHref, parseList, plainParams } from "@/lib/list-params";
 import { formatMoney } from "@/lib/money";
-import { DUE_LABELS, PAYMENT_TABS, daysLabel } from "@/lib/payments";
+import {
+  getPaymentOrderSupplierCounts,
+  getPaymentOrders,
+  type PaymentOrderRow,
+} from "@/lib/payment-orders-data";
+import { ORDER_METHOD_LABELS } from "@/lib/payment-orders";
+import { DUE_LABELS, METHOD_LABELS, PAYMENT_TABS, daysLabel } from "@/lib/payments";
 import {
   getCashToConfirm,
   getPaymentSchedule,
@@ -171,13 +177,20 @@ async function Payments({
     </FilterBar>
   );
 
+  // El panel cuenta lo que muestra la pestaña.
+  const unit =
+    tab.tab === "orders"
+      ? { one: "orden de pago", many: "órdenes de pago" }
+      : tab.tab === "cash"
+        ? { one: "pago", many: "pagos" }
+        : { one: "factura", many: "facturas" };
   const layout = (groups: GroupItem[], children: React.ReactNode) => (
     <GroupLayout
       panel={
         <GroupPanel
           label="Proveedores"
           icon={Truck}
-          unit={{ one: "factura", many: "facturas" }}
+          unit={unit}
           allLabel="Todos los proveedores"
           allCount={sumCounts(groups)}
           items={groups}
@@ -222,6 +235,55 @@ async function Payments({
             rowKey={(r) => r.payment_id}
             empty={<EmptyState title="No hay efectivo para confirmar." />}
           />
+        </section>
+      </>,
+    );
+  }
+
+  // «Órdenes de pago» (ADR-0070): las registradas y las anuladas, con su número y sus medios.
+  if (tab.tab === "orders") {
+    const [{ rows, total }, groups] = await Promise.all([
+      getPaymentOrders({
+        supplierId: supplier?.id,
+        restaurantId: local,
+        page: list.page - 1,
+        size: list.size,
+      }),
+      getPaymentOrderSupplierCounts(local),
+    ]);
+    const saved = NOTICES[first(raw.aviso) ?? ""];
+    return layout(
+      groups,
+      <>
+        {saved ? <Notice status="ok">{saved}</Notice> : null}
+        {filters}
+        <section aria-label="Órdenes de pago" className={box}>
+          <CardTitle className="tabular-nums">
+            {total === 1 ? "1 orden de pago" : `${total.toLocaleString("es-AR")} órdenes de pago`}
+          </CardTitle>
+          {tabs}
+          <DataTable
+            caption="Órdenes de pago"
+            scroll
+            columns={orderColumns(here)}
+            rows={rows}
+            rowKey={(r) => r.id}
+            list={list}
+            path={PATH}
+            params={params}
+            empty={
+              <EmptyState
+                title={
+                  supplier
+                    ? "No hay órdenes de pago de ese proveedor."
+                    : "Todavía no hay órdenes de pago."
+                }
+              />
+            }
+          />
+          {total > 0 ? (
+            <Pagination list={list} total={total} shown={rows.length} path={PATH} params={params} />
+          ) : null}
         </section>
       </>,
     );
@@ -336,6 +398,79 @@ async function Payments({
       </section>
     </>,
   );
+}
+
+// Los mismos nombres que en el panel de pago.
+const ORDER_METHOD_NAMES: Record<string, string> = {
+  cash: ORDER_METHOD_LABELS.cash,
+  transfer: ORDER_METHOD_LABELS.transfer,
+  check: "Cheque",
+  echeq: ORDER_METHOD_LABELS.echeq,
+  card: ORDER_METHOD_LABELS.card,
+  electronic_code: METHOD_LABELS.electronic_code,
+};
+
+function orderColumns(here: string): DataColumn<PaymentOrderRow>[] {
+  return [
+    {
+      key: "number",
+      header: "Orden",
+      mobile: "title",
+      cell: (r) => (
+        <Link
+          href={`/compras/pagos/ordenes/${r.id}?volver=${encodeURIComponent(here)}`}
+          className="inline-flex min-h-touch items-center font-medium text-primary tabular-nums underline-offset-4 hover:underline desk:min-h-0"
+        >
+          {r.number}
+        </Link>
+      ),
+    },
+    {
+      key: "supplier",
+      header: "Proveedor",
+      mobile: "line",
+      wrap: true,
+      cell: (r) => <span className="text-ink">{r.supplier_name}</span>,
+    },
+    {
+      key: "payer",
+      header: "Paga",
+      mobile: "hidden",
+      wrap: "narrow",
+      cell: (r) => r.payer_name ?? "—",
+    },
+    {
+      key: "paid",
+      header: "Fecha",
+      mobile: "line",
+      cell: (r) => <span className="tabular-nums">{shortDate(r.paid_on)}</span>,
+    },
+    {
+      key: "methods",
+      header: "Medios",
+      mobile: "hidden",
+      wrap: "narrow",
+      cell: (r) => r.methods.map((m) => ORDER_METHOD_NAMES[m] ?? "—").join(", "),
+    },
+    {
+      key: "total",
+      header: "Total",
+      align: "right",
+      mobile: "line",
+      cell: (r) => <span className="tabular-nums">{formatMoney(r.total_amount)}</span>,
+    },
+    {
+      key: "status",
+      header: "Estado",
+      mobile: "status",
+      cell: (r) =>
+        r.status === "voided" ? (
+          <Badge status="bad">Anulada</Badge>
+        ) : (
+          <Badge status="ok">Registrada</Badge>
+        ),
+    },
+  ];
 }
 
 function cashColumns(canPay: boolean): DataColumn<CashRow>[] {

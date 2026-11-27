@@ -8,6 +8,7 @@ import { z } from "zod";
 import { toActionState, type ActionState } from "@/lib/auth/results";
 import { readNumber } from "@/lib/invoices";
 import { getPayable, type Payable } from "@/lib/payments-data";
+import { paymentOrderSchema } from "@/lib/payment-orders";
 import { paymentSchema } from "@/lib/payments";
 import { createClient } from "@/lib/supabase/server";
 
@@ -159,6 +160,145 @@ export async function registerPaymentAction(formData: FormData): Promise<Registe
     message: `Pago registrado.${queued}${credit}${receiptNote}`,
     paymentId: result.data.payment_id,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Registrar una orden de pago (ADR-0070): de 1 a 5 medios, lo que cancela de cada factura y el comprobante
+// ---------------------------------------------------------------------------
+export type PaymentOrderState = ActionState & { paymentOrderId?: string };
+
+const orderLine = z
+  .object({
+    method: z.enum(["cash", "transfer", "check", "echeq", "card"]),
+    amount: z.number().positive(),
+    company_account_id: uuid.optional(),
+    supplier_account_id: uuid.optional(),
+    reference: z.string().max(80).optional(),
+    check_number: z.string().max(30).optional(),
+    check_bank: z.string().max(80).optional(),
+    check_due_on: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    check_third_party: z.boolean().optional(),
+    check_drawer_name: z.string().max(120).optional(),
+    check_drawer_tax_id: z.string().max(11).optional(),
+  })
+  .strict();
+
+export async function registerPaymentOrderAction(formData: FormData): Promise<PaymentOrderState> {
+  const restaurant = uuid.safeParse(formData.get("restaurantId"));
+  const supplier = uuid.safeParse(formData.get("supplierId"));
+  if (!restaurant.success) return { status: "bad", message: "Elegí el local arriba." };
+  if (!supplier.success) return { status: "bad", message: "Elegí el proveedor." };
+  const fields = paymentOrderSchema.safeParse({
+    paidOn: formData.get("paidOn"),
+    notes: formData.get("notes") ?? "",
+    reason: formData.get("reason"),
+  });
+  if (!fields.success)
+    return { status: "bad", message: fields.error.issues[0]?.message ?? "Revisá el pago." };
+  let rawLines: unknown;
+  let rawAllocations: unknown;
+  try {
+    rawLines = JSON.parse(String(formData.get("lines") ?? "[]"));
+    rawAllocations = JSON.parse(String(formData.get("allocations") ?? "[]"));
+  } catch {
+    return { status: "bad", message: "El pago no se entiende: recargá la página." };
+  }
+  const lines = z.array(orderLine).min(1).max(5).safeParse(rawLines);
+  if (!lines.success) return { status: "bad", message: "Revisá los medios de pago." };
+  const allocations = z
+    .array(z.object({ invoice_id: uuid, amount: z.number().positive() }))
+    .max(50)
+    .safeParse(rawAllocations);
+  if (!allocations.success)
+    return { status: "bad", message: "Revisá lo que se cancela de cada factura." };
+  const file = await checkFile(formData.get("file"));
+  if (typeof file === "string") return { status: "bad", message: file };
+  const legalEntity = uuid.safeParse(formData.get("legalEntityId"));
+  const f = fields.data;
+  const db = await createClient();
+  const { data, error } = await db.schema("purchasing").rpc("register_payment_order", {
+    p_restaurant_id: restaurant.data,
+    p_supplier_id: supplier.data,
+    p_paid_on: f.paidOn,
+    p_legal_entity_id: orNull(legalEntity.success ? legalEntity.data : null),
+    p_lines: lines.data,
+    p_allocations: allocations.data,
+    p_notes: orNull(f.notes || null),
+    p_reason: f.reason,
+  });
+  const state = toActionState(data, error);
+  if (state.status !== "ok") return state;
+  const result = z.object({ payment_order_id: z.string(), number: z.string() }).safeParse(data);
+  if (!result.success) return { status: "bad", message: "No pudimos registrar la orden de pago." };
+  // El comprobante va con el primer medio de la orden (la base controla el permiso y el estado).
+  if (file instanceof File) {
+    const { data: first } = await db
+      .schema("purchasing")
+      .from("payments")
+      .select("id, group_id")
+      .eq("payment_order_id", result.data.payment_order_id)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
+    const note = first ? await attachReceipt(first.id, first.group_id, file) : "x";
+    if (note) {
+      revalidate();
+      redirect(
+        `/compras/pagos/ordenes/${result.data.payment_order_id}?aviso=registrada-sin-comprobante`,
+      );
+    }
+  }
+  revalidate();
+  redirect(`/compras/pagos/ordenes/${result.data.payment_order_id}?aviso=registrada`);
+}
+
+// Sube un comprobante a la carpeta de un pago y lo registra; si no se pudo registrar, no queda suelto. Devuelve "" si
+// salió bien.
+async function attachReceipt(paymentId: string, groupId: string, file: File): Promise<string> {
+  const db = await createClient();
+  const ext = file.type === "application/pdf" ? "pdf" : "jpg";
+  const path = `${groupId}/payments/${paymentId}/${randomUUID()}.${ext}`;
+  const uploaded = await db.storage
+    .from(BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (uploaded.error) return "No pudimos subir el comprobante.";
+  const registered = await db.schema("purchasing").rpc("add_payment_attachment", {
+    p_payment_id: paymentId,
+    p_storage_path: path,
+    p_page: 1,
+  });
+  if (registered.error) {
+    await db.storage.from(BUCKET).remove([path]);
+    return "No pudimos registrar el comprobante.";
+  }
+  return "";
+}
+
+// Anular una orden de pago (con motivo).
+export async function voidPaymentOrderAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const id = uuid.safeParse(formData.get("paymentOrderId"));
+  const why = reason.safeParse(formData.get("reason"));
+  if (!id.success) return { status: "bad", message: "Falta la orden de pago." };
+  if (!why.success)
+    return {
+      status: "bad",
+      message: "Revisá los campos marcados.",
+      fieldErrors: { reason: why.error.issues[0]?.message ?? "Escribí el motivo." },
+    };
+  const db = await createClient();
+  const { data, error } = await db
+    .schema("purchasing")
+    .rpc("void_payment_order", { p_id: id.data, p_reason: why.data });
+  const state = toActionState(data, error);
+  if (state.status !== "ok") return state;
+  revalidate();
+  redirect(`/compras/pagos/ordenes/${id.data}?aviso=anulada`);
 }
 
 // ---------------------------------------------------------------------------

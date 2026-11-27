@@ -1,19 +1,37 @@
 "use client";
 
+import { useRef, useState } from "react";
+
 import { createInvoiceAction } from "@/app/compras/facturas/actions";
 import { FormNotice } from "@/components/form-notice";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FormInput, FormSelect, ServerForm, useServerForm, FormDate } from "@/components/ui/form";
+import { Field } from "@/components/ui/field";
+import { FileUpload } from "@/components/ui/file-upload";
+import { FormInput, FormSelect, ServerForm, useServerForm } from "@/components/ui/form";
 import { SegmentedField } from "@/components/ui/segmented-field";
 import { todayInArgentina } from "@/lib/forms/schemas";
-import { AUTHORIZATION_KINDS, INVOICE_CLASSES, isFiscal, type InvoiceClass } from "@/lib/invoices";
+import {
+  INVOICE_CLASSES,
+  OTHER_INVOICE_CLASSES,
+  isFiscal,
+  type InvoiceClass,
+} from "@/lib/invoices";
 import type { InvoiceableOrder } from "@/lib/invoices-data";
-import { formatCuit } from "@/lib/suppliers";
+import { shrinkPhoto } from "@/lib/photos";
 
-// Alta corta de una factura (ADR-0058): lo usan el modal del listado y la página /compras/facturas/nueva. Proveedor,
-// las órdenes recibidas que cubre y los datos del papel; las líneas salen solas de lo recibido, con el precio de la
-// lista, y se ajustan en la ficha. El CUIT del emisor es el del proveedor (lo pone la acción).
+// Alta corta de una factura (ADR-0058; criterios 3 y 11 de Soy, ADR-0070): un modal sin scroll con el proveedor, el
+// comprobante (los tres de siempre como botones y «Otro»), el punto de venta y el número, y la foto si está a mano. La
+// fecha arranca en hoy y el CAE se carga en la ficha: la base lo exige al controlar, no al cargar. Las líneas salen
+// solas de las órdenes recibidas del proveedor, con el precio de la lista. Lo usan el modal del listado y
+// /compras/facturas/nueva.
+const PICKS = [
+  { value: "invoice_a", label: "Factura A" },
+  { value: "invoice_b", label: "Factura B" },
+  { value: "invoice_remito_a", label: "Factura-remito A" },
+  { value: "other", label: "Otro" },
+];
+
 export function NewInvoiceForm({
   place,
   orders,
@@ -24,9 +42,12 @@ export function NewInvoiceForm({
   suppliers: { id: string; name: string; taxId: string | null }[];
 }) {
   const form = useServerForm({ schema: "invoiceNew", action: createInvoiceAction });
-  // Lo elegido decide qué órdenes y qué campos se muestran.
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [photoNote, setPhotoNote] = useState("");
   const supplierId = String(form.methods.watch("supplierId") ?? "");
-  const invoiceClass = (form.methods.watch("invoice_class") ?? "invoice_a") as InvoiceClass;
+  const pick = String(form.methods.watch("class_pick") ?? "invoice_a");
+  const other = String(form.methods.watch("other_class") ?? "invoice_c");
+  const invoiceClass = (pick === "other" ? other : pick) as InvoiceClass;
   if (!place)
     return (
       <p className="text-base text-ink">
@@ -34,7 +55,6 @@ export function NewInvoiceForm({
       </p>
     );
   const fiscal = isFiscal(invoiceClass);
-  const supplier = suppliers.find((s) => s.id === supplierId);
   const own = orders.filter((o) => o.supplierId === supplierId);
   // Primero los proveedores con órdenes recibidas para facturar.
   const withOrders = new Set(orders.map((o) => o.supplierId));
@@ -43,9 +63,39 @@ export function NewInvoiceForm({
       Number(withOrders.has(b.id)) - Number(withOrders.has(a.id)) ||
       a.name.localeCompare(b.name, "es"),
   );
+
+  // La foto se achica en el navegador y viaja con el formulario (la acción la sube después de crear la factura).
+  async function choose(file: File | null) {
+    setPhotoNote("");
+    const input = fileInput.current;
+    if (!input) return;
+    const box = new DataTransfer();
+    if (file) {
+      try {
+        box.items.add(
+          file.type === "application/pdf"
+            ? file
+            : new File([await shrinkPhoto(file)], "foto.jpg", { type: "image/jpeg" }),
+        );
+      } catch {
+        setPhotoNote("No pudimos leer la foto: probá con otra o subila después en la ficha.");
+      }
+    }
+    input.files = box.files;
+  }
+
+  const received = (o: InvoiceableOrder) =>
+    `${o.number}${o.partial ? " (recibida en parte)" : ""}${o.receivedOn ? ` · recibida el ${o.receivedOn.split("-").reverse().join("/")}` : ""}`;
+
   return (
     <ServerForm form={form} className="flex flex-col gap-4">
       <input type="hidden" name="restaurantId" value={place.id} />
+      {/* Registrados: el formulario valida solo lo que conoce. */}
+      <input
+        type="hidden"
+        defaultValue={todayInArgentina()}
+        {...form.methods.register("issued_on")}
+      />
       <FormSelect id="fc-nueva-proveedor" name="supplierId" label="Proveedor" required>
         <option value="">Elegí el proveedor</option>
         {sorted.map((s) => {
@@ -61,17 +111,25 @@ export function NewInvoiceForm({
       </FormSelect>
 
       {supplierId ? (
-        own.length > 0 ? (
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-medium text-ink">Órdenes que cubre</legend>
+        own.length === 1 && own[0] ? (
+          <p className="text-sm text-ink">
+            <input type="hidden" name="orderId" value={own[0].id} />
+            Tiene la orden {received(own[0])}: las líneas salen de ahí.
+          </p>
+        ) : own.length > 1 ? (
+          // Con muchas órdenes, la lista se desplaza adentro y el modal no crece (criterio 4).
+          <fieldset className="relative flex max-h-40 flex-col gap-1 overflow-y-auto">
+            <legend className="mb-1 text-sm font-medium text-ink">
+              Órdenes recibidas: las líneas salen de las que dejes marcadas
+            </legend>
             {own.map((o) => (
               <Checkbox
                 key={o.id}
                 id={`fc-nueva-oc-${o.id}`}
                 name="orderId"
                 value={o.id}
-                defaultChecked={own.length === 1}
-                label={`${o.number}${o.partial ? " (recibida en parte)" : ""}${o.receivedOn ? ` · recibida el ${o.receivedOn.split("-").reverse().join("/")}` : ""}`}
+                defaultChecked
+                label={received(o)}
               />
             ))}
           </fieldset>
@@ -83,19 +141,32 @@ export function NewInvoiceForm({
         )
       ) : null}
 
-      <FormSelect
-        id="fc-nueva-clase"
-        name="invoice_class"
-        label="Comprobante"
-        required
-        defaultValue="invoice_a"
-      >
-        {INVOICE_CLASSES.map((c) => (
-          <option key={c.value} value={c.value}>
-            {c.label}
-          </option>
-        ))}
-      </FormSelect>
+      <div className="flex flex-wrap items-end gap-3">
+        <SegmentedField
+          id="fc-nueva-clase"
+          name="class_pick"
+          label="Comprobante"
+          options={PICKS}
+          defaultValue="invoice_a"
+        />
+        {pick === "other" ? (
+          <FormSelect
+            id="fc-nueva-otro"
+            name="other_class"
+            label="Qué comprobante"
+            defaultValue="invoice_c"
+            className="w-44"
+          >
+            {INVOICE_CLASSES.filter((c) => OTHER_INVOICE_CLASSES.includes(c.value)).map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </FormSelect>
+        ) : (
+          <input type="hidden" defaultValue="invoice_c" {...form.methods.register("other_class")} />
+        )}
+      </div>
       <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
         {fiscal ? (
           <FormInput
@@ -117,54 +188,33 @@ export function NewInvoiceForm({
           maxLength={8}
           required
           hint="Sin el punto de venta ni guiones."
+          className={fiscal ? undefined : "sm:col-span-2"}
         />
       </div>
-      <FormDate
-        id="fc-nueva-fecha"
-        name="issued_on"
-        label="Fecha de la factura"
-        max={todayInArgentina()}
-        defaultValue={todayInArgentina()}
-        required
-      />
-      {fiscal ? (
-        <>
-          <SegmentedField
-            id="fc-nueva-aut"
-            name="authorization_kind"
-            label="Autorización"
-            options={AUTHORIZATION_KINDS}
-            defaultValue="cae"
-          />
-          <FormInput
-            id="fc-nueva-cae"
-            name="authorization_code"
-            label="Número de autorización"
-            inputMode="numeric"
-            maxLength={14}
-            required
-            hint="Los 14 números del CAE, CAI o CAEA."
-          />
-          <p className="text-sm text-ink">
-            CUIT del emisor:{" "}
-            <span className="tabular-nums">
-              {supplier
-                ? supplier.taxId
-                  ? formatCuit(supplier.taxId)
-                  : "el proveedor no tiene CUIT"
-                : "el del proveedor"}
-            </span>
-          </p>
-        </>
-      ) : (
-        <>
-          <input type="hidden" name="authorization_kind" value="cae" />
-          <input type="hidden" name="authorization_code" value="" />
-        </>
-      )}
+      <div className="flex flex-col gap-1">
+        <Field
+          id="fc-nueva-foto"
+          label="Foto o PDF de la factura"
+          hint="Opcional: si no, subila en la ficha."
+        >
+          <FileUpload accept="image/*,application/pdf" onFile={(f) => void choose(f)} />
+        </Field>
+        <input
+          ref={fileInput}
+          type="file"
+          name="file"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="hidden"
+        />
+        {photoNote ? <p className="text-sm text-bad-ink">{photoNote}</p> : null}
+      </div>
+      <p className="text-sm text-ink-muted">
+        La fecha arranca en hoy. La fecha del papel, el CAE y los totales se completan en la ficha.
+      </p>
       <FormNotice state={form.state} />
-      <Button type="submit" disabled={form.pending} className="w-full sm:w-auto">
-        {form.pending ? "Cargando…" : "Cargar y completar la factura"}
+      <Button type="submit" disabled={form.pending} className="w-full sm:w-auto sm:self-end">
+        {form.pending ? "Creando…" : "Crear y abrir la factura"}
       </Button>
     </ServerForm>
   );

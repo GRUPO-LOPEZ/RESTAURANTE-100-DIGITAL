@@ -1,8 +1,20 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los criterios de pantallas de Soy (#106). Correcciones de Compras: PR A (`feat/compras-criterios`, #107, ADR-0068) en verde en GitHub, falta que Joaco lo fusione; PR B (`feat/orden-de-compra-una-pantalla`, ADR-0069) en revisión, apilado sobre el A. Después, C y D.**
+_Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los criterios de pantallas de Soy (#106) y el PR A de Compras (#107). PR B fusionado (#108, ADR-0069). PR C (`feat/orden-de-pago`, ADR-0070) abierto. Después, D.**
 
-## Correcciones de Compras, PR B (orden de compra en una pantalla, ADR-0069): en revisión (2026-11-26)
+## Correcciones de Compras, PR C (facturas y orden de pago, ADR-0070): PR abierto (2026-11-27)
+
+- **Decisiones de Joaco:** un solo PR; la orden de pago se numera por razón social; las cajas y cuentas las carga quien administra el grupo, en la ficha de la razón social; «Para dar conforme» son las observadas que la persona puede decidir y no cargó; cheques solo con sus datos en el pago, sin cartera.
+- **Hecho:**
+  - base: `org.legal_entity_accounts`, `purchasing.payment_orders`, `register_payment_order`, `void_payment_order`, el detalle y la lista, el CAE al controlar y los filtros `to_approve` y `overdue`;
+  - pantallas: «Registrar pago» en dos columnas, la orden de pago imprimible, la pestaña «Órdenes de pago», el listado de facturas con los filtros nuevos, el alta corta sin CAE y la tarjeta «Cajas y cuentas»;
+  - seed y staging con cajas y cuentas ficticias.
+- **Revisiones:** las tres hechas. Dos graves corregidos (orden a nombre de otra razón social; anular suelto un medio de una orden) y los medios de base y diseño. Para decidir con Joaco: si gerente y auditor ven el CBU de las cuentas propias, el CBU en la auditoría y el prefijo de la numeración (ADR-0070).
+- **Pruebas:** pgTAP completo en verde (81 archivos, 3986); Vitest (688), tipos, lint y formato en verde; Playwright de Compras (orden de pago, pagos, facturas, criterios y órdenes de compra) en verde con la base limpia, en local. La de órdenes de compra ahora elige su local en la dirección (tomaba el que guardó otra prueba).
+- **Falta:** la suite en GitHub y que Joaco lo fusione. Al pasar a staging, volver a correr `test-superadmin.sql` (lo lanza Joaco desde Actions).
+- **Para Soy:** `docs/modulos/31-orden-de-pago-lista-de-cambios.md`.
+
+## Correcciones de Compras, PR B (orden de compra en una pantalla, ADR-0069): fusionado (#108, 2026-11-26)
 
 - **Decisiones de Joaco:**
   - el precio, el subtotal y el total, solo para quien ve listas de precios;
@@ -21,7 +33,9 @@ _Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los c
   - la cantidad arranca en 0;
   - «Enviar orden».
 - **Pruebas:** pgTAP completo (79), Vitest (673), `ordenes-de-compra` y `recepcion` (11) en local.
-- **Falta:** las revisiones (en curso), la suite en GitHub y el PR.
+- **Revisiones:** seguridad apta; base (un grave: proveedor sin días de entrega) y diseño (7 medios), corregidos.
+- **Suite en GitHub:** en verde (con la espera del desplegable del proveedor en el celular, que en GitHub medía antes de que estuviera).
+- **Fusionado** (#108, 2026-11-26).
 - **Para Soy:** `docs/modulos/30-orden-de-compra-lista-de-cambios.md`.
 
 ## Correcciones de Compras, PR A (criterios de Soy en todo Compras, ADR-0068): en curso (2026-11-26)

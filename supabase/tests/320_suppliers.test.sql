@@ -69,8 +69,8 @@ select tables_are('purchasing', array['supplier_terms', 'supplier_payment_terms'
                                       'purchase_orders', 'purchase_order_lines', 'purchase_order_events',
                                       'outbound_messages', 'receipts', 'receipt_lines', 'invoices',
                                       'invoice_orders', 'invoice_lines', 'invoice_taxes', 'invoice_checks',
-                                      'credit_debit_notes', 'payments', 'payment_allocations'],
-                  'purchasing tiene las tablas del proveedor, de listas de precios, de órdenes de compra, de recepciones, de facturas y de pagos');
+                                      'credit_debit_notes', 'payments', 'payment_allocations', 'payment_orders'],
+                  'purchasing tiene las tablas del proveedor, de listas de precios, de órdenes de compra, de recepciones, de facturas, de pagos y de órdenes de pago');
 select ok((select bool_and(c.relrowsecurity) from pg_class c join pg_namespace n on n.oid = c.relnamespace
             where n.nspname = 'purchasing' and c.relkind = 'r'), 'RLS activo en todas las tablas de purchasing');
 select ok((select bool_and(obj_description(c.oid, 'pg_class') is not null)
@@ -80,9 +80,9 @@ select ok((select bool_and(col_description(a.attrelid, a.attnum) is not null)
              from pg_attribute a join pg_class c on c.oid = a.attrelid join pg_namespace n on n.oid = c.relnamespace
             where n.nspname = 'purchasing' and c.relkind = 'r' and a.attnum > 0 and not a.attisdropped),
           'cada columna tiene su comentario');
-select ok((select count(*) = 24 from pg_trigger t join pg_class c on c.oid = t.tgrelid
+select ok((select count(*) = 25 from pg_trigger t join pg_class c on c.oid = t.tgrelid
              join pg_namespace n on n.oid = c.relnamespace
-            where n.nspname = 'purchasing' and t.tgname = 'log_change'), 'las 24 tablas se auditan');
+            where n.nspname = 'purchasing' and t.tgname = 'log_change'), 'las 25 tablas se auditan');
 select ok(not has_table_privilege('authenticated', 'purchasing.supplier_terms', 'insert')
           and not has_table_privilege('authenticated', 'purchasing.supplier_payment_accounts', 'update'),
           'la API no escribe directo');

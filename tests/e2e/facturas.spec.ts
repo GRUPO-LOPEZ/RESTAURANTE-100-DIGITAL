@@ -49,7 +49,7 @@ async function photo(page: Page, name: string) {
 
 // Abre una factura del listado por su número (sin el punto de venta), con su local elegido arriba.
 async function openInvoice(page: Page, number: string, local: string) {
-  await page.goto(`/compras/facturas?local=${local}`);
+  await page.goto(`/compras/facturas?local=${local}&fecha=otras`);
   await localSettled(page);
   await page
     .getByRole("link", { name: new RegExp(`${number}$`) })
@@ -73,12 +73,12 @@ test.describe("en la computadora", () => {
 
     await login(page, COMPRAS, { mfa: true });
     await openInvoice(page, "00002002", PARRILLA);
-    await page.getByRole("button", { name: "Cancelar la factura" }).click();
-    const cancel = page.getByRole("dialog", { name: "Cancelar la factura" });
+    await page.getByRole("button", { name: "Anular la factura" }).click();
+    const cancel = page.getByRole("dialog", { name: "Anular la factura" });
     await cancel.getByLabel("Motivo").fill("Se cargó con el artículo equivocado");
-    await cancel.getByRole("button", { name: "Cancelar la factura" }).click();
-    await expect(page.getByText("Cancelada: Se cargó con el artículo equivocado")).toBeVisible();
-    await expect(notice(page).filter({ hasText: "Factura cancelada" })).toBeVisible();
+    await cancel.getByRole("button", { name: "Anular la factura" }).click();
+    await expect(page.getByText("Anulada: Se cargó con el artículo equivocado")).toBeVisible();
+    await expect(notice(page).filter({ hasText: "Factura anulada" })).toBeVisible();
     await expect(cancel).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Controlar" })).toHaveCount(0);
 
@@ -90,16 +90,25 @@ test.describe("en la computadora", () => {
       .locator("option", { hasText: "Verdulería Demo" })
       .getAttribute("value");
     await supplier.selectOption(value ?? "");
-    await dialog.getByLabel(/^PAR-0005/).check();
+    // Con una sola orden recibida, se dice cuál y las líneas salen de ahí; con varias, se marcan (ADR-0070).
+    const order = dialog.getByLabel(/^PAR-0005/);
+    if ((await order.count()) > 0) {
+      for (const box of await dialog.getByRole("checkbox").all()) await box.uncheck();
+      await order.check();
+    } else {
+      await expect(dialog.getByText(/Tiene la orden PAR-0005/)).toBeVisible();
+    }
+    await expect(dialog.getByRole("radio", { name: "Factura A", exact: true })).toBeChecked();
     await dialog.getByLabel("Punto de venta").fill("1");
     await dialog.getByLabel("Número", { exact: true }).fill(number);
-    await dialog.getByLabel("Número de autorización").fill("75000000000099");
+    // El alta no pide ni la fecha ni el CAE: van en la ficha.
+    await expect(dialog.getByLabel("Número de autorización")).toHaveCount(0);
     await axe(page);
-    await dialog.getByRole("button", { name: "Cargar y completar la factura" }).click();
+    await dialog.getByRole("button", { name: "Crear y abrir la factura" }).click();
 
     // La ficha: las líneas salen de lo recibido, con el precio de la lista.
     await expect(page.getByRole("heading", { level: 1, name: label })).toBeVisible();
-    await expect(notice(page).filter({ hasText: "Factura cargada" })).toBeVisible();
+    await expect(notice(page).filter({ hasText: "Factura cargada" }).first()).toBeVisible();
     const price = page.getByLabel("Precio sin IVA de Tomate perita, cajón de 10 kg");
     await expect(price).toHaveValue("937");
     await page
@@ -119,8 +128,10 @@ test.describe("en la computadora", () => {
     await page.getByLabel("IVA", { exact: true }).fill("197,40");
     await page.getByLabel("Total", { exact: true }).fill("2077,40");
     await expect(page.getByText("La cuenta cierra")).toBeVisible();
+    // El CAE se carga en la ficha: sin él, la base no deja controlar.
+    await page.getByLabel("Número de autorización").fill("75000000000099");
     await expect(
-      page.getByRole("status").filter({ hasText: "4 cambios sin guardar" }),
+      page.getByRole("status").filter({ hasText: "5 cambios sin guardar" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Guardar cambios" }).click();
     await expect(page.getByText("Escribí el motivo de los cambios.")).toBeVisible();
@@ -203,16 +214,35 @@ test.describe("en la computadora", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await login(page, CONTROLLER, { mfa: true });
     await (await menuLink(page, "Facturas")).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Facturas" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "¿Qué facturas hay para revisar y pagar?" }),
+    ).toBeVisible();
     // El local lo elige la prueba: en GitHub corre en tandas y otra prueba pudo dejarle al Controller otro local
     // guardado (ADR-0059).
     await page.goto(`/compras/facturas?local=${PARRILLA}`);
     await localSettled(page);
     const table = page.getByRole("table", { name: "Facturas" }).locator("visible=true");
-    await page.getByRole("link", { name: "Observadas" }).click();
+    // Lo que pide hacer algo, con botones a la vista; lo demás, en el desplegable de estados (ADR-0070).
+    const todo = page.getByRole("group", { name: "Lo que pide hacer algo" });
+    await todo.getByRole("button", { name: "Observadas" }).click();
+    await expect(todo.getByRole("button", { name: "Observadas" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await expect(table.getByText("Observada").first()).toBeVisible();
     await expect(table.getByText("Liberada")).toHaveCount(0);
-    await page.getByRole("link", { name: "Conformes" }).click();
+    // El Controller puede dar por conforme las observadas que cargó Compras.
+    await todo.getByRole("button", { name: "Para dar conforme" }).click();
+    await expect(page.getByRole("heading", { name: /facturas? para dar conforme$/ })).toBeVisible();
+    await expect(table.getByText("Observada").first()).toBeVisible();
+    await page
+      .getByLabel("Estado", { exact: true })
+      .locator("visible=true")
+      .selectOption("conformes");
+    await page
+      .getByRole("group", { name: "Fecha" })
+      .getByRole("button", { name: "Todas las fechas" })
+      .click();
     // Las del seed las dio por conforme el Controller después de quedar observadas (doble firma).
     await expect(table.getByText("Conforme a mano").first()).toBeVisible();
     // El Controller no carga facturas.
@@ -279,7 +309,9 @@ test.describe("en el celular", () => {
   test("el listado y la ficha son de consulta, con 44 px", async ({ page }) => {
     await login(page, COMPRAS, { mfa: true });
     await page.goto("/compras/facturas");
-    await expect(page.getByRole("heading", { level: 1, name: "Facturas" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "¿Qué facturas hay para revisar y pagar?" }),
+    ).toBeVisible();
     await axe(page);
     await openInvoice(page, "00012001", NORTE);
     await expect(page.getByText("Observada").locator("visible=true").first()).toBeVisible();

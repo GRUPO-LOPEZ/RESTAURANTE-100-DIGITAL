@@ -68,7 +68,11 @@ test.describe("en la computadora", () => {
     await expect(nav.getByRole("link", { name: "Pagos" })).toHaveAttribute("aria-current", "page");
     await axe(page);
 
+    // Cada pago es una orden de pago (ADR-0070): en efectivo, de la caja de la razón social del local (la Verdulería
+    // solo cobra en efectivo). Al registrar, se abre la orden.
     const pay = async (amount: (balance: string) => string, reason: string) => {
+      await page.goto(`/compras/pagos?local=${PARRILLA}`);
+      await localSettled(page);
       await page.getByRole("button", { name: "Registrar pago" }).locator("visible=true").click();
       const panel = page.getByRole("dialog", { name: "Registrar pago" });
       await panel.getByLabel("Proveedor").selectOption(VERDULERIA);
@@ -77,13 +81,19 @@ test.describe("en la computadora", () => {
       const row = invoice.filter({ hasText: "00001234" });
       const balance = /saldo (\$\s?[\d.,]+)/.exec(await row.innerText())?.[1] ?? "";
       expect(balance).not.toBe("");
-      await panel.getByLabel("Importe del pago").fill(amount(balance));
+      await panel.getByLabel("Medio de pago").selectOption("cash");
+      // Arranca en la primera caja; se elige la del local (puede haber otras: botones, criterio 9).
+      await panel.getByText("Caja Parrilla Centro", { exact: true }).click();
+      await expect(panel.getByRole("radio", { name: "Caja Parrilla Centro" })).toBeChecked();
+      await panel.getByLabel("Importe", { exact: true }).fill(amount(balance));
       // Se reparte solo: va todo a la B (es la única con saldo de la Verdulería).
       await expect(row.getByRole("textbox")).toHaveValue(/\d/);
       await panel.getByLabel("Motivo").fill(reason);
       await panel.getByRole("button", { name: "Registrar pago" }).click();
-      await expect(panel.getByText(/^Pago registrado\./)).toBeVisible();
-      await page.keyboard.press("Escape");
+      await expect(
+        page.getByRole("heading", { level: 1, name: /^Orden de pago OP-\d{4,}$/ }),
+      ).toBeVisible();
+      await expect(page.getByText(/^Pago registrado\./)).toBeVisible();
       return balance;
     };
 

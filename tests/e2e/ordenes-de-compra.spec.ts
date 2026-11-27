@@ -119,7 +119,8 @@ test.describe("en la computadora", () => {
       { width: 1715, height: 843 },
     ]) {
       await page.setViewportSize(size);
-      await page.goto("/compras/ordenes?estado=todas");
+      // El local lo elige la prueba: otra pudo dejarle a Compras otro local guardado (ADR-0059).
+      await page.goto(`/compras/ordenes?estado=todas&local=${PCE}`);
       await expect(page.getByRole("table", { name: "Órdenes de compra" })).toContainText(
         "PCE-0004",
       );

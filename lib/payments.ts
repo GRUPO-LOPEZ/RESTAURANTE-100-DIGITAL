@@ -20,12 +20,13 @@ export const METHOD_LABELS: Record<PaymentMethod, string> = {
 export const PAYMENT_TABS: {
   value: string | undefined;
   label: string;
-  tab: "due" | "overdue" | "paid" | "cash";
+  tab: "due" | "overdue" | "paid" | "cash" | "orders";
 }[] = [
   { value: undefined, label: "Por vencer", tab: "due" },
   { value: "vencidas", label: "Vencidas", tab: "overdue" },
   { value: "pagadas", label: "Pagadas", tab: "paid" },
   { value: "para-confirmar", label: "Para confirmar", tab: "cash" },
+  { value: "ordenes", label: "Órdenes de pago", tab: "orders" },
 ];
 
 // El estado de un vencimiento, siempre con palabra.

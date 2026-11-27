@@ -50,8 +50,9 @@ select is(
   (select count(*)::int from audit.audit_events where table_schema = 'org' and source = 'seed'),
   -- 20 de la estructura, más 2 razones sociales y la razón social de los 4 locales (2.1 C, ADR-0029), más el código
   -- de 3 locales para numerar las órdenes de compra (ADR-0053). Más (ADR-0061) el tramo de razón social de los 4
-  -- locales, la ubicación de los 4, los datos de ARCA de las 2 razones sociales y sus 2 actividades.
-  41,
+  -- locales, la ubicación de los 4, los datos de ARCA de las 2 razones sociales y sus 2 actividades. Más (ADR-0070)
+  -- las 4 cajas y cuentas de las razones sociales.
+  45,
   'cada alta del seed quedó auditada con origen seed'
 );
 
@@ -282,7 +283,7 @@ select is(
   (select array_agg(policyname || ':' || cmd order by policyname)::text[]
      from pg_policies where schemaname = 'org' and roles <> '{audit_owner}'),
   array['areas_select:SELECT', 'brands_select:SELECT', 'groups_select:SELECT', 'legal_entities_select:SELECT',
-        'legal_entity_activities_select:SELECT', 'legal_entity_documents_select:SELECT', 'provinces_select:SELECT',
+        'legal_entity_accounts_select:SELECT', 'legal_entity_activities_select:SELECT', 'legal_entity_documents_select:SELECT', 'provinces_select:SELECT',
         'restaurant_legal_entities_select:SELECT', 'restaurants_select:SELECT', 'time_zones_select:SELECT'],
   'en org solo hay políticas de lectura (las escrituras van por funciones), más las de la auditoría'
 );

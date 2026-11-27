@@ -73,8 +73,9 @@ export async function createInvoiceAction(
       point_of_sale: fiscal ? Number(f.point_of_sale) : null,
       number: Number(f.number),
       issued_on: f.issued_on,
-      authorization_kind: fiscal ? f.authorization_kind : null,
-      authorization_code: fiscal ? f.authorization_code : null,
+      // El CAE se completa en la ficha: la base lo exige al controlar (ADR-0070).
+      authorization_kind: fiscal && f.authorization_code ? f.authorization_kind : null,
+      authorization_code: fiscal && f.authorization_code ? f.authorization_code : null,
       issuer_tax_id: fiscal ? supplier?.tax_id : null,
     },
     p_reason: "Factura cargada",
@@ -83,8 +84,24 @@ export async function createInvoiceAction(
   if (state.status !== "ok") return state;
   const created = z.object({ invoice_id: z.string() }).safeParse(data);
   if (!created.success) return { status: "bad", message: "No pudimos cargar la factura." };
+  // La foto del alta, si vino. La factura ya está creada: si la foto no se pudo guardar, se avisa en la ficha.
+  const entry = formData.get("file");
+  let notice = "creada";
+  if (entry instanceof File && entry.size > 0) {
+    const file = await checkFile(entry);
+    const attached =
+      typeof file === "string"
+        ? null
+        : await attachInvoiceFile(
+            created.data.invoice_id,
+            "invoices",
+            created.data.invoice_id,
+            file,
+          );
+    notice = attached?.state.status === "ok" ? "creada-con-foto" : "creada-sin-foto";
+  }
   revalidate();
-  redirect(`/compras/facturas/${created.data.invoice_id}?aviso=creada`);
+  redirect(`/compras/facturas/${created.data.invoice_id}?aviso=${notice}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -207,7 +224,7 @@ export async function cancelInvoiceAction(
   const state = toActionState(data, error);
   if (state.status !== "ok") return state;
   revalidate(id.data);
-  redirect(`/compras/facturas/${id.data}?aviso=cancelada`);
+  redirect(`/compras/facturas/${id.data}?aviso=anulada`);
 }
 
 // ---------------------------------------------------------------------------
@@ -276,34 +293,12 @@ export async function uploadInvoiceFileAction(
     return { status: "bad", message: "Falta la factura." };
   const file = await checkFile(formData.get("file"));
   if (typeof file === "string") return { status: "bad", message: file, fieldErrors: { file } };
-  const supabase = await createClient();
-  const { data: row } = await supabase
-    .schema("purchasing")
-    .from("invoices")
-    .select("group_id")
-    .eq("id", invoiceId.data)
-    .maybeSingle();
-  if (!row) return { status: "bad", message: "No encontramos la factura." };
-  const ext = file.type === "application/pdf" ? "pdf" : "jpg";
-  const path = `${row.group_id}/${table.data}/${sourceId.data}/${randomUUID()}.${ext}`;
-  // Storage controla que la sesión cargue facturas en ese local y que la factura todavía se pueda cambiar.
-  const uploaded = await supabase.storage
-    .from(BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: false });
-  if (uploaded.error)
-    return { status: "bad", message: "No pudimos subir el archivo. Probá de nuevo." };
-  const { data, error } = await supabase.schema("purchasing").rpc("add_invoice_attachment", {
-    p_source_table: table.data,
-    p_source_id: sourceId.data,
-    p_storage_path: path,
-    p_page: 1,
-  });
-  const state = toActionState(data, error);
-  if (state.status !== "ok") return state;
+  const attached = await attachInvoiceFile(invoiceId.data, table.data, sourceId.data, file);
+  if (attached.state.status !== "ok") return attached.state;
   revalidate(invoiceId.data);
   // El aviso va en la barra de la ficha (?aviso=): el botón de subir desaparece cuando la nota ya tiene su foto, y con
   // él se iría un mensaje que viviera a su lado.
-  const status = z.object({ status: z.string() }).safeParse(data);
+  const status = z.object({ status: z.string() }).safeParse(attached.data);
   if (status.success && STATUS_MESSAGES[status.data.status]) {
     const after = STATUS_MESSAGES[status.data.status];
     return {
@@ -313,4 +308,38 @@ export async function uploadInvoiceFileAction(
     };
   }
   return { status: "ok", message: "Archivo guardado.", notice: "archivo" };
+}
+
+// Sube la foto o el PDF a la carpeta de la factura o de su nota y lo registra. Storage controla que la sesión cargue
+// facturas en ese local y que la factura todavía se pueda cambiar; la base vuelve a controlar al registrarlo.
+async function attachInvoiceFile(
+  invoiceId: string,
+  table: "invoices" | "credit_debit_notes",
+  sourceId: string,
+  file: File,
+): Promise<{ state: ActionState; data?: unknown }> {
+  const db = await createClient();
+  const { data: row } = await db
+    .schema("purchasing")
+    .from("invoices")
+    .select("group_id")
+    .eq("id", invoiceId)
+    .maybeSingle();
+  if (!row) return { state: { status: "bad", message: "No encontramos la factura." } };
+  const ext = file.type === "application/pdf" ? "pdf" : "jpg";
+  const path = `${row.group_id}/${table}/${sourceId}/${randomUUID()}.${ext}`;
+  const uploaded = await db.storage
+    .from(BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (uploaded.error)
+    return { state: { status: "bad", message: "No pudimos subir el archivo. Probá de nuevo." } };
+  const { data, error } = await db.schema("purchasing").rpc("add_invoice_attachment", {
+    p_source_table: table,
+    p_source_id: sourceId,
+    p_storage_path: path,
+    p_page: 1,
+  });
+  const state = toActionState(data, error);
+  if (state.status !== "ok") await db.storage.from(BUCKET).remove([path]);
+  return { state, data };
 }
