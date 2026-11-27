@@ -7216,12 +7216,17 @@ export type Database = {
           group_id: string;
           id: string;
           notes: string | null;
+          previous_version_id: string | null;
           received_on: string;
           status: Database["purchasing"]["Enums"]["price_list_status"];
           supplier_id: string;
           updated_at: string;
           updated_by: string | null;
           valid_from: string;
+          version: number;
+          voided_at: string | null;
+          voided_by: string | null;
+          voided_reason: string | null;
         };
         ComputedFields: never;
         Insert: {
@@ -7235,12 +7240,17 @@ export type Database = {
           group_id: string;
           id?: string;
           notes?: string | null;
+          previous_version_id?: string | null;
           received_on: string;
           status?: Database["purchasing"]["Enums"]["price_list_status"];
           supplier_id: string;
           updated_at?: string;
           updated_by?: string | null;
           valid_from: string;
+          version?: number;
+          voided_at?: string | null;
+          voided_by?: string | null;
+          voided_reason?: string | null;
         };
         Update: {
           accepted_at?: string | null;
@@ -7253,14 +7263,27 @@ export type Database = {
           group_id?: string;
           id?: string;
           notes?: string | null;
+          previous_version_id?: string | null;
           received_on?: string;
           status?: Database["purchasing"]["Enums"]["price_list_status"];
           supplier_id?: string;
           updated_at?: string;
           updated_by?: string | null;
           valid_from?: string;
+          version?: number;
+          voided_at?: string | null;
+          voided_by?: string | null;
+          voided_reason?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "price_lists_previous_fkey";
+            columns: ["previous_version_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "price_lists";
+            referencedColumns: ["id", "group_id"];
+          },
+        ];
       };
       purchase_order_events: {
         Row: {
@@ -7910,6 +7933,7 @@ export type Database = {
           resolved_by: string | null;
           source_id: string | null;
           status: Database["purchasing"]["Enums"]["unmapped_status"];
+          suggested_product_id: string | null;
           supplier_id: string;
           supplier_sku: string | null;
           updated_at: string;
@@ -7932,6 +7956,7 @@ export type Database = {
           resolved_by?: string | null;
           source_id?: string | null;
           status?: Database["purchasing"]["Enums"]["unmapped_status"];
+          suggested_product_id?: string | null;
           supplier_id: string;
           supplier_sku?: string | null;
           updated_at?: string;
@@ -7953,6 +7978,7 @@ export type Database = {
           resolved_by?: string | null;
           source_id?: string | null;
           status?: Database["purchasing"]["Enums"]["unmapped_status"];
+          suggested_product_id?: string | null;
           supplier_id?: string;
           supplier_sku?: string | null;
           updated_at?: string;
@@ -7965,7 +7991,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      accept_price_list: { Args: { p_id: string; p_reason: string }; Returns: Json };
+      accept_price_list: {
+        Args: { p_confirm_review?: boolean; p_id: string; p_reason: string };
+        Returns: Json;
+      };
       account_label: {
         Args: {
           p_acc: Omit<
@@ -7994,6 +8023,16 @@ export type Database = {
       };
       add_price_list_attachment: {
         Args: { p_page: number; p_price_list_id: string; p_reason: string; p_storage_path: string };
+        Returns: Json;
+      };
+      add_price_list_items: {
+        Args: {
+          p_items: Json;
+          p_list: Omit<
+            Database["purchasing"]["Tables"]["price_lists"]["Row"],
+            Database["purchasing"]["Tables"]["price_lists"]["ComputedFields"]
+          >;
+        };
         Returns: Json;
       };
       add_receipt_attachment: {
@@ -8138,6 +8177,10 @@ export type Database = {
       };
       confirm_cash_payment: {
         Args: { p_amount: number; p_id: string; p_reason: string };
+        Returns: Json;
+      };
+      correct_price_list: {
+        Args: { p_confirm_review?: boolean; p_id: string; p_items: Json; p_reason: string };
         Returns: Json;
       };
       create_invoice: {
@@ -8542,6 +8585,7 @@ export type Database = {
           resolved_by: string | null;
           source_id: string | null;
           status: Database["purchasing"]["Enums"]["unmapped_status"];
+          suggested_product_id: string | null;
           supplier_id: string;
           supplier_sku: string | null;
           updated_at: string;
@@ -8554,15 +8598,24 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      price_line_check: {
+        Args: { p_group_id: string; p_net: number; p_previous: number; p_product_id: string };
+        Returns: Json;
+      };
+      price_line_product: { Args: { p_item: Json; p_supplier_id: string }; Returns: string };
       price_list_at: { Args: { p_date: string; p_supplier_id: string }; Returns: string };
       price_list_changes: {
         Args: { p_price_list_id: string };
         Returns: {
           change_pct: number;
           net_price: number;
+          over_threshold: boolean;
+          per_use_price: number;
+          per_use_unit: string;
           previous_net_price: number;
           purchase_product_id: string;
           raw_name: string;
+          review: boolean;
         }[];
       };
       price_list_expired: { Args: { p_id: string }; Returns: boolean };
@@ -8580,8 +8633,11 @@ export type Database = {
           supplier_name: string;
           total: number;
           valid_from: string;
+          version: number;
         }[];
       };
+      price_list_preview: { Args: { p_items: Json; p_supplier_id: string }; Returns: Json };
+      price_list_review_count: { Args: { p_list_id: string }; Returns: number };
       price_list_supplier_counts: {
         Args: { p_status?: string };
         Returns: {
@@ -8688,6 +8744,7 @@ export type Database = {
         Returns: undefined;
       };
       release_overpayment: { Args: { p_invoice_id: string }; Returns: number };
+      remember_list_aliases: { Args: { p_list_id: string }; Returns: number };
       request_lower_po_approval: {
         Args: { p_reason: string; p_supplier_id: string };
         Returns: Json;
@@ -8820,6 +8877,7 @@ export type Database = {
       void_payment: { Args: { p_id: string; p_reason: string }; Returns: Json };
       void_payment_internal: { Args: { p_id: string; p_reason: string }; Returns: Json };
       void_payment_order: { Args: { p_id: string; p_reason: string }; Returns: Json };
+      void_price_list: { Args: { p_id: string; p_reason: string }; Returns: Json };
       write_invoice_lines: {
         Args: {
           p_inv: Omit<
@@ -8901,7 +8959,7 @@ export type Database = {
         | "received"
         | "closed"
         | "cancelled";
-      price_list_status: "received" | "accepted" | "replaced";
+      price_list_status: "received" | "accepted" | "replaced" | "voided";
       receipt_issue: "missing" | "extra" | "different_product" | "quality" | "expired";
       receipt_result: "complete" | "partial" | "with_differences";
       receipt_status: "open" | "closed";
@@ -10729,7 +10787,7 @@ export const Constants = {
         "closed",
         "cancelled",
       ],
-      price_list_status: ["received", "accepted", "replaced"],
+      price_list_status: ["received", "accepted", "replaced", "voided"],
       receipt_issue: ["missing", "extra", "different_product", "quality", "expired"],
       receipt_result: ["complete", "partial", "with_differences"],
       receipt_status: ["open", "closed"],

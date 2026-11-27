@@ -42,6 +42,8 @@ export type ArticleToMap = {
   rawName: string;
   sku: string | null;
   packageHint: string | null;
+  // Lo que sugirió Compras en una lista («Es…»): arranca en «Es el mismo que…» con ese producto elegido.
+  suggested?: { id: string; description: string } | null;
 };
 
 export function MapArticle({
@@ -53,7 +55,7 @@ export function MapArticle({
   packageUnits: { code: string; name: string }[];
 }) {
   const [open, setOpen] = React.useState(false);
-  const [mode, setMode] = React.useState<Mode>("ingredient");
+  const [mode, setMode] = React.useState<Mode>(article.suggested ? "same" : "ingredient");
   return (
     <Modal
       open={open}
@@ -311,7 +313,7 @@ function SameForm({ article }: { article: ArticleToMap }) {
           hint="El nombre y el código nuevos quedan guardados para reconocerlo la próxima vez."
           error={errors.purchase_product_id}
         >
-          <Select name="purchase_product_id" defaultValue="">
+          <Select name="purchase_product_id" defaultValue={article.suggested?.id ?? ""}>
             <option value="" disabled>
               Elegí el producto
             </option>

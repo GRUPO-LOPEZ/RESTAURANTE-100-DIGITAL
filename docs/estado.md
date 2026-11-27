@@ -1,8 +1,18 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los criterios de pantallas de Soy (#106) y el PR A de Compras (#107). PR B fusionado (#108, ADR-0069). PR C (`feat/orden-de-pago`, ADR-0070) abierto. Después, D.**
+_Última actualización: 2026-11-27._ **Correcciones de Compras: A (#107), B (#108) y C (#109) fusionados. PR D (`feat/listas-importar`, ADR-0071: importar listas, controles, versiones y anulación) en curso. Después, E (pedido automático por mail desde Gmail y WhatsApp).**
 
-## Correcciones de Compras, PR C (facturas y orden de pago, ADR-0070): PR abierto (2026-11-27)
+## Correcciones de Compras, PR D (listas de precios: importar, controles, versiones, ADR-0071): PR abierto (2026-11-27)
+
+- **Decisiones de Joaco:** se parte en D y E; el mail será Gmail (SMTP de Google) y solo saldrá el pedido de lista (las OC y OP siguen en cola).
+- **Hecho:** migraciones `20261220120000` y `20261220120100`; lectura de Excel, CSV y PDF (`pdfjs-dist`, tecnología nueva); planilla modelo; carga con pantalla dividida; ficha con versiones, Corregir y Anular.
+- **Decisión de Joaco (revisión de seguridad):** lo que Compras elige a mano («Es…») entra a la cola de mapeo con la sugerencia y lo confirma el chef; recién ahí se recuerda.
+- **Pruebas:** pgTAP completo (82 archivos, 4036, con la 423 de 50); Vitest (703); Playwright de listas, proveedores e importar en verde con `next start`.
+- **Revisiones:** base, seguridad y diseño, sin graves abiertos (el grave de diseño, el error del renglón solo con color, corregido). Pendientes anotados en ADR-0071.
+- **Falta:** la suite en GitHub y que Joaco lo fusione. Después, E (mail desde Gmail y WhatsApp).
+- **Para Soy:** `docs/modulos/32-listas-de-precios-lista-de-cambios.md`.
+
+## Correcciones de Compras, PR C (facturas y orden de pago, ADR-0070): fusionado (#109, 2026-11-27)
 
 - **Decisiones de Joaco:** un solo PR; la orden de pago se numera por razón social; las cajas y cuentas las carga quien administra el grupo, en la ficha de la razón social; «Para dar conforme» son las observadas que la persona puede decidir y no cargó; cheques solo con sus datos en el pago, sin cartera.
 - **Hecho:**
@@ -11,7 +21,7 @@ _Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los c
   - seed y staging con cajas y cuentas ficticias.
 - **Revisiones:** las tres hechas. Dos graves corregidos (orden a nombre de otra razón social; anular suelto un medio de una orden) y los medios de base y diseño. Para decidir con Joaco: si gerente y auditor ven el CBU de las cuentas propias, el CBU en la auditoría y el prefijo de la numeración (ADR-0070).
 - **Pruebas:** pgTAP completo en verde (81 archivos, 3986); Vitest (688), tipos, lint y formato en verde; Playwright de Compras (orden de pago, pagos, facturas, criterios y órdenes de compra) en verde con la base limpia, en local. La de órdenes de compra ahora elige su local en la dirección (tomaba el que guardó otra prueba).
-- **Falta:** la suite en GitHub y que Joaco lo fusione. Al pasar a staging, volver a correr `test-superadmin.sql` (lo lanza Joaco desde Actions).
+- **Fusionado** (#109). Al pasar a staging, volver a correr `test-superadmin.sql` (lo lanza Joaco desde Actions).
 - **Para Soy:** `docs/modulos/31-orden-de-pago-lista-de-cambios.md`.
 
 ## Correcciones de Compras, PR B (orden de compra en una pantalla, ADR-0069): fusionado (#108, 2026-11-26)

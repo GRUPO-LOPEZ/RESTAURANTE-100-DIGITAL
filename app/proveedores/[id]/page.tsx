@@ -172,6 +172,18 @@ async function CurrentListMetric({
   const back = encodeURIComponent(`/proveedores/${supplierId}`);
   const link =
     "inline-flex min-h-touch items-center text-sm text-primary underline-offset-4 hover:underline desk:min-h-8";
+  // La planilla modelo para mandarle al proveedor (decisión 22 de Soy, ADR-0071), al lado de la acción de la lista.
+  const withTemplate = (action: React.ReactNode) =>
+    canView ? (
+      <span className="flex flex-wrap gap-x-3 gap-y-1">
+        {action}
+        <a href={`/proveedores/${supplierId}/planilla-lista`} className={link} download>
+          Planilla modelo (Excel)
+        </a>
+      </span>
+    ) : (
+      action
+    );
   if (!current) {
     return (
       <Metric
@@ -185,14 +197,16 @@ async function CurrentListMetric({
         status="none"
         statusLabel="Sin datos"
         action={
-          canManage ? (
-            <Link
-              href={`/listas-de-precios/nueva?proveedor=${supplierId}&volver=${back}`}
-              className={link}
-            >
-              Cargar lista
-            </Link>
-          ) : undefined
+          canManage
+            ? withTemplate(
+                <Link
+                  href={`/listas-de-precios/nueva?proveedor=${supplierId}&volver=${back}`}
+                  className={link}
+                >
+                  Cargar lista
+                </Link>,
+              )
+            : undefined
         }
       />
     );
@@ -208,11 +222,11 @@ async function CurrentListMetric({
         emptyLabel="Sin datos"
         status="none"
         statusLabel="Sin datos"
-        action={
+        action={withTemplate(
           <Link href={`/listas-de-precios/${current.id}?volver=${back}`} className={link}>
             Ver la lista
-          </Link>
-        }
+          </Link>,
+        )}
       />
     );
   return (
@@ -225,11 +239,11 @@ async function CurrentListMetric({
       // Vencida según la frecuencia de la ficha (design.md: dato vencido = Atención, con su fecha).
       status={current.expired ? "warn" : "ok"}
       statusLabel={current.expired ? "Vencida" : "Al día"}
-      action={
+      action={withTemplate(
         <Link href={`/listas-de-precios/${current.id}?volver=${back}`} className={link}>
           Ver la lista
-        </Link>
-      }
+        </Link>,
+      )}
     />
   );
 }

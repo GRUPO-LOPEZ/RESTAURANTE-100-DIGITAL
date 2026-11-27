@@ -17,10 +17,11 @@ const listRow = z.object({
   supplier_name: z.string(),
   received_on: z.string(),
   valid_from: z.string(),
-  status: z.enum(["received", "accepted", "replaced"]),
+  status: z.enum(["received", "accepted", "replaced", "voided"]),
   expired: z.boolean(),
   items: z.coerce.number(),
   queued: z.coerce.number(),
+  version: z.coerce.number(),
   total: z.coerce.number(),
 });
 export type PriceListRow = Omit<z.infer<typeof listRow>, "total">;
@@ -65,6 +66,20 @@ export type PriceListItem = {
   net: number | null;
   previousNet: number | null;
   changePct: number | null;
+  // Los controles (ADR-0071): si la suba pasa el umbral de Dirección, «Revisar» a 10 veces y el precio por unidad de uso.
+  overThreshold: boolean;
+  review: boolean;
+  perUsePrice: number | null;
+  perUseUnit: string | null;
+  purchaseProductId: string | null;
+};
+
+// Una versión de la lista (ADR-0071): la 1 cargada y sus correcciones.
+export type PriceListVersion = {
+  id: string;
+  version: number;
+  status: PriceListStatus;
+  createdAt: string;
 };
 
 export type PriceListDetail = {
@@ -76,6 +91,11 @@ export type PriceListDetail = {
   status: PriceListStatus;
   expired: boolean;
   notes: string | null;
+  version: number;
+  previousVersionId: string | null;
+  voidedReason: string | null;
+  voidedAt: string | null;
+  versions: PriceListVersion[];
   items: PriceListItem[];
   attachments: { id: string; path: string; page: number; url: string | null }[];
 };
@@ -98,6 +118,10 @@ const changeRow = z.object({
   net_price: z.coerce.number().nullable(),
   previous_net_price: z.coerce.number().nullable(),
   change_pct: z.coerce.number().nullable(),
+  over_threshold: z.boolean().nullable(),
+  review: z.boolean().nullable(),
+  per_use_price: z.coerce.number().nullable(),
+  per_use_unit: z.string().nullable(),
 });
 
 export async function getPriceListDetail(id: string): Promise<PriceListDetail | null> {
@@ -106,7 +130,9 @@ export async function getPriceListDetail(id: string): Promise<PriceListDetail | 
   const [list, items, changes, attachments] = await Promise.all([
     purchasing
       .from("price_lists")
-      .select("id, supplier_id, received_on, valid_from, status, notes")
+      .select(
+        "id, supplier_id, received_on, valid_from, status, notes, version, previous_version_id, voided_reason, voided_at",
+      )
       .eq("id", id)
       .maybeSingle(),
     purchasing
@@ -126,7 +152,7 @@ export async function getPriceListDetail(id: string): Promise<PriceListDetail | 
   if (list.error || items.error || changes.error || attachments.error)
     failed("la lista de precios");
   if (!list.data) return null;
-  const [supplier, expired] = await Promise.all([
+  const [supplier, expired, chain] = await Promise.all([
     supabase
       .schema("catalog")
       .from("suppliers")
@@ -134,8 +160,15 @@ export async function getPriceListDetail(id: string): Promise<PriceListDetail | 
       .eq("id", list.data.supplier_id)
       .maybeSingle(),
     purchasing.rpc("price_list_expired", { p_id: id }),
+    // Las versiones de la misma lista: misma vigencia y proveedor; se arma la cadena por previous_version_id.
+    purchasing
+      .from("price_lists")
+      .select("id, version, status, created_at, previous_version_id")
+      .eq("supplier_id", list.data.supplier_id)
+      .eq("valid_from", list.data.valid_from)
+      .order("version"),
   ]);
-  if (supplier.error || expired.error) failed("la lista de precios");
+  if (supplier.error || expired.error || chain.error) failed("la lista de precios");
   const parsedItems = z.array(itemRow).safeParse(items.data);
   const parsedChanges = z.array(changeRow).safeParse(changes.data);
   if (!parsedItems.success || !parsedChanges.success) failed("la lista de precios");
@@ -143,9 +176,11 @@ export async function getPriceListDetail(id: string): Promise<PriceListDetail | 
   // Enlaces firmados por 5 minutos para abrir cada archivo (Storage controla que la sesión lo pueda leer).
   const files = await Promise.all(
     (attachments.data ?? []).map(async (a) => {
+      // Un Excel o un CSV del proveedor se descarga, no se abre en el navegador (revisión de seguridad).
+      const download = /\.(xlsx|csv)$/.test(a.storage_path);
       const signed = await supabase.storage
         .from("purchasing-documents")
-        .createSignedUrl(a.storage_path, 300);
+        .createSignedUrl(a.storage_path, 300, download ? { download: true } : undefined);
       return { id: a.id, path: a.storage_path, page: a.page, url: signed.data?.signedUrl ?? null };
     }),
   );
@@ -161,6 +196,11 @@ export async function getPriceListDetail(id: string): Promise<PriceListDetail | 
     status: list.data.status,
     expired: expired.data === true,
     notes: list.data.notes,
+    version: list.data.version,
+    previousVersionId: list.data.previous_version_id,
+    voidedReason: list.data.voided_reason,
+    voidedAt: list.data.voided_at,
+    versions: versionChain(list.data.id, chain.data ?? []),
     items: parsedItems.data.map((i) => {
       const c = byKey.get(`${i.purchase_product_id ?? ""}|${i.raw_name}`);
       return {
@@ -177,10 +217,39 @@ export async function getPriceListDetail(id: string): Promise<PriceListDetail | 
         net: c?.net_price ?? null,
         previousNet: c?.previous_net_price ?? null,
         changePct: c?.change_pct ?? null,
+        overThreshold: c?.over_threshold ?? false,
+        review: c?.review ?? false,
+        perUsePrice: c?.per_use_price ?? null,
+        perUseUnit: c?.per_use_unit ?? null,
+        purchaseProductId: i.purchase_product_id,
       };
     }),
     attachments: files,
   };
+}
+
+// Las versiones de una lista: desde la 1 hasta la última corrección, siguiendo previous_version_id.
+function versionChain(
+  id: string,
+  rows: {
+    id: string;
+    version: number;
+    status: PriceListStatus;
+    created_at: string;
+    previous_version_id: string | null;
+  }[],
+): PriceListVersion[] {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const next = new Map(
+    rows.filter((r) => r.previous_version_id).map((r) => [r.previous_version_id!, r]),
+  );
+  let first = byId.get(id);
+  while (first?.previous_version_id && byId.has(first.previous_version_id))
+    first = byId.get(first.previous_version_id);
+  const out: PriceListVersion[] = [];
+  for (let r = first; r && out.length < 50; r = next.get(r.id))
+    out.push({ id: r.id, version: r.version, status: r.status, createdAt: r.created_at });
+  return out;
 }
 
 // La lista vigente de un proveedor (la aceptada), para el indicador de su ficha. Vacío si no ve listas o no hay.
@@ -246,6 +315,7 @@ export type UnmappedArticle = {
   packageHint: string | null;
   foundIn: string;
   createdAt: string;
+  suggested: { id: string; description: string } | null;
 };
 
 export async function getUnmappedArticles(filter: {
@@ -257,9 +327,12 @@ export async function getUnmappedArticles(filter: {
   let query = supabase
     .schema("purchasing")
     .from("unmapped_articles")
-    .select("id, supplier_id, raw_name, supplier_sku, package_hint, found_in, created_at", {
-      count: "exact",
-    })
+    .select(
+      "id, supplier_id, raw_name, supplier_sku, package_hint, found_in, created_at, suggested_product_id",
+      {
+        count: "exact",
+      },
+    )
     .eq("status", "pending")
     .order("created_at", { ascending: true })
     .order("raw_name")
@@ -278,6 +351,20 @@ export async function getUnmappedArticles(filter: {
     if (suppliers.error) failed("los proveedores de la cola");
     for (const s of suppliers.data) names.set(s.id, s.trade_name || s.name);
   }
+  // Lo que sugirió Compras al elegir a mano en una lista (ADR-0071): el chef lo confirma.
+  const suggestedIds = [
+    ...new Set(data.map((a) => a.suggested_product_id).filter((v): v is string => !!v)),
+  ];
+  const suggested = new Map<string, string>();
+  if (suggestedIds.length > 0) {
+    const products = await supabase
+      .schema("catalog")
+      .from("purchase_products")
+      .select("id, description")
+      .in("id", suggestedIds);
+    if (products.error) failed("los productos sugeridos");
+    for (const p of products.data) suggested.set(p.id, p.description);
+  }
   return {
     rows: data.map((a) => ({
       id: a.id,
@@ -288,6 +375,10 @@ export async function getUnmappedArticles(filter: {
       packageHint: a.package_hint,
       foundIn: a.found_in,
       createdAt: a.created_at,
+      suggested:
+        a.suggested_product_id && suggested.has(a.suggested_product_id)
+          ? { id: a.suggested_product_id, description: suggested.get(a.suggested_product_id)! }
+          : null,
     })),
     total: count ?? 0,
   };
