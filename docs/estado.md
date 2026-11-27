@@ -1,8 +1,8 @@
 # Estado del proyecto
 
-_Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los criterios de pantallas de Soy (#106) y el PR A de Compras (#107). PR B fusionado (#108, ADR-0069). PR C (`feat/orden-de-pago`, ADR-0070) en curso. Después, D.**
+_Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los criterios de pantallas de Soy (#106) y el PR A de Compras (#107). PR B fusionado (#108, ADR-0069). PR C (`feat/orden-de-pago`, ADR-0070) abierto. Después, D.**
 
-## Correcciones de Compras, PR C (facturas y orden de pago, ADR-0070): en pausa, commiteado en la rama sin PR (2026-11-26)
+## Correcciones de Compras, PR C (facturas y orden de pago, ADR-0070): PR abierto (2026-11-27)
 
 - **Decisiones de Joaco:** un solo PR; la orden de pago se numera por razón social; las cajas y cuentas las carga quien administra el grupo, en la ficha de la razón social; «Para dar conforme» son las observadas que la persona puede decidir y no cargó; cheques solo con sus datos en el pago, sin cartera.
 - **Hecho:**
@@ -10,8 +10,8 @@ _Última actualización: 2026-11-26._ **Tanda 2 cerrada (#105). Fusionados los c
   - pantallas: «Registrar pago» en dos columnas, la orden de pago imprimible, la pestaña «Órdenes de pago», el listado de facturas con los filtros nuevos, el alta corta sin CAE y la tarjeta «Cajas y cuentas»;
   - seed y staging con cajas y cuentas ficticias.
 - **Revisiones:** las tres hechas. Dos graves corregidos (orden a nombre de otra razón social; anular suelto un medio de una orden) y los medios de base y diseño. Para decidir con Joaco: si gerente y auditor ven el CBU de las cuentas propias, el CBU en la auditoría y el prefijo de la numeración (ADR-0070).
-- **Pruebas:** pgTAP completo en verde (81 archivos, 3986; las de tiempos, repetidas solas porque coincidieron con un build); Vitest (688), tipos, lint y formato en verde. Playwright de Compras pasó entero antes de los últimos ajustes; después se cortó en pausa.
-- **Al retomar:** `npm run db:reset` y correr contra `next start` `orden-de-pago`, `pagos`, `facturas`, `compras-criterios` y `ordenes-de-compra` (con la base limpia: repetidas sin reset fallan por datos de la corrida anterior); volver a sacar las capturas de Facturas y del panel de pago; actualizar la rama con `main` (ya tiene el #108) y abrir el PR contra `main`. Al pasar a staging, volver a correr `test-superadmin.sql` (lo lanza Joaco desde Actions).
+- **Pruebas:** pgTAP completo en verde (81 archivos, 3986); Vitest (688), tipos, lint y formato en verde; Playwright de Compras (orden de pago, pagos, facturas, criterios y órdenes de compra) en verde con la base limpia, en local. La de órdenes de compra ahora elige su local en la dirección (tomaba el que guardó otra prueba).
+- **Falta:** la suite en GitHub y que Joaco lo fusione. Al pasar a staging, volver a correr `test-superadmin.sql` (lo lanza Joaco desde Actions).
 - **Para Soy:** `docs/modulos/31-orden-de-pago-lista-de-cambios.md`.
 
 ## Correcciones de Compras, PR B (orden de compra en una pantalla, ADR-0069): fusionado (#108, 2026-11-26)
